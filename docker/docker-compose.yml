@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  genesis-prediction:
+    image: python:3.11-slim
+    container_name: genesis_prediction
+    working_dir: /app
+    volumes:
+      - ../scripts:/app
+      - ../data:/data
+    env_file:
+      - ../.env
+    command: >
+      sh -c "
+      pip install requests &&
+      python fetch_news.py
+      "

@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  fetcher:
+    build: ./docker/fetcher
+    env_file: .env
+    volumes:
+      - ./data:/data
+    command: >
+      python fetcher.py
+    restart: "no"
+
+  analyzer:
+    build: ./docker/analyzer
+    volumes:
+      - ./data:/data
+    command: >
+      python analyze.py
+    depends_on:
+      - fetcher
+    restart: "no"

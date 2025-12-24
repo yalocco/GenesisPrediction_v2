@@ -1,0 +1,18 @@
+# secrets
+.env
+
+# runtime data
+data/
+out/
+analysis/
+
+# python
+__pycache__/
+*.pyc
+
+# docker
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
