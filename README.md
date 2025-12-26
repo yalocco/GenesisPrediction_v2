@@ -35,3 +35,13 @@ docker compose run --rm fetcher
 docker compose run --rm analyzer
 
 docker compose run --rm analyzer
+
+git status
+git status --untracked-files
+git add -u
+git add docker/analyzer/analyze.py
+git add docker/analyzer/diff.py
+git add docker/analyzer/Dockerfile
+git commit -m "Fix daily diff generation and stabilize analyzer execution flow"
+git push origin main
+
