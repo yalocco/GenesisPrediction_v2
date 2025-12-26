@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
-
+from diff import generate_diff
 
 DATA_DIR = Path("/data")
 CATEGORY = "world_politics"
@@ -365,8 +365,14 @@ def main() -> None:
     summary_path = ANALYSIS_DIR / "summary.json"
     summary_path.write_text(json.dumps(summary_obj, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"[OK] summary -> {summary_path}")
+    
 
-    print("[OK] sentiment + topic analysis completed")
+    # generate daily diff (Genesis diff v1)
+    diff_path = generate_diff(
+        analysis_dir=str(ANALYSIS_DIR),
+        date_str=today_date
+        )
+    print(f"[OK] diff -> {diff_path}")
 
 
 if __name__ == "__main__":

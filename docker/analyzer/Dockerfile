@@ -1,6 +1,11 @@
-FROM python:3.11-slim
+FROM python:3.13-slim
+
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+
 COPY analyze.py .
+COPY diff.py .
+COPY requirements.txt .
+
+RUN pip install -r requirements.txt
+
 CMD ["python", "analyze.py"]
