@@ -1,0 +1,21 @@
+{
+  "scenario_id": "sc_topic_rotation_high_churn",
+  "enabled": true,
+
+  "match": {
+    "signal_id": "sig_topic_rotation_high_churn",
+    "min_severity": 0.6,
+    "min_confidence": 0.6
+  },
+
+  "prediction": {
+    "prediction_id": "pred_attention_rotation",
+    "title": "Attention is rotating rapidly",
+    "time_horizon_days": 3,
+    "summary": "ニュース件数は横ばいだが入れ替わりが大きく、注目テーマが短期間で回転している可能性。",
+    "recommended_actions": [
+      "明日の entities/keywords 変化を重点観測",
+      "同カテゴリ内の主要ソース偏りを点検"
+    ]
+  }
+}

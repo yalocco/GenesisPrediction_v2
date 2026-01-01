@@ -1,0 +1,5 @@
+python scripts\run_scenarios.py --latest
+python docker/analyzer/analyze.py
+docker compose run analyzer
+docker compose build --no-cache analyzer
+docker compose run --rm analyzer

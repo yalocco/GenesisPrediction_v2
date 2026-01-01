@@ -1,0 +1,19 @@
+{
+  "scenario_id": "sc_novelty_up",
+  "enabled": true,
+  "match": {
+    "signal_id": "sig_novelty_up",
+    "min_severity": 0.2,
+    "min_confidence": 0.35
+  },
+  "prediction": {
+    "prediction_id": "pred_novelty_up",
+    "title": "Novelty is rising",
+    "time_horizon_days": 2,
+    "summary": "新規に追加される記事/話題が増えており、新しい論点・ソース流入が起きている可能性。",
+    "recommended_actions": [
+      "added 上位URLのソース分布を確認",
+      "keywords/entitiesの新規出現を抽出して監視リスト化"
+    ]
+  }
+}

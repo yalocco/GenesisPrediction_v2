@@ -1,0 +1,19 @@
+{
+  "id": "sc_persistence_down",
+  "enabled": true,
+  "label": "Persistence is weakening",
+  "kind": "prediction",
+  "match": {
+    "signal_id": "sig_persistence_down",
+    "min_severity": 0.2,
+    "min_confidence": 0.35
+  },
+  "prediction": {
+    "time_horizon_days": 2,
+    "summary": "削除（removed）が増えており、継続して残る話題が弱く、短期で入れ替わる傾向。",
+    "recommended_actions": [
+      "removed の多いソース／テーマの偏りを確認",
+      "継続テーマ（baseline に残るもの）との対比を出す"
+    ]
+  }
+}

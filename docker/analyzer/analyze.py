@@ -81,6 +81,148 @@ def pick_today_and_yesterday(files: List[Path]) -> Tuple[Optional[Path], Optiona
     return today, yesterday
 
 
+# --- daily_summary helpers ---
+PRED_RE = re.compile(r"^predictions_(\d{4}-\d{2}-\d{2})\.json$")
+
+def _find_latest_predictions_file(analysis_dir: Path) -> Optional[Path]:
+    best_date = None
+    best_path = None
+    if not analysis_dir.exists():
+        return None
+    for p in analysis_dir.iterdir():
+        if not p.is_file():
+            continue
+        m = PRED_RE.match(p.name)
+        if not m:
+            continue
+        d = m.group(1)
+        if (best_date is None) or (d > best_date):
+            best_date = d
+            best_path = p
+    return best_path
+
+def _shorten(s: str, n: int = 30) -> str:
+    s = safe_text(s).strip()
+    if len(s) <= n:
+        return s
+    return s[: max(n - 1, 1)] + "…"
+
+def _build_one_liner(headline: str, bullets: List[str], uncertainty: str) -> str:
+    headline = safe_text(headline).strip()
+    bullets = [safe_text(x).strip() for x in (bullets or []) if safe_text(x).strip()]
+    b1 = bullets[0] if len(bullets) > 0 else ""
+    b2 = bullets[1] if len(bullets) > 1 else ""
+    unc_short = _shorten(uncertainty, 30)
+
+    if not headline and not b1 and not b2 and not unc_short:
+        return ""
+
+    s = f"{headline}｜根拠: {b1}"
+    if b2:
+        s += f" / {b2}"
+    s += f"｜不確実: {unc_short}"
+    return s
+# --- /daily_summary helpers ---
+
+
+PRED_RE = re.compile(r"^predictions_(\d{4}-\d{2}-\d{2})\.json$")
+
+
+def _load_json(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _find_latest_predictions_file(analysis_dir: Path) -> Optional[Path]:
+    best_date = None
+    best_path: Optional[Path] = None
+    if not analysis_dir.exists():
+        return None
+
+    for p in analysis_dir.iterdir():
+        if not p.is_file():
+            continue
+        m = PRED_RE.match(p.name)
+        if not m:
+            continue
+        d = m.group(1)
+        if (best_date is None) or (d > best_date):
+            best_date = d
+            best_path = p
+    return best_path
+
+
+def _build_a_explain_from_predictions(pred_doc: dict, *, max_preds: int = 3, max_bullets: int = 6) -> dict:
+    """
+    A仕様（短い・機械的）
+    - headline: [{scenario_id}] {claim} を改行で最大3件
+    - bullets: rationale をprefix付きで最大max_bullets
+    - uncertainty: 上位1件を採用（空なら次を探す）
+    - watch: 上位1件から最大2行（prefix付き）
+    """
+    preds = list(pred_doc.get("predictions") or [])
+    if not preds:
+        return {"headline": "", "bullets": [], "uncertainty": "predictions empty", "watch": []}
+
+    def _score(x: dict) -> float:
+        try:
+            return float(x.get("score", 0.0))
+        except Exception:
+            return 0.0
+
+    preds.sort(key=lambda x: (-_score(x), str(x.get("scenario_id", ""))))
+    preds = preds[:max_preds]
+
+    # headline（最大3件）
+    lines: List[str] = []
+    for p in preds:
+        sid = str(p.get("scenario_id") or "unknown")
+        claim = str(p.get("claim") or "").strip()
+        if claim:
+            lines.append(f"[{sid}] {claim}")
+    headline = "\n".join(lines)
+
+    # bullets（rationale 最大 max_bullets）
+    bullets: List[str] = []
+    for p in preds:
+        sid = str(p.get("scenario_id") or "unknown")
+        rat = p.get("rationale") or []
+        if isinstance(rat, str):
+            rat = [rat]
+        if isinstance(rat, list):
+            for s in rat:
+                s = str(s).strip()
+                if not s:
+                    continue
+                bullets.append(f"[{sid}] {s}")
+                if len(bullets) >= max_bullets:
+                    break
+        if len(bullets) >= max_bullets:
+            break
+
+    # uncertainty（最初に見つかった非空）
+    uncertainty = ""
+    for p in preds:
+        u = str(p.get("uncertainty") or "").strip()
+        if u:
+            uncertainty = u
+            break
+
+    # watch（上位1件から最大2行）
+    watch: List[str] = []
+    p0 = preds[0]
+    sid0 = str(p0.get("scenario_id") or "unknown")
+    w = p0.get("watch") or []
+    if isinstance(w, str):
+        w = [w]
+    if isinstance(w, list):
+        for s in w[:2]:
+            s = str(s).strip()
+            if s:
+                watch.append(f"[{sid0}] {s}")
+
+    return {"headline": headline, "bullets": bullets, "uncertainty": uncertainty, "watch": watch}
+
+
 # -----------------------------
 # Rule-based sentiment & topic
 # -----------------------------
@@ -370,10 +512,106 @@ def main() -> None:
     # generate daily diff (Genesis diff v1)
     diff_path = generate_diff(
         analysis_dir=str(ANALYSIS_DIR),
-        date_str=today_date
-        )
+        date_str=today_date,
+    )
     print(f"[OK] diff -> {diff_path}")
 
+    # --- A仕様 Explain（predictions_YYYY-MM-DD.json → headline/bullets/uncertainty/watch）---
+    pred_path = _find_latest_predictions_file(ANALYSIS_DIR)
+    if pred_path is None:
+        explain_a = {"headline": "", "bullets": [], "uncertainty": "predictions file not found", "watch": []}
+    else:
+        pred_doc = _load_json(pred_path)
+        explain_a = _build_a_explain_from_predictions(pred_doc)
+
+    # 既存 summary_obj に差し込む（キー追加のみ）
+    summary_obj["headline"] = explain_a["headline"]
+    summary_obj["bullets"] = explain_a["bullets"]
+    summary_obj["uncertainty"] = explain_a["uncertainty"]
+    summary_obj["watch"] = explain_a["watch"]
+    summary_obj.setdefault("sources", {})
+    summary_obj["sources"]["predictions_file"] = str(pred_path) if pred_path else None
+
+    # summary.json を上書き保存（headline等が入った版）
+    summary_path.write_text(json.dumps(summary_obj, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"[OK] summary(+A explain) -> {summary_path}")
+
+    # --- daily_summary_YYYY-MM-DD.json (schema fixed + one_liner) ---
+    # daily_summary は explain_a から作る（順序事故を防ぐ）
+    headline = safe_text(explain_a.get("headline")).strip()
+
+    bullets = explain_a.get("bullets") or []
+    if isinstance(bullets, str):
+        bullets = [bullets]
+    bullets = [safe_text(x).strip() for x in bullets if safe_text(x).strip()]
+
+    uncertainty = safe_text(explain_a.get("uncertainty")).strip()
+
+    watch = explain_a.get("watch") or []
+    if isinstance(watch, str):
+        watch = [watch]
+    watch = [safe_text(x).strip() for x in watch if safe_text(x).strip()]
+
+    baseline_date = None
+    if yesterday_file is not None:
+        try:
+            y_date, _, _ = load_events_from_daily_file(yesterday_file)
+            baseline_date = y_date
+        except Exception:
+            baseline_date = None
+
+    daily_summary = {
+        "schema": {"name": "genesis.daily_summary", "version": "0.1.0"},
+        "meta": {
+            "dataset": CATEGORY,
+            "date": today_date,
+            "baseline_date": baseline_date,
+            "generated_at": iso_now(),
+            "generator": {"component": "analyzer"},
+        },
+        "source": {
+            "predictions_file": str(pred_path) if pred_path else None,
+            "diff_file": str(diff_path) if diff_path else None,
+        },
+        "headline": headline,
+        "bullets": bullets[:3],
+        "uncertainty": uncertainty,
+        "watch": watch[:3],
+        "one_liner": _build_one_liner(headline, bullets[:2], uncertainty),
+        "debug": {
+            "predictions_count": len(bullets),
+            "scenario_ids": [],
+        },
+    }
+
+    daily_summary_path = ANALYSIS_DIR / f"daily_summary_{today_date}.json"
+    daily_summary_path.write_text(
+        json.dumps(daily_summary, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    print(f"[OK] daily_summary -> {daily_summary_path}")
+    # --- /daily_summary ---
+
+
+    # --- A仕様 Explain（predictions_YYYY-MM-DD.json → headline/bullets/uncertainty/watch）---
+    pred_path = _find_latest_predictions_file(ANALYSIS_DIR)
+    if pred_path is None:
+        explain_a = {"headline": "", "bullets": [], "uncertainty": "predictions file not found", "watch": []}
+    else:
+        pred_doc = _load_json(pred_path)
+        explain_a = _build_a_explain_from_predictions(pred_doc)
+
+    # 既存 summary_obj に差し込む（互換性を壊しにくい：キー追加のみ）
+    summary_obj["headline"] = explain_a["headline"]
+    summary_obj["bullets"] = explain_a["bullets"]
+    summary_obj["uncertainty"] = explain_a["uncertainty"]
+    summary_obj["watch"] = explain_a["watch"]
+    summary_obj.setdefault("sources", {})
+    summary_obj["sources"]["predictions_file"] = str(pred_path) if pred_path else None
+
+    # もう一度 summary.json を上書き保存（headline等が入った版）
+    summary_path.write_text(json.dumps(summary_obj, ensure_ascii=False, indent=2), encoding="utf-8")
+    
 
 if __name__ == "__main__":
     main()
