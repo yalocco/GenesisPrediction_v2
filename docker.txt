@@ -81,8 +81,12 @@ fetcher のコードが変わった	           docker compose build fetcher
 Dockerfile が変わった	              docker compose build --no-cache（安全）
 
 実行（run）の正しい使い方
-ocker compose run --rm fetcher
+docker compose run --rm fetcher
 docker compose run --rm analyzer
 
 Found orphan containers
 docker compose down --remove-orphans
+
+#failed to prepare extraction snapshot ... parent snapshot ... does not exist
+docker builder prune -af
+docker system prune -af

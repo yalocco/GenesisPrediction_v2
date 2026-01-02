@@ -1,9 +1,40 @@
+--------git status--------
 git status
 git status --untracked-files
+
+--------git add--------
 git add -u
 git add .
 git add docker/analyzer/analyze.py
 git add docker/analyzer/diff.py
 git add docker/analyzer/Dockerfile
+
+--------git commit--------
 git commit -m "Fix daily diff generation and stabilize analyzer execution flow"
+
+--------git push--------
 git push origin main
+
+--------Author identity unknown
+--------fatal: unable to auto-detect email address
+git config --global user.name "Masateru Yoshida"
+git config --global user.email "your-email@example.com"
+git config user.name "Masateru Yoshida"
+git config user.email "your-email@example.com"
+
+--------git pull--------
+git clone https://github.com/yalocco/GenesisPrediction_v2.git
+git pull origin main
+
+--------after git pull--------
+docker compose build analyzer
+docker compose run --rm analyzer
+
+
+
+
+
+
+
+
+
