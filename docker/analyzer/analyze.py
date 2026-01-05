@@ -320,10 +320,34 @@ def build_why_fields(diff_doc: dict) -> dict:
 
     return {
         "anchors": anchors,
+        "churn": round(churn, 4),
         "delta_explanation": delta_explanation,
         "change_reason_hypotheses": hyps,
         "confidence_of_hypotheses": round(top_conf, 2),
     }
+
+
+def classify_regime(conf: float | None, churn: float | None, conf_thr: float = 0.7, churn_thr: float = 0.12) -> str:
+    """Coarse regime label for dashboarding (rule-based)."""
+    try:
+        c = float(conf) if conf is not None else 0.0
+    except Exception:
+        c = 0.0
+    try:
+        ch = float(churn) if churn is not None else 0.0
+    except Exception:
+        ch = 0.0
+
+    high_c = c >= conf_thr
+    high_ch = ch >= churn_thr
+
+    if high_c and high_ch:
+        return "rotation (high conf/high churn)"
+    if high_c and (not high_ch):
+        return "stable (high conf/low churn)"
+    if (not high_c) and high_ch:
+        return "noisy (low conf/high churn)"
+    return "quiet (low conf/low churn)"
 # --- /"Why" reasoning ---------------------------------------------------------
 
 def parse_date_from_filename(p: Path) -> Optional[str]:
@@ -748,6 +772,8 @@ def main() -> None:
         "confidence_of_hypotheses": why.get("confidence_of_hypotheses") or 0.0,
         "anchors": why.get("anchors") or {},
 
+        "churn": why.get("churn"),
+        "regime": classify_regime(why.get("confidence_of_hypotheses"), why.get("churn")),
         "debug": {
             "predictions_count": len(pred_doc.get("predictions") or []) if isinstance(pred_doc, dict) else 0,
             "scenario_ids": [str(p.get("scenario_id")) for p in (pred_doc.get("predictions") or [])] if isinstance(pred_doc, dict) else [],
