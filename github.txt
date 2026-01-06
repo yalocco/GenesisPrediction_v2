@@ -22,18 +22,35 @@ git config --global user.email "your-email@example.com"
 git config user.name "Masateru Yoshida"
 git config user.email "your-email@example.com"
 
+----git push⑤の確認----
+git log -1 --oneline
+git status
+git push
+
 --------git pull--------
 git clone https://github.com/yalocco/GenesisPrediction_v2.git
 git pull origin main
 
 --------after git pull--------
-docker compose build analyzer
+docker compose build --no-cache
+docker compose run --rm fetcher
 docker compose run --rm analyzer
 
+dir .\data\world_politics\analysis
+dir .\data\world_politics\analysis\daily_summary_*.json
 
+git status
 
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install matplotlib pandas numpy
 
+visualize_requirements.txtを作成する
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r visualize_requirements.txt
 
+.\.venv\Scripts\python.exe scripts\build_daily_summary_index.py
+.\.venv\Scripts\python.exe scripts\plot_regime_timeline.py
 
 
 
