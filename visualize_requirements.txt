@@ -1,0 +1,5 @@
+# Visualization & analysis (local venv only)
+matplotlib>=3.8
+pandas>=2.1
+numpy>=1.26
+python-dateutil>=2.9
