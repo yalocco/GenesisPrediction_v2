@@ -71,15 +71,21 @@ volumes / command / depends_on       docker compose build
 README.md / docs/*                   何もしなくてOK
 
 
-git pull した直後にやること（最重要）
+----git pull した直後にやること（最重要）----
 git pull
 git status
 その後：
+Dockerfile が変わった	              docker compose build --no-cache（安全）
 analyzer のコードが変わった	           docker compose build analyzer
 fetcher のコードが変わった	           docker compose build fetcher
-両方	                             docker compose build
-Dockerfile が変わった	              docker compose build --no-cache（安全）
+両方	                              docker compose build
 
+その後
+docker compose run --rm fetcher
+docker compose run --rm analyzer
+.\.venv\Scripts\python.exe scripts\build_daily_summary_index.py
+.\.venv\Scripts\python.exe scripts\plot_*.py
+------------------------------------------
 実行（run）の正しい使い方
 docker compose run --rm fetcher
 docker compose run --rm analyzer
