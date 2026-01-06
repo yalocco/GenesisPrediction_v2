@@ -1,0 +1,28 @@
+{
+  "regime_templates": {
+    "rotation (high conf/high churn)": [
+      "信頼度が高い状態で churn が上昇しており、話題の入れ替わり（回転）が明確です。主要語: {anchors_top}"
+    ],
+    "stable (high conf/low churn)": [
+      "信頼度が高く churn も低いため、安定したニュース構造が維持されています。主要語: {anchors_top}"
+    ],
+    "noisy (low conf/high churn)": [
+      "churn が高い一方で信頼度が低く、短期的・ノイズ的なニュース入替が発生しています。主要語: {anchors_top}"
+    ],
+    "quiet (low conf/low churn)": [
+      "大きな変化はなく、ニュースフローは静穏な状態です。"
+    ]
+  },
+
+  "transition_templates": [
+    "{prev_date} から {date} にかけて regime が変化しました。前日は {prev_regime}（conf={prev_conf}, churn={prev_churn}）、本日は {regime}（conf={conf}, churn={churn}）です。主要語: {anchors_top}"
+  ],
+
+  "short_templates": [
+    "{regime}｜conf={conf} churn={churn}"
+  ],
+
+  "defaults": {
+    "language": "ja"
+  }
+}

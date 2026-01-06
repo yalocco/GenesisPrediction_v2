@@ -55,3 +55,14 @@ python -m venv .venv
 git add docker.txt
 git commit -m "Add Docker usage note"
 git push
+
+次にあなたがやること（今日の“続き”はこれ）
+git pull
+docker compose build --no-cache fetcher
+docker compose build --no-cache analyzer
+docker compose run --rm fetcher
+docker compose run --rm analyzer
+→ data/world_politics/analysis/daily_summary_*.json が出る
+.\.venv\Scripts\python.exe scripts\build_daily_summary_index.py
+（ここから追加）.\.venv\Scripts\python.exe scripts\build_regime_reason.py
+できた regime_reason_*.json を見て「言語化の型」が安定してるか確認
