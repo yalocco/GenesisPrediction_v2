@@ -740,10 +740,51 @@ def main() -> None:
     except Exception:
         diff_doc = {}
 
+        # --- build why fields (must exist) ---
     try:
-        why = build_why_fields(diff_doc) if diff_doc else {"delta_explanation": "", "change_reason_hypotheses": [], "confidence_of_hypotheses": 0.0, "anchors": {}}
+        why = build_why_fields(diff_doc) if diff_doc else {
+            "delta_explanation": "",
+            "change_reason_hypotheses": [],
+            "confidence_of_hypotheses": 0.0,
+            "anchors": {},
+            "churn": 0.0,
+        }
     except Exception as e:
-        why = {"delta_explanation": "", "change_reason_hypotheses": [], "confidence_of_hypotheses": 0.0, "anchors": {"_error": safe_text(e)}}
+        print(f"[WARN] build_why_fields failed: {e!r}")
+        why = {
+            "delta_explanation": "",
+            "change_reason_hypotheses": [],
+            "confidence_of_hypotheses": 0.0,
+            "anchors": {},
+            "churn": 0.0,
+        }
+    # --- /build why fields ---
+
+        # anchors dict -> list（表示用）
+    if isinstance(why.get("anchors"), dict) and "anchors_list" not in why:
+        # 優先順：hints > top_tokens > top_domains
+        xs = []
+        for k in ("hints", "top_tokens", "top_domains"):
+            v = why["anchors"].get(k) if isinstance(why.get("anchors"), dict) else None
+            if isinstance(v, list):
+                xs.extend([str(s) for s in v])
+            elif isinstance(v, str):
+                xs.append(v)
+        # 重複除去しつつ最大10
+        seen = set()
+        out = []
+        for s in xs:
+            t = s.strip()
+            if not t:
+                continue
+            key = t.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(t)
+        why["anchors_list"] = out[:10]
+
+
 
     daily_summary = {
         "schema": {"name": "genesis.daily_summary", "version": "0.2.0"},
@@ -770,7 +811,8 @@ def main() -> None:
         "delta_explanation": why.get("delta_explanation") or "",
         "change_reason_hypotheses": why.get("change_reason_hypotheses") or [],
         "confidence_of_hypotheses": why.get("confidence_of_hypotheses") or 0.0,
-        "anchors": why.get("anchors") or {},
+        "anchors_detail": why.get("anchors") or {},
+        "anchors": (why.get("anchors_list") or []),
 
         "churn": why.get("churn"),
         "regime": classify_regime(why.get("confidence_of_hypotheses"), why.get("churn")),
@@ -779,6 +821,48 @@ def main() -> None:
             "scenario_ids": [str(p.get("scenario_id")) for p in (pred_doc.get("predictions") or [])] if isinstance(pred_doc, dict) else [],
         },
     }
+    
+    # --- thin diff template (C) ---
+    try:
+        summary = diff_doc.get("summary") or {}
+        delta_events = float(summary.get("delta_events") or 0.0)
+
+        ev = diff_doc.get("event_level") or {}
+        added = ev.get("added") or []
+        removed = ev.get("removed") or []
+
+        churn_n = len(added) + len(removed)
+
+        # ① 薄い日：差分も回転も小さい
+        if abs(delta_events) <= 1.0 and churn_n <= 6:
+            anchors = daily_summary.get("anchors") if isinstance(daily_summary.get("anchors"), list) else []
+            a = ", ".join(anchors[:3]) if anchors else "主要トピック"
+            daily_summary["delta_explanation"] = (
+                "本日は前日比の変化が小さく、全体としては『現状維持』に近い一日です。"
+                f"観測上は {a} に関連する小さな揺れはあるものの、"
+                "新規の大型材料は限定的でした。"
+            )
+            daily_summary["confidence_of_hypotheses"] = min(
+                float(daily_summary.get("confidence_of_hypotheses") or 0.5),
+                0.60
+            )
+
+        # ② 回転日：純増は小さいが入れ替わりが大きい
+        elif abs(delta_events) <= 1.0 and churn_n >= 40:
+            anchors = daily_summary.get("anchors") if isinstance(daily_summary.get("anchors"), list) else []
+            a = ", ".join(anchors[:5]) if anchors else "主要トピック"
+            daily_summary["delta_explanation"] = (
+                "総量は横ばいだが、追加/削除が多く『入れ替わり（回転）』が強い一日です。"
+                f"目立つ語: {a}."
+            )
+            daily_summary["confidence_of_hypotheses"] = min(
+                float(daily_summary.get("confidence_of_hypotheses") or 0.7),
+                0.85
+            )
+    except Exception as e:
+        print(f"[WARN] thin-day template failed: {e!r}")
+    # --- /thin diff template ---
+
 
     daily_summary_path = ANALYSIS_DIR / f"daily_summary_{today_date}.json"
     daily_summary_path.write_text(json.dumps(daily_summary, ensure_ascii=False, indent=2), encoding="utf-8")

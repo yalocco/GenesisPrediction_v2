@@ -96,3 +96,11 @@ docker compose down --remove-orphans
 #failed to prepare extraction snapshot ... parent snapshot ... does not exist
 docker builder prune -af
 docker system prune -af
+
+毎日必ず回す
+python .\scripts\run_daily_pipeline.py --with-scenarios
+
+Docker がどれだけ食ってるか確認
+docker system df
+ビルダーキャッシュだけ掃除（安全寄り）
+docker builder prune -a -f
