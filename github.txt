@@ -66,3 +66,12 @@ docker compose run --rm analyzer
 .\.venv\Scripts\python.exe scripts\build_daily_summary_index.py
 （ここから追加）.\.venv\Scripts\python.exe scripts\build_regime_reason.py
 できた regime_reason_*.json を見て「言語化の型」が安定してるか確認
+
+
+git status
+git add .
+git commit -m "Sync home environment and update daily pipeline scripts"
+git push origin main
+git log -1 --oneline
+
+git restore --staged .

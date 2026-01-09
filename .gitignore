@@ -16,3 +16,7 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+
+# local japanese notes
+*ログ*.txt
+*作業*.txt

@@ -1,111 +1,156 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List
 
-STOP = {
-    "the", "a", "an", "and", "or", "to", "of", "in", "on", "for", "with", "at", "by",
-    "today", "yesterday", "tomorrow", "week", "month", "year", "report", "reports",
+# ============================================================
+# Anchor noise control (E: light, safe, single-source-of-truth)
+#   - STOP is applied at tokenize stage (main)
+#   - _take_top has a minimal "last safety valve"
+#   - analyze.py should NOT re-filter anchors (I/O only)
+# ============================================================
+
+# Absolute stopwords: pronouns / function words / boilerplate
+STOP_CORE = {
+    # pronouns / determiners
+    "i","me","my","mine","we","us","our","ours",
+    "you","your","yours",
+    "he","him","his","she","her","hers",
+    "they","them","their","theirs",
+    "it","its",
+    "this","that","these","those",
+    "who","what","when","where","why","how",
+
+    # reporting boilerplate
+    "said","says","say","told",
+    "report","reports","reported",
+    "update","updated","latest","breaking",
 }
+
+# Domain stopwords: dataset-wide generic terms (tune as needed)
+STOP_DOMAIN = {
+    # generic / news boilerplate
+    "global","world","politics","political","times",
+    "initiative","initiatives",
+
+    # weak verbs / nouns commonly surfacing as noise
+    "running","walking","movement",
+    "target","targets","targeted","targeting",
+    "back","backs","backed",
+
+    # often-too-generic event words (keep if you prefer)
+    "crisis","attack",
+
+    # numbers-as-words
+    "one","two","three","four","five","six","seven","eight","nine","ten",
+}
+
+STOP = STOP_CORE | STOP_DOMAIN
+
 
 @dataclass(frozen=True)
 class Anchor:
     text: str
-    kind: str   # "dimension" | "event" | "lexical"
+    kind: str      # "dimension" | "event" | "lexical" (current usage: lexical)
     score: float
+
 
 def _norm(s: str) -> str:
     return " ".join(str(s).strip().split())
 
+
+def _norm_token(s: str) -> str:
+    """Normalize token for STOP/dup checks."""
+    s = (s or "").lower()
+    s = re.sub(r"[^a-z0-9\s\-]", " ", s)
+    s = " ".join(s.split())
+    return s
+
+
 def _tokenize_light(s: str) -> List[str]:
-    import re
-    s = s.lower()
-    s = re.sub(r"[^a-z0-9\-\s]", " ", s)
-    toks = [
-        t for t in s.split()
-        if len(t) >= 3
-        and t not in STOP
-        and not t.isdigit()
-        and not re.fullmatch(r"\d{4}", t)  # year-like token
-        and t not in {"world", "politics"}
-    ]
+    s = _norm_token(s)
+    toks = []
+    for t in s.split():
+        if len(t) < 3:
+            continue
+        if t in STOP:
+            continue
+        if t.isdigit():
+            continue
+        if re.fullmatch(r"\d{4}", t):  # year-like token
+            continue
+        toks.append(t)
     return toks
 
+
 def _take_top(items: Iterable[Anchor], k: int) -> List[Anchor]:
+    """Rank + dedup. (Minimal last safety valve for STOP.)"""
     xs = sorted(items, key=lambda a: a.score, reverse=True)
     out: List[Anchor] = []
     seen = set()
+
     for a in xs:
-        key = a.text.lower()
+        key = _norm_token(a.text)
+
+        if not key or len(key) < 3:
+            continue
+        if key in STOP:               # last safety valve
+            continue
+        if key.isdigit():
+            continue
+        if re.fullmatch(r"\d{4}", key):
+            continue
+
         if key in seen:
             continue
         seen.add(key)
-        out.append(a)
+
+        # keep original text (but normalized casing tends to be nicer)
+        out.append(Anchor(text=key, kind=a.kind, score=a.score))
+
         if len(out) >= k:
             break
+
     return out
 
+
 def extract_anchors(diff_doc: Dict[str, Any], daily_doc: Dict[str, Any], max_anchors: int = 12) -> List[Anchor]:
+    """Extract lexical anchors from available text fields and return ranked anchors."""
     found: List[Anchor] = []
 
-    # 1) dimensions（diff.dimensions が list[dict] 想定）
-    dims = diff_doc.get("dimensions") or (diff_doc.get("diff") or {}).get("dimensions") or []
-    if isinstance(dims, list):
-        for dim in dims:
-            if not isinstance(dim, dict):
-                continue
-            name = dim.get("name") or dim.get("key") or dim.get("dimension")
-            if isinstance(name, str) and name.strip():
-                delta = dim.get("delta") or dim.get("change") or 0.0
-                try:
-                    d = float(delta)
-                except Exception:
-                    d = 0.0
-                score = 3.0 + min(abs(d), 5.0)
-                found.append(Anchor(text=_norm(name), kind="dimension", score=score))
-
-    # 2) event_level（added/removed の entity/title/country/topic など）
-    ev = diff_doc.get("event_level") or {}
-    # ev が {"added":[...], "removed":[...]} 形式を想定
-    if isinstance(ev, dict):
-        for bucket, base in (("added", 6.0), ("removed", 4.5)):
-            items = ev.get(bucket) or []
-            if not isinstance(items, list):
-                continue
-            for it in items:
-                if not isinstance(it, dict):
-                    continue
-                # よくあるキー候補（無いならスキップ）
-                for k in ("entity", "actor", "country", "topic", "title", "headline", "location"):
-                    v = it.get(k)
-                    if isinstance(v, str) and v.strip():
-                        found.append(Anchor(text=_norm(v), kind="event", score=base))
-                    elif isinstance(v, list):
-                        for s in v:
-                            if isinstance(s, str) and s.strip():
-                                found.append(Anchor(text=_norm(s), kind="event", score=base - 0.5))
-
-    # 3) daily_summaryテキストから lexical（headline/bullets/one_liner など）
+    # You can expand these fields safely; empty/missing is fine.
     texts: List[str] = []
-    for key in ("headline", "one_liner", "delta_explanation", "summary"):
-        v = daily_doc.get(key)
-        if isinstance(v, str) and v.strip():
-            texts.append(v)
-    bullets = daily_doc.get("bullets")
-    if isinstance(bullets, list):
-        texts.extend([b for b in bullets if isinstance(b, str)])
 
+    # diff summary-ish
+    if isinstance(diff_doc, dict):
+        s = diff_doc.get("summary") or {}
+        if isinstance(s, dict):
+            for key in ("headline", "bullets", "watch", "uncertainty", "note"):
+                v = s.get(key)
+                if isinstance(v, str) and v.strip():
+                    texts.append(v)
+                elif isinstance(v, list):
+                    texts.extend([str(x) for x in v if str(x).strip()])
+
+    # daily summary-ish
+    if isinstance(daily_doc, dict):
+        for key in ("headline", "one_liner", "delta_explanation"):
+            v = daily_doc.get(key)
+            if isinstance(v, str) and v.strip():
+                texts.append(v)
+
+    # Build bag-of-words (after tokenize filtering)
     bag: Dict[str, int] = {}
     for t in texts:
         for tok in _tokenize_light(t):
             bag[tok] = bag.get(tok, 0) + 1
+
     for tok, c in bag.items():
         found.append(Anchor(text=tok, kind="lexical", score=1.0 + c * 0.25))
 
     return _take_top(found, max_anchors)
 
+
 def anchors_to_strings(anchors: List[Anchor], max_n: int = 10) -> List[str]:
-    out = []
-    for a in anchors[:max_n]:
-        out.append(a.text)
-    return out
+    """Stable conversion for daily_summary JSON."""
+    return [a.text for a in (anchors or [])[:max_n]]
