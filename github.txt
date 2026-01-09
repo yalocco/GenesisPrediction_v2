@@ -74,4 +74,13 @@ git commit -m "Sync home environment and update daily pipeline scripts"
 git push origin main
 git log -1 --oneline
 
+git addを取り消す
 git restore --staged .
+
+どこにいるか迷ったら
+git branch --show-current
+
+github.txtだけgit addする
+git add github.txt
+git commit -m "Update Git command notes"
+git push origin exp/anchor-noise
