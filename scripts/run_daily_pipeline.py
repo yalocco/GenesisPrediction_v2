@@ -1,41 +1,31 @@
-from __future__ import annotations
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-import argparse
 import subprocess
 import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
 
-def run(cmd: list[str]) -> None:
-    r = subprocess.run(cmd)
-    if r.returncode != 0:
-        raise SystemExit(r.returncode)
+def run(cmd, *, shell=False):
+    print(f"[RUN] {cmd}")
+    subprocess.check_call(cmd, shell=shell)
 
-
-def main() -> None:
-    ap = argparse.ArgumentParser(description="Daily pipeline (docker analyzer entry)")
-    ap.add_argument(
-        "--analysis-dir",
-        default=str(Path("data") / "world_politics" / "analysis"),
-        help="analysis dir",
+def main():
+    # 1) analyzer 実行（既存の安定ルート）
+    run(
+        ["docker", "compose", "run", "--rm", "analyzer"],
     )
-    ap.add_argument("--with-scenarios", action="store_true", help="also run scenario predictions")
-    args = ap.parse_args()
 
-    analysis_dir = Path(args.analysis_dir)
+    # 2) daily_summary の anchors を後処理で掃除（確実・安全）
+    python_exe = ROOT / ".venv" / "Scripts" / "python.exe"
+    cleaner = ROOT / "scripts" / "clean_daily_summary_anchors.py"
 
-    # 1) diff / daily_summary（入口は docker compose analyzer）
-    run(["docker", "compose", "run", "--rm", "analyzer"])
+    run(
+        [str(python_exe), str(cleaner)]
+    )
 
-    # 2) regime_reason（最新日に対して作る：build_regime_reason.py は analysis_dir の daily_summary_* を走査する）
-    run([sys.executable, "scripts/build_regime_reason.py", "--outdir", str(analysis_dir)])
-
-    # 3) predictions（任意）
-    if args.with_scenarios:
-        run([sys.executable, "scripts/run_scenarios.py", "--latest", "--analysis-dir", str(analysis_dir)])
-
-    print("[OK] daily pipeline finished")
-
+    print("[DONE] daily pipeline finished successfully")
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

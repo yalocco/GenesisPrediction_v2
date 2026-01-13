@@ -1,111 +1,137 @@
-from __future__ import annotations
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""Clean weak/generic tokens from daily_summary_YYYY-MM-DD.json anchors.
 
-from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List, Tuple
+Usage (PowerShell, repo root):
+  .\.venv\Scripts\python.exe scripts\clean_daily_summary_anchors.py
+  .\.venv\Scripts\python.exe scripts\clean_daily_summary_anchors.py data/world_politics/analysis/daily_summary_2026-01-09.json
+  .\.venv\Scripts\python.exe scripts\clean_daily_summary_anchors.py --all
+  .\.venv\Scripts\python.exe scripts\clean_daily_summary_anchors.py --words would plan door back politics
 
-STOP = {
-    "the", "a", "an", "and", "or", "to", "of", "in", "on", "for", "with", "at", "by",
-    "today", "yesterday", "tomorrow", "week", "month", "year", "report", "reports",
+Options:
+  --all       : clean all daily_summary_*.json under data/world_politics/analysis/
+  --dry-run   : show what would change without writing
+  --words ... : override removal list (space-separated)
+"""
+
+import argparse
+import json
+from pathlib import Path
+
+DEFAULT_REMOVE = {
+    # weak / auxiliary / meta
+    "would", "plan", "door", "back",
+    # add more if you want:
+    # "politics", "global", "view",
 }
 
-@dataclass(frozen=True)
-class Anchor:
-    text: str
-    kind: str   # "dimension" | "event" | "lexical"
-    score: float
+DS_GLOB = "daily_summary_*.json"
 
-def _norm(s: str) -> str:
-    return " ".join(str(s).strip().split())
 
-def _tokenize_light(s: str) -> List[str]:
-    import re
-    s = s.lower()
-    s = re.sub(r"[^a-z0-9\-\s]", " ", s)
-    toks = [
-        t for t in s.split()
-        if len(t) >= 3
-        and t not in STOP
-        and not t.isdigit()
-        and not re.fullmatch(r"\d{4}", t)  # year-like token
-        and t not in {"world", "politics"}
-    ]
-    return toks
+def _load_json(p):
+    return json.loads(p.read_text(encoding="utf-8"))
 
-def _take_top(items: Iterable[Anchor], k: int) -> List[Anchor]:
-    xs = sorted(items, key=lambda a: a.score, reverse=True)
-    out: List[Anchor] = []
-    seen = set()
-    for a in xs:
-        key = a.text.lower()
-        if key in seen:
-            continue
-        seen.add(key)
-        out.append(a)
-        if len(out) >= k:
-            break
-    return out
 
-def extract_anchors(diff_doc: Dict[str, Any], daily_doc: Dict[str, Any], max_anchors: int = 12) -> List[Anchor]:
-    found: List[Anchor] = []
+def _dump_json(p, obj):
+    p.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    # 1) dimensions（diff.dimensions が list[dict] 想定）
-    dims = diff_doc.get("dimensions") or (diff_doc.get("diff") or {}).get("dimensions") or []
-    if isinstance(dims, list):
-        for dim in dims:
-            if not isinstance(dim, dict):
-                continue
-            name = dim.get("name") or dim.get("key") or dim.get("dimension")
-            if isinstance(name, str) and name.strip():
-                delta = dim.get("delta") or dim.get("change") or 0.0
-                try:
-                    d = float(delta)
-                except Exception:
-                    d = 0.0
-                score = 3.0 + min(abs(d), 5.0)
-                found.append(Anchor(text=_norm(name), kind="dimension", score=score))
 
-    # 2) event_level（added/removed の entity/title/country/topic など）
-    ev = diff_doc.get("event_level") or {}
-    # ev が {"added":[...], "removed":[...]} 形式を想定
-    if isinstance(ev, dict):
-        for bucket, base in (("added", 6.0), ("removed", 4.5)):
-            items = ev.get(bucket) or []
-            if not isinstance(items, list):
-                continue
-            for it in items:
-                if not isinstance(it, dict):
-                    continue
-                # よくあるキー候補（無いならスキップ）
-                for k in ("entity", "actor", "country", "topic", "title", "headline", "location"):
-                    v = it.get(k)
-                    if isinstance(v, str) and v.strip():
-                        found.append(Anchor(text=_norm(v), kind="event", score=base))
-                    elif isinstance(v, list):
-                        for s in v:
-                            if isinstance(s, str) and s.strip():
-                                found.append(Anchor(text=_norm(s), kind="event", score=base - 0.5))
-
-    # 3) daily_summaryテキストから lexical（headline/bullets/one_liner など）
-    texts: List[str] = []
-    for key in ("headline", "one_liner", "delta_explanation", "summary"):
-        v = daily_doc.get(key)
-        if isinstance(v, str) and v.strip():
-            texts.append(v)
-    bullets = daily_doc.get("bullets")
-    if isinstance(bullets, list):
-        texts.extend([b for b in bullets if isinstance(b, str)])
-
-    bag: Dict[str, int] = {}
-    for t in texts:
-        for tok in _tokenize_light(t):
-            bag[tok] = bag.get(tok, 0) + 1
-    for tok, c in bag.items():
-        found.append(Anchor(text=tok, kind="lexical", score=1.0 + c * 0.25))
-
-    return _take_top(found, max_anchors)
-
-def anchors_to_strings(anchors: List[Anchor], max_n: int = 10) -> List[str]:
+def _clean_list(xs, remove_set):
+    if not isinstance(xs, list):
+        return xs, []
+    removed = []
     out = []
-    for a in anchors[:max_n]:
-        out.append(a.text)
-    return out
+    for x in xs:
+        if isinstance(x, str) and x.strip().lower() in remove_set:
+            removed.append(x)
+            continue
+        out.append(x)
+    return out, removed
+
+
+def clean_daily_summary_obj(ds, remove_set):
+    removed_all = []
+
+    ds["anchors"], rem = _clean_list(ds.get("anchors"), remove_set)
+    removed_all += rem
+
+    ad = ds.get("anchors_detail")
+    if isinstance(ad, dict):
+        for k in ("top_tokens", "hints", "top_domains"):
+            if k in ad:
+                ad[k], rem = _clean_list(ad.get(k), remove_set)
+                removed_all += [f"{k}:{x}" for x in rem]
+        ds["anchors_detail"] = ad
+
+    return ds, removed_all
+
+
+def pick_latest_daily_summary(analysis_dir):
+    candidates = sorted(analysis_dir.glob(DS_GLOB))
+    return candidates[-1] if candidates else None
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("path", nargs="?", default=None, help="path to daily_summary_YYYY-MM-DD.json (optional)")
+    ap.add_argument("--all", action="store_true", help="clean all daily_summary_*.json under analysis dir")
+    ap.add_argument("--dry-run", action="store_true", help="do not write files")
+    ap.add_argument("--words", nargs="*", default=None, help="override removal words list")
+    args = ap.parse_args()
+
+    repo_root = Path(__file__).resolve().parents[1]
+    analysis_dir = repo_root / "data" / "world_politics" / "analysis"
+
+    remove_set = set((w or "").strip().lower() for w in (args.words or DEFAULT_REMOVE))
+    remove_set.discard("")
+
+    targets = []
+    if args.all:
+        targets = sorted(analysis_dir.glob(DS_GLOB))
+    elif args.path:
+        p = Path(args.path)
+        targets = [(repo_root / p).resolve() if not p.is_absolute() else p.resolve()]
+    else:
+        latest = pick_latest_daily_summary(analysis_dir)
+        if latest:
+            targets = [latest]
+
+    if not targets:
+        print(f"[NG] daily_summary not found. looked under: {analysis_dir}")
+        return 2
+
+    total_removed = 0
+    for p in targets:
+        if not p.exists():
+            print(f"[SKIP] not found: {p}")
+            continue
+
+        ds = _load_json(p)
+        before = list(ds.get("anchors") or []) if isinstance(ds.get("anchors"), list) else None
+        ds2, removed = clean_daily_summary_obj(ds, remove_set)
+        after = list(ds2.get("anchors") or []) if isinstance(ds2.get("anchors"), list) else None
+
+        if before is not None and after is not None and before == after:
+            print(f"[OK] {p.name}: no change")
+            continue
+
+        total_removed += len(removed)
+        print(f"[CHG] {p.name}")
+        if before is not None:
+            print("  anchors(before):", before)
+            print("  anchors(after) :", after)
+        if removed:
+            print("  removed:", removed)
+
+        if not args.dry_run:
+            bak = p.with_suffix(p.suffix + ".bak")
+            if not bak.exists():
+                bak.write_text(p.read_text(encoding="utf-8"), encoding="utf-8")
+            _dump_json(p, ds2)
+
+    print(f"[DONE] removed items: {total_removed}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
