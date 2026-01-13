@@ -1,215 +1,137 @@
-from __future__ import annotations
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""Clean weak/generic tokens from daily_summary_YYYY-MM-DD.json anchors.
 
-import re
-from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List
+Usage (PowerShell, repo root):
+  .\.venv\Scripts\python.exe scripts\clean_daily_summary_anchors.py
+  .\.venv\Scripts\python.exe scripts\clean_daily_summary_anchors.py data/world_politics/analysis/daily_summary_2026-01-09.json
+  .\.venv\Scripts\python.exe scripts\clean_daily_summary_anchors.py --all
+  .\.venv\Scripts\python.exe scripts\clean_daily_summary_anchors.py --words would plan door back politics
 
-# ============================================================
-# Anchor noise control (E: light, safe, single-source-of-truth)
-#
-# ✅ Finalize point: anchors.py (single source of truth)
-# ✅ STOP is applied at tokenize stage (main) for CORE + WEAK tokens
-# ✅ DOMAIN_GENERIC is handled in finalize_anchors():
-#    - single-token generic is blocked
-#    - rescued only when "specific" anchors exist (context present)
-#    - capped to a small max (default 2)
-# ✅ analyze.py should NOT re-filter anchors (I/O only)
-# ============================================================
+Options:
+  --all       : clean all daily_summary_*.json under data/world_politics/analysis/
+  --dry-run   : show what would change without writing
+  --words ... : override removal list (space-separated)
+"""
 
-# Absolute stopwords: pronouns / function words / boilerplate
-STOP_CORE = {
-    # pronouns / determiners
-    "i", "me", "my", "mine", "we", "us", "our", "ours",
-    "you", "your", "yours",
-    "he", "him", "his", "she", "her", "hers",
-    "they", "them", "their", "theirs",
-    "it", "its",
-    "this", "that", "these", "those",
-    "who", "what", "when", "where", "why", "how",
+import argparse
+import json
+from pathlib import Path
 
-    # reporting boilerplate
-    "said", "says", "say", "told",
-    "report", "reports", "reported",
-    "update", "updated", "latest", "breaking",
+DEFAULT_REMOVE = {
+    # weak / auxiliary / meta
+    "would", "plan", "door", "back",
+    # add more if you want:
+    # "politics", "global", "view",
 }
 
-# Domain-generic terms (do NOT drop at tokenize; handled in finalize_anchors)
-# Rule: single-token generic is blocked; rescued only with "specific" context.
-DOMAIN_GENERIC = {
-    # generic / news boilerplate
-    "global", "world", "politics", "political", "times",
-    "initiative", "initiatives",
-
-    # often-too-generic event words (kept only as contextual labels)
-    "crisis", "attack",
-}
-
-# Weak verbs / weak tokens we want to drop early (tokenize stage)
-STOP_WEAK = {
-    "running", "walking", "movement",
-    "target", "targets", "targeted", "targeting",
-    "back", "backs", "backed",
-}
-
-# Numbers-as-words (drop early)
-STOP_NUMWORDS = {
-    "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
-}
-
-# Tokenize-time stop list (CORE + WEAK + NUMWORDS)
-STOP = STOP_CORE | STOP_WEAK | STOP_NUMWORDS
+DS_GLOB = "daily_summary_*.json"
 
 
-@dataclass(frozen=True)
-class Anchor:
-    text: str
-    kind: str      # "dimension" | "event" | "lexical" (current usage: lexical)
-    score: float
+def _load_json(p):
+    return json.loads(p.read_text(encoding="utf-8"))
 
 
-def _norm(s: str) -> str:
-    return " ".join(str(s).strip().split())
+def _dump_json(p, obj):
+    p.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def _norm_token(s: str) -> str:
-    """Normalize token for STOP/dup checks."""
-    s = (s or "").lower()
-    s = re.sub(r"[^a-z0-9\s\-]", " ", s)
-    s = " ".join(s.split())
-    return s
-
-
-def _tokenize_light(s: str) -> List[str]:
-    """
-    Tokenize with light normalization.
-    - Drops STOP (core/weak/numwords) here
-    - Keeps DOMAIN_GENERIC here (handled later in finalize_anchors)
-    """
-    s = _norm_token(s)
-    toks: List[str] = []
-
-    for t in s.split():
-        if len(t) < 3:
+def _clean_list(xs, remove_set):
+    if not isinstance(xs, list):
+        return xs, []
+    removed = []
+    out = []
+    for x in xs:
+        if isinstance(x, str) and x.strip().lower() in remove_set:
+            removed.append(x)
             continue
-        if t in STOP:
-            continue
-        if t.isdigit():
-            continue
-        if re.fullmatch(r"\d{4}", t):  # year-like token
-            continue
-        toks.append(t)
-
-    return toks
+        out.append(x)
+    return out, removed
 
 
-def _take_top(items: Iterable[Anchor], k: int) -> List[Anchor]:
-    """Rank + dedup. (Minimal last safety valve for STOP only.)"""
-    xs = sorted(items, key=lambda a: a.score, reverse=True)
-    out: List[Anchor] = []
-    seen = set()
+def clean_daily_summary_obj(ds, remove_set):
+    removed_all = []
 
-    for a in xs:
-        key = _norm_token(a.text)
+    ds["anchors"], rem = _clean_list(ds.get("anchors"), remove_set)
+    removed_all += rem
 
-        if not key or len(key) < 3:
-            continue
-        if key in STOP:               # last safety valve
-            continue
-        if key.isdigit():
-            continue
-        if re.fullmatch(r"\d{4}", key):
+    ad = ds.get("anchors_detail")
+    if isinstance(ad, dict):
+        for k in ("top_tokens", "hints", "top_domains"):
+            if k in ad:
+                ad[k], rem = _clean_list(ad.get(k), remove_set)
+                removed_all += [f"{k}:{x}" for x in rem]
+        ds["anchors_detail"] = ad
+
+    return ds, removed_all
+
+
+def pick_latest_daily_summary(analysis_dir):
+    candidates = sorted(analysis_dir.glob(DS_GLOB))
+    return candidates[-1] if candidates else None
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("path", nargs="?", default=None, help="path to daily_summary_YYYY-MM-DD.json (optional)")
+    ap.add_argument("--all", action="store_true", help="clean all daily_summary_*.json under analysis dir")
+    ap.add_argument("--dry-run", action="store_true", help="do not write files")
+    ap.add_argument("--words", nargs="*", default=None, help="override removal words list")
+    args = ap.parse_args()
+
+    repo_root = Path(__file__).resolve().parents[1]
+    analysis_dir = repo_root / "data" / "world_politics" / "analysis"
+
+    remove_set = set((w or "").strip().lower() for w in (args.words or DEFAULT_REMOVE))
+    remove_set.discard("")
+
+    targets = []
+    if args.all:
+        targets = sorted(analysis_dir.glob(DS_GLOB))
+    elif args.path:
+        p = Path(args.path)
+        targets = [(repo_root / p).resolve() if not p.is_absolute() else p.resolve()]
+    else:
+        latest = pick_latest_daily_summary(analysis_dir)
+        if latest:
+            targets = [latest]
+
+    if not targets:
+        print(f"[NG] daily_summary not found. looked under: {analysis_dir}")
+        return 2
+
+    total_removed = 0
+    for p in targets:
+        if not p.exists():
+            print(f"[SKIP] not found: {p}")
             continue
 
-        if key in seen:
+        ds = _load_json(p)
+        before = list(ds.get("anchors") or []) if isinstance(ds.get("anchors"), list) else None
+        ds2, removed = clean_daily_summary_obj(ds, remove_set)
+        after = list(ds2.get("anchors") or []) if isinstance(ds2.get("anchors"), list) else None
+
+        if before is not None and after is not None and before == after:
+            print(f"[OK] {p.name}: no change")
             continue
-        seen.add(key)
 
-        # keep normalized token
-        out.append(Anchor(text=key, kind=a.kind, score=a.score))
+        total_removed += len(removed)
+        print(f"[CHG] {p.name}")
+        if before is not None:
+            print("  anchors(before):", before)
+            print("  anchors(after) :", after)
+        if removed:
+            print("  removed:", removed)
 
-        if len(out) >= k:
-            break
+        if not args.dry_run:
+            bak = p.with_suffix(p.suffix + ".bak")
+            if not bak.exists():
+                bak.write_text(p.read_text(encoding="utf-8"), encoding="utf-8")
+            _dump_json(p, ds2)
 
-    return out
-
-
-def finalize_anchors(
-    anchors: List[Anchor],
-    max_anchors: int,
-    max_domain_generic: int = 2,
-) -> List[Anchor]:
-    """
-    Final quality gate (single source of truth).
-    DOMAIN_GENERIC:
-      - blocked if it's the only kind of content (no "specific" anchors)
-      - allowed only as contextual labels when specific anchors exist
-      - capped (default 2)
-    """
-    anchors = anchors or []
-    specific: List[Anchor] = []
-    generic: List[Anchor] = []
-
-    for a in anchors:
-        tok = _norm_token(a.text)
-        if not tok:
-            continue
-        if tok in DOMAIN_GENERIC:
-            generic.append(Anchor(text=tok, kind=a.kind, score=a.score))
-        else:
-            specific.append(Anchor(text=tok, kind=a.kind, score=a.score))
-
-    # If we have no specific anchors, do not emit generics alone.
-    if not specific:
-        return []
-
-    # Prioritize specifics, then a small number of rescued generics.
-    out: List[Anchor] = []
-    out.extend(specific)
-
-    if max_domain_generic > 0 and generic:
-        out.extend(generic[:max_domain_generic])
-
-    return out[:max_anchors]
+    print(f"[DONE] removed items: {total_removed}")
+    return 0
 
 
-def extract_anchors(diff_doc: Dict[str, Any], daily_doc: Dict[str, Any], max_anchors: int = 12) -> List[Anchor]:
-    """Extract lexical anchors from available text fields and return ranked anchors."""
-    found: List[Anchor] = []
-
-    texts: List[str] = []
-
-    # diff summary-ish
-    if isinstance(diff_doc, dict):
-        s = diff_doc.get("summary") or {}
-        if isinstance(s, dict):
-            for key in ("headline", "bullets", "watch", "uncertainty", "note"):
-                v = s.get(key)
-                if isinstance(v, str) and v.strip():
-                    texts.append(v)
-                elif isinstance(v, list):
-                    texts.extend([str(x) for x in v if str(x).strip()])
-
-    # daily summary-ish
-    if isinstance(daily_doc, dict):
-        for key in ("headline", "one_liner", "delta_explanation"):
-            v = daily_doc.get(key)
-            if isinstance(v, str) and v.strip():
-                texts.append(v)
-
-    # Build bag-of-words (after tokenize filtering)
-    bag: Dict[str, int] = {}
-    for t in texts:
-        for tok in _tokenize_light(t):
-            bag[tok] = bag.get(tok, 0) + 1
-
-    for tok, c in bag.items():
-        found.append(Anchor(text=tok, kind="lexical", score=1.0 + c * 0.25))
-
-    # rank/dedup → final gate
-    ranked = _take_top(found, max_anchors * 2)  # small buffer before finalize
-    return finalize_anchors(ranked, max_anchors=max_anchors, max_domain_generic=2)
-
-
-def anchors_to_strings(anchors: List[Anchor], max_n: int = 10) -> List[str]:
-    """Stable conversion for daily_summary JSON."""
-    return [a.text for a in (anchors or [])[:max_n]
+if __name__ == "__main__":
+    raise SystemExit(main())
