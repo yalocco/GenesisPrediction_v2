@@ -54,11 +54,11 @@ python -m venv .venv
 
 git add docker.txt
 git commit -m "Add Docker usage note"
-git push
+git push origin main
 
 git add python.txt
 git commit -m "Add python usage note"
-git push
+git push origin main
 
 
 次にあなたがやること（今日の“続き”はこれ）
