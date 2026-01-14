@@ -20,3 +20,6 @@ Thumbs.db
 # local japanese notes
 *ログ*.txt
 *作業*.txt
+
+# local approved stopwords (do not commit)
+configs/stopwords_approved.txt
