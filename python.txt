@@ -12,3 +12,12 @@ docker compose run --rm analyzer
 
 ステップ2（3〜5日後）
 .\.venv\Scripts\python.exe scripts\build_stop_candidates.py --days 14
+
+日次ルーチン（確定版）
+fetch / analyze / daily_summary 生成
+clean_daily_summary_anchors.py
+score_daily_summary_anchors.py
+build_anchors_quality_timeseries.py
+build_stop_candidates.py
+build_weak_anchor_candidates.py
+git status → clean なら終了
