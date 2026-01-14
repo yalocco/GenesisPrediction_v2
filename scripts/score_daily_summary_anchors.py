@@ -155,7 +155,13 @@ def should_skip(doc: Dict[str, Any], anchors: List[str]) -> bool:
         return False
     if aq.get("anchors_sig") != anchors_signature(anchors):
         return False
+
+    # NEW: note/weak_tokens/flag 追加後の再計算を1回だけ許す
+    if "note" not in aq or "flag" not in aq or "weak_tokens" not in aq:
+        return False
+
     return True
+
 
 def process_file(p: Path) -> bool:
     doc = load_json(p)
@@ -170,20 +176,22 @@ def process_file(p: Path) -> bool:
 
     weak_tokens = [it.token for it in items if it.score < 0.40]
     flag = "low" if overall < 0.70 else "ok"
+    note = "anchors_quality is LOW; anchors may contain generic/weak terms" if flag == "low" else ""
 
     doc["anchors_quality"] = {
         "version": VERSION,
         "anchors_sig": anchors_signature(anchors),
         "overall_score": overall,
         "flag": flag,
+        "note": note,
         "weak_tokens": weak_tokens,
         "items": [{"token": it.token, "score": round(it.score, 4), "tags": it.tags} for it in items],
         "computed_at": now_jst_iso(),
     }
 
-
     dump_json(p, doc)
     return True
+
 
 def main() -> int:
     ap = argparse.ArgumentParser()
