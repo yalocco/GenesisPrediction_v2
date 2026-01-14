@@ -60,6 +60,10 @@ git add python.txt
 git commit -m "Add python usage note"
 git push origin main
 
+git add github.txt
+git commit -m "Add github usage note"
+git push origin main
+
 
 次にあなたがやること（今日の“続き”はこれ）
 git pull
