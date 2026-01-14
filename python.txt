@@ -4,3 +4,8 @@
 毎日のルーチン（確定）
 docker compose run --rm analyzer
 .\.venv\Scripts\python.exe scripts\clean_daily_summary_anchors.py
+
+日次ルーチン（更新案）
+docker compose run --rm analyzer
+.\.venv\Scripts\python.exe scripts\clean_daily_summary_anchors.py
+.\.venv\Scripts\python.exe scripts\score_daily_summary_anchors.py
