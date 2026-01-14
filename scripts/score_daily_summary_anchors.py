@@ -168,13 +168,19 @@ def process_file(p: Path) -> bool:
 
     overall, items = compute_quality(doc)
 
+    weak_tokens = [it.token for it in items if it.score < 0.40]
+    flag = "low" if overall < 0.70 else "ok"
+
     doc["anchors_quality"] = {
         "version": VERSION,
         "anchors_sig": anchors_signature(anchors),
         "overall_score": overall,
+        "flag": flag,
+        "weak_tokens": weak_tokens,
         "items": [{"token": it.token, "score": round(it.score, 4), "tags": it.tags} for it in items],
         "computed_at": now_jst_iso(),
     }
+
 
     dump_json(p, doc)
     return True
