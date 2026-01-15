@@ -29,3 +29,4 @@ docker compose run --rm analyzer
 .\.venv\Scripts\python.exe scripts\build_anchors_quality_timeseries.py
 .\.venv\Scripts\python.exe scripts\build_stop_candidates.py --days 14
 .\.venv\Scripts\python.exe scripts\build_weak_anchor_candidates.py --days 14
+.\.venv\Scripts\python.exe scripts\build_daily_news_digest.py --date 2026-01-14
