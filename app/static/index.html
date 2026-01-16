@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GenesisPrediction v2 - Local GUI</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 16px; }
+    .grid { display: grid; grid-template-columns: 420px 1fr; gap: 16px; }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 12px; }
+    .muted { color: #666; font-size: 12px; }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    button { padding: 8px 10px; border-radius: 8px; border: 1px solid #ccc; background: #f7f7f7; cursor: pointer; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    input { padding: 8px; border-radius: 8px; border: 1px solid #ccc; }
+    textarea { width: 100%; min-height: 360px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+    ul { margin: 8px 0 0 18px; padding: 0; }
+    a { color: #0b65d8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .pill { display:inline-block; padding:2px 8px; border:1px solid #ddd; border-radius:999px; font-size:12px; background:#fafafa; }
+  </style>
+</head>
+<body>
+  <h2>GenesisPrediction v2 — Local Daily Routine</h2>
+  <div class="muted">Localhost-only UI. Runs commands on this PC only.</div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Daily Routine (Steps)</h3>
+
+      <div class="card" style="background:#fff;">
+        <div class="row">
+          <div><strong>Date</strong></div>
+          <input id="date" type="date" />
+          <div><strong>Limit</strong></div>
+          <input id="limit" type="number" min="1" max="500" value="40" style="width:90px;" />
+          <span id="statusPill" class="pill">idle</span>
+        </div>
+        <div class="muted" style="margin-top:6px;">
+          Tip: If there are no events for the date, digest may show SKIP.
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:10px;">
+        <div><strong>Step 1 — Run Analyzer</strong></div>
+        <div class="muted">Runs: <code>docker compose run --rm analyzer</code></div>
+        <div class="muted">Outputs: events / diff / summary / latest / daily_summary</div>
+        <div class="row" style="margin-top:8px;">
+          <button id="btnAnalyzer" onclick="runStep('analyzer')">1) Run Analyzer</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:10px;">
+        <div><strong>Step 2 — Build HTML Digest</strong></div>
+        <div class="muted">Runs: <code>python scripts/build_daily_news_digest.py --date ... --limit ...</code></div>
+        <div class="muted">Outputs: daily_news_YYYY-MM-DD.html / .md</div>
+        <div class="row" style="margin-top:8px;">
+          <button id="btnDigest" onclick="runStep('digest')">2) Build HTML Digest</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:10px;">
+        <div><strong>Run All</strong></div>
+        <div class="muted">Executes Step 1 → Step 2 in order. Stops on error.</div>
+        <div class="row" style="margin-top:8px;">
+          <button id="btnAll" onclick="runStep('all')">▶ Run Daily Routine</button>
+          <button id="btnRefresh" onclick="refreshOutputs()">Refresh outputs</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:10px;">
+        <div><strong>Outputs (click to open)</strong></div>
+        <div class="muted" id="outDir"></div>
+        <ul id="outputs"></ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Logs</h3>
+      <div class="muted">Shows command output. If a run is in progress, buttons are disabled.</div>
+      <textarea id="log" readonly></textarea>
+    </div>
+  </div>
+
+<script>
+  function isoToday() {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  function setRunning(running, label) {
+    document.getElementById('btnAnalyzer').disabled = running;
+    document.getElementById('btnDigest').disabled = running;
+    document.getElementById('btnAll').disabled = running;
+    document.getElementById('btnRefresh').disabled = running;
+    const pill = document.getElementById('statusPill');
+    pill.textContent = running ? `running: ${label}` : 'idle';
+  }
+
+  function getParams() {
+    const date = document.getElementById('date').value;
+    const limit = parseInt(document.getElementById('limit').value || '40', 10);
+    return { date, limit };
+  }
+
+  async function refreshStatus() {
+    try {
+      const r = await fetch('/api/status');
+      const s = await r.json();
+      setRunning(!!s.running, s.step || '');
+      if (s.log_tail) document.getElementById('log').value = s.log_tail;
+    } catch (_) {}
+  }
+
+  async function refreshOutputs() {
+    const { date } = getParams();
+    const r = await fetch(`/api/outputs?date=${encodeURIComponent(date)}`);
+    const data = await r.json();
+    document.getElementById('outDir').textContent = `Directory: ${data.analysis_dir}`;
+    const ul = document.getElementById('outputs');
+    ul.innerHTML = '';
+    for (const f of data.files) {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.href = `/api/file?path=${encodeURIComponent(f.path)}`;
+      a.target = '_blank';
+      a.textContent = f.path;
+      li.appendChild(a);
+      ul.appendChild(li);
+    }
+  }
+
+  async function runStep(which) {
+    const { date, limit } = getParams();
+    setRunning(true, which);
+    document.getElementById('log').value = `Starting ${which}...\n`;
+
+    const endpoint = which === 'analyzer'
+      ? '/api/run/analyzer'
+      : which === 'digest'
+        ? '/api/run/digest'
+        : '/api/run/all';
+
+    const url = `${endpoint}?date=${encodeURIComponent(date)}&limit=${encodeURIComponent(limit)}`;
+
+    try {
+      const r = await fetch(url, { method: 'POST' });
+      const data = await r.json();
+      document.getElementById('log').value = data.log || JSON.stringify(data, null, 2);
+
+      await refreshOutputs();
+      setRunning(false, '');
+    } catch (e) {
+      document.getElementById('log').value += `\nERROR: ${e}\n`;
+      setRunning(false, '');
+    }
+  }
+
+  // init
+  document.getElementById('date').value = isoToday();
+  refreshOutputs();
+  refreshStatus();
+  setInterval(refreshStatus, 2000);
+</script>
+</body>
+</html>
