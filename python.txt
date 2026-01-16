@@ -31,6 +31,6 @@ docker compose run --rm analyzer
 .\.venv\Scripts\python.exe scripts\build_weak_anchor_candidates.py --days 14
 .\.venv\Scripts\python.exe scripts\build_daily_news_digest.py --date 2026-01-14
 
-Gui起動
-.\.venv\Scripts\python.exe -m uvicorn app.server:app --reload --host 127.0.0.1 --port 8000
 
+guiを起動
+.\.venv\Scripts\python.exe -m uvicorn app.server:app --reload --host 127.0.0.1 --port 8000
