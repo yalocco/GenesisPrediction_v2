@@ -60,8 +60,26 @@
       </div>
 
       <div class="card" style="margin-top:10px;">
+        <div><strong>Step 3 — Plot (Visual Aids)</strong></div>
+        <div class="muted">Runs: plot_regime_timeline / plot_confidence_churn_regime / plot_confidence_anchors_dual</div>
+        <div class="muted">Outputs: *.png (regime/confidence visual aids)</div>
+        <div class="row" style="margin-top:8px;">
+          <button id="btnPlot" onclick="runStep('plot')">3) Run Plot</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:10px;">
+        <div><strong>Step 4 — Observation Log</strong></div>
+        <div class="muted">Runs: <code>python scripts/build_daily_observation_log.py</code></div>
+        <div class="muted">Outputs: observation_YYYY-MM-DD.md / .json</div>
+        <div class="row" style="margin-top:8px;">
+          <button id="btnObs" onclick="runStep('observation')">4) Write Observation</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:10px;">
         <div><strong>Run All</strong></div>
-        <div class="muted">Executes Step 1 → Step 2 in order. Stops on error.</div>
+        <div class="muted">Executes Step 1 → Step 4 in order. Stops on error.</div>
         <div class="row" style="margin-top:8px;">
           <button id="btnAll" onclick="runStep('all')">▶ Run Daily Routine</button>
           <button id="btnRefresh" onclick="refreshOutputs()">Refresh outputs</button>
@@ -94,6 +112,8 @@
   function setRunning(running, label) {
     document.getElementById('btnAnalyzer').disabled = running;
     document.getElementById('btnDigest').disabled = running;
+    document.getElementById('btnPlot').disabled = running;
+    document.getElementById('btnObs').disabled = running;
     document.getElementById('btnAll').disabled = running;
     document.getElementById('btnRefresh').disabled = running;
     const pill = document.getElementById('statusPill');
@@ -138,11 +158,12 @@
     setRunning(true, which);
     document.getElementById('log').value = `Starting ${which}...\n`;
 
-    const endpoint = which === 'analyzer'
-      ? '/api/run/analyzer'
-      : which === 'digest'
-        ? '/api/run/digest'
-        : '/api/run/all';
+    const endpoint =
+      which === 'analyzer' ? '/api/run/analyzer' :
+      which === 'digest' ? '/api/run/digest' :
+      which === 'plot' ? '/api/run/plot' :
+      which === 'observation' ? '/api/run/observation' :
+      '/api/run/all';
 
     const url = `${endpoint}?date=${encodeURIComponent(date)}&limit=${encodeURIComponent(limit)}`;
 

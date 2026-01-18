@@ -156,7 +156,7 @@ def extract_focus_terms(text: str) -> List[str]:
     return out
 
 
-def build_observation(date: str, events: List[Dict[str, Any]], top_n: int = 8) -> Tuple[Dict[str, Any], str]:
+def build_observation(date: str, events: List[Dict[str, Any]], top_n: int = 8, model_state: Optional[str] = None) -> Tuple[Dict[str, Any], str]:
     # Score and tag each event
     tagged: List[Dict[str, Any]] = []
     tag_counts = Counter()
@@ -236,6 +236,8 @@ def build_observation(date: str, events: List[Dict[str, Any]], top_n: int = 8) -
 
     lines.append("### 今日の要約")
     lines.append(f"- {' / '.join(obs_bits)}")
+    if model_state:
+        lines.append(f"- モデル状態: {model_state}")
     if top_focus2:
         lines.append(f"- 目立つ焦点語: {', '.join(top_focus2)}")
     lines.append("")
@@ -290,6 +292,7 @@ def build_observation(date: str, events: List[Dict[str, Any]], top_n: int = 8) -
         "top_focus_terms": top_focus2,
         "top_cards": tagged_sorted[:top_n],
         "watch_notes": watch[:6],
+        "model_state": model_state or "",
     }
 
     return payload, "\n".join(lines)
@@ -300,6 +303,8 @@ def main() -> int:
     ap.add_argument("--date", default="", help="YYYY-MM-DD (optional; default: infer latest events file)")
     ap.add_argument("--dir", default="data/world_politics/analysis", help="analysis dir")
     ap.add_argument("--top", type=int, default=8, help="top cards to include")
+    ap.add_argument("--model-state", default="", help="1-line model state summary to append (optional)")
+    ap.add_argument("--model-state-file", default="data/world_politics/analysis/model_state_latest.txt", help="fallback file for model state (optional)")
     args = ap.parse_args()
 
     base = Path(args.dir)
@@ -323,7 +328,16 @@ def main() -> int:
         print(f"[SKIP] no events in {ev_path.name}")
         return 0
 
-    payload, md = build_observation(date, events, top_n=max(1, args.top))
+    model_state = args.model_state.strip()
+    if not model_state:
+        ms_path = Path(args.model_state_file)
+        if not ms_path.is_absolute():
+            # interpret relative to repo root
+            ms_path = Path(__file__).resolve().parents[1] / ms_path
+        if ms_path.exists():
+            model_state = ms_path.read_text(encoding="utf-8").strip()
+
+    payload, md = build_observation(date, events, top_n=max(1, args.top), model_state=(model_state or None))
 
     md_out = base / f"observation_{date}.md"
     js_out = base / f"observation_{date}.json"
