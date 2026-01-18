@@ -14,6 +14,7 @@ services:
     build: ./docker/analyzer
     volumes:
       - ./data:/data
+      - ./resources:/app/resources:ro  
     command: >
       python analyze.py
     depends_on:

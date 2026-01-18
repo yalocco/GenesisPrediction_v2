@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from diff import generate_diff
+from history_analog import derive_current_tags, find_historical_analogs
+
 
 DATA_DIR = Path("/data")
 CATEGORY = "world_politics"
@@ -740,7 +742,7 @@ def main() -> None:
     except Exception:
         diff_doc = {}
 
-        # --- build why fields (must exist) ---
+    # --- build why fields (must exist) ---
     try:
         why = build_why_fields(diff_doc) if diff_doc else {
             "delta_explanation": "",
@@ -760,7 +762,7 @@ def main() -> None:
         }
     # --- /build why fields ---
 
-        # anchors dict -> list（表示用）
+    # anchors dict -> list（表示用）
     if isinstance(why.get("anchors"), dict) and "anchors_list" not in why:
         # 優先順：hints > top_tokens > top_domains
         xs = []
@@ -783,7 +785,6 @@ def main() -> None:
             seen.add(key)
             out.append(t)
         why["anchors_list"] = out[:10]
-
 
 
     daily_summary = {
@@ -821,7 +822,32 @@ def main() -> None:
             "scenario_ids": [str(p.get("scenario_id")) for p in (pred_doc.get("predictions") or [])] if isinstance(pred_doc, dict) else [],
         },
     }
-    
+
+    # --- historical analogs (v1) ---
+    try:
+        anchors = daily_summary.get("anchors") or []
+        regime = daily_summary.get("regime") or None
+
+        current_tags = derive_current_tags(anchors=anchors, regime=regime)
+
+        # v1: safety fallback（必ず何か出るように）
+        if not current_tags:
+            current_tags = [
+                "bloc_polarization",
+                "financial_regime",
+                "arms_race",
+                "debt_cycle",
+            ]
+
+        daily_summary["historical_analogs"] = find_historical_analogs(
+            current_tags, top_k=3
+        )
+        daily_summary["historical_analog_tags"] = current_tags
+
+    except Exception as e:
+        # 失敗しても既存分析は壊さない
+        daily_summary["historical_analogs_error"] = str(e)
+
     # --- thin diff template (C) ---
     try:
         summary = diff_doc.get("summary") or {}
@@ -863,12 +889,10 @@ def main() -> None:
         print(f"[WARN] thin-day template failed: {e!r}")
     # --- /thin diff template ---
 
-
     daily_summary_path = ANALYSIS_DIR / f"daily_summary_{today_date}.json"
     daily_summary_path.write_text(json.dumps(daily_summary, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"[OK] daily_summary -> {daily_summary_path}")
     # --- /daily_summary ---
-
 
 
 if __name__ == "__main__":
