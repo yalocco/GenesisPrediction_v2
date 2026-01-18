@@ -1,0 +1,365 @@
+[
+  {
+    "id": "hist_0001_bronze_age_collapse",
+    "title": "Late Bronze Age Collapse",
+    "period": { "start_year": -1200, "end_year": -1150 },
+    "region": ["Eastern Mediterranean", "Levant", "Anatolia", "Aegean"],
+    "event_type": ["systemic_collapse", "multi_crisis"],
+    "summary": "複数のショック（気候・移民/侵入・交易断絶・国家財政/軍事負担）が連鎖し、広域秩序が崩壊した例。",
+    "causal_template": {
+      "root_drivers": ["trade_network_dependency", "elite_competition", "state_overextension"],
+      "triggers": ["supply_chain_breakdown", "food_shortage", "population_displacement"],
+      "escalators": ["fiscal_stress", "loss_of_legitimacy", "security_vacuum"],
+      "inhibitors": ["local_resilience", "alternative_trade_routes", "institutional_adaptation"],
+      "signals_before": [
+        "grain_price_stress",
+        "fortification_activity",
+        "raids_and_piracy_reports",
+        "diplomatic_appeals_for_aid"
+      ],
+      "outcomes": {
+        "politics": ["state_failure_or_fragmentation", "elite_turnover", "new_polities_emerge"],
+        "economy": ["trade_contraction", "specialized_production_loss", "localization_of_economy"],
+        "security": ["raiding_increases", "border_control_breakdown", "militarization_of_survivors"],
+        "finance": ["tax_base_collapse", "credit_network_breakdown", "commodity_money_shift_or_debasement"]
+      },
+      "time_lags": {
+        "politics_months": [6, 36],
+        "economy_months": [3, 60],
+        "security_months": [0, 24],
+        "finance_months": [1, 36]
+      }
+    },
+    "analog_tags": ["multi_crisis", "supply_chain_shock", "food_insecurity", "state_fragility"],
+    "notes": "Genesisでは『複合危機→交易断絶→治安悪化→国家分裂』の連鎖型として参照。",
+    "references": [{ "type": "placeholder", "cite": "ADD_SOURCES_LATER" }]
+  },
+  {
+    "id": "hist_0002_imperial_turnover_assyria_persia",
+    "title": "Imperial Turnover: Neo-Assyrian → Neo-Babylonian → Achaemenid",
+    "period": { "start_year": -630, "end_year": -520 },
+    "region": ["Mesopotamia", "Levant", "Iran Plateau"],
+    "event_type": ["hegemony_shift", "imperial_transition"],
+    "summary": "覇権国家が過伸展・内紛・外圧で弱体化し、次の秩序へ移行する型。",
+    "causal_template": {
+      "root_drivers": ["imperial_overreach", "tributary_strain", "succession_instability"],
+      "triggers": ["rebellions", "coalition_warfare", "capital_capture"],
+      "escalators": ["administrative_overload", "elite_fragmentation", "frontier_pressure"],
+      "inhibitors": ["reform_capacity", "logistics_superiority", "legitimacy_narratives"],
+      "signals_before": [
+        "frequent_succession_changes",
+        "rising_revolt_frequency",
+        "increasing_military_expenditure",
+        "tribute_shortfalls"
+      ],
+      "outcomes": {
+        "politics": ["regime_change", "provincial_reorganization", "new_legitimacy_framework"],
+        "economy": ["tax_system_reset", "trade_policy_shift", "infrastructure_reprioritization"],
+        "security": ["border_reconfiguration", "counterinsurgency_cycles", "garrison_redeployment"],
+        "finance": ["revenue_base_rebuild", "tribute_terms_renegotiation", "state_spending_rebalance"]
+      },
+      "time_lags": {
+        "politics_months": [1, 24],
+        "economy_months": [6, 60],
+        "security_months": [0, 24],
+        "finance_months": [3, 36]
+      }
+    },
+    "analog_tags": ["hegemony_shift", "overreach", "succession_crisis", "rebellion_cycle"],
+    "notes": "現代の『覇権の空白・地域秩序の再編』に対応。",
+    "references": [{ "type": "placeholder", "cite": "ADD_SOURCES_LATER" }]
+  },
+  {
+    "id": "hist_0003_alexander_hellenistic_order",
+    "title": "Alexander’s Conquests and the Hellenistic Successor States",
+    "period": { "start_year": -334, "end_year": -281 },
+    "region": ["Eastern Mediterranean", "Egypt", "Near East"],
+    "event_type": ["rapid_expansion", "fragmentation_after_leader"],
+    "summary": "急拡大→統治コスト増→後継争い→分裂という典型。",
+    "causal_template": {
+      "root_drivers": ["military_innovation", "elite_ambition", "weak_neighboring_order"],
+      "triggers": ["decisive_battles", "leader_death"],
+      "escalators": ["succession_conflict", "overextended_supply_lines", "regional_power_brokers"],
+      "inhibitors": ["institution_building", "shared_elite_coalition", "stable_succession_rules"],
+      "signals_before": [
+        "territorial_expansion_rate_spike",
+        "governance_gap_reports",
+        "rising_factionalism",
+        "mercenary_dependency"
+      ],
+      "outcomes": {
+        "politics": ["successor_state_competition", "new_administrative_centers", "dynastic_legitimation"],
+        "economy": ["trade_integration_then_fragmentation", "urban_growth_in_centers", "tax_farming_expansion"],
+        "security": ["interstate_wars", "fortification_buildout", "frontier_instability"],
+        "finance": ["coinage_expansion", "war_finance_pressure", "asset_seizures_and_redistribution"]
+      },
+      "time_lags": {
+        "politics_months": [0, 24],
+        "economy_months": [6, 84],
+        "security_months": [0, 36],
+        "finance_months": [0, 36]
+      }
+    },
+    "analog_tags": ["rapid_expansion", "post_leader_fragmentation", "succession_wars"],
+    "notes": "『短期の勝利→統治不能→分裂』の警告パターン。",
+    "references": [{ "type": "placeholder", "cite": "ADD_SOURCES_LATER" }]
+  },
+  {
+    "id": "hist_0004_roman_republic_to_empire",
+    "title": "Roman Republic → Principate (Civil Wars and Institutional Transition)",
+    "period": { "start_year": -133, "end_year": -27 },
+    "region": ["Mediterranean"],
+    "event_type": ["institutional_transition", "civil_conflict"],
+    "summary": "制度疲労・格差・軍事政治化が内戦を誘発し、統治形態が転換する型。",
+    "causal_template": {
+      "root_drivers": ["elite_polarization", "wealth_inequality", "military_personalization"],
+      "triggers": ["constitutional_crises", "assassinations", "extraordinary_commands"],
+      "escalators": ["private_armies", "propaganda_wars", "breakdown_of_norms"],
+      "inhibitors": ["inclusive_reform", "rule_enforcement", "power_sharing"],
+      "signals_before": [
+        "frequent_emergency_decrees",
+        "political_violence_incidents",
+        "army_loyalty_shifts",
+        "street_mobilization"
+      ],
+      "outcomes": {
+        "politics": ["centralization_of_power", "bureaucratic_growth", "reframed_legitimacy"],
+        "economy": ["redistribution_policies", "provincial_extraction_increases", "public_works_expansion"],
+        "security": ["pacification_campaigns", "border_pressure_management", "internal_surveillance"],
+        "finance": ["war_debt_management", "tax_reforms", "monetary_adjustments"]
+      },
+      "time_lags": {
+        "politics_months": [6, 120],
+        "economy_months": [6, 120],
+        "security_months": [0, 60],
+        "finance_months": [3, 60]
+      }
+    },
+    "analog_tags": ["institutional_fatigue", "elite_polarization", "civil_war_risk", "centralization"],
+    "notes": "『制度疲労→例外措置常態化→権力集中』の型。",
+    "references": [{ "type": "placeholder", "cite": "ADD_SOURCES_LATER" }]
+  },
+  {
+    "id": "hist_0005_western_rome_fall_trade_shift",
+    "title": "Fall of the Western Roman Empire and Trade System Transformation",
+    "period": { "start_year": 376, "end_year": 476 },
+    "region": ["Western Europe", "Mediterranean"],
+    "event_type": ["state_decline", "security_economy_shift"],
+    "summary": "治安低下・財政弱体化・外圧で統治が崩れ、交易と都市が縮小する型。",
+    "causal_template": {
+      "root_drivers": ["fiscal_erosion", "frontier_pressure", "elite_fragmentation"],
+      "triggers": ["mass_migration", "military_defeats", "capital_instability"],
+      "escalators": ["loss_of_tax_capacity", "mercenary_dependence", "local_strongmen"],
+      "inhibitors": ["administrative_reform", "regional_autonomy_compacts", "defensive_success"],
+      "signals_before": [
+        "tax_collection_shortfalls",
+        "frontier_breaches",
+        "currency_debasement_signs",
+        "urban_decline_indicators"
+      ],
+      "outcomes": {
+        "politics": ["fragmented_authority", "new_kingdoms", "legal_pluralism"],
+        "economy": ["urban_contraction", "trade_relocalization", "productivity_decline_in_centers"],
+        "security": ["chronic_raiding", "fortified_settlements", "private_security_growth"],
+        "finance": ["monetary_instability", "revenue_localization", "in-kind_taxation_increase"]
+      },
+      "time_lags": {
+        "politics_months": [12, 120],
+        "economy_months": [12, 240],
+        "security_months": [0, 120],
+        "finance_months": [6, 120]
+      }
+    },
+    "analog_tags": ["fiscal_decline", "border_pressure", "trade_relocalization", "state_fragmentation"],
+    "notes": "『治安→物流→税収』の逆回転を観測する型。",
+    "references": [{ "type": "placeholder", "cite": "ADD_SOURCES_LATER" }]
+  },
+  {
+    "id": "hist_0006_mongol_pax_and_fragmentation",
+    "title": "Mongol Empire: Integration (Pax) and Fragmentation",
+    "period": { "start_year": 1206, "end_year": 1368 },
+    "region": ["Eurasia"],
+    "event_type": ["hegemony_integration", "fragmentation"],
+    "summary": "広域秩序が交易・移動を加速（繁栄）しつつ、分裂後に不安定化する型。",
+    "causal_template": {
+      "root_drivers": ["military_mobility", "steppe_political_unification", "trade_capture"],
+      "triggers": ["rapid_conquests", "succession_disputes"],
+      "escalators": ["administrative_overstretch", "regional_dynasties", "pandemic_spread"],
+      "inhibitors": ["trade_security_policy", "meritocratic_admin", "stable_succession"],
+      "signals_before": [
+        "trade_route_security_changes",
+        "rapid_tax_base_expansion",
+        "increasing_inter-elite_rivalry",
+        "rising_disease_reports_along_routes"
+      ],
+      "outcomes": {
+        "politics": ["imperial_administration_then_split", "regional_khanates", "new_state_forms"],
+        "economy": ["trade_boom_then_disruption", "city_growth_on_routes", "revenue_volatility"],
+        "security": ["route_policing_then_warlordism", "border_fluidity", "conflict_regionalization"],
+        "finance": ["tribute_system_expansion", "coinage_and_tax_experiments", "post_split_fiscal_shocks"]
+      },
+      "time_lags": {
+        "politics_months": [12, 120],
+        "economy_months": [6, 180],
+        "security_months": [0, 120],
+        "finance_months": [6, 120]
+      }
+    },
+    "analog_tags": ["trade_integration", "hegemony_pax", "succession_split", "route_security"],
+    "notes": "『統合が進むほどパンデミック/ショック伝播も速い』の型。",
+    "references": [{ "type": "placeholder", "cite": "ADD_SOURCES_LATER" }]
+  },
+  {
+    "id": "hist_0007_black_death_labor_institutions",
+    "title": "Black Death (Pandemic Shock) and Economic/Social Reordering",
+    "period": { "start_year": 1347, "end_year": 1353 },
+    "region": ["Europe", "Mediterranean", "West Asia"],
+    "event_type": ["pandemic", "labor_market_shock"],
+    "summary": "人口急減が賃金・制度・社会秩序を変える“疫病ショック”の代表。",
+    "causal_template": {
+      "root_drivers": ["high_connectivity_trade_routes", "urban_density", "limited_public_health"],
+      "triggers": ["pathogen_introduction", "rapid_spread"],
+      "escalators": ["labor_shortage", "elite_resistance_to_wage_rise", "social_unrest"],
+      "inhibitors": ["quarantine_measures", "local_containment", "institutional_flexibility"],
+      "signals_before": [
+        "mortality_spikes",
+        "trade_disruptions",
+        "food_supply_instability",
+        "scapegoating_or_violence_incidents"
+      ],
+      "outcomes": {
+        "politics": ["policy_control_attempts", "legitimacy_tests", "local_rebellions"],
+        "economy": ["wage_inflation", "land_value_shifts", "productivity_reallocation"],
+        "security": ["internal_unrest", "banditry_changes", "border_enforcement_variation"],
+        "finance": ["tax_revenue_drop", "debt_stress", "public_spending_reprioritization"]
+      },
+      "time_lags": {
+        "politics_months": [0, 60],
+        "economy_months": [3, 120],
+        "security_months": [0, 60],
+        "finance_months": [3, 60]
+      }
+    },
+    "analog_tags": ["pandemic_shock", "labor_shortage", "wage_pressure", "social_unrest"],
+    "notes": "パンデミックは『医療』だけでなく『賃金・税収・治安』に波及。",
+    "references": [{ "type": "placeholder", "cite": "ADD_SOURCES_LATER" }]
+  },
+  {
+    "id": "hist_0008_age_of_discovery_silver_inflation",
+    "title": "Age of Discovery: Global Silver Flows and Price Revolution",
+    "period": { "start_year": 1500, "end_year": 1650 },
+    "region": ["Europe", "Americas", "Global Trade"],
+    "event_type": ["globalization_wave", "monetary_shock"],
+    "summary": "資源流入（銀）＋交易網拡大が物価・国家財政・覇権競争を変える型。",
+    "causal_template": {
+      "root_drivers": ["new_trade_routes", "resource_extraction", "naval_power"],
+      "triggers": ["silver_influx", "colonial_expansion"],
+      "escalators": ["war_finance", "rent_seeking", "inflationary_pressure"],
+      "inhibitors": ["fiscal_reform", "diversified_revenue", "trade_balancing"],
+      "signals_before": [
+        "shipping_capacity_growth",
+        "bullion_import_spikes",
+        "widening_trade_imbalances",
+        "military_naval_buildout"
+      ],
+      "outcomes": {
+        "politics": ["imperial_competition", "colonial_administration_growth", "power_rebalancing"],
+        "economy": ["price_inflation", "manufacturing_competitiveness_shifts", "trade_dependence_increase"],
+        "security": ["naval_conflict", "piracy_privateering", "frontier_wars"],
+        "finance": ["monetary_expansion", "debt_cycles", "fiscal_crises_in_overextended_states"]
+      },
+      "time_lags": {
+        "politics_months": [12, 120],
+        "economy_months": [6, 240],
+        "security_months": [6, 120],
+        "finance_months": [6, 180]
+      }
+    },
+    "analog_tags": ["commodity_money_shock", "globalization_wave", "inflation", "debt_cycle"],
+    "notes": "資源流入や通貨供給増は『物価→財政→戦争』に繋がりやすい。",
+    "references": [{ "type": "placeholder", "cite": "ADD_SOURCES_LATER" }]
+  },
+  {
+    "id": "hist_0009_industrial_revolution_gold_standard_imperialism",
+    "title": "Industrial Revolution, Gold Standard Era, and Imperial Competition",
+    "period": { "start_year": 1815, "end_year": 1914 },
+    "region": ["Europe", "Global"],
+    "event_type": ["industrialization", "financial_regime", "imperial_competition"],
+    "summary": "産業力・金融覇権・通貨体制（信用）・帝国競争が結合する型。",
+    "causal_template": {
+      "root_drivers": ["technology_productivity", "capital_markets_deepening", "resource_competition"],
+      "triggers": ["financial_panics", "colonial_rivalries", "arms_races"],
+      "escalators": ["alliance_polarization", "trade_protectionism", "military_spending_growth"],
+      "inhibitors": ["cooperative_institutions", "balanced_trade", "credible_monetary_policy"],
+      "signals_before": [
+        "rapid_industrial_output_growth",
+        "credit_boom_then_stress",
+        "arms_spending_acceleration",
+        "tariff_barriers_rising"
+      ],
+      "outcomes": {
+        "politics": ["bloc_formation", "imperial_expansion", "domestic_social_reforms_or_backlash"],
+        "economy": ["productivity_gap_widens", "global_trade_growth_then_fragility", "commodity_dependency"],
+        "security": ["arms_race", "proxy_conflicts", "crisis_escalation_risk"],
+        "finance": ["gold_standard_constraints", "cross_border_capital_flows", "contagion_in_panics"]
+      },
+      "time_lags": {
+        "politics_months": [12, 240],
+        "economy_months": [12, 240],
+        "security_months": [6, 120],
+        "finance_months": [1, 60]
+      }
+    },
+    "analog_tags": ["financial_regime", "arms_race", "bloc_polarization", "contagion"],
+    "notes": "『通貨体制の制約＋覇権競争＋同盟固定化』は大戦前夜の型。",
+    "references": [{ "type": "placeholder", "cite": "ADD_SOURCES_LATER" }]
+  },
+  {
+    "id": "hist_0010_ww1_to_ww2_to_bretton_woods",
+    "title": "WWI → Interwar Instability → WWII → Bretton Woods Order",
+    "period": { "start_year": 1914, "end_year": 1947 },
+    "region": ["Global"],
+    "event_type": ["total_war", "financial_reset", "order_building"],
+    "summary": "総力戦→賠償/債務→不況/過激化→再戦→金融秩序再設計、という連鎖型。",
+    "causal_template": {
+      "root_drivers": ["bloc_polarization", "imperial_competition", "financial_constraints"],
+      "triggers": ["assassination_crisis", "mobilization_spirals", "banking_and_debt_crises"],
+      "escalators": ["reparations_disputes", "hyperinflation_or_deflation", "extremism_rise"],
+      "inhibitors": ["credible_security_architecture", "debt_restructuring", "trade_cooperation"],
+      "signals_before": [
+        "alliance_commitment_rigidity",
+        "military_mobilization_signals",
+        "war_finance_stress",
+        "bank_runs_or_sovereign_spreads_widen"
+      ],
+      "outcomes": {
+        "politics": ["new_borders", "ideological_polarization", "institution_building_postwar"],
+        "economy": ["reconstruction_cycles", "trade_regime_rewrite", "industrial_retooling"],
+        "security": [
+          "collective_security_attempts_then_failure",
+          "rearmament_cycles",
+          "new_deterrence_models"
+        ],
+        "finance": ["debt_overhang_then_reset", "capital_controls", "new_monetary_order_framework"]
+      },
+      "time_lags": {
+        "politics_months": [1, 240],
+        "economy_months": [6, 240],
+        "security_months": [0, 240],
+        "finance_months": [0, 120]
+      }
+    },
+    "analog_tags": [
+      "total_war",
+      "debt_overhang",
+      "extremism_risk",
+      "order_reset",
+      "bloc_polarization",
+      "financial_regime",
+      "arms_race",
+      "debt_cycle"
+    ],
+    "notes": "Genesis出力の『秩序再設計（通貨・安全保障）』フェーズ判定に使える。",
+    "references": [{ "type": "placeholder", "cite": "ADD_SOURCES_LATER" }]
+  }
+]

@@ -23,3 +23,8 @@ Thumbs.db
 
 # local approved stopwords (do not commit)
 configs/stopwords_approved.txt
+
+# Keep design assets in Git
+!resources/
+!resources/**/*
+
