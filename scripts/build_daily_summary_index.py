@@ -20,6 +20,10 @@ def _safe_float(x, default=None):
         return default
 
 
+def _clamp(x: float, lo: float, hi: float) -> float:
+    return max(lo, min(hi, x))
+
+
 def _read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -73,24 +77,33 @@ def _load_daily_counts() -> dict[str, int]:
 def _extract_churn_from_doc(doc: dict, denom: int | None) -> float | None:
     """
     churn = (added + removed) / denom を基本にする。
-    denom は baseline(昨日)の events_count を使うのが理想。
-    取れない場合は today の events_count → それも無ければ None。
+    anchors の形式が dict の日 / list の日など混在しても落ちないように防御する。
     """
-    anchors = doc.get("anchors") or {}
-    counts = anchors.get("counts") or {}
-    added = int(_safe_float(counts.get("added"), 0) or 0)
-    removed = int(_safe_float(counts.get("removed"), 0) or 0)
-
     if denom is None or denom <= 0:
         return None
 
-    churn = (added + removed) / float(denom)
-    # 0..1 に軽くクランプ（外れ値でグラフが壊れるの防止）
-    if churn < 0:
-        churn = 0.0
-    if churn > 1:
-        churn = 1.0
-    return churn
+    anchors = doc.get("anchors")
+
+    # anchors が dict 形式のときだけ counts を読む
+    if isinstance(anchors, dict):
+        counts = anchors.get("counts") or {}
+        if not isinstance(counts, dict):
+            return None
+
+        added = int(_safe_float(counts.get("added"), 0) or 0)
+        removed = int(_safe_float(counts.get("removed"), 0) or 0)
+
+        churn = (added + removed) / float(denom)
+        # 0..1 に軽くクランプ（外れ値でグラフが壊れるの防止）
+        if churn < 0:
+            churn = 0.0
+        if churn > 1:
+            churn = 1.0
+        return churn
+
+    # anchors が list / None / その他形式なら churn は出さない（空欄）
+    return None
+
 
 
 def _guess_today_count(daily_counts: dict[str, int], date_str: str) -> int | None:
@@ -118,11 +131,44 @@ def _normalize_date(s: str) -> str | None:
     return s
 
 
+def _compute_historical_analog_delta(doc: dict) -> tuple[float, str]:
+    """
+    D-1a: historical_analogs 上位3件の score 平均から confidence に微反映する。
+    delta は必ず [-0.05, +0.05]。
+
+    avg=0.0 -> -0.05
+    avg=0.5 ->  0.00
+    avg=1.0 -> +0.05
+    """
+    analogs = doc.get("historical_analogs") or []
+    if not analogs:
+        return 0.0, "no historical_analogs"
+
+    top = analogs[:3]
+    scores: list[float] = []
+    for a in top:
+        try:
+            s = float(a.get("score", 0.0))
+        except Exception:
+            s = 0.0
+        scores.append(s)
+
+    if not scores:
+        return 0.0, "no scores"
+
+    avg = sum(scores) / len(scores)
+    delta = _clamp((avg - 0.5) * 0.1, -0.05, +0.05)
+    reason = f"analog avg score={avg:.3f} -> delta={delta:+.3f}"
+    return delta, reason
+
+
 def main():
     daily_counts = _load_daily_counts()
 
     files = sorted(ANALYSIS_DIR.glob("daily_summary_*.json"))
     rows = []
+
+    applied = 0  # D-1a: delta applied count (conf not None and analogs available)
 
     for fp in files:
         try:
@@ -139,6 +185,15 @@ def main():
         if conf is None:
             # 古い形式の可能性を少し救う
             conf = _safe_float(doc.get("confidence"))
+
+        # --- D-1a: micro adjust confidence using historical analogs (±0.05) ---
+        # NOTE: This affects only the index CSV / plots that use it.
+        if conf is not None:
+            delta, _reason = _compute_historical_analog_delta(doc)
+            if delta != 0.0:
+                conf = _clamp(float(conf) + float(delta), 0.0, 1.0)
+                applied += 1
+        # ---------------------------------------------------------------------
 
         baseline_date = _normalize_date(meta.get("baseline_date") or "")
 
@@ -170,6 +225,7 @@ def main():
 
     kept = sum(1 for r in rows if r.get("confidence") not in ("", None))
     print(f"[OK] wrote {OUT_CSV} ({len(rows)} rows, {kept} with confidence)")
+    print(f"[OK] D-1a applied analog delta to confidence on {applied} days")
 
 
 if __name__ == "__main__":
