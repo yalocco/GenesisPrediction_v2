@@ -70,6 +70,19 @@ Genesis出力の『秩序再設計（通貨・安全保障）』フェーズ判�
 
 **Why these analogs today (template)**
 
+<!-- CAND_START -->
+**Auto candidates (semi-auto)**
+
+- analog_tags: `bloc_polarization, financial_regime, arms_race, debt_cycle`
+- matched_tags(top3): `arms_race, bloc_polarization, debt_cycle, debt_overhang, financial_regime`
+- top_domains: (none)
+- top_tokens: (none)
+- anchors(sample): `trump, need, america, canada, best, january, 2026, games, biggest, world`
+
+> Use these as hints only. Keep/Remove after your review.
+
+<!-- CAND_END -->
+
 - Anchor overlap:
   - (Which tags / domains / themes in today’s news match the analog tags?)
 - Regime/context:
