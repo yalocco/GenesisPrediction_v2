@@ -7,7 +7,7 @@
   <style>
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 16px; }
     .grid { display: grid; grid-template-columns: 420px 1fr; gap: 16px; }
-    .card { border: 1px solid #ddd; border-radius: 10px; padding: 12px; }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 12px; background:#fff; }
     .muted { color: #666; font-size: 12px; }
     .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     button { padding: 8px 10px; border-radius: 8px; border: 1px solid #ccc; background: #f7f7f7; cursor: pointer; }
@@ -18,6 +18,15 @@
     a { color: #0b65d8; text-decoration: none; }
     a:hover { text-decoration: underline; }
     .pill { display:inline-block; padding:2px 8px; border:1px solid #ddd; border-radius:999px; font-size:12px; background:#fafafa; }
+
+    /* Historical Analogs */
+    .ha-item { margin: 8px 0; padding: 10px; border: 1px solid #ddd; border-radius: 10px; background: #fff; }
+    .ha-title { font-weight: 750; }
+    .ha-sub { color: #666; font-size: 12px; margin-top: 2px; }
+    .ha-summary { margin-top: 6px; white-space: pre-wrap; }
+    details { margin-top: 6px; }
+    details > summary { cursor: pointer; color:#0b65d8; }
+    .ha-notes { margin-top: 6px; padding: 8px; border: 1px dashed #ddd; border-radius: 8px; background: #fafafa; white-space: pre-wrap; }
   </style>
 </head>
 <body>
@@ -91,6 +100,13 @@
         <div class="muted" id="outDir"></div>
         <ul id="outputs"></ul>
       </div>
+
+      <!-- Historical Analogs (same position as now: under Outputs) -->
+      <div class="card" style="margin-top:10px;">
+        <div><strong>Historical Analogs</strong></div>
+        <div class="muted" id="haMeta">loading...</div>
+        <div id="haList"></div>
+      </div>
     </div>
 
     <div class="card">
@@ -135,6 +151,83 @@
     } catch (_) {}
   }
 
+  async function refreshHistoricalAnalogs(dateStr) {
+    const meta = document.getElementById('haMeta');
+    const list = document.getElementById('haList');
+    if (!meta || !list) return;
+
+    meta.textContent = 'loading...';
+    list.innerHTML = '';
+
+    try {
+      const r = await fetch(`/api/historical_analogs?date=${encodeURIComponent(dateStr)}`);
+      const data = await r.json();
+
+      if (data.error) {
+        meta.textContent = `error`;
+        list.textContent = data.error;
+        return;
+      }
+
+      const tags = (data.historical_analog_tags || []).join(', ');
+      const usedLatest = data.used_latest ? ' (fallback to latest)' : '';
+      const req = data.requested_date ? `requested=${data.requested_date} | ` : '';
+      meta.textContent = `${req}date=${data.date}${usedLatest} | tags: ${tags || '(none)'}`;
+
+      const xs = data.historical_analogs || [];
+      if (xs.length === 0) {
+        list.textContent = '(no analogs)';
+        return;
+      }
+
+      const top = xs.slice(0, 3);
+      for (const x of top) {
+        const title = x.title || '(untitled)';
+        const score = (x.score !== undefined && x.score !== null) ? x.score : '';
+        const mt = (x.matched_tags || []).join(', ');
+        const summary = x.summary || '';
+        const notes = x.notes || '';
+
+        const div = document.createElement('div');
+        div.className = 'ha-item';
+
+        const t = document.createElement('div');
+        t.className = 'ha-title';
+        t.textContent = title;
+
+        const sub = document.createElement('div');
+        sub.className = 'ha-sub';
+        sub.textContent = `score=${score} | matched: ${mt || '(none)'}`;
+
+        const s = document.createElement('div');
+        s.className = 'ha-summary';
+        s.textContent = summary;
+
+        div.appendChild(t);
+        div.appendChild(sub);
+        div.appendChild(s);
+
+        // (A) notes: collapsible
+        if (notes && String(notes).trim().length > 0) {
+          const details = document.createElement('details');
+          const summaryEl = document.createElement('summary');
+          summaryEl.textContent = 'Notes';
+          const box = document.createElement('div');
+          box.className = 'ha-notes';
+          box.textContent = notes;
+          details.appendChild(summaryEl);
+          details.appendChild(box);
+          div.appendChild(details);
+        }
+
+        list.appendChild(div);
+      }
+    } catch (e) {
+      meta.textContent = 'error';
+      list.textContent = String(e);
+    }
+  }
+
   async function refreshOutputs() {
     const { date } = getParams();
     const r = await fetch(`/api/outputs?date=${encodeURIComponent(date)}`);
@@ -151,6 +244,9 @@
       li.appendChild(a);
       ul.appendChild(li);
     }
+
+    // refresh analogs too
+    await refreshHistoricalAnalogs(date);
   }
 
   async function runStep(which) {

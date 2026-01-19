@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import threading
 from datetime import date as _date
@@ -83,10 +84,7 @@ def _run_cmd(cmd: List[str], cwd: Optional[Path] = None) -> Dict[str, Any]:
     }
 
 
-def _run_cmd_try_with_date_then_fallback(
-    base_cmd: List[str],
-    target_date: str,
-) -> Dict[str, Any]:
+def _run_cmd_try_with_date_then_fallback(base_cmd: List[str], target_date: str) -> Dict[str, Any]:
     """
     Robust runner:
     1) Try with: ... --date YYYY-MM-DD
@@ -99,7 +97,6 @@ def _run_cmd_try_with_date_then_fallback(
     out = (r1.get("output") or "").lower()
     if "unrecognized arguments" in out and "--date" in out:
         r2 = _run_cmd(base_cmd, cwd=REPO_ROOT)
-        # keep both outputs for debugging clarity
         merged = (
             "=== Attempt 1 (with --date) ===\n"
             + "$ " + " ".join(r1["cmd"]) + "\n" + (r1["output"] or "") + "\n\n"
@@ -120,7 +117,6 @@ def _list_outputs(target_date: str) -> List[Dict[str, Any]]:
         return []
 
     patterns = [
-        # analyzer
         f"events_{target_date}.jsonl",
         f"diff_{target_date}.json",
         f"daily_summary_{target_date}.json",
@@ -129,12 +125,8 @@ def _list_outputs(target_date: str) -> List[Dict[str, Any]]:
         "summary.json",
         "daily_counts.csv",
         "anchors_quality_timeseries.csv",
-
-        # observation (json + md)
         f"observation_{target_date}.json",
         f"observation_{target_date}.md",
-
-        # plots (png)
         "regime_timeline.png",
         "confidence_churn_regime.png",
         "confidence_anchors_dual.png",
@@ -152,7 +144,7 @@ def _list_outputs(target_date: str) -> List[Dict[str, Any]]:
         if p.exists():
             files.append(p)
 
-    # Also: show any daily_news / observation / diff / png that includes the date (future-proof)
+    # future-proof date-containing files
     for p in ANALYSIS_DIR.glob(f"*{target_date}*.html"):
         if p not in files:
             files.append(p)
@@ -163,30 +155,49 @@ def _list_outputs(target_date: str) -> List[Dict[str, Any]]:
         if p not in files:
             files.append(p)
 
-    # Any pngs (plot outputs) in analysis dir
     for p in ANALYSIS_DIR.glob("*.png"):
         if p not in files:
             files.append(p)
 
-    # sort by mtime desc
     files.sort(key=lambda x: x.stat().st_mtime if x.exists() else 0, reverse=True)
 
     result: List[Dict[str, Any]] = []
     for p in files:
         try:
             st = p.stat()
-            result.append({
-                "path": _safe_relpath(p),
-                "size": st.st_size,
-                "mtime": st.st_mtime,
-            })
+            result.append({"path": _safe_relpath(p), "size": st.st_size, "mtime": st.st_mtime})
         except Exception:
             result.append({"path": _safe_relpath(p)})
     return result
 
 
+# ---- historical analog helpers ----
+def _daily_summary_path_for(date_str: str) -> Path:
+    return ANALYSIS_DIR / f"daily_summary_{date_str}.json"
+
+
+def _pick_latest_daily_summary_path() -> Optional[Path]:
+    if not ANALYSIS_DIR.exists():
+        return None
+    files = sorted(ANALYSIS_DIR.glob("daily_summary_*.json"))
+    return files[-1] if files else None
+
+
+def _load_json_or_none(path: Path) -> Optional[Dict[str, Any]]:
+    try:
+        return json.loads(path.read_text(encoding="utf-8", errors="replace"))
+    except Exception:
+        return None
+
+
+def _date_from_daily_summary_filename(path: Path) -> str:
+    # daily_summary_YYYY-MM-DD.json
+    name = path.name
+    return name.replace("daily_summary_", "").replace(".json", "")
+
+
 # ---- FastAPI app ----
-app = FastAPI(title="GenesisPrediction v2 - Local GUI", version="0.2")
+app = FastAPI(title="GenesisPrediction v2 - Local GUI", version="0.3")
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
@@ -206,11 +217,64 @@ def api_status():
 
 @app.get("/api/outputs")
 def api_outputs(date: str = Query(default_factory=lambda: _date.today().isoformat())):
-    return JSONResponse({
-        "date": date,
-        "analysis_dir": _safe_relpath(ANALYSIS_DIR),
-        "files": _list_outputs(date),
-    })
+    return JSONResponse({"date": date, "analysis_dir": _safe_relpath(ANALYSIS_DIR), "files": _list_outputs(date)})
+
+
+@app.get("/api/historical_analogs")
+def api_historical_analogs(date: Optional[str] = None):
+    """
+    (B) fallback behavior:
+    - If date is provided and daily_summary_{date}.json exists: use it.
+    - If missing: fallback to latest daily_summary_*.json (if exists).
+    """
+    requested_date = date
+    used_latest = False
+
+    if date:
+        path = _daily_summary_path_for(date)
+        if not path.exists():
+            # fallback to latest
+            latest = _pick_latest_daily_summary_path()
+            if not latest or not latest.exists():
+                return JSONResponse(
+                    {
+                        "date": date,
+                        "requested_date": requested_date,
+                        "used_latest": False,
+                        "historical_analog_tags": [],
+                        "historical_analogs": [],
+                        "error": f"daily_summary not found for date={date} and no latest daily_summary available.",
+                    }
+                )
+            path = latest
+            used_latest = True
+            date = _date_from_daily_summary_filename(path)
+    else:
+        path = _pick_latest_daily_summary_path()
+        if not path or not path.exists():
+            return JSONResponse(
+                {
+                    "date": None,
+                    "requested_date": None,
+                    "used_latest": False,
+                    "historical_analog_tags": [],
+                    "historical_analogs": [],
+                    "error": "No daily_summary_*.json found.",
+                }
+            )
+        date = _date_from_daily_summary_filename(path)
+
+    doc = _load_json_or_none(path) or {}
+
+    return JSONResponse(
+        {
+            "date": date,
+            "requested_date": requested_date,
+            "used_latest": used_latest,
+            "historical_analog_tags": doc.get("historical_analog_tags", []) or [],
+            "historical_analogs": doc.get("historical_analogs", []) or [],
+        }
+    )
 
 
 @app.get("/api/file")
@@ -240,25 +304,18 @@ def api_file(path: str):
 
 
 def _do_step_analyzer() -> Dict[str, Any]:
-    # Step 1: docker compose run --rm analyzer
     cmd = ["docker", "compose", "run", "--rm", "analyzer"]
     return _run_cmd(cmd, cwd=REPO_ROOT)
 
 
 def _do_step_digest(target_date: str, limit: int) -> Dict[str, Any]:
-    # Step 2: use current python (run server from .venv) to execute script
     import sys
     cmd = [sys.executable, "scripts/build_daily_news_digest.py", "--date", target_date, "--limit", str(limit)]
     return _run_cmd(cmd, cwd=REPO_ROOT)
 
 
 def _do_step_plot(target_date: str) -> Dict[str, Any]:
-    """
-    Step 3: Plot (visual aids)
-    Run plot scripts sequentially. Try with --date, fallback if unsupported.
-    """
     import sys
-
     plot_scripts = [
         "scripts/plot_regime_timeline.py",
         "scripts/plot_confidence_churn_regime.py",
@@ -276,18 +333,10 @@ def _do_step_plot(target_date: str) -> Dict[str, Any]:
         if rc != 0:
             break
 
-    return {
-        "cmd": ["<plot-batch>"],
-        "returncode": rc,
-        "output": "\n".join(logs),
-    }
+    return {"cmd": ["<plot-batch>"], "returncode": rc, "output": "\n".join(logs)}
 
 
 def _do_step_observation(target_date: str) -> Dict[str, Any]:
-    """
-    Step 4: Observation Log (finalization)
-    Run build_daily_observation_log.py. Try with --date, fallback if unsupported.
-    """
     import sys
     base_cmd = [sys.executable, "scripts/build_daily_observation_log.py"]
     return _run_cmd_try_with_date_then_fallback(base_cmd, target_date)
@@ -316,143 +365,71 @@ def _run_pipeline(target_date: str, limit: int, mode: str) -> Dict[str, Any]:
         rc = 0
 
         def add_log(block: str):
-            nonlocal logs
             logs.append(block)
-            tail = "\n".join(logs)[-20000:]  # keep last ~20k chars
-            _last_status["log_tail"] = tail
+            _last_status["log_tail"] = "\n".join(logs)[-20000:]
 
-        # ---- Step 1 ----
         if mode in ("analyzer", "all"):
             add_log("=== Step 1: Run Analyzer (docker compose) ===\n")
             r1 = _do_step_analyzer()
             add_log("$ " + " ".join(r1["cmd"]) + "\n" + r1["output"] + "\n")
             rc = r1["returncode"]
             if rc != 0:
-                _last_status["returncode"] = rc
-                _last_status["ended_at"] = _now_iso()
-                _last_status["running"] = False
-                return {
-                    "ok": False,
-                    "mode": mode,
-                    "date": target_date,
-                    "limit": limit,
-                    "returncode": rc,
-                    "log": "\n".join(logs),
-                    "files": _list_outputs(target_date),
-                }
+                _last_status.update({"returncode": rc, "ended_at": _now_iso(), "running": False})
+                return {"ok": False, "mode": mode, "date": target_date, "limit": limit, "returncode": rc, "log": "\n".join(logs), "files": _list_outputs(target_date)}
 
-        # ---- Step 2 ----
         if mode in ("digest", "all"):
             add_log("=== Step 2: Build HTML Digest ===\n")
             r2 = _do_step_digest(target_date, limit if limit else 40)
             add_log("$ " + " ".join(r2["cmd"]) + "\n" + r2["output"] + "\n")
             rc = r2["returncode"]
             if rc != 0:
-                _last_status["returncode"] = rc
-                _last_status["ended_at"] = _now_iso()
-                _last_status["running"] = False
-                return {
-                    "ok": False,
-                    "mode": mode,
-                    "date": target_date,
-                    "limit": limit,
-                    "returncode": rc,
-                    "log": "\n".join(logs),
-                    "files": _list_outputs(target_date),
-                }
+                _last_status.update({"returncode": rc, "ended_at": _now_iso(), "running": False})
+                return {"ok": False, "mode": mode, "date": target_date, "limit": limit, "returncode": rc, "log": "\n".join(logs), "files": _list_outputs(target_date)}
 
-        # ---- Step 3 ----
         if mode in ("plot", "all"):
             add_log("=== Step 3: Plot (visual aids) ===\n")
             r3 = _do_step_plot(target_date)
-            add_log(r3["output"] + "\n")
+            add_log((r3["output"] or "") + "\n")
             rc = r3["returncode"]
             if rc != 0:
-                _last_status["returncode"] = rc
-                _last_status["ended_at"] = _now_iso()
-                _last_status["running"] = False
-                return {
-                    "ok": False,
-                    "mode": mode,
-                    "date": target_date,
-                    "limit": limit,
-                    "returncode": rc,
-                    "log": "\n".join(logs),
-                    "files": _list_outputs(target_date),
-                }
+                _last_status.update({"returncode": rc, "ended_at": _now_iso(), "running": False})
+                return {"ok": False, "mode": mode, "date": target_date, "limit": limit, "returncode": rc, "log": "\n".join(logs), "files": _list_outputs(target_date)}
 
-        # ---- Step 4 ----
         if mode in ("observation", "all"):
             add_log("=== Step 4: Observation Log ===\n")
             r4 = _do_step_observation(target_date)
             add_log("$ " + " ".join(r4["cmd"]) + "\n" + r4["output"] + "\n")
             rc = r4["returncode"]
             if rc != 0:
-                _last_status["returncode"] = rc
-                _last_status["ended_at"] = _now_iso()
-                _last_status["running"] = False
-                return {
-                    "ok": False,
-                    "mode": mode,
-                    "date": target_date,
-                    "limit": limit,
-                    "returncode": rc,
-                    "log": "\n".join(logs),
-                    "files": _list_outputs(target_date),
-                }
+                _last_status.update({"returncode": rc, "ended_at": _now_iso(), "running": False})
+                return {"ok": False, "mode": mode, "date": target_date, "limit": limit, "returncode": rc, "log": "\n".join(logs), "files": _list_outputs(target_date)}
 
-        _last_status["returncode"] = rc
-        _last_status["ended_at"] = _now_iso()
-        _last_status["running"] = False
-
-        return {
-            "ok": (rc == 0),
-            "mode": mode,
-            "date": target_date,
-            "limit": limit,
-            "returncode": rc,
-            "log": "\n".join(logs),
-            "files": _list_outputs(target_date),
-        }
+        _last_status.update({"returncode": rc, "ended_at": _now_iso(), "running": False})
+        return {"ok": (rc == 0), "mode": mode, "date": target_date, "limit": limit, "returncode": rc, "log": "\n".join(logs), "files": _list_outputs(target_date)}
     finally:
         _run_lock.release()
 
 
 @app.post("/api/run/analyzer")
-def run_analyzer(
-    date: str = Query(default_factory=lambda: _date.today().isoformat()),
-    limit: int = Query(40, ge=1, le=500),
-):
+def run_analyzer(date: str = Query(default_factory=lambda: _date.today().isoformat()), limit: int = Query(40, ge=1, le=500)):
     return JSONResponse(_run_pipeline(date, limit, mode="analyzer"))
 
 
 @app.post("/api/run/digest")
-def run_digest(
-    date: str = Query(default_factory=lambda: _date.today().isoformat()),
-    limit: int = Query(40, ge=1, le=500),
-):
+def run_digest(date: str = Query(default_factory=lambda: _date.today().isoformat()), limit: int = Query(40, ge=1, le=500)):
     return JSONResponse(_run_pipeline(date, limit, mode="digest"))
 
 
 @app.post("/api/run/plot")
-def run_plot(
-    date: str = Query(default_factory=lambda: _date.today().isoformat()),
-):
-    # limit unused here
+def run_plot(date: str = Query(default_factory=lambda: _date.today().isoformat())):
     return JSONResponse(_run_pipeline(date, 0, mode="plot"))
 
 
 @app.post("/api/run/observation")
-def run_observation(
-    date: str = Query(default_factory=lambda: _date.today().isoformat()),
-):
-    # limit unused here
+def run_observation(date: str = Query(default_factory=lambda: _date.today().isoformat())):
     return JSONResponse(_run_pipeline(date, 0, mode="observation"))
 
 
 @app.post("/api/run/all")
-def run_all(
-    date: str = Query(default_factory=lambda: _date.today().isoformat()),
-    limit: int = Query(40, ge=1, le=500),
-):
+def run_all(date: str = Query(default_factory=lambda: _date.today().isoformat()), limit: int = Query(40, ge=1, le=500)):
     return JSONResponse(_run_pipeline(date, limit, mode="all"))
