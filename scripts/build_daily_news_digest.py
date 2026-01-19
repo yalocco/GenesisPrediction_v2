@@ -47,6 +47,19 @@ ENTERTAINMENT_TERMS = {
     "tv show","netflix","hollywood","awards","oscar","grammy","red carpet",
 }
 
+# Observed structural noise (Phase B): sports
+# We do NOT remove items; we only down-weight them in ranking.
+SPORTS_TERMS = {
+    "sport","sports","athlete","athletes","team","teams","league","match","matches",
+    "tournament","championship","final","playoff","playoffs","season","coach",
+    "nba","wnba","nfl","mlb","nhl",
+    "fifa","uefa","afc","caf","conmebol","concacaf",
+    "olympic","olympics","world cup","grand slam",
+    "boxing","mma","ufc","wwe",
+    "tennis","golf","soccer","football","baseball","basketball","hockey",
+    "formula 1","f1","motogp","indycar",
+}
+
 JAPAN_TERMS = {
     "japan","tokyo","boj","bank of japan","yen","jpy","nikkei","topix",
     "japanese","fukushima","tokyo stock exchange","tse",
@@ -121,6 +134,10 @@ def classify_tags(title: str, summary: str, domain: str) -> List[str]:
     if any(k in t for k in ENTERTAINMENT_TERMS):
         tags.append("ENT")
 
+    # Sports: push down (do not remove)
+    if any(k in t for k in SPORTS_TERMS):
+        tags.append("SPORTS")
+
     return tags
 
 
@@ -150,6 +167,10 @@ def score_item(tags: List[str]) -> int:
     # Entertainment: push down (do not remove)
     if "ENT" in tags:
         score -= 40
+
+    # Sports: observed structural noise in digest (do not remove)
+    if "SPORTS" in tags:
+        score -= 35
 
     return score
 
