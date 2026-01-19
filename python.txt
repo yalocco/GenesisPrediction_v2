@@ -34,3 +34,6 @@ docker compose run --rm analyzer
 
 guiを起動
 .\.venv\Scripts\python.exe -m uvicorn app.server:app --reload --host 127.0.0.1 --port 8000
+
+グラフ起動
+.\.venv\Scripts\python.exe scripts\fx_overlay.py
