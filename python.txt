@@ -37,3 +37,6 @@ guiを起動
 
 グラフ起動
 .\.venv\Scripts\python.exe scripts\fx_overlay.py
+
+events_xxxx-xx-xx.jsonlが生成されない場合
+docker compose run --rm analyzer
