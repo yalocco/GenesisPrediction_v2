@@ -59,4 +59,25 @@ Genesis出力の『秩序再設計（通貨・安全保障）』フェーズ判�
 
 </details>
 
+<!-- MEMO3_START -->
+### 3-line memo × analog mapping
+
+**Today’s 3-line memo (human)**
+
+- 1) スポーツ：構造的ノイズ（回転型）
+- 2) 芸能：低優先
+- 3) ゲーム：1件混入
+
+**Why these analogs today (template)**
+
+- Anchor overlap:
+  - (Which tags / domains / themes in today’s news match the analog tags?)
+- Regime/context:
+  - (Which macro regime signals are consistent with the analog summaries?)
+- What to watch next:
+  - (1–3 concrete indicators to monitor tomorrow)
+
+> Notes: This section is intentionally conservative. Replace placeholders after your review.
+
+<!-- MEMO3_END -->
 <!-- /OBS:2026-01-19 -->
