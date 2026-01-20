@@ -1,116 +1,136 @@
-# GenesisPrediction v2 Runbook
-（Frozen Operational Guide）
+# Runbook — GenesisPrediction v2
 
-## 0. 位置づけ
-GenesisPrediction v2 は、
-**未来を決めるシステムではなく、人間が考えるための道具**である。
+（2026-01-20 更新：GUI運用と 1-line reflection を正式採用）
 
+---
+
+## 0. 目的と位置づけ
+
+GenesisPrediction v2 は、**未来を決めるシステムではない**。
 本 Runbook は、
-- 日次運用を安定させる
-- 思考を歪めない
-- 後から読み返しても意味が分かる
 
-ことを目的に、**2026-01 時点の正解構成を凍結**したものである。
+* 迷わず運用できること
+* 壊さず深められること
+* 疲れている日でも判断を誤らないこと
 
----
+を目的とした **最優先の運用台本**である。
 
-## 1. 全体思想（最重要）
-- 数値は「結論」ではない
-- アナログは「示唆」であり「証拠」ではない
-- 判断は常に **人間が行う**
-- システムは「観測 → 仮説 → 判断」を支援するだけ
+> 本 Runbook は、チャット・一時的な判断・思いつきよりも優先される。
 
 ---
 
-## 2. 日次フロー（正式・固定）
+## 1. 基本思想（凍結）
 
-### 2.1 データ生成（前日確定主義）
-1. fetcher  
-   - **前日分のみを確定データとして取得**
-   - 当日速報は扱わない（ノイズ防止）
-
-2. analyzer  
-   - daily_summary_YYYY-MM-DD.json を生成
-   - anchors / regime / historical analogs を確定
+* 観測 → 仮説 → 判断 の順を崩さない
+* 数値は結論ではない
+* アナログは示唆であり証拠ではない
+* 判断は常に人間が行う
+* 当日速報は扱わない（前日確定主義）
+* STOP は最後の手段
 
 ---
 
-### 2.2 信頼度の微調整（D-1）
-3. apply_confidence_analog_delta.py（D-1b）
-   - historical_analogs に基づき confidence を ±0.05 微調整
-   - **冪等（何度回してもドリフトしない）**
-   - 理由は以下を必ず保存：
-     - confidence_analog_delta
-     - confidence_analog_reason
-     - confidence_analog_base
+## 2. 全体構成（役割分離）
+
+* **自動処理**：材料を出す（events / anchors / analogs）
+* **GUI**：読む・気づく・忘れないための窓
+* **人間**：1行で確定する
+* **docs (.md)**：判断と気づきを未来に残す
 
 ---
 
-### 2.3 観測ログ化（D-2 / D-3）
-4. update_observation_md.py（D-2）
-   - historical_analogs / notes を observation.md に自動転記
-   - 日付単位で **idempotent upsert**
+## 3. 日次正式ルーチン（GUI前提）
 
-5. update_observation_memo_link.py（D-3）
-   - 人間が書く「3行メモ」と historical analogs を対応付け
-   - 「なぜこのアナログが出たか」を言語化するための足場
+### 3.1 サーバ起動（必要なとき）
 
----
-
-### 2.4 思考補助ヒント（E-2）
-6. enrich_observation_memo_template.py（E-2）
-   - tag / domain / token の **半自動候補**を提示
-   - 数値評価は禁止
-   - あくまで「考えるための材料」
+```powershell
+cd D:\AI\Projects\GenesisPrediction_v2
+.\.venv\Scripts\python.exe -m uvicorn app.server:app --host 127.0.0.1 --port 8000
+```
 
 ---
 
-## 3. GUI の位置づけ
-- GUI は **生成装置ではない**
-- daily_summary / observation を「読むための窓」
-- 正解を示さない
-- 判断を代行しない
+### 3.2 GUIを開く
 
-※ GUI に表示されない日は「データが未確定」なだけで異常ではない
+* [http://127.0.0.1:8000](http://127.0.0.1:8000)
+* 表示日付を確認（latest / 指定日）
 
 ---
 
-## 4. 設計上のルール（厳守）
+### 3.3 Analyzer 実行
 
-### 4.1 データ管理
-- data/ : Git 管理外
-- resources/ : Git 管理対象
-- docs/ : 思考ログ・設計意図として保存
-
-### 4.2 STOP の扱い
-- STOP は **最後の手段**
-- 誤殺を避けるため、原則使用しない
-- 使う場合は理由を docs に残す
+* Step 1: Run Analyzer
+* 前日分の daily_summary_YYYY-MM-DD.json を生成
 
 ---
 
-## 5. 非目標（やらないこと）
-以下は **v2 では意図的に行わない**：
+### 3.4 HTML Digest
 
-- 自動判断
-- スコア最適化
-- 当日速報モード
-- 未来断定
-- 数値による意思決定の強制
+* Step 2: Build HTML Digest
+* 日次ニュースの俯瞰用（判断材料）
 
 ---
 
-## 6. 今後の拡張候補（未実装）
-- F-1：GUI「観測 → 仮説 → 判断」1画面パネル
-- E-3：候補の“強さ”を色/記号で示す非数値ヒント
-- provisional mode（速報用・別ブランチ）
+### 3.5 可視化（任意）
 
-※ いずれも **本 Runbook を破らない範囲でのみ実施**
+* Step 3: Plot
+* regime / confidence 系グラフ
+
+---
+
+### 3.6 Observation Log
+
+* Step 4: Observation Log
+* observation_YYYY-MM-DD.md / json を生成
+
+---
+
+### 3.7 1-line Reflection（重要）
+
+* GUI 起動時、所感が未記入の日は **ダイアログが表示される**
+* 1行だけ所感を書く、または「今日は書かない」を選ぶ
+* 所感は自動生成しない
+
+保存先：
+
+* docs/observation.md
+
+役割：
+
+* 当たり外れを書かない
+* 見え方の変化・次に観測すべき点を書く
+
+---
+
+## 4. observation.md の運用ルール
+
+* 自動生成はヒントまで
+* 人間の所感は 1行で十分
+* 書かない日があっても異常ではない
+* 後から読んで意味が分かることを優先
+
+---
+
+## 5. 禁止事項（事故防止）
+
+* 数値だけで判断しない
+* confidence を手動で盛らない
+* 1日に複数の結論を確定しない
+* .md を自動文で埋めない
+
+---
+
+## 6. トラブル時の原則
+
+* 生成物が無い → 前日データを確認
+* events が無い → SKIP は正常
+* 迷ったら observation.md の最後を見る
 
 ---
 
 ## 7. 状態宣言
-GenesisPrediction v2 は、
-**壊さずに深めるフェーズ**に入った。
 
-急がず、1タスクずつ進める。
+GenesisPrediction v2 は、
+**壊さずに深めるフェーズ**に入っている。
+
+急がず、1日1行で十分。
