@@ -37,6 +37,11 @@ guiを起動
 
 グラフ起動
 .\.venv\Scripts\python.exe scripts\fx_overlay.py
+.\.venv\Scripts\python.exe scripts\fx_remittance_overlay.py
+
 
 events_xxxx-xx-xx.jsonlが生成されない場合
 docker compose run --rm analyzer
+
+gui起動 タイバーツ
+powershell -NoProfile -ExecutionPolicy Bypass -File "D:\AI\Projects\GenesisPrediction_v2\scripts\fx_monthly_report_gui.ps1"
