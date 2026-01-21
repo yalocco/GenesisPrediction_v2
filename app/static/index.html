@@ -1,219 +1,223 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GenesisPrediction v2 - Local GUI</title>
   <style>
-    :root{
-      --bg:#ffffff; --text:#111827; --muted:#6b7280; --card:#ffffff; --border:#e5e7eb;
-      --shadow:0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.06);
-      --radius:18px;
-      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background:#fff; color:#111; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 28px 22px 60px; }
+    h1 { font-size: 44px; letter-spacing: -0.02em; margin: 10px 0 6px; }
+    .sub { color:#555; margin: 0 0 22px; }
+    .card { border: 1px solid #e6e6e6; border-radius: 16px; padding: 18px 18px; margin: 18px 0; background: #fff; }
+    .card h2 { margin: 0 0 12px; font-size: 28px; }
+    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .kv { display:grid; grid-template-columns: 220px 1fr; gap: 8px 14px; margin: 10px 0 0; }
+    .k { color:#666; }
+    .v { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; }
+    button, .btnlink {
+      border: 1px solid #d5d5d5;
+      background: #fff;
+      border-radius: 12px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-weight: 600;
+      text-decoration: none;
+      color: #111;
+      display: inline-block;
     }
-    body{ margin:0; padding:32px; font-family:var(--sans); color:var(--text); background:var(--bg); }
-    h1{ font-size:44px; margin:0 0 6px 0; letter-spacing:-.02em; }
-    .subtitle{ color:var(--muted); margin-bottom:22px; }
-    .grid{ display:grid; grid-template-columns: 1fr; gap:22px; }
-    .card{
-      background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
-      box-shadow:var(--shadow); padding:20px;
-    }
-    .card h2{ margin:0 0 6px 0; font-size:28px; letter-spacing:-.01em; }
-    .muted{ color:var(--muted); }
-    .row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-    .pill{ border:1px solid var(--border); border-radius:999px; padding:4px 10px; font-weight:700; }
-    button{
-      border:1px solid var(--border); background:#fff; border-radius:12px;
-      padding:10px 14px; cursor:pointer; font-weight:700;
-      box-shadow:0 1px 1px rgba(0,0,0,.03);
-    }
-    button:hover{ background:#f9fafb; }
-    .kv{ display:grid; grid-template-columns: 220px 1fr; gap:8px 14px; margin-top:12px; }
-    .kv div{ padding:2px 0; }
-    .sep{ height:1px; background:var(--border); margin:14px 0; }
-    .mono{
-      font-family:var(--mono);
-      font-size:12px; line-height:1.45;
-      background:#0b1020; color:#e5e7eb;
-      padding:12px; border-radius:14px; overflow:auto; max-height:340px;
-      border:1px solid rgba(255,255,255,.06);
-    }
-    select, input{
-      border:1px solid var(--border); border-radius:10px; padding:8px 10px; font-weight:600;
-      background:#fff;
-    }
+    button:hover, .btnlink:hover { background:#f7f7f7; }
+    select, input { border: 1px solid #d5d5d5; border-radius: 10px; padding: 7px 10px; }
+    .muted { color:#777; font-size: 13px; }
+    .log { margin-top: 14px; border-radius: 12px; background:#0b0b0b; color:#eaeaea; padding: 12px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; min-height: 44px; }
+    .badge { display:inline-block; padding: 6px 10px; border:1px solid #e0e0e0; border-radius: 999px; font-weight: 700; background:#fafafa; }
   </style>
 </head>
 <body>
-  <h1>GenesisPrediction v2 - Local GUI</h1>
-  <div class="subtitle">World politics outputs + FX remittance decision (JPY→THB).</div>
+  <div class="wrap">
+    <h1>GenesisPrediction v2 - Local GUI</h1>
+    <p class="sub">World politics outputs + FX remittance decision (JPY→THB).</p>
 
-  <div class="grid">
-    <!-- FX -->
     <div class="card">
       <h2>FX Remittance (JPY→THB)</h2>
-
-      <div class="row" style="margin-top:8px;">
+      <div class="row">
         <div class="muted">Today:</div>
-        <div id="fxTodayDate" class="pill">-</div>
-        <div id="fxTodayDecision" class="pill">-</div>
-        <button id="btnFxRefresh">Refresh</button>
+        <div class="badge" id="fxToday">-</div>
+        <div class="badge" id="fxDecision">-</div>
+        <button id="fxRefresh">Refresh</button>
       </div>
 
-      <div class="kv">
-        <div class="muted">combined_noise</div><div id="fxCombined">-</div>
-        <div class="muted">USDJPY / USDTHB</div><div id="fxPairNoise">-</div>
-        <div class="muted">recommended_action</div><div id="fxAction">-</div>
-        <div class="muted">note</div><div id="fxNote">-</div>
+      <div class="kv" style="margin-top:14px">
+        <div class="k">combined_noise</div><div class="v" id="fxNoise">-</div>
+        <div class="k">USDJPY / USDTHB</div><div class="v" id="fxPair">-</div>
+        <div class="k">recommended_action</div><div class="v" id="fxAction">-</div>
+        <div class="k">note</div><div class="v" id="fxNote">-</div>
       </div>
 
-      <div class="sep"></div>
+      <hr style="border:none;border-top:1px solid #eee;margin:16px 0" />
 
       <div class="row">
         <div class="muted">Monthly:</div>
         <select id="fxMonth"></select>
-        <button id="btnFxMonthly">Load</button>
+        <button id="fxLoadMonth">Load</button>
       </div>
 
-      <div class="kv">
-        <div class="muted">days</div><div id="fxDays">-</div>
-        <div class="muted">avg_noise</div><div id="fxAvgNoise">-</div>
-        <div class="muted">counts</div><div id="fxCounts">-</div>
-        <div class="muted">actions</div><div id="fxActions">-</div>
+      <div class="kv" style="margin-top:14px">
+        <div class="k">days</div><div class="v" id="fxMDays">-</div>
+        <div class="k">avg_noise</div><div class="v" id="fxMAvg">-</div>
+        <div class="k">counts</div><div class="v" id="fxMCounts">-</div>
+        <div class="k">actions</div><div class="v" id="fxMActions">-</div>
       </div>
 
-      <div class="muted" style="margin-top:10px;">
-        Reports directory: <span id="fxReportsDir">-</span>
-      </div>
+      <p class="muted" style="margin:10px 0 0">Reports directory: <span class="v">data/fx/reports</span></p>
     </div>
 
-    <!-- World Politics -->
     <div class="card">
       <h2>World Politics</h2>
-      <div class="muted">Outputs list + Digest generation &amp; viewing.</div>
+      <p class="muted">Outputs list + Digest generation & viewing.</p>
 
-      <div class="row" style="margin-top:10px;">
-        <button id="btnOutputsToday">Load outputs (today)</button>
-        <button id="btnRunDigest">Run digest (today)</button>
-        <button id="btnOpenDigest">Open digest HTML (today)</button>
+      <div class="row">
+        <button id="wpLoad">Load outputs (today)</button>
+        <button id="wpRunDigest">Run digest (today)</button>
+
+        <!-- Option 2: Link (preferred) -->
+        <a class="btnlink" id="wpOpenDigestHtml" href="#" target="_blank" rel="noopener">Open digest HTML (today)</a>
+        <a class="btnlink" id="wpOpenDigestMd" href="#" target="_blank" rel="noopener">Open digest MD (today)</a>
       </div>
 
-      <div class="sep"></div>
-
-      <div id="wpOut" class="mono">Press buttons above…</div>
+      <div class="log" id="wpLog">Press buttons above…</div>
     </div>
   </div>
 
 <script>
-  const todayISO = () => new Date().toISOString().slice(0,10);
-  const ymISO = (d) => d.toISOString().slice(0,7);
+  const $ = (id) => document.getElementById(id);
 
-  function fmt(x){
-    if (x === null || x === undefined) return "-";
-    if (typeof x === "number" && !Number.isInteger(x)) return x.toFixed(3);
-    return String(x);
+  function todayISO() {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
   }
 
-  async function jget(url){
+  function setDigestLinks(dateStr) {
+    $("wpOpenDigestHtml").href = `/api/digest/html?date=${encodeURIComponent(dateStr)}`;
+    $("wpOpenDigestMd").href   = `/api/digest/md_view?date=${encodeURIComponent(dateStr)}`;
+  }
+
+  async function apiGet(url) {
     const r = await fetch(url);
-    const t = await r.text();
-    try { return { ok:r.ok, status:r.status, data: JSON.parse(t) }; }
-    catch { return { ok:r.ok, status:r.status, data: t }; }
+    let body;
+    const ct = r.headers.get("content-type") || "";
+    if (ct.includes("application/json")) body = await r.json();
+    else body = await r.text();
+    return { ok: r.ok, status: r.status, body };
   }
 
-  function setMono(obj){
-    const el = document.getElementById("wpOut");
-    el.textContent = (typeof obj === "string") ? obj : JSON.stringify(obj, null, 2);
+  async function apiPost(url) {
+    const r = await fetch(url, { method: "POST" });
+    const ct = r.headers.get("content-type") || "";
+    const body = ct.includes("application/json") ? await r.json() : await r.text();
+    return { ok: r.ok, status: r.status, body };
   }
 
-  // FX
-  async function loadFxToday(){
-    const d = todayISO();
-    const res = await jget(`/api/fx/remittance/today?date=${encodeURIComponent(d)}`);
-    if (!res.ok){
-      document.getElementById("fxTodayDate").textContent = d;
-      document.getElementById("fxTodayDecision").textContent = "N/A";
-      document.getElementById("fxCombined").textContent = "-";
-      document.getElementById("fxPairNoise").textContent = "-";
-      document.getElementById("fxAction").textContent = "-";
-      document.getElementById("fxNote").textContent = "not found";
-      document.getElementById("fxReportsDir").textContent = (res.data && res.data.path) ? res.data.path : "-";
+  function log(msg) {
+    $("wpLog").textContent = msg;
+  }
+
+  function initMonths() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = d.getMonth()+1;
+    const months = [];
+    for (let i=0; i<14; i++) {
+      const mm = m - i;
+      const yy = y + Math.floor((mm-1)/12);
+      const m2 = ((mm-1)%12+12)%12 + 1;
+      const pad = (n) => String(n).padStart(2,"0");
+      months.push(`${yy}-${pad(m2)}`);
+    }
+    $("fxMonth").innerHTML = months.map(x => `<option value="${x}">${x}</option>`).join("");
+  }
+
+  async function refreshFxToday() {
+    const { ok, body } = await apiGet("/api/fx/remittance/today");
+    if (!ok) {
+      $("fxToday").textContent = todayISO();
+      $("fxDecision").textContent = "N/A";
+      $("fxNoise").textContent = "-";
+      $("fxPair").textContent = "-";
+      $("fxAction").textContent = "-";
+      $("fxNote").textContent = body?.error || "error";
       return;
     }
-    const x = res.data;
-    document.getElementById("fxTodayDate").textContent = x.date || d;
-    document.getElementById("fxTodayDecision").textContent = (x.decision || "-");
-    document.getElementById("fxCombined").textContent = fmt(x.combined_noise_prob);
-    document.getElementById("fxPairNoise").textContent = `${fmt(x.usd_jpy_noise)} / ${fmt(x.usd_thb_noise)}`;
-    document.getElementById("fxAction").textContent = (x.recommended_action || "-");
-    document.getElementById("fxNote").textContent = (x.remit_note || "-");
-    document.getElementById("fxReportsDir").textContent = (x.reports_dir || "-");
+    const row = body.row || {};
+    $("fxToday").textContent = row.date || todayISO();
+    $("fxDecision").textContent = row.decision || "-";
+    $("fxNoise").textContent = row.combined_noise_prob || row.combined_noise || "-";
+    const uj = row.usdjpy || row.USDJPY || "-";
+    const ut = row.usdthb || row.USDTHB || "-";
+    $("fxPair").textContent = `${uj} / ${ut}`;
+    $("fxAction").textContent = row.recommended_action || row.action || "-";
+    $("fxNote").textContent = row.note || row.remit_note || "-";
   }
 
-  async function loadFxMonthly(){
-    const m = document.getElementById("fxMonth").value;
-    const res = await jget(`/api/fx/remittance/monthly?month=${encodeURIComponent(m)}`);
-    if (!res.ok){
-      document.getElementById("fxDays").textContent = "-";
-      document.getElementById("fxAvgNoise").textContent = "-";
-      document.getElementById("fxCounts").textContent = "not found";
-      document.getElementById("fxActions").textContent = "-";
+  async function loadFxMonth() {
+    const month = $("fxMonth").value;
+    const { ok, body } = await apiGet(`/api/fx/remittance/month?month=${encodeURIComponent(month)}`);
+    if (!ok) {
+      $("fxMDays").textContent = "-";
+      $("fxMAvg").textContent = "-";
+      $("fxMCounts").textContent = "-";
+      $("fxMActions").textContent = body?.error || "error";
       return;
     }
-    const x = res.data;
-    document.getElementById("fxDays").textContent = fmt(x.days);
-    document.getElementById("fxAvgNoise").textContent = fmt(x.avg_noise);
-    document.getElementById("fxCounts").textContent = Object.entries(x.counts || {}).map(([k,v])=>`${k}=${v}`).join(" / ");
-    document.getElementById("fxActions").textContent = Object.entries(x.actions || {}).map(([k,v])=>`${k}: ${v}`).join(" | ");
-    document.getElementById("fxReportsDir").textContent = (x.reports_dir || "-");
-  }
+    const rows = body.rows || [];
+    $("fxMDays").textContent = rows.length;
 
-  // World Politics
-  async function loadOutputsToday(){
-    const d = todayISO();
-    const res = await jget(`/api/outputs?date=${encodeURIComponent(d)}`);
-    setMono(res.data);
-  }
-
-  async function runDigestToday(){
-    const d = todayISO();
-    setMono({running:true, mode:"digest", date:d});
-    const r = await fetch(`/api/run/digest?date=${encodeURIComponent(d)}&limit=40`, { method:"POST" });
-    const t = await r.text();
-    try { setMono(JSON.parse(t)); }
-    catch { setMono(t); }
-  }
-
-  function openDigestToday(){
-    const d = todayISO();
-    window.open(`/api/digest/html?date=${encodeURIComponent(d)}`, "_blank");
-  }
-
-  // init month selector (last 12 months)
-  (function initMonths(){
-    const sel = document.getElementById("fxMonth");
-    const now = new Date();
-    for (let i=0;i<12;i++){
-      const dd = new Date(now.getFullYear(), now.getMonth()-i, 1);
-      const v = ymISO(dd);
-      const opt = document.createElement("option");
-      opt.value = v;
-      opt.textContent = v;
-      sel.appendChild(opt);
+    // best-effort stats
+    let sum = 0, cnt = 0;
+    const counts = {};
+    const actions = {};
+    for (const r of rows) {
+      const n = parseFloat(r.combined_noise_prob || r.combined_noise || "");
+      if (!Number.isNaN(n)) { sum += n; cnt++; }
+      counts[r.decision || "UNK"] = (counts[r.decision || "UNK"] || 0) + 1;
+      actions[r.recommended_action || r.action || "UNK"] = (actions[r.recommended_action || r.action || "UNK"] || 0) + 1;
     }
-  })();
+    $("fxMAvg").textContent = (cnt ? (sum/cnt).toFixed(3) : "-");
+    $("fxMCounts").textContent = Object.entries(counts).map(([k,v])=>`${k}=${v}`).join(" / ") || "-";
+    $("fxMActions").textContent = Object.entries(actions).map(([k,v])=>`${k}: ${v}`).join(" | ") || "-";
+  }
 
-  document.getElementById("btnFxRefresh").addEventListener("click", loadFxToday);
-  document.getElementById("btnFxMonthly").addEventListener("click", loadFxMonthly);
-  document.getElementById("btnOutputsToday").addEventListener("click", loadOutputsToday);
-  document.getElementById("btnRunDigest").addEventListener("click", runDigestToday);
-  document.getElementById("btnOpenDigest").addEventListener("click", openDigestToday);
+  async function wpLoadOutputsToday() {
+    const d = todayISO();
+    setDigestLinks(d);
+    const { ok, body } = await apiGet(`/api/world/analysis/files?date=${encodeURIComponent(d)}`);
+    if (!ok) return log(typeof body === "string" ? body : JSON.stringify(body, null, 2));
+    log(JSON.stringify(body, null, 2));
+  }
 
-  // auto
-  loadFxToday().catch(()=>{});
-  loadFxMonthly().catch(()=>{});
+  async function wpRunDigestToday() {
+    const d = todayISO();
+    setDigestLinks(d);
+    log("Running digest…");
+    const { ok, body } = await apiPost(`/api/run/digest?date=${encodeURIComponent(d)}&limit=40`);
+    if (!ok) return log(typeof body === "string" ? body : JSON.stringify(body, null, 2));
+    log(JSON.stringify(body, null, 2));
+  }
+
+  // Wire up
+  initMonths();
+  setDigestLinks(todayISO());
+
+  $("fxRefresh").addEventListener("click", refreshFxToday);
+  $("fxLoadMonth").addEventListener("click", loadFxMonth);
+
+  $("wpLoad").addEventListener("click", wpLoadOutputsToday);
+  $("wpRunDigest").addEventListener("click", wpRunDigestToday);
+
+  // Initial load
+  refreshFxToday();
+  loadFxMonth();
 </script>
 </body>
 </html>

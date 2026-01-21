@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import csv
 import json
+import html
+import os
 import subprocess
 import threading
 from datetime import date as _date
@@ -9,35 +10,46 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
+# =============================================================================
+# GenesisPrediction v2 - Local GUI API
+#
+# Design goals:
+# - Keep UI stable: serve app/static/index.html at "/"
+# - Provide deterministic API endpoints used by the UI
+# - Serve digest HTML as *rendered* HTML (NOT download dialog)
+# - Restrict file reads to known safe roots
+# =============================================================================
 
 # --- Paths (repo root assumed as current working directory when starting uvicorn) ---
 REPO_ROOT = Path.cwd()
+APP_DIR = REPO_ROOT / "app"
+STATIC_DIR = APP_DIR / "static"
 
-STATIC_DIR = REPO_ROOT / "app" / "static"
-INDEX_HTML = STATIC_DIR / "index.html"
+DATA_DIR = REPO_ROOT / "data"
+ANALYSIS_DIR = DATA_DIR / "world_politics" / "analysis"
 
-ANALYSIS_DIR = REPO_ROOT / "data" / "world_politics" / "analysis"
-
-FX_DIR = REPO_ROOT / "data" / "fx"
-FX_LOG = FX_DIR / "jpy_thb_remittance_decision_log.csv"
+FX_DIR = DATA_DIR / "fx"
 FX_REPORT_DIR = FX_DIR / "reports"
+FX_LOG = FX_DIR / "jpy_thb_remittance_decision_log.csv"
+FX_DASHBOARD = FX_DIR / "jpy_thb_remittance_dashboard.csv"
 
+# Tracked docs (optional)
+DOCS_DIR = REPO_ROOT / "docs"
+OBS_MD = DOCS_DIR / "observation.md"
+
+# Scripts
 SCRIPTS_DIR = REPO_ROOT / "scripts"
-VENV_PY = REPO_ROOT / ".venv" / "Scripts" / "python.exe"
-if not VENV_PY.exists():
-    # fallback (Linux/mac, etc.)
-    VENV_PY = REPO_ROOT / ".venv" / "bin" / "python"
-
+SCRIPT_BUILD_DIGEST = SCRIPTS_DIR / "build_daily_news_digest.py"
 
 # --- Safety: allow reading files only from these directories ---
 ALLOWED_READ_ROOTS = [
     STATIC_DIR,
     ANALYSIS_DIR,
+    DOCS_DIR,
     FX_DIR,
-    FX_REPORT_DIR,
 ]
 
 def _is_allowed_file(p: Path) -> bool:
@@ -47,11 +59,16 @@ def _is_allowed_file(p: Path) -> bool:
         return False
     for root in ALLOWED_READ_ROOTS:
         try:
-            rr = root.resolve()
-            rp.relative_to(rr)
-            return True
-        except Exception:
-            pass
+            if rp.is_relative_to(root.resolve()):
+                return True
+        except AttributeError:
+            # Python < 3.9 compatibility (not needed here but harmless)
+            try:
+                root_r = root.resolve()
+                if str(rp).startswith(str(root_r) + os.sep):
+                    return True
+            except Exception:
+                pass
     return False
 
 def _safe_relpath(p: Path) -> str:
@@ -60,18 +77,9 @@ def _safe_relpath(p: Path) -> str:
     except Exception:
         return str(p)
 
-def _stat_file(p: Path) -> Dict[str, Any]:
-    st = p.stat()
-    return {
-        "path": _safe_relpath(p),
-        "size": int(st.st_size),
-        "mtime": float(st.st_mtime),
-    }
-
-
-# --- Single-run lock (avoid double execution for run/digest) ---
+# --- Single-run lock (avoid double execution) ---
 _run_lock = threading.Lock()
-_status: Dict[str, Any] = {
+_last_run: Dict[str, Any] = {
     "running": False,
     "step": None,
     "started_at": None,
@@ -80,135 +88,206 @@ _status: Dict[str, Any] = {
     "log_tail": "",
 }
 
-
-def _set_status(**kw: Any) -> None:
-    _status.update(kw)
+def _set_last_run(**kwargs: Any) -> None:
+    _last_run.update(kwargs)
 
 def _tail_text(text: str, max_chars: int = 6000) -> str:
-    if text is None:
-        return ""
+    if len(text) <= max_chars:
+        return text
     return text[-max_chars:]
 
+def _run_cmd(cmd: List[str], cwd: Optional[Path] = None) -> Dict[str, Any]:
+    """Run a command and capture output (short tail saved in status)."""
+    try:
+        proc = subprocess.run(
+            cmd,
+            cwd=str(cwd or REPO_ROOT),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        out = (proc.stdout or "") + "\n" + (proc.stderr or "")
+        return {"returncode": proc.returncode, "output": out}
+    except Exception as e:
+        return {"returncode": 1, "output": f"[EXCEPTION] {e!r}"}
 
-# --- FastAPI app ---
+# =============================================================================
+# FastAPI app
+# =============================================================================
+
 app = FastAPI(title="GenesisPrediction v2 - Local GUI")
 
+# Serve static files under /static (optional assets)
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
-# ========== UI ==========
-@app.get("/", response_class=HTMLResponse)
-def root() -> FileResponse:
-    if not INDEX_HTML.exists():
-        raise HTTPException(status_code=404, detail="index.html not found.")
-    return FileResponse(str(INDEX_HTML), media_type="text/html")
+@app.get("/")
+def root():
+    index = STATIC_DIR / "index.html"
+    if not index.exists():
+        raise HTTPException(status_code=404, detail="index.html not found under app/static")
+    return FileResponse(str(index), media_type="text/html")
 
+# =============================================================================
+# Basic status / health
+# =============================================================================
 
-# static assets (if any)
-app.mount("/static", StaticFiles(directory=str(STATIC_DIR), html=True), name="static")
+@app.get("/api/status")
+def api_status():
+    return JSONResponse(_last_run)
 
+# =============================================================================
+# FX remittance endpoints (simple file-based)
+# =============================================================================
 
-# ========== World Politics ==========
-@app.get("/api/outputs")
-def api_outputs(date: Optional[str] = None) -> JSONResponse:
+def _read_csv_last_line(path: Path) -> Optional[str]:
+    if not path.exists():
+        return None
+    try:
+        # fast tail read
+        with path.open("rb") as f:
+            f.seek(0, os.SEEK_END)
+            size = f.tell()
+            block = 8192
+            pos = max(0, size - block)
+            f.seek(pos)
+            data = f.read().decode("utf-8", errors="replace")
+        lines = [ln for ln in data.splitlines() if ln.strip()]
+        return lines[-1] if lines else None
+    except Exception:
+        return None
+
+@app.get("/api/fx/remittance/today")
+def api_fx_remittance_today():
     """
-    List output files under data/world_politics/analysis.
-    If date is provided (YYYY-MM-DD), filter files that contain that date.
+    Expected producer: scripts/fx_remittance_today.py writing data/fx/jpy_thb_remittance_dashboard.csv
+    This endpoint simply returns latest dashboard row if present.
     """
-    if not ANALYSIS_DIR.exists():
-        return JSONResponse({"ok": True, "files": [], "note": "analysis dir not found"})
+    if not FX_DASHBOARD.exists():
+        return JSONResponse({"ok": False, "error": "dashboard csv not found", "path": _safe_relpath(FX_DASHBOARD)}, status_code=404)
 
-    files: List[Path] = []
-    if date:
-        files = sorted(ANALYSIS_DIR.glob(f"*{date}*"))
-    else:
-        files = sorted(ANALYSIS_DIR.glob("*"))
+    # Best-effort parse: dashboard is typically tiny, so read all.
+    try:
+        txt = FX_DASHBOARD.read_text(encoding="utf-8", errors="replace").splitlines()
+        header = txt[0].split(",") if txt else []
+        last = txt[-1].split(",") if len(txt) >= 2 else []
+        row = dict(zip(header, last)) if header and last else {}
+        return JSONResponse({"ok": True, "path": _safe_relpath(FX_DASHBOARD), "row": row})
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": repr(e), "path": _safe_relpath(FX_DASHBOARD)}, status_code=500)
 
-    out = []
-    for p in files:
-        if p.is_file():
-            out.append(_stat_file(p))
-    return JSONResponse({"ok": True, "files": out})
+@app.get("/api/fx/remittance/month")
+def api_fx_remittance_month(month: str = Query(..., description="YYYY-MM")):
+    """
+    Reads reports/monthly summary if you have one; otherwise returns aggregated from log.
+    """
+    if not FX_LOG.exists():
+        return JSONResponse({"ok": False, "error": "log csv not found", "path": _safe_relpath(FX_LOG)}, status_code=404)
 
+    try:
+        lines = FX_LOG.read_text(encoding="utf-8", errors="replace").splitlines()
+        if not lines:
+            return JSONResponse({"ok": True, "month": month, "rows": []})
+        header = lines[0].split(",")
+        rows = []
+        for ln in lines[1:]:
+            cols = ln.split(",")
+            row = dict(zip(header, cols))
+            d = (row.get("date") or "")[:7]
+            if d == month:
+                rows.append(row)
+        return JSONResponse({"ok": True, "month": month, "rows": rows})
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": repr(e)}, status_code=500)
+
+# =============================================================================
+# World politics outputs list (optional helper)
+# =============================================================================
+
+@app.get("/api/world/analysis/files")
+def api_world_analysis_files(date: str = Query(default_factory=lambda: _date.today().isoformat())):
+    """
+    Returns world_politics/analysis files for the date (best-effort).
+    """
+    d = (date or "").strip()
+    if len(d) != 10:
+        raise HTTPException(status_code=400, detail="Invalid date. Use YYYY-MM-DD.")
+    out: List[Dict[str, Any]] = []
+    if ANALYSIS_DIR.exists():
+        for p in sorted(ANALYSIS_DIR.glob(f"*{d}*")):
+            if p.is_file():
+                out.append({"path": _safe_relpath(p), "name": p.name, "size": p.stat().st_size, "mtime": p.stat().st_mtime})
+    return JSONResponse({"ok": True, "date": d, "files": out})
+
+# =============================================================================
+# Digest generation + viewing
+# =============================================================================
+
+def _digest_md_path(d: str) -> Path:
+    return ANALYSIS_DIR / f"daily_news_{d}.md"
+
+def _digest_html_path(d: str) -> Path:
+    return ANALYSIS_DIR / f"daily_news_{d}.html"
 
 @app.post("/api/run/digest")
 def api_run_digest(
-    date: str = Query(default_factory=lambda: _date.today().isoformat()),
-    limit: int = 40,
-) -> JSONResponse:
+    date: str = Query(default_factory=lambda: _date.today().isoformat(), description="YYYY-MM-DD"),
+    limit: int = Query(40, ge=1, le=200),
+):
     """
-    Run scripts/build_daily_news_digest.py and generate:
-      data/world_politics/analysis/daily_news_YYYY-MM-DD.md
-      data/world_politics/analysis/daily_news_YYYY-MM-DD.html
+    Runs scripts/build_daily_news_digest.py to generate md/html under analysis/.
     """
     d = (date or "").strip()
     if len(d) != 10:
         raise HTTPException(status_code=400, detail="Invalid date. Use YYYY-MM-DD.")
 
-    if not VENV_PY.exists():
-        raise HTTPException(status_code=500, detail=f"venv python not found: {_safe_relpath(VENV_PY)}")
+    if not SCRIPT_BUILD_DIGEST.exists():
+        raise HTTPException(status_code=404, detail=f"Digest script not found: {_safe_relpath(SCRIPT_BUILD_DIGEST)}")
 
-    script = SCRIPTS_DIR / "build_daily_news_digest.py"
-    if not script.exists():
-        raise HTTPException(status_code=404, detail="scripts/build_daily_news_digest.py not found.")
+    # Try to use venv python if present
+    venv_py = REPO_ROOT / ".venv" / "Scripts" / "python.exe"
+    py = str(venv_py if venv_py.exists() else Path(os.sys.executable))
+
+    cmd = [py, str(SCRIPT_BUILD_DIGEST), "--date", d, "--limit", str(limit)]
 
     if not _run_lock.acquire(blocking=False):
         raise HTTPException(status_code=409, detail="Another run is in progress.")
 
     try:
-        _set_status(
-            running=True,
-            step="digest",
-            started_at=_date.today().isoformat(),
-            ended_at=None,
-            returncode=None,
-            log_tail="",
-        )
-
-        cmd = [str(VENV_PY), str(script), "--date", d, "--limit", str(limit)]
-        proc = subprocess.run(cmd, capture_output=True, text=True, cwd=str(REPO_ROOT))
-        combined = (proc.stdout or "") + ("\n" + proc.stderr if proc.stderr else "")
-        _set_status(
+        _set_last_run(running=True, step="digest", started_at=_date.today().isoformat(), ended_at=None, returncode=None, log_tail="")
+        res = _run_cmd(cmd, cwd=REPO_ROOT)
+        _set_last_run(
             running=False,
+            step="digest",
             ended_at=_date.today().isoformat(),
-            returncode=int(proc.returncode),
-            log_tail=_tail_text("=== Step 2: Build HTML Digest ===\n$ " + " ".join(cmd) + "\n" + combined + "\n"),
+            returncode=res["returncode"],
+            log_tail=_tail_text(res["output"]),
         )
 
-        # return files that were produced
-        produced = []
-        for ext in ("md", "html"):
-            p = ANALYSIS_DIR / f"daily_news_{d}.{ext}"
+        md = _digest_md_path(d)
+        html = _digest_html_path(d)
+        files = []
+        for p in [md, html]:
             if p.exists():
-                produced.append(_stat_file(p))
+                st = p.stat()
+                files.append({"path": _safe_relpath(p), "size": st.st_size, "mtime": st.st_mtime})
 
-        return JSONResponse(
-            {
-                "ok": proc.returncode == 0,
-                "mode": "digest",
-                "date": d,
-                "limit": limit,
-                "returncode": int(proc.returncode),
-                "log": _status.get("log_tail", ""),
-                "files": produced,
-            }
-        )
+        return JSONResponse({"ok": res["returncode"] == 0, "mode": "digest", "date": d, "limit": limit, "returncode": res["returncode"], "files": files, "log": _tail_text(res["output"])})
     finally:
         _run_lock.release()
 
-
-@app.get("/api/status")
-def api_status() -> JSONResponse:
-    return JSONResponse(_status)
-
-
 @app.get("/api/digest/html")
-def api_digest_html(date: str = Query(default_factory=lambda: _date.today().isoformat())) -> FileResponse:
+def api_digest_html(date: str = Query(default_factory=lambda: _date.today().isoformat())):
+    """
+    Serve generated digest HTML as *rendered HTML* (no download dialog).
+    """
     d = (date or "").strip()
     if len(d) != 10:
         raise HTTPException(status_code=400, detail="Invalid date. Use YYYY-MM-DD.")
 
-    p = ANALYSIS_DIR / f"daily_news_{d}.html"
+    p = _digest_html_path(d)
     if not p.exists():
-        # fallback: newest matching html
+        # fallback: pick newest daily_news_*.html
         cand = sorted(ANALYSIS_DIR.glob("daily_news_*.html"), key=lambda x: x.stat().st_mtime, reverse=True)
         if cand:
             p = cand[0]
@@ -219,16 +298,86 @@ def api_digest_html(date: str = Query(default_factory=lambda: _date.today().isof
     if not _is_allowed_file(p):
         raise HTTPException(status_code=403, detail="File path not allowed.")
 
-    return FileResponse(str(p), media_type="text/html", filename=p.name)
-
+    html = p.read_text(encoding="utf-8", errors="replace")
+    # Ensure browser treats it as HTML
+    return HTMLResponse(content=html)
 
 @app.get("/api/digest/md")
-def api_digest_md(date: str = Query(default_factory=lambda: _date.today().isoformat())) -> PlainTextResponse:
+def api_digest_md(date: str = Query(default_factory=lambda: _date.today().isoformat())):
+    """
+    Serve generated digest markdown as text.
+    """
     d = (date or "").strip()
     if len(d) != 10:
         raise HTTPException(status_code=400, detail="Invalid date. Use YYYY-MM-DD.")
 
-    p = ANALYSIS_DIR / f"daily_news_{d}.md"
+    p = _digest_md_path(d)
+    if not p.exists():
+        cand = sorted(ANALYSIS_DIR.glob("daily_news_*.md"), key=lambda x: x.stat().st_mtime, reverse=True)
+        if cand:
+            p = cand[0]
+
+    if not p.exists():
+        raise HTTPException(status_code=404, detail="Digest markdown not found.")
+
+    if not _is_allowed_file(p):
+        raise HTTPException(status_code=403, detail="File path not allowed.")
+
+    return PlainTextResponse(p.read_text(encoding="utf-8", errors="replace"))
+
+
+
+def _md_to_html(md: str) -> str:
+    """
+    Minimal Markdown -> HTML renderer (headings + unordered lists + paragraphs).
+    Keeps it dependency-free (no extra pip installs).
+    """
+    lines = md.splitlines()
+    out: List[str] = []
+    in_ul = False
+
+    def close_ul():
+        nonlocal in_ul
+        if in_ul:
+            out.append("</ul>")
+            in_ul = False
+
+    for raw in lines:
+        line = raw.rstrip("\n")
+        if line.startswith("### "):
+            close_ul()
+            out.append(f"<h3>{html.escape(line[4:])}</h3>")
+        elif line.startswith("## "):
+            close_ul()
+            out.append(f"<h2>{html.escape(line[3:])}</h2>")
+        elif line.startswith("# "):
+            close_ul()
+            out.append(f"<h1>{html.escape(line[2:])}</h1>")
+        elif line.startswith("- "):
+            if not in_ul:
+                out.append("<ul>")
+                in_ul = True
+            out.append(f"<li>{html.escape(line[2:])}</li>")
+        elif line.strip() == "":
+            close_ul()
+            out.append("<br/>")
+        else:
+            close_ul()
+            out.append(f"<p>{html.escape(line)}</p>")
+
+    close_ul()
+    return "\n".join(out)
+
+@app.get("/api/digest/md_view")
+def api_digest_md_view(date: str = Query(default_factory=lambda: _date.today().isoformat())):
+    """
+    Serve digest markdown rendered as HTML (dependency-free).
+    """
+    d = (date or "").strip()
+    if len(d) != 10:
+        raise HTTPException(status_code=400, detail="Invalid date. Use YYYY-MM-DD.")
+
+    p = _digest_md_path(d)
     if not p.exists():
         cand = sorted(ANALYSIS_DIR.glob("daily_news_*.md"), key=lambda x: x.stat().st_mtime, reverse=True)
         if cand:
@@ -237,116 +386,62 @@ def api_digest_md(date: str = Query(default_factory=lambda: _date.today().isofor
     if not p.exists():
         raise HTTPException(status_code=404, detail="Digest MD not found.")
 
+    if "_is_allowed_file" in globals():
+        if not _is_allowed_file(p):  # type: ignore[name-defined]
+            raise HTTPException(status_code=403, detail="File path not allowed.")
+
+    md = p.read_text(encoding="utf-8", errors="replace")
+    body = _md_to_html(md)
+    page = f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Daily News Digest (MD) — {html.escape(p.name)}</title>
+  <style>
+    body {{ font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji"; padding: 20px; }}
+    h1 {{ margin: 0 0 8px; }}
+    h2 {{ margin: 18px 0 8px; }}
+    h3 {{ margin: 14px 0 6px; }}
+    ul {{ margin: 6px 0 12px 22px; }}
+    li {{ margin: 2px 0; }}
+    p {{ margin: 4px 0; white-space: pre-wrap; }}
+    .meta {{ color: #666; font-size: 12px; margin-bottom: 14px; }}
+    .top {{ display:flex; gap:10px; align-items:center; margin-bottom: 8px; }}
+    a {{ color: inherit; }}
+    .pill {{ display:inline-block; padding:2px 8px; border:1px solid #ddd; border-radius:999px; font-size:12px; color:#444; }}
+  </style>
+</head>
+<body>
+  <div class="top">
+    <span class="pill">md_view</span>
+    <span class="meta">{html.escape(str(p))}</span>
+  </div>
+  {body}
+</body>
+</html>"""
+    return HTMLResponse(content=page)
+
+# =============================================================================
+# Generic file viewer (safe roots only)
+# =============================================================================
+
+@app.get("/api/file")
+def api_file(path: str):
+    """
+    Read any file under ALLOWED_READ_ROOTS (as text) for debugging/inspection.
+    """
+    if not path:
+        raise HTTPException(status_code=400, detail="path is required")
+
+    p = (REPO_ROOT / path).resolve()
+    if not p.exists() or not p.is_file():
+        raise HTTPException(status_code=404, detail="file not found")
+
     if not _is_allowed_file(p):
-        raise HTTPException(status_code=403, detail="File path not allowed.")
+        raise HTTPException(status_code=403, detail="file path not allowed")
 
+    # Decide response type
+    if p.suffix.lower() in [".html", ".htm"]:
+        return HTMLResponse(p.read_text(encoding="utf-8", errors="replace"))
     return PlainTextResponse(p.read_text(encoding="utf-8", errors="replace"))
-
-
-# ========== FX Remittance (JPY→THB) ==========
-def _read_fx_rows() -> List[Dict[str, str]]:
-    if not FX_LOG.exists():
-        return []
-    rows: List[Dict[str, str]] = []
-    with FX_LOG.open("r", encoding="utf-8", newline="") as f:
-        reader = csv.DictReader(f)
-        for r in reader:
-            rows.append({k: (v or "").strip() for k, v in r.items()})
-    return rows
-
-
-@app.get("/api/fx/remittance/today")
-def api_fx_today(date: str = Query(default_factory=lambda: _date.today().isoformat())) -> JSONResponse:
-    """
-    Returns today's FX remittance decision from CSV log (best-effort).
-    """
-    d = (date or "").strip()
-    rows = _read_fx_rows()
-    row = None
-    for r in reversed(rows):
-        if r.get("date") == d:
-            row = r
-            break
-
-    if not row:
-        # fallback: latest row
-        if rows:
-            row = rows[-1]
-        else:
-            return JSONResponse(
-                {
-                    "ok": False,
-                    "date": d,
-                    "note": "FX log not found or empty",
-                    "path": _safe_relpath(FX_LOG),
-                },
-                status_code=404,
-            )
-
-    def _f(x: str) -> Optional[float]:
-        try:
-            return float(x)
-        except Exception:
-            return None
-
-    payload = {
-        "ok": True,
-        "date": row.get("date"),
-        "decision": row.get("decision") or row.get("remit_decision"),
-        "combined_noise_prob": _f(row.get("combined_noise_prob", "")) or _f(row.get("combined_noise", "")),
-        "usd_jpy_noise": _f(row.get("usd_jpy_noise", "")),
-        "usd_thb_noise": _f(row.get("usd_thb_noise", "")),
-        "recommended_action": row.get("recommended_action") or row.get("action"),
-        "remit_note": row.get("remit_note") or row.get("note"),
-        "reports_dir": _safe_relpath(FX_REPORT_DIR),
-    }
-    return JSONResponse(payload)
-
-
-@app.get("/api/fx/remittance/monthly")
-def api_fx_monthly(month: str = Query(default_factory=lambda: _date.today().strftime("%Y-%m"))) -> JSONResponse:
-    """
-    Aggregate monthly summary from FX log CSV.
-    month: YYYY-MM
-    """
-    m = (month or "").strip()
-    if len(m) != 7:
-        raise HTTPException(status_code=400, detail="Invalid month. Use YYYY-MM.")
-
-    rows = _read_fx_rows()
-    month_rows = [r for r in rows if (r.get("date") or "").startswith(m)]
-
-    if not month_rows:
-        return JSONResponse(
-            {"ok": False, "month": m, "days": 0, "avg_noise": None, "counts": {}, "actions": {}, "reports_dir": _safe_relpath(FX_REPORT_DIR)},
-            status_code=404,
-        )
-
-    noises: List[float] = []
-    counts: Dict[str, int] = {}
-    actions: Dict[str, int] = {}
-    for r in month_rows:
-        dec = (r.get("decision") or r.get("remit_decision") or "").upper() or "UNKNOWN"
-        counts[dec] = counts.get(dec, 0) + 1
-
-        act = (r.get("recommended_action") or r.get("action") or "").strip() or "unknown"
-        actions[act] = actions.get(act, 0) + 1
-
-        try:
-            noises.append(float(r.get("combined_noise_prob", "") or r.get("combined_noise", "")))
-        except Exception:
-            pass
-
-    avg_noise = (sum(noises) / len(noises)) if noises else None
-
-    return JSONResponse(
-        {
-            "ok": True,
-            "month": m,
-            "days": len(month_rows),
-            "avg_noise": avg_noise,
-            "counts": counts,
-            "actions": actions,
-            "reports_dir": _safe_relpath(FX_REPORT_DIR),
-        }
-    )
