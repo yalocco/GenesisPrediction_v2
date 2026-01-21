@@ -1,286 +1,219 @@
 <!doctype html>
-<html lang="en">
+<html lang="ja">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>GenesisPrediction v2 - Local GUI</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 16px; }
-    .grid { display: grid; grid-template-columns: 420px 1fr; gap: 16px; }
-    .card { border: 1px solid #ddd; border-radius: 10px; padding: 12px; background:#fff; }
-    .muted { color: #666; font-size: 12px; }
-    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    button { padding: 8px 10px; border-radius: 8px; border: 1px solid #ccc; background: #f7f7f7; cursor: pointer; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    input { padding: 8px; border-radius: 8px; border: 1px solid #ccc; }
-    textarea { width: 100%; min-height: 360px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
-    ul { margin: 8px 0 0 18px; padding: 0; }
-    a { color: #0b65d8; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .pill { display:inline-block; padding:2px 8px; border:1px solid #ddd; border-radius:999px; font-size:12px; background:#fafafa; }
-
-    /* Historical Analogs */
-    .ha-item { margin: 8px 0; padding: 10px; border: 1px solid #ddd; border-radius: 10px; background: #fff; }
-    .ha-title { font-weight: 750; }
-    .ha-sub { color: #666; font-size: 12px; margin-top: 2px; }
-    .ha-summary { margin-top: 6px; white-space: pre-wrap; }
-    details { margin-top: 6px; }
-    details > summary { cursor: pointer; color:#0b65d8; }
-    .ha-notes { margin-top: 6px; padding: 8px; border: 1px dashed #ddd; border-radius: 8px; background: #fafafa; white-space: pre-wrap; }
+    :root{
+      --bg:#ffffff; --text:#111827; --muted:#6b7280; --card:#ffffff; --border:#e5e7eb;
+      --shadow:0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.06);
+      --radius:18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    body{ margin:0; padding:32px; font-family:var(--sans); color:var(--text); background:var(--bg); }
+    h1{ font-size:44px; margin:0 0 6px 0; letter-spacing:-.02em; }
+    .subtitle{ color:var(--muted); margin-bottom:22px; }
+    .grid{ display:grid; grid-template-columns: 1fr; gap:22px; }
+    .card{
+      background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+      box-shadow:var(--shadow); padding:20px;
+    }
+    .card h2{ margin:0 0 6px 0; font-size:28px; letter-spacing:-.01em; }
+    .muted{ color:var(--muted); }
+    .row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .pill{ border:1px solid var(--border); border-radius:999px; padding:4px 10px; font-weight:700; }
+    button{
+      border:1px solid var(--border); background:#fff; border-radius:12px;
+      padding:10px 14px; cursor:pointer; font-weight:700;
+      box-shadow:0 1px 1px rgba(0,0,0,.03);
+    }
+    button:hover{ background:#f9fafb; }
+    .kv{ display:grid; grid-template-columns: 220px 1fr; gap:8px 14px; margin-top:12px; }
+    .kv div{ padding:2px 0; }
+    .sep{ height:1px; background:var(--border); margin:14px 0; }
+    .mono{
+      font-family:var(--mono);
+      font-size:12px; line-height:1.45;
+      background:#0b1020; color:#e5e7eb;
+      padding:12px; border-radius:14px; overflow:auto; max-height:340px;
+      border:1px solid rgba(255,255,255,.06);
+    }
+    select, input{
+      border:1px solid var(--border); border-radius:10px; padding:8px 10px; font-weight:600;
+      background:#fff;
+    }
   </style>
 </head>
 <body>
-  <h2>GenesisPrediction v2 — Local Daily Routine</h2>
-  <div class="muted">Localhost-only UI. Runs commands on this PC only.</div>
+  <h1>GenesisPrediction v2 - Local GUI</h1>
+  <div class="subtitle">World politics outputs + FX remittance decision (JPY→THB).</div>
 
   <div class="grid">
+    <!-- FX -->
     <div class="card">
-      <h3>Daily Routine (Steps)</h3>
+      <h2>FX Remittance (JPY→THB)</h2>
 
-      <div class="card" style="background:#fff;">
-        <div class="row">
-          <div><strong>Date</strong></div>
-          <input id="date" type="date" />
-          <div><strong>Limit</strong></div>
-          <input id="limit" type="number" min="1" max="500" value="40" style="width:90px;" />
-          <span id="statusPill" class="pill">idle</span>
-        </div>
-        <div class="muted" style="margin-top:6px;">
-          Tip: If there are no events for the date, digest may show SKIP.
-        </div>
+      <div class="row" style="margin-top:8px;">
+        <div class="muted">Today:</div>
+        <div id="fxTodayDate" class="pill">-</div>
+        <div id="fxTodayDecision" class="pill">-</div>
+        <button id="btnFxRefresh">Refresh</button>
       </div>
 
-      <div class="card" style="margin-top:10px;">
-        <div><strong>Step 1 — Run Analyzer</strong></div>
-        <div class="muted">Runs: <code>docker compose run --rm analyzer</code></div>
-        <div class="muted">Outputs: events / diff / summary / latest / daily_summary</div>
-        <div class="row" style="margin-top:8px;">
-          <button id="btnAnalyzer" onclick="runStep('analyzer')">1) Run Analyzer</button>
-        </div>
+      <div class="kv">
+        <div class="muted">combined_noise</div><div id="fxCombined">-</div>
+        <div class="muted">USDJPY / USDTHB</div><div id="fxPairNoise">-</div>
+        <div class="muted">recommended_action</div><div id="fxAction">-</div>
+        <div class="muted">note</div><div id="fxNote">-</div>
       </div>
 
-      <div class="card" style="margin-top:10px;">
-        <div><strong>Step 2 — Build HTML Digest</strong></div>
-        <div class="muted">Runs: <code>python scripts/build_daily_news_digest.py --date ... --limit ...</code></div>
-        <div class="muted">Outputs: daily_news_YYYY-MM-DD.html / .md</div>
-        <div class="row" style="margin-top:8px;">
-          <button id="btnDigest" onclick="runStep('digest')">2) Build HTML Digest</button>
-        </div>
+      <div class="sep"></div>
+
+      <div class="row">
+        <div class="muted">Monthly:</div>
+        <select id="fxMonth"></select>
+        <button id="btnFxMonthly">Load</button>
       </div>
 
-      <div class="card" style="margin-top:10px;">
-        <div><strong>Step 3 — Plot (Visual Aids)</strong></div>
-        <div class="muted">Runs: plot_regime_timeline / plot_confidence_churn_regime / plot_confidence_anchors_dual</div>
-        <div class="muted">Outputs: *.png (regime/confidence visual aids)</div>
-        <div class="row" style="margin-top:8px;">
-          <button id="btnPlot" onclick="runStep('plot')">3) Run Plot</button>
-        </div>
+      <div class="kv">
+        <div class="muted">days</div><div id="fxDays">-</div>
+        <div class="muted">avg_noise</div><div id="fxAvgNoise">-</div>
+        <div class="muted">counts</div><div id="fxCounts">-</div>
+        <div class="muted">actions</div><div id="fxActions">-</div>
       </div>
 
-      <div class="card" style="margin-top:10px;">
-        <div><strong>Step 4 — Observation Log</strong></div>
-        <div class="muted">Runs: <code>python scripts/build_daily_observation_log.py</code></div>
-        <div class="muted">Outputs: observation_YYYY-MM-DD.md / .json</div>
-        <div class="row" style="margin-top:8px;">
-          <button id="btnObs" onclick="runStep('observation')">4) Write Observation</button>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top:10px;">
-        <div><strong>Run All</strong></div>
-        <div class="muted">Executes Step 1 → Step 4 in order. Stops on error.</div>
-        <div class="row" style="margin-top:8px;">
-          <button id="btnAll" onclick="runStep('all')">▶ Run Daily Routine</button>
-          <button id="btnRefresh" onclick="refreshOutputs()">Refresh outputs</button>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top:10px;">
-        <div><strong>Outputs (click to open)</strong></div>
-        <div class="muted" id="outDir"></div>
-        <ul id="outputs"></ul>
-      </div>
-
-      <!-- Historical Analogs (same position as now: under Outputs) -->
-      <div class="card" style="margin-top:10px;">
-        <div><strong>Historical Analogs</strong></div>
-        <div class="muted" id="haMeta">loading...</div>
-        <div id="haList"></div>
+      <div class="muted" style="margin-top:10px;">
+        Reports directory: <span id="fxReportsDir">-</span>
       </div>
     </div>
 
+    <!-- World Politics -->
     <div class="card">
-      <h3>Logs</h3>
-      <div class="muted">Shows command output. If a run is in progress, buttons are disabled.</div>
-      <textarea id="log" readonly></textarea>
+      <h2>World Politics</h2>
+      <div class="muted">Outputs list + Digest generation &amp; viewing.</div>
+
+      <div class="row" style="margin-top:10px;">
+        <button id="btnOutputsToday">Load outputs (today)</button>
+        <button id="btnRunDigest">Run digest (today)</button>
+        <button id="btnOpenDigest">Open digest HTML (today)</button>
+      </div>
+
+      <div class="sep"></div>
+
+      <div id="wpOut" class="mono">Press buttons above…</div>
     </div>
   </div>
 
 <script>
-  function isoToday() {
-    const d = new Date();
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth()+1).padStart(2,'0');
-    const dd = String(d.getDate()).padStart(2,'0');
-    return `${yyyy}-${mm}-${dd}`;
+  const todayISO = () => new Date().toISOString().slice(0,10);
+  const ymISO = (d) => d.toISOString().slice(0,7);
+
+  function fmt(x){
+    if (x === null || x === undefined) return "-";
+    if (typeof x === "number" && !Number.isInteger(x)) return x.toFixed(3);
+    return String(x);
   }
 
-  function setRunning(running, label) {
-    document.getElementById('btnAnalyzer').disabled = running;
-    document.getElementById('btnDigest').disabled = running;
-    document.getElementById('btnPlot').disabled = running;
-    document.getElementById('btnObs').disabled = running;
-    document.getElementById('btnAll').disabled = running;
-    document.getElementById('btnRefresh').disabled = running;
-    const pill = document.getElementById('statusPill');
-    pill.textContent = running ? `running: ${label}` : 'idle';
+  async function jget(url){
+    const r = await fetch(url);
+    const t = await r.text();
+    try { return { ok:r.ok, status:r.status, data: JSON.parse(t) }; }
+    catch { return { ok:r.ok, status:r.status, data: t }; }
   }
 
-  function getParams() {
-    const date = document.getElementById('date').value;
-    const limit = parseInt(document.getElementById('limit').value || '40', 10);
-    return { date, limit };
+  function setMono(obj){
+    const el = document.getElementById("wpOut");
+    el.textContent = (typeof obj === "string") ? obj : JSON.stringify(obj, null, 2);
   }
 
-  async function refreshStatus() {
-    try {
-      const r = await fetch('/api/status');
-      const s = await r.json();
-      setRunning(!!s.running, s.step || '');
-      if (s.log_tail) document.getElementById('log').value = s.log_tail;
-    } catch (_) {}
-  }
-
-  async function refreshHistoricalAnalogs(dateStr) {
-    const meta = document.getElementById('haMeta');
-    const list = document.getElementById('haList');
-    if (!meta || !list) return;
-
-    meta.textContent = 'loading...';
-    list.innerHTML = '';
-
-    try {
-      const r = await fetch(`/api/historical_analogs?date=${encodeURIComponent(dateStr)}`);
-      const data = await r.json();
-
-      if (data.error) {
-        meta.textContent = `error`;
-        list.textContent = data.error;
-        return;
-      }
-
-      const tags = (data.historical_analog_tags || []).join(', ');
-      const usedLatest = data.used_latest ? ' (fallback to latest)' : '';
-      const req = data.requested_date ? `requested=${data.requested_date} | ` : '';
-      meta.textContent = `${req}date=${data.date}${usedLatest} | tags: ${tags || '(none)'}`;
-
-      const xs = data.historical_analogs || [];
-      if (xs.length === 0) {
-        list.textContent = '(no analogs)';
-        return;
-      }
-
-      const top = xs.slice(0, 3);
-      for (const x of top) {
-        const title = x.title || '(untitled)';
-        const score = (x.score !== undefined && x.score !== null) ? x.score : '';
-        const mt = (x.matched_tags || []).join(', ');
-        const summary = x.summary || '';
-        const notes = x.notes || '';
-
-        const div = document.createElement('div');
-        div.className = 'ha-item';
-
-        const t = document.createElement('div');
-        t.className = 'ha-title';
-        t.textContent = title;
-
-        const sub = document.createElement('div');
-        sub.className = 'ha-sub';
-        sub.textContent = `score=${score} | matched: ${mt || '(none)'}`;
-
-        const s = document.createElement('div');
-        s.className = 'ha-summary';
-        s.textContent = summary;
-
-        div.appendChild(t);
-        div.appendChild(sub);
-        div.appendChild(s);
-
-        // (A) notes: collapsible
-        if (notes && String(notes).trim().length > 0) {
-          const details = document.createElement('details');
-          const summaryEl = document.createElement('summary');
-          summaryEl.textContent = 'Notes';
-          const box = document.createElement('div');
-          box.className = 'ha-notes';
-          box.textContent = notes;
-          details.appendChild(summaryEl);
-          details.appendChild(box);
-          div.appendChild(details);
-        }
-
-        list.appendChild(div);
-      }
-    } catch (e) {
-      meta.textContent = 'error';
-      list.textContent = String(e);
+  // FX
+  async function loadFxToday(){
+    const d = todayISO();
+    const res = await jget(`/api/fx/remittance/today?date=${encodeURIComponent(d)}`);
+    if (!res.ok){
+      document.getElementById("fxTodayDate").textContent = d;
+      document.getElementById("fxTodayDecision").textContent = "N/A";
+      document.getElementById("fxCombined").textContent = "-";
+      document.getElementById("fxPairNoise").textContent = "-";
+      document.getElementById("fxAction").textContent = "-";
+      document.getElementById("fxNote").textContent = "not found";
+      document.getElementById("fxReportsDir").textContent = (res.data && res.data.path) ? res.data.path : "-";
+      return;
     }
+    const x = res.data;
+    document.getElementById("fxTodayDate").textContent = x.date || d;
+    document.getElementById("fxTodayDecision").textContent = (x.decision || "-");
+    document.getElementById("fxCombined").textContent = fmt(x.combined_noise_prob);
+    document.getElementById("fxPairNoise").textContent = `${fmt(x.usd_jpy_noise)} / ${fmt(x.usd_thb_noise)}`;
+    document.getElementById("fxAction").textContent = (x.recommended_action || "-");
+    document.getElementById("fxNote").textContent = (x.remit_note || "-");
+    document.getElementById("fxReportsDir").textContent = (x.reports_dir || "-");
   }
 
-  async function refreshOutputs() {
-    const { date } = getParams();
-    const r = await fetch(`/api/outputs?date=${encodeURIComponent(date)}`);
-    const data = await r.json();
-    document.getElementById('outDir').textContent = `Directory: ${data.analysis_dir}`;
-    const ul = document.getElementById('outputs');
-    ul.innerHTML = '';
-    for (const f of data.files) {
-      const li = document.createElement('li');
-      const a = document.createElement('a');
-      a.href = `/api/file?path=${encodeURIComponent(f.path)}`;
-      a.target = '_blank';
-      a.textContent = f.path;
-      li.appendChild(a);
-      ul.appendChild(li);
+  async function loadFxMonthly(){
+    const m = document.getElementById("fxMonth").value;
+    const res = await jget(`/api/fx/remittance/monthly?month=${encodeURIComponent(m)}`);
+    if (!res.ok){
+      document.getElementById("fxDays").textContent = "-";
+      document.getElementById("fxAvgNoise").textContent = "-";
+      document.getElementById("fxCounts").textContent = "not found";
+      document.getElementById("fxActions").textContent = "-";
+      return;
     }
-
-    // refresh analogs too
-    await refreshHistoricalAnalogs(date);
+    const x = res.data;
+    document.getElementById("fxDays").textContent = fmt(x.days);
+    document.getElementById("fxAvgNoise").textContent = fmt(x.avg_noise);
+    document.getElementById("fxCounts").textContent = Object.entries(x.counts || {}).map(([k,v])=>`${k}=${v}`).join(" / ");
+    document.getElementById("fxActions").textContent = Object.entries(x.actions || {}).map(([k,v])=>`${k}: ${v}`).join(" | ");
+    document.getElementById("fxReportsDir").textContent = (x.reports_dir || "-");
   }
 
-  async function runStep(which) {
-    const { date, limit } = getParams();
-    setRunning(true, which);
-    document.getElementById('log').value = `Starting ${which}...\n`;
+  // World Politics
+  async function loadOutputsToday(){
+    const d = todayISO();
+    const res = await jget(`/api/outputs?date=${encodeURIComponent(d)}`);
+    setMono(res.data);
+  }
 
-    const endpoint =
-      which === 'analyzer' ? '/api/run/analyzer' :
-      which === 'digest' ? '/api/run/digest' :
-      which === 'plot' ? '/api/run/plot' :
-      which === 'observation' ? '/api/run/observation' :
-      '/api/run/all';
+  async function runDigestToday(){
+    const d = todayISO();
+    setMono({running:true, mode:"digest", date:d});
+    const r = await fetch(`/api/run/digest?date=${encodeURIComponent(d)}&limit=40`, { method:"POST" });
+    const t = await r.text();
+    try { setMono(JSON.parse(t)); }
+    catch { setMono(t); }
+  }
 
-    const url = `${endpoint}?date=${encodeURIComponent(date)}&limit=${encodeURIComponent(limit)}`;
+  function openDigestToday(){
+    const d = todayISO();
+    window.open(`/api/digest/html?date=${encodeURIComponent(d)}`, "_blank");
+  }
 
-    try {
-      const r = await fetch(url, { method: 'POST' });
-      const data = await r.json();
-      document.getElementById('log').value = data.log || JSON.stringify(data, null, 2);
-
-      await refreshOutputs();
-      setRunning(false, '');
-    } catch (e) {
-      document.getElementById('log').value += `\nERROR: ${e}\n`;
-      setRunning(false, '');
+  // init month selector (last 12 months)
+  (function initMonths(){
+    const sel = document.getElementById("fxMonth");
+    const now = new Date();
+    for (let i=0;i<12;i++){
+      const dd = new Date(now.getFullYear(), now.getMonth()-i, 1);
+      const v = ymISO(dd);
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = v;
+      sel.appendChild(opt);
     }
-  }
+  })();
 
-  // init
-  document.getElementById('date').value = isoToday();
-  refreshOutputs();
-  refreshStatus();
-  setInterval(refreshStatus, 2000);
+  document.getElementById("btnFxRefresh").addEventListener("click", loadFxToday);
+  document.getElementById("btnFxMonthly").addEventListener("click", loadFxMonthly);
+  document.getElementById("btnOutputsToday").addEventListener("click", loadOutputsToday);
+  document.getElementById("btnRunDigest").addEventListener("click", runDigestToday);
+  document.getElementById("btnOpenDigest").addEventListener("click", openDigestToday);
+
+  // auto
+  loadFxToday().catch(()=>{});
+  loadFxMonthly().catch(()=>{});
 </script>
 </body>
 </html>
