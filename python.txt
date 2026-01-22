@@ -45,3 +45,12 @@ docker compose run --rm analyzer
 
 gui起動 タイバーツ
 powershell -NoProfile -ExecutionPolicy Bypass -File "D:\AI\Projects\GenesisPrediction_v2\scripts\fx_monthly_report_gui.ps1"
+
+仮想環境を有効化
+.\.venv\Scripts\Activate.ps1
+
+GUI 起動
+python -m uvicorn app.server:app --reload
+
+port listen
+netstat -ano | findstr :8000
