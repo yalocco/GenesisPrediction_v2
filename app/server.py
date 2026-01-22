@@ -1,75 +1,105 @@
 from __future__ import annotations
 
-import json
 import html
+import json
 import os
 import subprocess
 import threading
 from datetime import date as _date
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, FileResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 # =============================================================================
 # GenesisPrediction v2 - Local GUI API
 #
-# Design goals:
-# - Keep UI stable: serve app/static/index.html at "/"
-# - Provide deterministic API endpoints used by the UI
-# - Serve digest HTML as *rendered* HTML (NOT download dialog)
-# - Restrict file reads to known safe roots
+# Fixed rules:
+# - GUI must NOT parse HTML. GUI reads ViewModel JSON.
+# - "Legacy" HTML/MD are view-only.
+# - No manual edits of outputs; generation happens by scripts / analyzer.
+# - Provide stable endpoints; return 404/na as "not available" not as UI error.
 # =============================================================================
 
-# --- Paths (repo root assumed as current working directory when starting uvicorn) ---
 REPO_ROOT = Path.cwd()
+
 APP_DIR = REPO_ROOT / "app"
 STATIC_DIR = APP_DIR / "static"
 
 DATA_DIR = REPO_ROOT / "data"
-ANALYSIS_DIR = DATA_DIR / "world_politics" / "analysis"
+WORLD_ANALYSIS_DIR = DATA_DIR / "world_politics" / "analysis"
+DIGEST_VIEW_DIR = DATA_DIR / "digest" / "view"
 
 FX_DIR = DATA_DIR / "fx"
 FX_REPORT_DIR = FX_DIR / "reports"
-FX_LOG = FX_DIR / "jpy_thb_remittance_decision_log.csv"
-FX_DASHBOARD = FX_DIR / "jpy_thb_remittance_dashboard.csv"
 
-# Tracked docs (optional)
-DOCS_DIR = REPO_ROOT / "docs"
-OBS_MD = DOCS_DIR / "observation.md"
-
-# Scripts
+# ---- scripts (all optional; missing ones should not crash the server) ----
 SCRIPTS_DIR = REPO_ROOT / "scripts"
-SCRIPT_BUILD_DIGEST = SCRIPTS_DIR / "build_daily_news_digest.py"
 
-# --- Safety: allow reading files only from these directories ---
-ALLOWED_READ_ROOTS = [
-    STATIC_DIR,
-    ANALYSIS_DIR,
-    DOCS_DIR,
-    FX_DIR,
-]
+SCRIPT_BUILD_DAILY_DIGEST = SCRIPTS_DIR / "build_daily_news_digest.py"
+SCRIPT_BUILD_DIGEST_VIEW_MODEL = SCRIPTS_DIR / "build_digest_view_model.py"
 
-def _is_allowed_file(p: Path) -> bool:
-    try:
-        rp = p.resolve()
-    except Exception:
-        return False
-    for root in ALLOWED_READ_ROOTS:
-        try:
-            if rp.is_relative_to(root.resolve()):
-                return True
-        except AttributeError:
-            # Python < 3.9 compatibility (not needed here but harmless)
-            try:
-                root_r = root.resolve()
-                if str(rp).startswith(str(root_r) + os.sep):
-                    return True
-            except Exception:
-                pass
-    return False
+SCRIPT_FX_TODAY = SCRIPTS_DIR / "fx_remittance_today.py"
+SCRIPT_FX_SUMMARY = SCRIPTS_DIR / "fx_remittance_summary.py"
+SCRIPT_FX_OVERLAY = SCRIPTS_DIR / "fx_remittance_overlay.py"  # creates overlay png(s)
+
+# ---- docker ----
+DOCKER_COMPOSE = "docker"
+DOCKER_COMPOSE_ARGS = ["compose"]  # docker compose ...
+
+# -----------------------------------------------------------------------------
+# App setup
+# -----------------------------------------------------------------------------
+app = FastAPI(title="GenesisPrediction v2 Local GUI API", version="2")
+
+# Static UI
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+# Serve generated artifacts under /data/...
+# (Safe: only from repo's data directory)
+if DATA_DIR.exists():
+    app.mount("/data", StaticFiles(directory=str(DATA_DIR)), name="data")
+
+# -----------------------------------------------------------------------------
+# Concurrency guard + last-run state
+# -----------------------------------------------------------------------------
+_run_lock = threading.Lock()
+_last_run: Dict[str, Any] = {
+    "running": False,
+    "mode": None,           # digest / daily / fx
+    "date": None,
+    "returncode": None,
+    "artifacts": [],
+    "log": "",
+}
+
+def _set_last_run(**kwargs: Any) -> None:
+    _last_run.update(kwargs)
+
+def _tail(s: str, n: int = 20000) -> str:
+    if len(s) <= n:
+        return s
+    return s[-n:]
+
+def _venv_python() -> str:
+    venv_py = REPO_ROOT / ".venv" / "Scripts" / "python.exe"
+    if venv_py.exists():
+        return str(venv_py)
+    return str(Path(os.sys.executable))
+
+def _run_cmd(cmd: List[str], cwd: Path) -> Tuple[int, str]:
+    # Capture combined output; do not raise.
+    p = subprocess.run(
+        cmd,
+        cwd=str(cwd),
+        capture_output=True,
+        text=True,
+        shell=False,
+    )
+    out = (p.stdout or "") + (p.stderr or "")
+    return int(p.returncode), out
 
 def _safe_relpath(p: Path) -> str:
     try:
@@ -77,371 +107,445 @@ def _safe_relpath(p: Path) -> str:
     except Exception:
         return str(p)
 
-# --- Single-run lock (avoid double execution) ---
-_run_lock = threading.Lock()
-_last_run: Dict[str, Any] = {
-    "running": False,
-    "step": None,
-    "started_at": None,
-    "ended_at": None,
-    "returncode": None,
-    "log_tail": "",
-}
+def _list_files(root: Path, exts: Optional[List[str]] = None, recursive: bool = True) -> List[Dict[str, Any]]:
+    if not root.exists():
+        return []
+    items: List[Dict[str, Any]] = []
+    exts_norm = None
+    if exts:
+        exts_norm = []
+        for e in exts:
+            e = e.strip().lower()
+            if not e:
+                continue
+            if not e.startswith("."):
+                e = "." + e
+            exts_norm.append(e)
+    it = root.rglob("*") if recursive else root.glob("*")
+    for p in it:
+        if not p.is_file():
+            continue
+        if exts_norm and p.suffix.lower() not in exts_norm:
+            continue
+        rp = p.resolve()
+        try:
+            rel = rp.relative_to(DATA_DIR.resolve())
+            url = "/data/" + str(rel).replace("\\", "/")
+        except Exception:
+            # not under /data (should not happen)
+            url = None
+        st = p.stat()
+        items.append({
+            "path": _safe_relpath(p),
+            "url": url,
+            "size": st.st_size,
+            "mtime": st.st_mtime,
+            "name": p.name,
+        })
+    items.sort(key=lambda x: x.get("mtime", 0), reverse=True)
+    return items
 
-def _set_last_run(**kwargs: Any) -> None:
-    _last_run.update(kwargs)
-
-def _tail_text(text: str, max_chars: int = 6000) -> str:
-    if len(text) <= max_chars:
-        return text
-    return text[-max_chars:]
-
-def _run_cmd(cmd: List[str], cwd: Optional[Path] = None) -> Dict[str, Any]:
-    """Run a command and capture output (short tail saved in status)."""
-    try:
-        proc = subprocess.run(
-            cmd,
-            cwd=str(cwd or REPO_ROOT),
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        out = (proc.stdout or "") + "\n" + (proc.stderr or "")
-        return {"returncode": proc.returncode, "output": out}
-    except Exception as e:
-        return {"returncode": 1, "output": f"[EXCEPTION] {e!r}"}
-
-# =============================================================================
-# FastAPI app
-# =============================================================================
-
-app = FastAPI(title="GenesisPrediction v2 - Local GUI")
-
-# Serve static files under /static (optional assets)
-if STATIC_DIR.exists():
-    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
-
-@app.get("/")
-def root():
-    index = STATIC_DIR / "index.html"
-    if not index.exists():
-        raise HTTPException(status_code=404, detail="index.html not found under app/static")
-    return FileResponse(str(index), media_type="text/html")
-
-# =============================================================================
-# Basic status / health
-# =============================================================================
-
-@app.get("/api/status")
-def api_status():
-    return JSONResponse(_last_run)
-
-# =============================================================================
-# FX remittance endpoints (simple file-based)
-# =============================================================================
-
-def _read_csv_last_line(path: Path) -> Optional[str]:
-    if not path.exists():
-        return None
-    try:
-        # fast tail read
-        with path.open("rb") as f:
-            f.seek(0, os.SEEK_END)
-            size = f.tell()
-            block = 8192
-            pos = max(0, size - block)
-            f.seek(pos)
-            data = f.read().decode("utf-8", errors="replace")
-        lines = [ln for ln in data.splitlines() if ln.strip()]
-        return lines[-1] if lines else None
-    except Exception:
-        return None
-
-@app.get("/api/fx/remittance/today")
-def api_fx_remittance_today():
-    """
-    Expected producer: scripts/fx_remittance_today.py writing data/fx/jpy_thb_remittance_dashboard.csv
-    This endpoint simply returns latest dashboard row if present.
-    """
-    if not FX_DASHBOARD.exists():
-        return JSONResponse({"ok": False, "error": "dashboard csv not found", "path": _safe_relpath(FX_DASHBOARD)}, status_code=404)
-
-    # Best-effort parse: dashboard is typically tiny, so read all.
-    try:
-        txt = FX_DASHBOARD.read_text(encoding="utf-8", errors="replace").splitlines()
-        header = txt[0].split(",") if txt else []
-        last = txt[-1].split(",") if len(txt) >= 2 else []
-        row = dict(zip(header, last)) if header and last else {}
-        return JSONResponse({"ok": True, "path": _safe_relpath(FX_DASHBOARD), "row": row})
-    except Exception as e:
-        return JSONResponse({"ok": False, "error": repr(e), "path": _safe_relpath(FX_DASHBOARD)}, status_code=500)
-
-@app.get("/api/fx/remittance/month")
-def api_fx_remittance_month(month: str = Query(..., description="YYYY-MM")):
-    """
-    Reads reports/monthly summary if you have one; otherwise returns aggregated from log.
-    """
-    if not FX_LOG.exists():
-        return JSONResponse({"ok": False, "error": "log csv not found", "path": _safe_relpath(FX_LOG)}, status_code=404)
-
-    try:
-        lines = FX_LOG.read_text(encoding="utf-8", errors="replace").splitlines()
-        if not lines:
-            return JSONResponse({"ok": True, "month": month, "rows": []})
-        header = lines[0].split(",")
-        rows = []
-        for ln in lines[1:]:
-            cols = ln.split(",")
-            row = dict(zip(header, cols))
-            d = (row.get("date") or "")[:7]
-            if d == month:
-                rows.append(row)
-        return JSONResponse({"ok": True, "month": month, "rows": rows})
-    except Exception as e:
-        return JSONResponse({"ok": False, "error": repr(e)}, status_code=500)
-
-# =============================================================================
-# World politics outputs list (optional helper)
-# =============================================================================
-
-@app.get("/api/world/analysis/files")
-def api_world_analysis_files(date: str = Query(default_factory=lambda: _date.today().isoformat())):
-    """
-    Returns world_politics/analysis files for the date (best-effort).
-    """
-    d = (date or "").strip()
+def _parse_date(d: str) -> str:
+    d = (d or "").strip()
     if len(d) != 10:
         raise HTTPException(status_code=400, detail="Invalid date. Use YYYY-MM-DD.")
-    out: List[Dict[str, Any]] = []
-    if ANALYSIS_DIR.exists():
-        for p in sorted(ANALYSIS_DIR.glob(f"*{d}*")):
-            if p.is_file():
-                out.append({"path": _safe_relpath(p), "name": p.name, "size": p.stat().st_size, "mtime": p.stat().st_mtime})
-    return JSONResponse({"ok": True, "date": d, "files": out})
+    return d
 
-# =============================================================================
-# Digest generation + viewing
-# =============================================================================
+# -----------------------------------------------------------------------------
+# UI root
+# -----------------------------------------------------------------------------
+@app.get("/")
+def root() -> FileResponse:
+    index = STATIC_DIR / "index.html"
+    if not index.exists():
+        raise HTTPException(status_code=404, detail=f"index.html not found: {_safe_relpath(index)}")
+    return FileResponse(str(index), media_type="text/html; charset=utf-8")
 
-def _digest_md_path(d: str) -> Path:
-    return ANALYSIS_DIR / f"daily_news_{d}.md"
+# -----------------------------------------------------------------------------
+# Health / status
+# -----------------------------------------------------------------------------
+@app.get("/api/status")
+def api_status() -> JSONResponse:
+    return JSONResponse(
+        {
+            "ok": True,
+            "repo_root": str(REPO_ROOT),
+            "last_run": _last_run,
+            "paths": {
+                "world_analysis": _safe_relpath(WORLD_ANALYSIS_DIR),
+                "digest_view": _safe_relpath(DIGEST_VIEW_DIR),
+                "fx_dir": _safe_relpath(FX_DIR),
+            },
+        }
+    )
 
-def _digest_html_path(d: str) -> Path:
-    return ANALYSIS_DIR / f"daily_news_{d}.html"
+# -----------------------------------------------------------------------------
+# Legacy digest outputs (HTML/MD) - view only
+# -----------------------------------------------------------------------------
+@app.get("/api/digest/html")
+def api_digest_html(date: str = Query(..., description="YYYY-MM-DD")) -> HTMLResponse:
+    d = _parse_date(date)
+    path = WORLD_ANALYSIS_DIR / f"daily_news_{d}.html"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Digest HTML not found.")
+    txt = path.read_text(encoding="utf-8", errors="replace")
+    # Serve as rendered HTML
+    return HTMLResponse(content=txt)
 
+@app.get("/api/digest/md")
+def api_digest_md(date: str = Query(..., description="YYYY-MM-DD")) -> JSONResponse:
+    d = _parse_date(date)
+    path = WORLD_ANALYSIS_DIR / f"daily_news_{d}.md"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Digest MD not found.")
+    txt = path.read_text(encoding="utf-8", errors="replace")
+    return JSONResponse({"ok": True, "date": d, "text": txt})
+
+@app.get("/api/digest/md_view")
+def api_digest_md_view(date: str = Query(..., description="YYYY-MM-DD")) -> HTMLResponse:
+    d = _parse_date(date)
+    path = WORLD_ANALYSIS_DIR / f"daily_news_{d}.md"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Digest MD not found.")
+    txt = path.read_text(encoding="utf-8", errors="replace")
+    # Minimal safe viewer: escape then <pre>
+    body = (
+        f"<html><head><meta charset='utf-8'><title>Daily News Digest {html.escape(d)}</title></head>"
+        f"<body style='margin:0;background:#0b0f14;color:#e8eef4'>"
+        f"<div style='max-width:1100px;margin:0 auto;padding:24px'>"
+        f"<h1 style='margin:0 0 12px'>Daily News Digest — {html.escape(d)}</h1>"
+        f"<pre style='white-space:pre-wrap;line-height:1.35;font-size:14px'>{html.escape(txt)}</pre>"
+        f"</div></body></html>"
+    )
+    return HTMLResponse(content=body)
+
+# -----------------------------------------------------------------------------
+# Digest ViewModel (SST) - the only "truth" for GUI rendering
+# -----------------------------------------------------------------------------
+@app.get("/api/digest/view")
+def api_digest_view(date: str = Query(..., description="YYYY-MM-DD")) -> JSONResponse:
+    d = _parse_date(date)
+    path = DIGEST_VIEW_DIR / f"{d}.json"
+    if not path.exists():
+        # IMPORTANT: not an error for UI. Return "na".
+        return JSONResponse(
+            {
+                "version": "v1",
+                "date": d,
+                "status": "na",
+                "sections": [],
+                "notes": f"view not found for {d}",
+                "meta": {"generated_at": None, "generator": "digest", "source": "na"},
+            }
+        )
+    try:
+        obj = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as e:
+        return JSONResponse(
+            {
+                "version": "v1",
+                "date": d,
+                "status": "error",
+                "sections": [],
+                "notes": f"failed to read viewmodel: {e}",
+                "meta": {"generated_at": None, "generator": "digest", "source": "error"},
+            },
+            status_code=200,
+        )
+    # Keep API stable
+    return JSONResponse(obj)
+
+@app.get("/api/digest/view/latest")
+def api_digest_view_latest() -> JSONResponse:
+    if not DIGEST_VIEW_DIR.exists():
+        return JSONResponse({"ok": False, "latest": None, "reason": "digest view dir missing"})
+    files = sorted(DIGEST_VIEW_DIR.glob("*.json"))
+    if not files:
+        return JSONResponse({"ok": True, "latest": None})
+    # filenames are YYYY-MM-DD.json
+    latest = sorted([p.stem for p in files if len(p.stem) == 10])[-1]
+    return JSONResponse({"ok": True, "latest": latest})
+
+# -----------------------------------------------------------------------------
+# World outputs list (analysis directory)
+# -----------------------------------------------------------------------------
+@app.get("/api/world/analysis/files")
+def api_world_analysis_files(date: str = Query(default="", description="optional YYYY-MM-DD filter")) -> JSONResponse:
+    d = (date or "").strip()
+    if d and len(d) != 10:
+        raise HTTPException(status_code=400, detail="Invalid date. Use YYYY-MM-DD.")
+    if not WORLD_ANALYSIS_DIR.exists():
+        return JSONResponse({"ok": True, "files": []})
+    items = []
+    for p in sorted(WORLD_ANALYSIS_DIR.glob("*"), key=lambda x: x.stat().st_mtime, reverse=True):
+        if not p.is_file():
+            continue
+        if d and d not in p.name:
+            continue
+        st = p.stat()
+        try:
+            rel = p.resolve().relative_to(DATA_DIR.resolve())
+            url = "/data/" + str(rel).replace("\\", "/")
+        except Exception:
+            url = None
+        items.append({"name": p.name, "path": _safe_relpath(p), "url": url, "size": st.st_size, "mtime": st.st_mtime})
+    return JSONResponse({"ok": True, "files": items})
+
+# -----------------------------------------------------------------------------
+# Run: Digest only (legacy generator)
+# -----------------------------------------------------------------------------
 @app.post("/api/run/digest")
 def api_run_digest(
     date: str = Query(default_factory=lambda: _date.today().isoformat(), description="YYYY-MM-DD"),
     limit: int = Query(40, ge=1, le=200),
-):
-    """
-    Runs scripts/build_daily_news_digest.py to generate md/html under analysis/.
-    """
-    d = (date or "").strip()
-    if len(d) != 10:
-        raise HTTPException(status_code=400, detail="Invalid date. Use YYYY-MM-DD.")
+) -> JSONResponse:
+    d = _parse_date(date)
 
-    if not SCRIPT_BUILD_DIGEST.exists():
-        raise HTTPException(status_code=404, detail=f"Digest script not found: {_safe_relpath(SCRIPT_BUILD_DIGEST)}")
+    if not SCRIPT_BUILD_DAILY_DIGEST.exists():
+        raise HTTPException(status_code=404, detail=f"Digest script not found: {_safe_relpath(SCRIPT_BUILD_DAILY_DIGEST)}")
 
-    # Try to use venv python if present
-    venv_py = REPO_ROOT / ".venv" / "Scripts" / "python.exe"
-    py = str(venv_py if venv_py.exists() else Path(os.sys.executable))
-
-    cmd = [py, str(SCRIPT_BUILD_DIGEST), "--date", d, "--limit", str(limit)]
+    py = _venv_python()
+    cmd = [py, str(SCRIPT_BUILD_DAILY_DIGEST), "--date", d, "--limit", str(limit)]
 
     if not _run_lock.acquire(blocking=False):
         raise HTTPException(status_code=409, detail="Another run is in progress.")
 
     try:
-        _set_last_run(running=True, step="digest", started_at=_date.today().isoformat(), ended_at=None, returncode=None, log_tail="")
-        res = _run_cmd(cmd, cwd=REPO_ROOT)
-        _set_last_run(
-            running=False,
-            step="digest",
-            ended_at=_date.today().isoformat(),
-            returncode=res["returncode"],
-            log_tail=_tail_text(res["output"]),
-        )
-
-        md = _digest_md_path(d)
-        html = _digest_html_path(d)
-        files = []
-        for p in [md, html]:
+        _set_last_run(running=True, mode="digest", date=d, returncode=None, artifacts=[], log="")
+        rc, out = _run_cmd(cmd, cwd=REPO_ROOT)
+        artifacts = []
+        for p in [
+            WORLD_ANALYSIS_DIR / f"daily_news_{d}.html",
+            WORLD_ANALYSIS_DIR / f"daily_news_{d}.md",
+        ]:
             if p.exists():
-                st = p.stat()
-                files.append({"path": _safe_relpath(p), "size": st.st_size, "mtime": st.st_mtime})
-
-        return JSONResponse({"ok": res["returncode"] == 0, "mode": "digest", "date": d, "limit": limit, "returncode": res["returncode"], "files": files, "log": _tail_text(res["output"])})
+                artifacts.append({"path": _safe_relpath(p), "size": p.stat().st_size, "mtime": p.stat().st_mtime})
+        _set_last_run(running=False, returncode=rc, artifacts=artifacts, log=_tail(out))
+        return JSONResponse({"ok": rc == 0, "mode": "digest", "date": d, "returncode": rc, "artifacts": artifacts, "log": _tail(out)})
     finally:
         _run_lock.release()
 
-@app.get("/api/digest/html")
-def api_digest_html(date: str = Query(default_factory=lambda: _date.today().isoformat())):
-    """
-    Serve generated digest HTML as *rendered HTML* (no download dialog).
-    """
-    d = (date or "").strip()
-    if len(d) != 10:
-        raise HTTPException(status_code=400, detail="Invalid date. Use YYYY-MM-DD.")
+# -----------------------------------------------------------------------------
+# Run: DAILY routine (recommended)
+# analyzer (docker) -> digest (py) -> viewmodel (py)
+# -----------------------------------------------------------------------------
+@app.post("/api/run/daily")
+def api_run_daily(
+    date: str = Query(default_factory=lambda: _date.today().isoformat(), description="YYYY-MM-DD"),
+    limit: int = Query(40, ge=1, le=200),
+) -> JSONResponse:
+    d = _parse_date(date)
 
-    p = _digest_html_path(d)
-    if not p.exists():
-        # fallback: pick newest daily_news_*.html
-        cand = sorted(ANALYSIS_DIR.glob("daily_news_*.html"), key=lambda x: x.stat().st_mtime, reverse=True)
-        if cand:
-            p = cand[0]
+    if not _run_lock.acquire(blocking=False):
+        raise HTTPException(status_code=409, detail="Another run is in progress.")
 
-    if not p.exists():
-        raise HTTPException(status_code=404, detail="Digest HTML not found.")
+    log_parts: List[str] = []
+    artifacts: List[Dict[str, Any]] = []
 
-    if not _is_allowed_file(p):
-        raise HTTPException(status_code=403, detail="File path not allowed.")
+    def add_artifact(p: Path) -> None:
+        if p.exists() and p.is_file():
+            st = p.stat()
+            artifacts.append({"path": _safe_relpath(p), "size": st.st_size, "mtime": st.st_mtime})
 
-    html = p.read_text(encoding="utf-8", errors="replace")
-    # Ensure browser treats it as HTML
-    return HTMLResponse(content=html)
+    try:
+        _set_last_run(running=True, mode="daily", date=d, returncode=None, artifacts=[], log="")
 
-@app.get("/api/digest/md")
-def api_digest_md(date: str = Query(default_factory=lambda: _date.today().isoformat())):
-    """
-    Serve generated digest markdown as text.
-    """
-    d = (date or "").strip()
-    if len(d) != 10:
-        raise HTTPException(status_code=400, detail="Invalid date. Use YYYY-MM-DD.")
+        # STEP 1: analyzer (docker compose run --rm analyzer)
+        cmd_an = [DOCKER_COMPOSE, *DOCKER_COMPOSE_ARGS, "run", "--rm", "analyzer"]
+        rc, out = _run_cmd(cmd_an, cwd=REPO_ROOT)
+        log_parts.append(f"[STEP] analyzer: {' '.join(cmd_an)}\n{out}")
+        if rc != 0:
+            _set_last_run(running=False, returncode=rc, artifacts=artifacts, log=_tail("\n\n".join(log_parts)))
+            return JSONResponse({"ok": False, "mode": "daily", "date": d, "returncode": rc, "artifacts": artifacts, "log": _tail("\n\n".join(log_parts))})
 
-    p = _digest_md_path(d)
-    if not p.exists():
-        cand = sorted(ANALYSIS_DIR.glob("daily_news_*.md"), key=lambda x: x.stat().st_mtime, reverse=True)
-        if cand:
-            p = cand[0]
-
-    if not p.exists():
-        raise HTTPException(status_code=404, detail="Digest markdown not found.")
-
-    if not _is_allowed_file(p):
-        raise HTTPException(status_code=403, detail="File path not allowed.")
-
-    return PlainTextResponse(p.read_text(encoding="utf-8", errors="replace"))
-
-
-
-def _md_to_html(md: str) -> str:
-    """
-    Minimal Markdown -> HTML renderer (headings + unordered lists + paragraphs).
-    Keeps it dependency-free (no extra pip installs).
-    """
-    lines = md.splitlines()
-    out: List[str] = []
-    in_ul = False
-
-    def close_ul():
-        nonlocal in_ul
-        if in_ul:
-            out.append("</ul>")
-            in_ul = False
-
-    for raw in lines:
-        line = raw.rstrip("\n")
-        if line.startswith("### "):
-            close_ul()
-            out.append(f"<h3>{html.escape(line[4:])}</h3>")
-        elif line.startswith("## "):
-            close_ul()
-            out.append(f"<h2>{html.escape(line[3:])}</h2>")
-        elif line.startswith("# "):
-            close_ul()
-            out.append(f"<h1>{html.escape(line[2:])}</h1>")
-        elif line.startswith("- "):
-            if not in_ul:
-                out.append("<ul>")
-                in_ul = True
-            out.append(f"<li>{html.escape(line[2:])}</li>")
-        elif line.strip() == "":
-            close_ul()
-            out.append("<br/>")
+        # STEP 2: digest (legacy HTML/MD)
+        if SCRIPT_BUILD_DAILY_DIGEST.exists():
+            py = _venv_python()
+            cmd_dg = [py, str(SCRIPT_BUILD_DAILY_DIGEST), "--date", d, "--limit", str(limit)]
+            rc, out = _run_cmd(cmd_dg, cwd=REPO_ROOT)
+            log_parts.append(f"[STEP] digest: {' '.join(cmd_dg)}\n{out}")
+            if rc != 0:
+                _set_last_run(running=False, returncode=rc, artifacts=artifacts, log=_tail("\n\n".join(log_parts)))
+                return JSONResponse({"ok": False, "mode": "daily", "date": d, "returncode": rc, "artifacts": artifacts, "log": _tail("\n\n".join(log_parts))})
         else:
-            close_ul()
-            out.append(f"<p>{html.escape(line)}</p>")
+            log_parts.append("[STEP] digest: SKIP (script missing)")
 
-    close_ul()
-    return "\n".join(out)
+        # STEP 3: viewmodel
+        if SCRIPT_BUILD_DIGEST_VIEW_MODEL.exists():
+            py = _venv_python()
+            cmd_vm = [py, str(SCRIPT_BUILD_DIGEST_VIEW_MODEL), "--date", d]
+            rc, out = _run_cmd(cmd_vm, cwd=REPO_ROOT)
+            log_parts.append(f"[STEP] viewmodel: {' '.join(cmd_vm)}\n{out}")
+            if rc != 0:
+                _set_last_run(running=False, returncode=rc, artifacts=artifacts, log=_tail("\n\n".join(log_parts)))
+                return JSONResponse({"ok": False, "mode": "daily", "date": d, "returncode": rc, "artifacts": artifacts, "log": _tail("\n\n".join(log_parts))})
+        else:
+            log_parts.append("[STEP] viewmodel: SKIP (script missing)")
 
-@app.get("/api/digest/md_view")
-def api_digest_md_view(date: str = Query(default_factory=lambda: _date.today().isoformat())):
+        # Collect artifacts (best-effort)
+        add_artifact(WORLD_ANALYSIS_DIR / f"daily_summary_{d}.json")
+        add_artifact(WORLD_ANALYSIS_DIR / f"daily_news_{d}.html")
+        add_artifact(WORLD_ANALYSIS_DIR / f"daily_news_{d}.md")
+        add_artifact(DIGEST_VIEW_DIR / f"{d}.json")
+
+        _set_last_run(running=False, returncode=0, artifacts=artifacts, log=_tail("\n\n".join(log_parts)))
+        return JSONResponse({"ok": True, "mode": "daily", "date": d, "returncode": 0, "artifacts": artifacts, "log": _tail("\n\n".join(log_parts))})
+    finally:
+        _run_lock.release()
+
+# -----------------------------------------------------------------------------
+# Run: FX daily (recommended minimal set)
+# today -> summary -> overlay images
+# -----------------------------------------------------------------------------
+@app.post("/api/run/fx")
+def api_run_fx(
+    date: str = Query(default_factory=lambda: _date.today().isoformat(), description="YYYY-MM-DD"),
+) -> JSONResponse:
+    d = _parse_date(date)
+
+    if not _run_lock.acquire(blocking=False):
+        raise HTTPException(status_code=409, detail="Another run is in progress.")
+
+    py = _venv_python()
+    log_parts: List[str] = []
+    artifacts: List[Dict[str, Any]] = []
+
+    def add_artifacts_from_dir(root: Path, exts: List[str]) -> None:
+        for it in _list_files(root, exts=exts, recursive=True)[:200]:
+            artifacts.append(it)
+
+    try:
+        _set_last_run(running=True, mode="fx", date=d, returncode=None, artifacts=[], log="")
+
+        steps: List[Tuple[str, Path, List[str]]] = [
+            ("fx_today", SCRIPT_FX_TODAY, ["--date", d]),
+            ("fx_summary", SCRIPT_FX_SUMMARY, []),
+            ("fx_overlay", SCRIPT_FX_OVERLAY, []),
+        ]
+
+        for step_name, script_path, args in steps:
+            if not script_path.exists():
+                log_parts.append(f"[STEP] {step_name}: SKIP (missing {_safe_relpath(script_path)})")
+                continue
+            cmd = [py, str(script_path), *args]
+            rc, out = _run_cmd(cmd, cwd=REPO_ROOT)
+            log_parts.append(f"[STEP] {step_name}: {' '.join(cmd)}\n{out}")
+            if rc != 0:
+                _set_last_run(running=False, returncode=rc, artifacts=artifacts, log=_tail("\n\n".join(log_parts)))
+                return JSONResponse({"ok": False, "mode": "fx", "date": d, "returncode": rc, "artifacts": artifacts, "log": _tail("\n\n".join(log_parts))})
+
+        # Collect likely artifacts
+        add_artifacts_from_dir(FX_DIR, [".png", ".json", ".csv"])
+        add_artifacts_from_dir(FX_REPORT_DIR, [".png", ".json", ".csv"])
+
+        _set_last_run(running=False, returncode=0, artifacts=artifacts, log=_tail("\n\n".join(log_parts)))
+        return JSONResponse({"ok": True, "mode": "fx", "date": d, "returncode": 0, "artifacts": artifacts, "log": _tail("\n\n".join(log_parts))})
+    finally:
+        _run_lock.release()
+
+# -----------------------------------------------------------------------------
+# FX: existing summary endpoints (used by UI panels)
+# -----------------------------------------------------------------------------
+@app.get("/api/fx/remittance/today")
+def api_fx_today() -> JSONResponse:
     """
-    Serve digest markdown rendered as HTML (dependency-free).
+    Best-effort: read latest "today" decision from data/fx outputs if present.
+    This endpoint is intentionally tolerant and returns N/A fields when missing.
     """
-    d = (date or "").strip()
-    if len(d) != 10:
-        raise HTTPException(status_code=400, detail="Invalid date. Use YYYY-MM-DD.")
+    # Known files from your pipeline; if not present, return N/A.
+    # (Do not invent data.)
+    out: Dict[str, Any] = {
+        "ok": True,
+        "date": None,
+        "decision": None,
+        "combined_noise": None,
+        "USDJPY": None,
+        "USDTHB": None,
+        "recommended_action": None,
+        "note": None,
+    }
 
-    p = _digest_md_path(d)
-    if not p.exists():
-        cand = sorted(ANALYSIS_DIR.glob("daily_news_*.md"), key=lambda x: x.stat().st_mtime, reverse=True)
-        if cand:
-            p = cand[0]
+    # Prefer a small json (if exists)
+    cand_json = sorted(FX_DIR.glob("*today*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    if cand_json:
+        try:
+            obj = json.loads(cand_json[0].read_text(encoding="utf-8"))
+            out.update(obj if isinstance(obj, dict) else {})
+            out["date"] = out.get("date") or out.get("today") or None
+            return JSONResponse(out)
+        except Exception:
+            pass
 
-    if not p.exists():
-        raise HTTPException(status_code=404, detail="Digest MD not found.")
+    # Fallback: dashboard csv (optional)
+    dash = FX_DIR / "jpy_thb_remittance_dashboard.csv"
+    if dash.exists():
+        try:
+            txt = dash.read_text(encoding="utf-8", errors="replace").strip().splitlines()
+            if len(txt) >= 2:
+                # naive parse: header, last row
+                header = [h.strip() for h in txt[0].split(",")]
+                last = [c.strip() for c in txt[-1].split(",")]
+                row = dict(zip(header, last))
+                out["date"] = row.get("date") or row.get("today")
+                out["decision"] = row.get("decision")
+                out["combined_noise"] = row.get("combined_noise")
+                out["USDJPY"] = row.get("USDJPY")
+                out["USDTHB"] = row.get("USDTHB")
+                out["recommended_action"] = row.get("recommended_action")
+                out["note"] = row.get("note")
+        except Exception:
+            pass
 
-    if "_is_allowed_file" in globals():
-        if not _is_allowed_file(p):  # type: ignore[name-defined]
-            raise HTTPException(status_code=403, detail="File path not allowed.")
+    return JSONResponse(out)
 
-    md = p.read_text(encoding="utf-8", errors="replace")
-    body = _md_to_html(md)
-    page = f"""<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Daily News Digest (MD) — {html.escape(p.name)}</title>
-  <style>
-    body {{ font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji"; padding: 20px; }}
-    h1 {{ margin: 0 0 8px; }}
-    h2 {{ margin: 18px 0 8px; }}
-    h3 {{ margin: 14px 0 6px; }}
-    ul {{ margin: 6px 0 12px 22px; }}
-    li {{ margin: 2px 0; }}
-    p {{ margin: 4px 0; white-space: pre-wrap; }}
-    .meta {{ color: #666; font-size: 12px; margin-bottom: 14px; }}
-    .top {{ display:flex; gap:10px; align-items:center; margin-bottom: 8px; }}
-    a {{ color: inherit; }}
-    .pill {{ display:inline-block; padding:2px 8px; border:1px solid #ddd; border-radius:999px; font-size:12px; color:#444; }}
-  </style>
-</head>
-<body>
-  <div class="top">
-    <span class="pill">md_view</span>
-    <span class="meta">{html.escape(str(p))}</span>
-  </div>
-  {body}
-</body>
-</html>"""
-    return HTMLResponse(content=page)
-
-# =============================================================================
-# Generic file viewer (safe roots only)
-# =============================================================================
-
-@app.get("/api/file")
-def api_file(path: str):
+@app.get("/api/fx/remittance/month")
+def api_fx_month(month: str = Query(..., description="YYYY-MM")) -> JSONResponse:
     """
-    Read any file under ALLOWED_READ_ROOTS (as text) for debugging/inspection.
+    Best-effort monthly summary. If scripts produce JSON summaries, expose them.
     """
-    if not path:
-        raise HTTPException(status_code=400, detail="path is required")
+    m = (month or "").strip()
+    if len(m) != 7:
+        raise HTTPException(status_code=400, detail="Invalid month. Use YYYY-MM.")
+    # Candidate: data/fx/reports/*{month}*.json
+    cands = sorted((FX_REPORT_DIR.glob(f"*{m}*.json")), key=lambda p: p.stat().st_mtime, reverse=True)
+    if cands:
+        try:
+            obj = json.loads(cands[0].read_text(encoding="utf-8"))
+            return JSONResponse({"ok": True, "month": m, "data": obj, "source": _safe_relpath(cands[0])})
+        except Exception as e:
+            return JSONResponse({"ok": False, "month": m, "error": str(e), "source": _safe_relpath(cands[0])})
+    return JSONResponse({"ok": True, "month": m, "data": None, "source": None})
 
-    p = (REPO_ROOT / path).resolve()
-    if not p.exists() or not p.is_file():
-        raise HTTPException(status_code=404, detail="file not found")
+# -----------------------------------------------------------------------------
+# Assets: list / latest for GUI (png/json/csv) under /data
+# -----------------------------------------------------------------------------
+@app.get("/api/assets/list")
+def api_assets_list(
+    dir: str = Query(..., description="root dir under /data, e.g. fx or world_politics/analysis"),
+    ext: str = Query("png", description="extension without dot, e.g. png"),
+    recursive: bool = Query(True),
+    limit: int = Query(50, ge=1, le=500),
+) -> JSONResponse:
+    rel = (dir or "").strip().replace("\\", "/").strip("/")
+    if not rel:
+        raise HTTPException(status_code=400, detail="dir required")
+    root = DATA_DIR / rel
+    if not root.exists() or not root.is_dir():
+        return JSONResponse({"ok": True, "dir": rel, "items": []})
+    items = _list_files(root, exts=[ext], recursive=recursive)[:limit]
+    return JSONResponse({"ok": True, "dir": rel, "items": items})
 
-    if not _is_allowed_file(p):
-        raise HTTPException(status_code=403, detail="file path not allowed")
-
-    # Decide response type
-    if p.suffix.lower() in [".html", ".htm"]:
-        return HTMLResponse(p.read_text(encoding="utf-8", errors="replace"))
-    return PlainTextResponse(p.read_text(encoding="utf-8", errors="replace"))
+@app.get("/api/assets/latest")
+def api_assets_latest(
+    dir: str = Query(..., description="root dir under /data, e.g. fx"),
+    ext: str = Query("png", description="extension without dot"),
+    recursive: bool = Query(True),
+    ) -> JSONResponse:
+    rel = (dir or "").strip().replace("\\", "/").strip("/")
+    if not rel:
+        raise HTTPException(status_code=400, detail="dir required")
+    root = DATA_DIR / rel
+    if not root.exists() or not root.is_dir():
+        return JSONResponse({"ok": True, "dir": rel, "item": None})
+    items = _list_files(root, exts=[ext], recursive=recursive)
+    return JSONResponse({"ok": True, "dir": rel, "item": items[0] if items else None})
