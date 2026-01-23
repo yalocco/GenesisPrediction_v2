@@ -52,15 +52,15 @@ python -m venv .venv
 .\.venv\Scripts\python.exe scripts\build_daily_summary_index.py
 .\.venv\Scripts\python.exe scripts\plot_regime_timeline.py
 
-git add docker.txt
+git add docker.md
 git commit -m "Add Docker usage note"
 git push origin main
 
-git add python.txt
+git add python.md
 git commit -m "Add python usage note"
 git push origin main
 
-git add github.txt
+git add github.md
 git commit -m "Add github usage note"
 git push origin main
 
