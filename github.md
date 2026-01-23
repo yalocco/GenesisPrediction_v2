@@ -93,3 +93,8 @@ github.txtだけgit addする
 git add github.txt
 git commit -m "Update Git command notes"
 git push origin exp/anchor-noise
+
+削除をステージに載せる
+git add -u
+git commit -m "Remove legacy .txt operation notes (migrated to .md)"
+git push origin main
