@@ -89,12 +89,15 @@ git restore --staged .
 どこにいるか迷ったら
 git branch --show-current
 
-github.txtだけgit addする
-git add github.txt
-git commit -m "Update Git command notes"
-git push origin exp/anchor-noise
-
 削除をステージに載せる
 git add -u
 git commit -m "Remove legacy .txt operation notes (migrated to .md)"
 git push origin main
+
+“同じズレ” を防ぐ最小ルール（おすすめ）
+git fetch origin
+git status -sb
+git log -1 --oneline
+git log -1 --oneline origin/main
+2つの log が違ってたら pull（今回の --ff-only が安全）
+git pull --ff-only origin main

@@ -1,11 +1,11 @@
 ルーティーン（最短・安全）
 .\.venv\Scripts\Activate.ps1
-python -m uvicorn app.server:app --reload --host 127.0.0.1 --port 8000
 docker compose run --rm analyzer
 scripts/run_daily.ps1
+python -m uvicorn app.server:app --reload --host 127.0.0.1 --port 8000
+
 
 .\.venv\Scripts\python.exe scripts\clean_daily_summary_anchors.py
-
 
 毎回これだけ実行
 .\.venv\Scripts\python.exe scripts\run_daily_pipeline.py
@@ -49,7 +49,7 @@ events_xxxx-xx-xx.jsonlが生成されない場合
 docker compose run --rm analyzer
 
 gui起動 タイバーツ
-powershell -NoProfile -ExecutionPolicy Bypass -File "D:\AI\Projects\GenesisPrediction_v2\scripts\fx_monthly_report_gui.ps1"
+-NoProfile -ExecutionPolicy Bypass -File "D:\AI\Projects\GenesisPrediction_v2\scripts\fx_monthly_report_gui.ps1"
 
 
 
