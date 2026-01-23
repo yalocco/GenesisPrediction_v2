@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sentiment (辞書ベース v1)</title>
+  <style>
+    :root{
+      --bg:#0e1117; --panel:#111827; --panel2:#0b1220; --text:#e5e7eb; --muted:#94a3b8;
+      --line:#1f2937; --link:#93c5fd; --btn:#1f2937;
+    }
+    *{box-sizing:border-box}
+    body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:var(--bg); color:var(--text)}
+    header{position:sticky; top:0; z-index:10; background:rgba(0,0,0,0.7); backdrop-filter: blur(6px); border-bottom:1px solid var(--line)}
+    .bar{display:flex; gap:14px; align-items:center; padding:10px 14px}
+    .brand{font-weight:700}
+    nav a{color:var(--link); text-decoration:none; margin-right:10px; font-size:14px}
+    nav a:hover{text-decoration:underline}
+    main{padding:18px 14px; max-width:1200px; margin:0 auto}
+    .card{background:linear-gradient(180deg,var(--panel),var(--panel2)); border:1px solid var(--line); border-radius:14px; padding:14px}
+    .row{display:flex; flex-wrap:wrap; gap:10px; align-items:center}
+    .btn{display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; border:1px solid var(--line); background:var(--btn); color:var(--text); cursor:pointer; text-decoration:none; font-size:14px}
+    .btn:hover{background:#223049}
+    .pill{padding:4px 8px; border-radius:999px; border:1px solid var(--line); font-size:12px; color:var(--muted)}
+    .kpi{display:grid; grid-template-columns: 110px 1fr; gap:6px 10px; margin-top:10px; font-size:14px}
+    .kpi .k{color:var(--muted)}
+    canvas{width:100%; height:420px; border:1px solid var(--line); border-radius:14px; background:#070a12}
+    .muted{color:var(--muted); font-size:13px}
+    .hr{height:1px; background:var(--line); margin:12px 0}
+    label{font-size:14px}
+  </style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand">GenesisPrediction v2</div>
+    <nav>
+      <a id="navHome" href="/static/index.html">Home</a>
+      <a id="navOverlay" href="/static/overlay.html">Overlay</a>
+      <a id="navSent" href="/static/sentiment.html">Sentiment</a>
+    </nav>
+    <div style="margin-left:auto" class="muted">正本: sentiment_timeseries.csv / 日次JSON（受動ビュー）</div>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <h1 style="margin:0 0 6px;">Sentiment（辞書ベース v1）</h1>
+    <div class="muted">CSVを fetch で読み込み、表示のみ（保存ダイアログは出ません）</div>
+
+    <div class="kpi" style="margin-top:12px;">
+      <div class="k">date</div><div id="k_date">-</div>
+      <div class="k">articles</div><div id="k_articles">-</div>
+      <div class="k">risk</div><div id="k_risk">-</div>
+      <div class="k">positive</div><div id="k_pos">-</div>
+      <div class="k">uncertainty</div><div id="k_unc">-</div>
+    </div>
+
+    <div class="hr"></div>
+
+    <div class="row">
+      <span class="pill">range</span>
+      <button class="btn" data-range="30">30d</button>
+      <button class="btn" data-range="90">90d</button>
+      <button class="btn" data-range="180">180d</button>
+      <button class="btn" data-range="all">ALL</button>
+      <button class="btn" id="reloadBtn">Reload</button>
+
+      <span class="pill">series</span>
+      <label><input type="checkbox" id="s_risk" checked> risk</label>
+      <label><input type="checkbox" id="s_pos" checked> positive</label>
+      <label><input type="checkbox" id="s_unc" checked> uncertainty</label>
+
+      <span class="pill">Y</span>
+      <button class="btn" id="yAutoBtn">Auto</button>
+      <button class="btn" id="yFixedBtn">Fixed(±0.02)</button>
+
+      <a class="btn" id="openCsv" href="/analysis/sentiment_timeseries.csv" target="_blank" rel="noopener">Open CSV</a>
+      <a class="btn" id="openJson" href="#" target="_blank" rel="noopener">Open JSON</a>
+    </div>
+
+    <div style="margin-top:12px;">
+      <canvas id="chart" width="1200" height="520"></canvas>
+      <div class="muted" id="info" style="margin-top:8px;">loading…</div>
+    </div>
+  </div>
+</main>
+
+<script>
+  function qs(name){ return new URLSearchParams(location.search).get(name); }
+  function setHref(id, url){ const el=document.getElementById(id); if(el) el.href=url; }
+  function fmt(n){
+    const x = Number(n);
+    if (!isFinite(x)) return String(n ?? "-");
+    return x.toFixed(6);
+  }
+  async function fetchText(url){
+    const r = await fetch(url, {cache:"no-store"});
+    if(!r.ok) throw new Error("HTTP " + r.status + " " + url);
+    return await r.text();
+  }
+  function parseCSV(text){
+    const lines = text.trim().split(/\r?\n/);
+    if(lines.length < 2) return [];
+    const headers = lines[0].split(",").map(s=>s.trim());
+    const rows = [];
+    for(let i=1;i<lines.length;i++){
+      const cols = lines[i].split(",");
+      const obj = {};
+      headers.forEach((h, idx)=> obj[h] = (cols[idx] ?? "").trim());
+      rows.push(obj);
+    }
+    return rows;
+  }
+
+  // simple chart drawer (no libs)
+  function drawChart(canvas, data, opts){
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+
+    // margins
+    const m = {l:60, r:20, t:20, b:50};
+    const w = W - m.l - m.r;
+    const h = H - m.t - m.b;
+
+    // background
+    ctx.fillStyle = "#070a12";
+    ctx.fillRect(0,0,W,H);
+
+    // grid
+    ctx.strokeStyle = "#1f2937";
+    ctx.lineWidth = 1;
+    for(let i=0;i<=5;i++){
+      const y = m.t + (h*i/5);
+      ctx.beginPath(); ctx.moveTo(m.l,y); ctx.lineTo(m.l+w,y); ctx.stroke();
+    }
+
+    // x scale
+    const n = data.length;
+    const xAt = (i)=> m.l + (n<=1 ? 0 : (w * i/(n-1)));
+
+    // y scale
+    const series = [];
+    if(opts.showRisk) series.push({key:"risk", label:"risk"});
+    if(opts.showPos) series.push({key:"positive", label:"positive"});
+    if(opts.showUnc) series.push({key:"uncertainty", label:"uncertainty"});
+
+    const vals = [];
+    for(const s of series){
+      for(const d of data){
+        const v = Number(d[s.key]);
+        if(isFinite(v)) vals.push(v);
+      }
+    }
+    let ymin=-0.02, ymax=0.02;
+    if(opts.yMode === "auto" && vals.length){
+      ymin = Math.min(...vals);
+      ymax = Math.max(...vals);
+      if(ymin === ymax){ ymin -= 0.01; ymax += 0.01; }
+      const pad = (ymax-ymin)*0.15;
+      ymin -= pad; ymax += pad;
+    }
+    const yAt = (v)=> m.t + (h * (1 - (v - ymin)/(ymax - ymin)));
+
+    // axes labels
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "14px system-ui";
+    ctx.fillText("score", 10, m.t + h/2);
+
+    // y ticks
+    ctx.font = "12px system-ui";
+    for(let i=0;i<=5;i++){
+      const v = ymin + (ymax-ymin)*(1 - i/5);
+      const y = m.t + (h*i/5);
+      ctx.fillText(v.toFixed(3), m.l-55, y+4);
+    }
+
+    // series drawing (different line styles, no color spec requirement here; but we must differentiate)
+    // We'll use grayscale patterns (dash) to avoid explicit colors.
+    const styles = [
+      {dash:[], width:2},
+      {dash:[8,6], width:2},
+      {dash:[2,6], width:2}
+    ];
+    ctx.strokeStyle = "#e5e7eb";
+
+    series.forEach((s, idx)=>{
+      const st = styles[idx % styles.length];
+      ctx.setLineDash(st.dash);
+      ctx.lineWidth = st.width;
+
+      ctx.beginPath();
+      data.forEach((d,i)=>{
+        const v = Number(d[s.key]);
+        if(!isFinite(v)) return;
+        const x = xAt(i);
+        const y = yAt(v);
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    // x labels (first/last)
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "12px system-ui";
+    if(n){
+      ctx.fillText(data[0].date, m.l, H-18);
+      ctx.fillText(data[n-1].date, m.l+w-80, H-18);
+    }
+
+    // legend
+    ctx.fillStyle = "#e5e7eb";
+    ctx.font = "13px system-ui";
+    let lx = m.l, ly = 16;
+    series.forEach((s, idx)=>{
+      const st = styles[idx % styles.length];
+      ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 2;
+      ctx.setLineDash(st.dash);
+      ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx+26, ly); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillText(s.label, lx+34, ly+4);
+      lx += 120;
+    });
+  }
+
+  function sliceRange(rows, range){
+    if(range === "all") return rows;
+    const n = Number(range);
+    if(!isFinite(n) || n<=0) return rows;
+    return rows.slice(Math.max(0, rows.length - n));
+  }
+
+  (async ()=>{
+    const csvUrl = "/analysis/sentiment_timeseries.csv";
+    const canvas = document.getElementById("chart");
+    const info = document.getElementById("info");
+
+    let yMode = "fixed";
+    let range = "30";
+
+    const wantedDate = qs("date"); // optional (not required)
+    const setNavDate = (d)=>{
+      setHref("navHome", d ? ("/static/index.html?date="+encodeURIComponent(d)) : "/static/index.html");
+      setHref("navOverlay", d ? ("/static/overlay.html?date="+encodeURIComponent(d)) : "/static/overlay.html");
+      setHref("navSent", d ? ("/static/sentiment.html?date="+encodeURIComponent(d)) : "/static/sentiment.html");
+      setHref("openJson", d ? ("/analysis/sentiment_"+d+".json") : "#");
+    };
+
+    async function loadAndRender(){
+      info.textContent = "loading…";
+      let rows = [];
+      try{
+        const csv = await fetchText(csvUrl + "?t=" + Date.now());
+        rows = parseCSV(csv);
+      }catch(e){
+        info.textContent = "CSV load failed: " + e.message;
+        return;
+      }
+      if(!rows.length){
+        info.textContent = "no data";
+        return;
+      }
+
+      // latest row
+      const last = rows[rows.length-1];
+      const latestDate = last.date || "-";
+      setNavDate(latestDate);
+
+      document.getElementById("k_date").textContent = latestDate;
+      document.getElementById("k_articles").textContent = last.articles ?? "-";
+      document.getElementById("k_risk").textContent = fmt(last.risk);
+      document.getElementById("k_pos").textContent = fmt(last.positive ?? last.pos);
+      document.getElementById("k_unc").textContent = fmt(last.uncertainty ?? last.unc);
+
+      // range slice
+      const view = sliceRange(rows, range);
+
+      // normalize keys
+      const normalized = view.map(r=>({
+        date: r.date,
+        risk: Number(r.risk),
+        positive: Number(r.positive ?? r.pos),
+        uncertainty: Number(r.uncertainty ?? r.unc)
+      }));
+
+      const opts = {
+        showRisk: document.getElementById("s_risk").checked,
+        showPos: document.getElementById("s_pos").checked,
+        showUnc: document.getElementById("s_unc").checked,
+        yMode
+      };
+
+      drawChart(canvas, normalized, opts);
+
+      info.textContent =
+        `points=${normalized.length}  range=${normalized[0].date} → ${normalized[normalized.length-1].date}  y=${yMode}`;
+    }
+
+    // buttons
+    document.querySelectorAll("button[data-range]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        range = btn.getAttribute("data-range");
+        loadAndRender();
+      });
+    });
+    document.getElementById("reloadBtn").addEventListener("click", loadAndRender);
+
+    document.getElementById("yAutoBtn").addEventListener("click", ()=>{ yMode="auto"; loadAndRender(); });
+    document.getElementById("yFixedBtn").addEventListener("click", ()=>{ yMode="fixed"; loadAndRender(); });
+
+    ["s_risk","s_pos","s_unc"].forEach(id=>{
+      document.getElementById(id).addEventListener("change", loadAndRender);
+    });
+
+    // initial
+    // If URL has date, only affects json/open links + nav; chart still uses CSV range.
+    if(wantedDate) setNavDate(wantedDate);
+    await loadAndRender();
+  })();
+</script>
+</body>
+</html>

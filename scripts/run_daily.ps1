@@ -25,17 +25,29 @@ Write-Output "[RUN] date=$Date"
 Write-Output "[STEP] analyzer: docker compose run --rm analyzer"
 docker compose run --rm analyzer
 
-# 2) Digest (HTML/MD)
+# python exe
 $venvPy = Join-Path $repoRoot ".venv\Scripts\python.exe"
 $py = $venvPy
 if (!(Test-Path $py)) {
   $py = "python"
 }
 
+# 2) Digest (HTML/MD)
 Write-Output "[STEP] digest: scripts/build_daily_news_digest.py --date $Date --limit 40"
 & $py "scripts/build_daily_news_digest.py" --date $Date --limit 40
 
-# 3) ViewModel (digest/view)
+# 3) Sentiment (JSON + timeseries CSV)
+Write-Output "[STEP] sentiment: scripts/build_daily_sentiment.py --date $Date"
+& $py "scripts/build_daily_sentiment.py" --date $Date
+
+# 3.5) FX overlay (PNG) + publish to analysis (dated)
+Write-Output "[STEP] fx: scripts/fx_remittance_overlay.py"
+& $py "scripts/fx_remittance_overlay.py"
+
+Write-Output "[STEP] fx publish: scripts/publish_fx_overlay_to_analysis.py --date $Date"
+& $py "scripts/publish_fx_overlay_to_analysis.py" --date $Date
+
+# 4) ViewModel (digest/view)
 Write-Output "[STEP] viewmodel: scripts/build_digest_view_model.py --date $Date"
 & $py "scripts/build_digest_view_model.py" --date $Date
 

@@ -1,564 +1,206 @@
 <!doctype html>
-<html lang="en">
+<html lang="ja">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>GenesisPrediction v2 - Local GUI</title>
+  <title>GenesisPrediction v2 - Home</title>
   <style>
     :root{
-      --bg:#ffffff;
-      --fg:#0b0f14;
-      --muted:#5b6573;
-      --card:#ffffff;
-      --border:rgba(0,0,0,.10);
-      --shadow:0 6px 18px rgba(0,0,0,.06);
-      --pill:#f2f4f7;
-      --link:#1a73e8;
+      --bg:#0e1117; --panel:#111827; --panel2:#0b1220; --text:#e5e7eb; --muted:#94a3b8;
+      --line:#1f2937; --link:#93c5fd; --btn:#1f2937; --btn2:#0b1220; --ok:#10b981;
     }
     *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--fg)}
-    header{padding:28px 20px 14px;max-width:1200px;margin:0 auto}
-    h1{font-size:54px;letter-spacing:-.02em;margin:0 0 6px}
-    .subtitle{color:var(--muted);margin:0}
-    main{max-width:1200px;margin:0 auto;padding:0 20px 40px}
-    .panel{background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:18px 18px 16px;margin:18px 0}
-    .panel h2{font-size:38px;margin:0 0 6px}
-    .panel .desc{color:var(--muted);margin:0 0 14px}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .row + .row{margin-top:10px}
-    .btn{border:1px solid var(--border);background:#fff;border-radius:999px;padding:8px 14px;font-weight:600;cursor:pointer}
-    .btn:hover{background:#fafafa}
-    .btn.primary{background:#0b0f14;color:#fff;border-color:#0b0f14}
-    .btn.primary:hover{background:#151b22}
-    .inp{border:1px solid var(--border);border-radius:999px;padding:8px 12px;font-weight:600}
-    .pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--pill);border-radius:999px;padding:6px 10px;font-size:13px;color:#263142}
-    .status{font-weight:800}
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
-    .box{border:1px solid var(--border);border-radius:14px;padding:12px;background:#fff}
-    .pre{white-space:pre-wrap;line-height:1.35;font-size:13px}
-    .log{background:#0b0f14;color:#e8eef4;border-radius:14px;padding:14px}
-    a{color:var(--link);text-decoration:none}
-    a:hover{text-decoration:underline}
-
-    /* cards */
-    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-    @media (max-width:980px){ .grid{grid-template-columns:1fr} }
-    .card{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:#fff}
-    .card-body{padding:12px 12px 10px}
-    .card-title{font-size:16px;font-weight:800;margin:0 0 6px}
-    .card-summary{margin:0;color:#1f2a37;font-size:13px;line-height:1.35}
-    .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
-    .tag{font-size:12px;border:1px solid var(--border);background:var(--pill);padding:4px 8px;border-radius:999px;color:#263142}
-    .thumb{
-      width:100%;
-      height:220px;
-      background:linear-gradient(135deg,#f3f4f6,#e5e7eb);
-      display:flex;align-items:center;justify-content:center;
-      color:#9aa4b2;
-      font-weight:800;
-      letter-spacing:.02em;
-    }
-    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
-    .right-link{margin-left:auto;font-weight:800}
-    .small{font-size:12px;color:var(--muted)}
-    .hr{height:1px;background:var(--border);margin:12px 0}
-    .kv{display:grid;grid-template-columns:180px 1fr;gap:8px 14px}
-    @media (max-width:700px){ .kv{grid-template-columns:1fr} }
-
-    /* image viewer modal */
-    .modal{
-      position:fixed;inset:0;background:rgba(0,0,0,.72);
-      display:none;align-items:center;justify-content:center;z-index:9999;
-      padding:20px;
-    }
-    .modal.open{display:flex}
-    .modal-inner{
-      width:min(1200px,96vw);
-      height:min(780px,92vh);
-      background:#0b0f14;
-      border:1px solid rgba(255,255,255,.12);
-      border-radius:18px;
-      overflow:hidden;
-      display:flex;flex-direction:column;
-      box-shadow:0 20px 60px rgba(0,0,0,.45);
-    }
-    .modal-bar{
-      display:flex;gap:10px;align-items:center;
-      padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.12);
-      color:#e8eef4;
-    }
-    .modal-bar .spacer{flex:1}
-    .modal-bar .btn2{
-      border:1px solid rgba(255,255,255,.18);
-      background:rgba(255,255,255,.06);
-      color:#e8eef4;border-radius:999px;padding:7px 12px;font-weight:800;cursor:pointer;
-    }
-    .modal-bar .btn2:hover{background:rgba(255,255,255,.10)}
-    .modal-canvas{
-      position:relative;flex:1;overflow:hidden;cursor:grab;
-      background:radial-gradient(circle at 20% 20%, rgba(255,255,255,.06), transparent 55%);
-    }
-    .modal-canvas:active{cursor:grabbing}
-    .zoom-img{
-      position:absolute;left:50%;top:50%;
-      transform:translate(-50%,-50%) scale(1);
-      transform-origin:center center;
-      user-select:none;
-      max-width:none;
-      -webkit-user-drag:none;
-      pointer-events:none;
-    }
+    body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:var(--bg); color:var(--text)}
+    header{position:sticky; top:0; z-index:10; background:rgba(0,0,0,0.7); backdrop-filter: blur(6px); border-bottom:1px solid var(--line)}
+    .bar{display:flex; gap:14px; align-items:center; padding:10px 14px}
+    .brand{font-weight:700}
+    nav a{color:var(--link); text-decoration:none; margin-right:10px; font-size:14px}
+    nav a:hover{text-decoration:underline}
+    main{padding:18px 14px; max-width:1200px; margin:0 auto}
+    .grid{display:grid; gap:14px}
+    @media(min-width:980px){ .grid{grid-template-columns: 1.2fr 0.8fr;} }
+    .card{background:linear-gradient(180deg,var(--panel),var(--panel2)); border:1px solid var(--line); border-radius:14px; padding:14px}
+    .title{font-size:18px; font-weight:700; margin:0 0 8px}
+    .muted{color:var(--muted); font-size:13px}
+    .row{display:flex; flex-wrap:wrap; gap:10px; align-items:center}
+    .btn{display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; border:1px solid var(--line); background:var(--btn); color:var(--text); cursor:pointer; text-decoration:none; font-size:14px}
+    .btn:hover{background:#223049}
+    .btn:disabled{opacity:0.45; cursor:not-allowed}
+    .pill{padding:4px 8px; border-radius:999px; border:1px solid var(--line); font-size:12px; color:var(--muted)}
+    .kpi{display:grid; grid-template-columns: 110px 1fr; gap:6px 10px; margin-top:10px; font-size:14px}
+    .kpi div{padding:3px 0}
+    .kpi .k{color:var(--muted)}
+    .previewWrap{border:1px solid var(--line); border-radius:14px; overflow:hidden; background:#000}
+    iframe{width:100%; border:0}
+    img{max-width:100%; display:block; border-radius:12px; border:1px solid var(--line); background:#000}
+    .hr{height:1px; background:var(--line); margin:12px 0}
+    .small{font-size:12px}
+    .okdot{display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--ok); margin-right:6px}
   </style>
 </head>
 <body>
 <header>
-  <h1>GenesisPrediction v2 - Local GUI</h1>
-  <p class="subtitle">Daily routine runner + ViewModel (SST) + legacy digest outputs (HTML/MD). GUI must not parse HTML.</p>
+  <div class="bar">
+    <div class="brand">GenesisPrediction v2</div>
+    <nav>
+      <a href="/static/index.html">Home</a>
+      <a id="navOverlay" href="/static/overlay.html">Overlay</a>
+      <a id="navSent" href="/static/sentiment.html">Sentiment</a>
+    </nav>
+    <div style="margin-left:auto" class="muted small">
+      <span class="okdot"></span>GUI is read-only (SST)
+    </div>
+  </div>
 </header>
 
 <main>
-  <section class="panel" id="daily">
-    <h2>Daily Routine</h2>
-    <p class="desc">Run analyzer → digest → viewmodel with one button (recommended).</p>
+  <div class="grid">
+    <!-- Left -->
+    <div class="card">
+      <h2 class="title">Today / Latest</h2>
+      <div class="muted">正本（PNG/CSV/HTML）を読むだけ。GUIは再計算しません。</div>
 
-    <div class="row">
-      <span class="small">Date:</span>
-      <input id="dateDaily" class="inp" type="date" />
-      <button class="btn" id="btnToday">Today</button>
-      <button class="btn" id="btnLatest">Latest</button>
-      <button class="btn primary" id="btnRunDaily">Run daily</button>
-      <button class="btn" id="btnLoadView">Load view</button>
-      <button class="btn" id="btnOpenHtml">Open digest HTML</button>
-      <button class="btn" id="btnOpenMd">Open digest MD</button>
-    </div>
+      <div class="row" style="margin-top:10px;">
+        <span class="pill">date: <span id="dateLabel">loading…</span></span>
+        <a class="btn" id="openOverlayBtn" href="/static/overlay.html">Open Overlay</a>
+        <a class="btn" id="openSentBtn" href="/static/sentiment.html">Open Sentiment</a>
+        <a class="btn" id="openDigestBtn" href="#" target="_blank" rel="noopener">Open Digest HTML</a>
+      </div>
 
-    <div class="row">
-      <span class="pill"><span class="status" id="statusDaily">status: -</span></span>
-      <span class="small">source: <span class="mono">/api/digest/view</span></span>
-      <span class="small">date: <span class="mono" id="statusDate">-</span></span>
-      <span class="small">latest: <span class="mono" id="statusLatest">-</span></span>
-    </div>
+      <div class="kpi" id="kpi">
+        <div class="k">sentiment articles</div><div id="k_articles">-</div>
+        <div class="k">risk</div><div id="k_risk">-</div>
+        <div class="k">positive</div><div id="k_pos">-</div>
+        <div class="k">uncertainty</div><div id="k_unc">-</div>
+      </div>
 
-    <div class="row box" style="width:100%">
-      <div class="kv" style="width:100%">
-        <div class="small">run</div><div class="mono" id="runMode">-</div>
-        <div class="small">returncode</div><div class="mono" id="runCode">-</div>
-        <div class="small">view_status</div><div class="mono" id="viewStatus">-</div>
-        <div class="small">artifacts</div><div class="mono" id="artifactCount">-</div>
+      <div class="hr"></div>
+
+      <h3 class="title" style="font-size:16px;">Digest preview</h3>
+      <div class="muted small">※ HTMLをそのまま埋め込み表示（パースしない）。</div>
+      <div class="previewWrap" style="margin-top:10px;">
+        <iframe id="digestFrame" title="Digest preview" style="height:680px;"></iframe>
       </div>
     </div>
 
-    <div class="hr"></div>
-    <div id="viewArea" class="grid"></div>
+    <!-- Right -->
+    <div class="card">
+      <h2 class="title">Run (CLI only)</h2>
+      <div class="muted">日次生成は CLI/PowerShell で実行してください。</div>
 
-    <div class="hr"></div>
-    <div class="log mono pre" id="logArea">Press buttons above…</div>
-  </section>
-
-  <section class="panel" id="fx">
-    <h2>FX Remittance</h2>
-    <p class="desc">Show FX decision + list/preview generated graphs (PNG). Click any image to zoom (wheel) + pan (drag).</p>
-
-    <div class="row">
-      <span class="small">Date:</span>
-      <input id="dateFx" class="inp" type="date" />
-      <button class="btn" id="btnFxToday">Today</button>
-      <button class="btn primary" id="btnRunFx">Run FX</button>
-      <button class="btn" id="btnFxRefresh">Refresh status</button>
-      <button class="btn" id="btnFxLatestImg">Open latest image</button>
-    </div>
-
-    <div class="row box" style="width:100%">
-      <div class="kv" style="width:100%">
-        <div class="small">combined_noise</div><div class="mono" id="fxCombined">-</div>
-        <div class="small">USDJPY / USDTHB</div><div class="mono" id="fxPairs">-</div>
-        <div class="small">recommended_action</div><div class="mono" id="fxAction">-</div>
-        <div class="small">note</div><div class="mono" id="fxNote">-</div>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn" disabled title="GUIから実行しません">Run Daily (disabled)</button>
       </div>
-    </div>
 
-    <div class="hr"></div>
-    <div class="row" style="justify-content:space-between">
-      <div class="small">Images under <span class="mono">data/fx</span> (png). Newest first.</div>
-      <button class="btn" id="btnFxReloadImgs">Reload images</button>
-    </div>
-    <div class="grid" id="fxGrid"></div>
-  </section>
-</main>
+      <pre style="margin-top:10px; padding:10px; border:1px solid var(--line); border-radius:12px; background:#0b1020; color:#cbd5e1; overflow:auto;">
+docker compose run --rm analyzer
+# または
+scripts/run_daily.ps1
+      </pre>
 
-<!-- Image viewer modal -->
-<div class="modal" id="imgModal" aria-hidden="true">
-  <div class="modal-inner">
-    <div class="modal-bar">
-      <span class="mono" id="imgTitle">image</span>
-      <span class="spacer"></span>
-      <button class="btn2" id="btnResetZoom">Reset</button>
-      <a class="btn2" id="btnOpenNewTab" href="#" target="_blank" rel="noopener">Open</a>
-      <button class="btn2" id="btnCloseModal">Close</button>
-    </div>
-    <div class="modal-canvas" id="imgCanvas">
-      <img id="zoomImg" class="zoom-img" alt="preview" />
+      <div class="hr"></div>
+
+      <h3 class="title" style="font-size:16px;">FX preview</h3>
+      <div class="muted small">dated があれば dated を優先。なければ latest にフォールバック。</div>
+      <div style="margin-top:10px;">
+        <div class="muted small" id="fxPathLabel">-</div>
+        <a id="fxOpenLink" class="btn" href="#" target="_blank" rel="noopener" style="margin:10px 0 8px;">open image</a>
+        <img id="fxImg" alt="FX overlay preview" />
+      </div>
     </div>
   </div>
-</div>
+</main>
 
 <script>
-  const $ = (id) => document.getElementById(id);
-
-  function todayISO(){
-    const d = new Date();
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth()+1).padStart(2,'0');
-    const dd = String(d.getDate()).padStart(2,'0');
-    return `${yyyy}-${mm}-${dd}`;
+  // ---------- helpers ----------
+  function qs(name){ return new URLSearchParams(location.search).get(name); }
+  function setHref(id, url){ const el=document.getElementById(id); if(el) el.href=url; }
+  function fmt(n){
+    const x = Number(n);
+    if (!isFinite(x)) return String(n ?? "-");
+    return x.toFixed(6);
   }
-
-  async function apiGet(url){
-    const r = await fetch(url, {cache:'no-store'});
-    const text = await r.text();
-    let obj = null;
-    try{ obj = JSON.parse(text); }catch(e){}
-    if(!r.ok){
-      const msg = obj?.detail || obj?.error || text || `HTTP ${r.status}`;
-      throw new Error(msg);
+  async function fetchText(url){
+    const r = await fetch(url, {cache:"no-store"});
+    if(!r.ok) throw new Error("HTTP " + r.status + " " + url);
+    return await r.text();
+  }
+  function parseCSV(text){
+    const lines = text.trim().split(/\r?\n/);
+    if(lines.length < 2) return [];
+    const headers = lines[0].split(",").map(s=>s.trim());
+    const rows = [];
+    for(let i=1;i<lines.length;i++){
+      const cols = lines[i].split(",");
+      const obj = {};
+      headers.forEach((h, idx)=> obj[h] = (cols[idx] ?? "").trim());
+      rows.push(obj);
     }
-    return obj ?? text;
+    return rows;
   }
-
-  async function apiPost(url){
-    const r = await fetch(url, {method:'POST'});
-    const text = await r.text();
-    let obj = null;
-    try{ obj = JSON.parse(text); }catch(e){}
-    if(!r.ok){
-      const msg = obj?.detail || obj?.error || text || `HTTP ${r.status}`;
-      throw new Error(msg);
+  async function pickFirstExists(urls){
+    for (const u of urls){
+      try{
+        const r = await fetch(u, {method:"HEAD", cache:"no-store"});
+        if(r.ok) return u;
+      }catch(e){}
     }
-    return obj ?? text;
+    return urls[urls.length-1];
   }
 
-  function setLog(s){
-    $("logArea").textContent = s || "";
-  }
+  // ---------- main ----------
+  (async ()=>{
+    // latest date from sentiment_timeseries.csv
+    const csvUrl = "/analysis/sentiment_timeseries.csv";
+    let latestDate = qs("date") || null;
 
-  function statusPill(el, status){
-    el.textContent = `status: ${status || "-"}`;
-  }
+    try{
+      const csv = await fetchText(csvUrl + "?t=" + Date.now());
+      const rows = parseCSV(csv);
+      if(rows.length){
+        const last = rows[rows.length-1];
+        latestDate = latestDate || last.date || latestDate;
 
-  function safeStr(x){
-    if(x === null || x === undefined) return "-";
-    if(typeof x === "string" && x.trim() === "") return "-";
-    return String(x);
-  }
-
-  function openUrl(url){
-    window.open(url, "_blank", "noopener");
-  }
-
-  // ---------------------------
-  // Daily routine (World politics)
-  // ---------------------------
-  async function refreshLatest(){
-    const obj = await apiGet("/api/digest/view/latest");
-    $("statusLatest").textContent = obj?.latest ? `${obj.latest} (ok)` : "none";
-    return obj?.latest || null;
-  }
-
-  async function loadView(dateStr){
-    $("statusDate").textContent = dateStr;
-    const vm = await apiGet(`/api/digest/view?date=${encodeURIComponent(dateStr)}`);
-
-    const viewStatus = vm?.status || (vm?.sections ? "ok" : "na");
-    $("viewStatus").textContent = viewStatus;
-    statusPill($("statusDaily"), viewStatus);
-
-    const root = $("viewArea");
-    root.innerHTML = "";
-
-    const sections = vm?.sections || [];
-    if(viewStatus === "na" || sections.length === 0){
-      root.innerHTML = `<div class="box"><div class="mono pre">N/A (not generated / not available).</div><div class="small">notes: ${safeStr(vm?.notes)}</div></div>`;
-      return vm;
-    }
-
-    // Render a simplified card grid for the first section (world_politics)
-    const sec = sections[0];
-    const cards = sec?.cards || [];
-    for(const c of cards){
-      const card = document.createElement("div");
-      card.className = "card";
-
-      const imgUrl = c?.image || null;
-      const thumb = document.createElement("div");
-      thumb.className = "thumb";
-      if(imgUrl){
-        const img = document.createElement("img");
-        img.src = imgUrl;
-        img.alt = "thumb";
-        img.loading = "lazy";
-        img.referrerPolicy = "no-referrer";
-        img.onerror = () => { thumb.textContent = "no image"; };
-        thumb.appendChild(img);
-        thumb.style.cursor = "pointer";
-        thumb.onclick = () => openImageModal(imgUrl, c?.title || "image");
+        document.getElementById("k_articles").textContent = last.articles ?? "-";
+        document.getElementById("k_risk").textContent = fmt(last.risk);
+        document.getElementById("k_pos").textContent = fmt(last.positive ?? last.pos);
+        document.getElementById("k_unc").textContent = fmt(last.uncertainty ?? last.unc);
+        document.getElementById("dateLabel").textContent = latestDate ?? "unknown";
       } else {
-        thumb.textContent = "no image";
+        document.getElementById("dateLabel").textContent = latestDate ?? "unknown";
       }
-
-      const body = document.createElement("div");
-      body.className = "card-body";
-
-      const title = document.createElement("div");
-      title.className = "card-title";
-      title.textContent = safeStr(c?.title);
-
-      const sum = document.createElement("p");
-      sum.className = "card-summary";
-      sum.textContent = safeStr(c?.summary);
-
-      const meta = document.createElement("div");
-      meta.className = "meta";
-      const source = c?.source ? `<span class="tag mono">${c.source}</span>` : "";
-      const tags = (c?.tags || []).slice(0,6).map(t => `<span class="tag">${t}</span>`).join("");
-      const open = c?.url ? `<a class="right-link" href="${c.url}" target="_blank" rel="noopener">open</a>` : "";
-      meta.innerHTML = `${source}${tags}${open}`;
-
-      body.appendChild(title);
-      body.appendChild(sum);
-      body.appendChild(meta);
-
-      card.appendChild(thumb);
-      card.appendChild(body);
-      root.appendChild(card);
-    }
-
-    return vm;
-  }
-
-  async function runDaily(dateStr){
-    setLog("Running daily…");
-    const obj = await apiPost(`/api/run/daily?date=${encodeURIComponent(dateStr)}`);
-    $("runMode").textContent = safeStr(obj?.mode);
-    $("runCode").textContent = safeStr(obj?.returncode);
-    $("artifactCount").textContent = safeStr((obj?.artifacts||[]).length);
-    setLog(obj?.log || "");
-    await loadView(dateStr);
-    await refreshLatest();
-    return obj;
-  }
-
-  // ---------------------------
-  // FX
-  // ---------------------------
-  async function refreshFxStatus(){
-    const obj = await apiGet("/api/fx/remittance/today");
-    $("fxCombined").textContent = safeStr(obj?.combined_noise);
-    $("fxPairs").textContent = `${safeStr(obj?.USDJPY)} / ${safeStr(obj?.USDTHB)}`;
-    $("fxAction").textContent = safeStr(obj?.recommended_action);
-    $("fxNote").textContent = safeStr(obj?.note);
-    return obj;
-  }
-
-  async function reloadFxImages(){
-    const obj = await apiGet("/api/assets/list?dir=fx&ext=png&recursive=true&limit=80");
-    const items = obj?.items || [];
-    const grid = $("fxGrid");
-    grid.innerHTML = "";
-    if(items.length === 0){
-      grid.innerHTML = `<div class="box"><div class="mono pre">No FX images found under data/fx</div></div>`;
-      return;
-    }
-    for(const it of items){
-      const card = document.createElement("div");
-      card.className = "card";
-      const thumb = document.createElement("div");
-      thumb.className = "thumb";
-      const img = document.createElement("img");
-      img.src = it.url;
-      img.alt = it.name;
-      img.loading = "lazy";
-      img.onerror = () => { thumb.textContent = "no image"; };
-      thumb.appendChild(img);
-      thumb.style.cursor = "pointer";
-      thumb.onclick = () => openImageModal(it.url, it.name);
-
-      const body = document.createElement("div");
-      body.className = "card-body";
-      body.innerHTML = `
-        <div class="card-title mono">${it.name}</div>
-        <div class="small">path: <span class="mono">${it.path}</span></div>
-        <div class="meta">
-          <a class="right-link" href="${it.url}" target="_blank" rel="noopener">open</a>
-        </div>
-      `;
-      card.appendChild(thumb);
-      card.appendChild(body);
-      grid.appendChild(card);
-    }
-  }
-
-  async function openLatestFxImage(){
-    const obj = await apiGet("/api/assets/latest?dir=fx&ext=png&recursive=true");
-    const it = obj?.item;
-    if(!it?.url){
-      alert("No FX images found.");
-      return;
-    }
-    openImageModal(it.url, it.name || "latest");
-  }
-
-  async function runFx(dateStr){
-    setLog("Running FX…");
-    const obj = await apiPost(`/api/run/fx?date=${encodeURIComponent(dateStr)}`);
-    setLog(obj?.log || "");
-    await refreshFxStatus();
-    await reloadFxImages();
-    return obj;
-  }
-
-  // ---------------------------
-  // Image modal: zoom + pan
-  // ---------------------------
-  let zoom = 1;
-  let panX = 0, panY = 0;
-  let isDragging = false;
-  let startX = 0, startY = 0;
-
-  function applyTransform(){
-    const img = $("zoomImg");
-    img.style.transform = `translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${zoom})`;
-  }
-
-  function openImageModal(url, title){
-    $("imgTitle").textContent = title || "image";
-    $("btnOpenNewTab").href = url;
-    const img = $("zoomImg");
-    img.src = url;
-    zoom = 1; panX = 0; panY = 0;
-    applyTransform();
-    $("imgModal").classList.add("open");
-    $("imgModal").setAttribute("aria-hidden", "false");
-  }
-
-  function closeModal(){
-    $("imgModal").classList.remove("open");
-    $("imgModal").setAttribute("aria-hidden", "true");
-  }
-
-  $("btnCloseModal").onclick = closeModal;
-  $("imgModal").addEventListener("click", (e) => {
-    if(e.target === $("imgModal")) closeModal();
-  });
-
-  $("btnResetZoom").onclick = () => { zoom = 1; panX = 0; panY = 0; applyTransform(); };
-
-  const canvas = $("imgCanvas");
-  canvas.addEventListener("wheel", (e) => {
-    e.preventDefault();
-    const delta = Math.sign(e.deltaY);
-    const factor = delta > 0 ? 0.90 : 1.10;
-    const next = Math.min(8, Math.max(0.2, zoom * factor));
-    zoom = next;
-    applyTransform();
-  }, {passive:false});
-
-  canvas.addEventListener("mousedown", (e) => {
-    isDragging = true;
-    startX = e.clientX - panX;
-    startY = e.clientY - panY;
-  });
-
-  window.addEventListener("mousemove", (e) => {
-    if(!isDragging) return;
-    panX = e.clientX - startX;
-    panY = e.clientY - startY;
-    applyTransform();
-  });
-
-  window.addEventListener("mouseup", () => { isDragging = false; });
-
-  // ---------------------------
-  // Wire buttons
-  // ---------------------------
-  function initDates(){
-    const t = todayISO();
-    $("dateDaily").value = t;
-    $("dateFx").value = t;
-    $("statusDate").textContent = t;
-  }
-
-  $("btnToday").onclick = async () => {
-    const t = todayISO();
-    $("dateDaily").value = t;
-    await loadView(t);
-  };
-
-  $("btnLatest").onclick = async () => {
-    const latest = await refreshLatest();
-    if(latest){
-      $("dateDaily").value = latest;
-      await loadView(latest);
-    }else{
-      alert("No viewmodel files found yet.");
-    }
-  };
-
-  $("btnRunDaily").onclick = async () => {
-    const d = $("dateDaily").value || todayISO();
-    try{ await runDaily(d); }catch(e){ setLog(String(e)); alert(e); }
-  };
-
-  $("btnLoadView").onclick = async () => {
-    const d = $("dateDaily").value || todayISO();
-    try{ await loadView(d); }catch(e){ setLog(String(e)); alert(e); }
-  };
-
-  $("btnOpenHtml").onclick = () => {
-    const d = $("dateDaily").value || todayISO();
-    openUrl(`/api/digest/html?date=${encodeURIComponent(d)}`);
-  };
-
-  $("btnOpenMd").onclick = () => {
-    const d = $("dateDaily").value || todayISO();
-    openUrl(`/api/digest/md_view?date=${encodeURIComponent(d)}`);
-  };
-
-  $("btnFxToday").onclick = async () => {
-    const t = todayISO();
-    $("dateFx").value = t;
-    await refreshFxStatus();
-  };
-
-  $("btnRunFx").onclick = async () => {
-    const d = $("dateFx").value || todayISO();
-    try{ await runFx(d); }catch(e){ setLog(String(e)); alert(e); }
-  };
-
-  $("btnFxRefresh").onclick = async () => {
-    try{ await refreshFxStatus(); }catch(e){ alert(e); }
-  };
-
-  $("btnFxReloadImgs").onclick = async () => {
-    try{ await reloadFxImages(); }catch(e){ alert(e); }
-  };
-
-  $("btnFxLatestImg").onclick = async () => {
-    try{ await openLatestFxImage(); }catch(e){ alert(e); }
-  };
-
-  // Init
-  (async function boot(){
-    initDates();
-    try{
-      await refreshLatest();
-      await loadView($("dateDaily").value);
     }catch(e){
-      setLog(String(e));
+      document.getElementById("dateLabel").textContent = latestDate ?? "unknown";
     }
-    try{
-      await refreshFxStatus();
-      await reloadFxImages();
-    }catch(e){}
+
+    // nav links with date
+    const d = latestDate;
+    if(d){
+      setHref("navOverlay", "/static/overlay.html?date=" + encodeURIComponent(d));
+      setHref("openOverlayBtn", "/static/overlay.html?date=" + encodeURIComponent(d));
+      setHref("navSent", "/static/sentiment.html?date=" + encodeURIComponent(d));
+      setHref("openSentBtn", "/static/sentiment.html?date=" + encodeURIComponent(d));
+
+      const digestUrl = "/analysis/daily_news_" + d + ".html";
+      setHref("openDigestBtn", digestUrl);
+      document.getElementById("digestFrame").src = digestUrl;
+
+      // FX: prefer dated, fallback to latest
+      const fxCandidates = [
+        "/analysis/fx_overlay_" + d + ".png",
+        "/analysis/jpy_thb_remittance_overlay.png"
+      ];
+      const picked = await pickFirstExists(fxCandidates);
+      document.getElementById("fxPathLabel").textContent = picked;
+      document.getElementById("fxOpenLink").href = picked;
+      document.getElementById("fxImg").src = picked + "?t=" + Date.now();
+    }else{
+      // fallback
+      const fallback = "/analysis/jpy_thb_remittance_overlay.png";
+      document.getElementById("fxPathLabel").textContent = fallback;
+      document.getElementById("fxOpenLink").href = fallback;
+      document.getElementById("fxImg").src = fallback + "?t=" + Date.now();
+    }
   })();
 </script>
 </body>
