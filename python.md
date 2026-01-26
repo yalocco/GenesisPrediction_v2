@@ -2,8 +2,10 @@
 .\.venv\Scripts\Activate.ps1
 docker compose run --rm analyzer
 scripts/run_daily.ps1
-python -m uvicorn app.server:app --reload --host 127.0.0.1 --port 8000
+python -m uvicorn app.server:app --host 127.0.0.1 --port 8000
 
+指定日で回す
+.\scripts\run_daily.ps1 -date 2026-01-25
 
 .\.venv\Scripts\python.exe scripts\clean_daily_summary_anchors.py
 
