@@ -53,6 +53,12 @@ docker compose run --rm analyzer
 gui起動 タイバーツ
 -NoProfile -ExecutionPolicy Bypass -File "D:\AI\Projects\GenesisPrediction_v2\scripts\fx_monthly_report_gui.ps1"
 
+壊れた raw を退避
+Move-Item .\data\world_politics\2026-01-26.json .\data\world_politics\2026-01-26.json.bad
+docker compose run --rm fetcher
+docker compose run --rm analyzer
+
+
 
 
 
