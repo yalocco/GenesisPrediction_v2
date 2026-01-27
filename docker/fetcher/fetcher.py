@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import os
-import time
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
@@ -14,16 +14,12 @@ import requests
 # ----------------------------
 # Config
 # ----------------------------
-API_KEY = os.getenv("NEWSAPI_KEY")
-QUERY = os.getenv("NEWS_QUERY", "world politics")
-LANG = os.getenv("NEWS_LANG", "en")
+API_KEY = os.getenv("NEWSAPI_KEY", "").strip()
+QUERY = os.getenv("NEWS_QUERY", "world politics").strip()
+LANG = os.getenv("NEWS_LANG", "en").strip()
 PAGE_SIZE = int(os.getenv("NEWS_PAGE_SIZE", "50"))
-TIMEOUT_SEC = int(os.getenv("NEWS_TIMEOUT_SEC", "30"))
 
-OUT_DIR = Path("/data/world_politics")
-
-if not API_KEY:
-    raise RuntimeError("NEWSAPI_KEY is not set")
+OUT_DIR = Path(os.getenv("NEWS_OUT_DIR", "/data/world_politics"))
 
 NEWSAPI_URL = "https://newsapi.org/v2/everything"
 
@@ -31,71 +27,63 @@ NEWSAPI_URL = "https://newsapi.org/v2/everything"
 # ----------------------------
 # Helpers
 # ----------------------------
-def utc_today() -> str:
+def utc_today_str() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
 
-def atomic_write_json(final_path: Path, payload: Dict[str, Any]) -> None:
+def utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def validate_payload(payload: Dict[str, Any]) -> None:
+    # 最低限の形だけ保証（ここが崩れてたら“保存しない”）
+    if not isinstance(payload, dict):
+        raise ValueError("payload is not a dict")
+    if "articles" not in payload:
+        raise ValueError("payload missing 'articles'")
+    if not isinstance(payload["articles"], list):
+        raise ValueError("'articles' is not a list")
+
+
+def atomic_write_json(path: Path, obj: Any) -> None:
     """
-    LAST SAFETY DEVICE (tmp -> rename):
-      1) write to tmp (same dir)
-      2) flush + fsync (file)
-      3) read-back validate json
-      4) os.replace(tmp, final)  (atomic on same filesystem)
-      5) best-effort fsync(dir) on Linux
+    安全装置の本体：
+    - 同一ディレクトリに tmp を作る（rename/replace が原子的に効くため）
+    - 書き込み→flush→fsync
+    - 最後に os.replace で本番へ（同名があっても置換）
     """
-    final_path.parent.mkdir(parents=True, exist_ok=True)
+    path.parent.mkdir(parents=True, exist_ok=True)
 
-    # unique tmp name (avoid collision if multiple runs)
-    stamp = int(time.time() * 1000)
-    pid = os.getpid()
-    tmp_path = final_path.with_name(f"{final_path.name}.tmp.{pid}.{stamp}")
-
-    # cleanup old tmp files for same target (best-effort)
-    try:
-        for p in final_path.parent.glob(f"{final_path.name}.tmp.*"):
-            # only delete old ones; keep "just-created" safe
-            if p != tmp_path:
-                p.unlink(missing_ok=True)
-    except Exception:
-        pass
+    # Windows/Unixとも “同一dir” に tmp を置くのが重要
+    tmp_fd, tmp_name = tempfile.mkstemp(prefix=path.name + ".", suffix=".tmp", dir=str(path.parent))
+    tmp_path = Path(tmp_name)
 
     try:
-        # 1) write tmp
-        with tmp_path.open("w", encoding="utf-8", newline="\n") as f:
-            json.dump(payload, f, ensure_ascii=False, indent=2)
-            f.write("\n")  # nicer & helps some tools
+        with os.fdopen(tmp_fd, "w", encoding="utf-8") as f:
+            json.dump(obj, f, ensure_ascii=False, indent=2)
             f.flush()
             os.fsync(f.fileno())
 
-        # 2) read-back validate (prevents “empty/half file” becoming final)
-        #    If this fails, we DO NOT touch final_path.
-        with tmp_path.open("r", encoding="utf-8") as rf:
-            _ = json.load(rf)
+        # ここで “一発入れ替え”
+        os.replace(tmp_path, path)
 
-        # 3) atomic replace
-        os.replace(tmp_path, final_path)
-
-        # 4) best-effort fsync dir (Linux container)
+    except Exception:
+        # 失敗したら tmp を消して終わり（本番は汚さない）
         try:
-            if hasattr(os, "O_DIRECTORY"):
-                fd = os.open(str(final_path.parent), os.O_DIRECTORY)
-                try:
-                    os.fsync(fd)
-                finally:
-                    os.close(fd)
+            if tmp_path.exists():
+                tmp_path.unlink()
         except Exception:
             pass
-
-    finally:
-        # if anything failed before replace, tmp might remain
-        try:
-            tmp_path.unlink(missing_ok=True)
-        except Exception:
-            pass
+        raise
 
 
-def fetch_news() -> Dict[str, Any]:
+# ----------------------------
+# Main
+# ----------------------------
+def main() -> None:
+    if not API_KEY:
+        raise RuntimeError("NEWSAPI_KEY is not set")
+
     params = {
         "q": QUERY,
         "language": LANG,
@@ -103,25 +91,22 @@ def fetch_news() -> Dict[str, Any]:
         "sortBy": "publishedAt",
         "apiKey": API_KEY,
     }
-    res = requests.get(NEWSAPI_URL, params=params, timeout=TIMEOUT_SEC)
+
+    res = requests.get(NEWSAPI_URL, params=params, timeout=30)
     res.raise_for_status()
-    return res.json()
+    data = res.json()
 
-
-def main() -> None:
-    data = fetch_news()
-
-    today = utc_today()
+    today = utc_today_str()
     out_path = OUT_DIR / f"{today}.json"
 
     payload: Dict[str, Any] = {
-        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "fetched_at": utc_now_iso(),
         "query": QUERY,
         "totalResults": data.get("totalResults"),
         "articles": data.get("articles", []) or [],
     }
 
-    # write with last safety device
+    validate_payload(payload)
     atomic_write_json(out_path, payload)
 
     print(f"[OK] saved {len(payload['articles'])} articles to {out_path}")
