@@ -86,6 +86,81 @@ def norm_space(s: str) -> str:
 
 
 # ---------------------------
+# Sentiment merge
+# ---------------------------
+
+def sentiment_path(repo: Path, date: str) -> Path:
+    return repo / "data" / "world_politics" / "analysis" / f"sentiment_{date}.json"
+
+
+def build_sentiment_index(sent_obj: Any) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]]]:
+    """
+    Returns:
+      - by_url[url] = item
+      - by_key[key] = item
+    """
+    by_url: Dict[str, Dict[str, Any]] = {}
+    by_key: Dict[str, Dict[str, Any]] = {}
+
+    if not isinstance(sent_obj, dict):
+        return by_url, by_key
+
+    items = sent_obj.get("items")
+    if not isinstance(items, list):
+        return by_url, by_key
+
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+        url = it.get("url")
+        key = it.get("key")
+        if isinstance(url, str) and url.strip():
+            by_url[url.strip()] = it
+        if isinstance(key, str) and key.strip():
+            by_key[key.strip()] = it
+    return by_url, by_key
+
+
+def attach_sentiment(repo: Path, date: str, cards: List["Card"]) -> None:
+    p = sentiment_path(repo, date)
+    if not p.exists():
+        return
+
+    try:
+        sent = read_json_safe(p)
+        by_url, by_key = build_sentiment_index(sent)
+    except Exception:
+        return
+
+    for c in cards:
+        hit: Optional[Dict[str, Any]] = None
+        if c.url and c.url in by_url:
+            hit = by_url.get(c.url)
+        # fallback: if no url-hit, try a very soft key match (source + title) using existing key in sentiment items
+        # (we only use it if it exists, so "urlがない日"でも最低限つながる)
+        if hit is None:
+            # brute: title contains (not perfect, but safer than nothing)
+            t = (c.title or "").strip().lower()
+            if t:
+                for it in by_key.values():
+                    tt = (it.get("title") or "").strip().lower()
+                    if tt and tt == t:
+                        hit = it
+                        break
+
+        if hit is None:
+            continue
+
+        # Put compact sentiment on the card
+        c.sentiment = {
+            "risk": float(hit.get("risk_score") or 0.0),
+            "positive": float(hit.get("positive_score") or 0.0),
+            "uncertainty": float(hit.get("uncertainty_score") or 0.0),
+            "net": float(hit.get("net") or 0.0),
+        }
+
+
+# ---------------------------
 # ViewModel models
 # ---------------------------
 
@@ -97,9 +172,10 @@ class Card:
     url: Optional[str] = None
     image: Optional[str] = None
     tags: Optional[List[str]] = None
+    sentiment: Optional[Dict[str, float]] = None  # <- add
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        d = {
             "title": self.title,
             "summary": self.summary,
             "source": self.source,
@@ -107,6 +183,9 @@ class Card:
             "image": self.image,
             "tags": self.tags or [],
         }
+        if self.sentiment is not None:
+            d["sentiment"] = self.sentiment
+        return d
 
 
 @dataclass
@@ -208,16 +287,6 @@ class _CardCtx:
 
 
 class DigestCardHTMLParser(HTMLParser):
-    """
-    Heuristic parser:
-    - Detect "card-like" container: <article> or <div class="...card...">
-    - Inside it, collect:
-      - first <a href=...> text as title candidate
-      - first heading text (h1/h2/h3) as stronger title candidate
-      - first <p> text as summary
-      - first <img src=...> as image
-      - <span class="..."> used for tags / domain (chip/pill/tag/badge)
-    """
     def __init__(self, max_cards: int):
         super().__init__(convert_charrefs=True)
         self.max_cards = max_cards
@@ -233,14 +302,12 @@ class DigestCardHTMLParser(HTMLParser):
         def start_new_card():
             self.ctx = _CardCtx(depth=self.stack_depth)
 
-        # Enter card container
         if self.ctx is None:
             if tag.lower() == "article":
                 start_new_card()
             elif tag.lower() == "div" and "card" in cls:
                 start_new_card()
 
-        # If inside a card, capture fields
         if self.ctx is not None:
             if tag.lower() == "a":
                 href = a.get("href")
@@ -252,7 +319,6 @@ class DigestCardHTMLParser(HTMLParser):
                 self.ctx._in_h = True
 
             elif tag.lower() == "p":
-                # capture first paragraph as summary
                 self.ctx._in_p = True
 
             elif tag.lower() == "img":
@@ -264,7 +330,6 @@ class DigestCardHTMLParser(HTMLParser):
                 self.ctx._span_class = (a.get("class") or "").lower()
 
     def handle_endtag(self, tag: str):
-        # close flags
         if self.ctx is not None:
             if tag.lower() == "a":
                 self.ctx._in_a = False
@@ -275,7 +340,6 @@ class DigestCardHTMLParser(HTMLParser):
             elif tag.lower() == "span":
                 self.ctx._span_class = ""
 
-            # Exit container: when depth returns above ctx.depth
             if self.stack_depth == self.ctx.depth and tag.lower() in ("div", "article"):
                 self._finalize_ctx()
                 self.ctx = None
@@ -289,33 +353,27 @@ class DigestCardHTMLParser(HTMLParser):
         if not t:
             return
 
-        # tags / domain chips
         sc = self.ctx._span_class
         if sc:
-            # domain often in a span with "domain" class
             if "domain" in sc and len(t) <= 80:
                 if not self.ctx.domain_text:
                     self.ctx.domain_text = t
                 return
-            # tags/pills
             if any(k in sc for k in ("tag", "pill", "chip", "badge")) and 1 <= len(t) <= 30:
                 if t not in self.ctx.tags:
                     self.ctx.tags.append(t)
                 return
 
-        # title preference: heading > anchor text
         if self.ctx._in_h and len(t) >= 6:
             if not self.ctx.title_text:
                 self.ctx.title_text = t
             return
 
         if self.ctx._in_a and len(t) >= 8:
-            # only if heading not already set
             if not self.ctx.title_text:
                 self.ctx.title_text = t
             return
 
-        # summary: first paragraph
         if self.ctx._in_p and not self.ctx.summary_text:
             if len(t) >= 20:
                 self.ctx.summary_text = t
@@ -332,11 +390,9 @@ class DigestCardHTMLParser(HTMLParser):
         title = short(c.title_text or "Untitled", 180)
         summary = short(c.summary_text or "", 520)
 
-        # drop junk titles
         if title.lower() in ("open", "read", "link"):
             title = "Untitled"
 
-        # keep if it has something meaningful
         if title == "Untitled" and not summary and not url:
             return
 
@@ -357,7 +413,6 @@ def build_cards_from_html_digest(html: str, max_cards: int) -> List[Card]:
     p.feed(html)
     cards = p.cards
 
-    # If parsing failed (0 cards), fallback: extract anchors (very coarse)
     if cards:
         return cards[:max_cards]
 
@@ -422,22 +477,22 @@ def build_world_politics_section(repo: Path, date: str, max_cards: int) -> Secti
         cards: List[Card] = []
         notes_parts: List[str] = []
 
-        # 1) Prefer HTML digest -> news-like cards
         if html_src and html_src.exists():
             notes_parts.append(f"source_html={html_src.as_posix()}")
             html_txt = read_text_safe(html_src)
             cards = build_cards_from_html_digest(html_txt, max_cards=max_cards)
 
-        # 2) Fallback to JSON if HTML gives nothing
         if not cards and json_src and json_src.exists():
             notes_parts.append(f"source_json={json_src.as_posix()}")
             obj = read_json_safe(json_src)
             cards = build_cards_from_json(obj, max_cards=max_cards)
 
+        # ⭐ sentiment attach here
         if cards:
-            status = "ok"
-        else:
-            status = "na"
+            attach_sentiment(repo, date, cards)
+
+        status = "ok" if cards else "na"
+        if not cards:
             if not html_src and not json_src:
                 notes_parts.append("no_date_matched_sources_found_in=data/world_politics/analysis")
             else:

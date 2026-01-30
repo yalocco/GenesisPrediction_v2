@@ -1,72 +1,122 @@
-"""
-Publish FX overlay PNG into the GUI's "analysis outputs" folder.
-
-Why:
-- The FastAPI GUI lists outputs from data/world_politics/analysis/.
-- FX overlay is generated under data/fx/ (source of truth).
-- To show the overlay in the GUI without touching server.py/index.html,
-  copy (publish) the latest overlay into the analysis folder.
-
-Usage:
-  python scripts/publish_fx_overlay_to_analysis.py --date 2026-01-22
-  python scripts/publish_fx_overlay_to_analysis.py --latest
-"""
-
+# scripts/publish_fx_overlay_to_analysis.py
 from __future__ import annotations
 
 import argparse
-import shutil
-from datetime import date
+import csv
+import hashlib
+from datetime import datetime
 from pathlib import Path
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-
-FX_DIR = REPO_ROOT / "data" / "fx"
-ANALYSIS_DIR = REPO_ROOT / "data" / "world_politics" / "analysis"
-
-# Source-of-truth overlay produced by fx_remittance_* scripts
-SRC_OVERLAY = FX_DIR / "jpy_thb_remittance_overlay.png"
-
-# Published filename (stable) so the GUI always shows "the latest"
-DST_STABLE = ANALYSIS_DIR / "jpy_thb_remittance_overlay.png"
+from typing import Optional, Tuple
 
 
-def publish(target_date: str | None, latest: bool) -> Path:
-    if not SRC_OVERLAY.exists():
-        raise FileNotFoundError(f"Source overlay not found: {SRC_OVERLAY}")
+def sha256_file(p: Path) -> str:
+    h = hashlib.sha256()
+    with p.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
-    ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Always publish the stable name
-    shutil.copy2(SRC_OVERLAY, DST_STABLE)
+def read_last_fx_date(dashboard_csv: Path) -> Tuple[Optional[str], Optional[str]]:
+    """
+    dashboard CSV format (expected):
+      date, usd_jpy, ..., jpy_thb, ..., decision, ...
+    Returns:
+      (last_date_str, error_reason)
+    """
+    if not dashboard_csv.exists():
+        return None, f"dashboard_csv_not_found:{dashboard_csv}"
 
-    # Optionally also publish a dated snapshot for history
-    if latest:
-        d = date.today().isoformat()
-        dst_dated = ANALYSIS_DIR / f"fx_overlay_{d}.png"
-        shutil.copy2(SRC_OVERLAY, dst_dated)
-        return dst_dated
+    last_date: Optional[str] = None
+    try:
+        with dashboard_csv.open("r", encoding="utf-8") as f:
+            reader = csv.reader(f)
+            for row in reader:
+                if not row:
+                    continue
+                d = (row[0] or "").strip()
+                if len(d) == 10 and d[4] == "-" and d[7] == "-":
+                    last_date = d
+    except Exception as e:
+        return None, f"dashboard_csv_read_error:{e}"
 
-    if target_date:
-        dst_dated = ANALYSIS_DIR / f"fx_overlay_{target_date}.png"
-        shutil.copy2(SRC_OVERLAY, dst_dated)
-        return dst_dated
+    if not last_date:
+        return None, "dashboard_csv_no_date_rows"
+    return last_date, None
 
-    return DST_STABLE
+
+def parse_date(s: str) -> datetime:
+    return datetime.strptime(s, "%Y-%m-%d")
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--date", help="YYYY-MM-DD (also writes fx_overlay_YYYY-MM-DD.png)")
-    ap.add_argument("--latest", action="store_true", help="Also write fx_overlay_<today>.png")
+    ap.add_argument("--date", required=True, help="YYYY-MM-DD")
     args = ap.parse_args()
 
-    out = publish(args.date, args.latest)
+    date = args.date.strip()
+    if len(date) != 10:
+        raise SystemExit("invalid --date. use YYYY-MM-DD")
+
+    repo = Path(".")
+    src_png = repo / "data" / "fx" / "jpy_thb_remittance_overlay.png"
+    dashboard_csv = repo / "data" / "fx" / "jpy_thb_remittance_dashboard.csv"
+
+    analysis_dir = repo / "data" / "world_politics" / "analysis"
+    analysis_dir.mkdir(parents=True, exist_ok=True)
+
+    # 1) Copy PNG (fixed + dated)
+    if not src_png.exists():
+        raise SystemExit(f"source png not found: {src_png}")
+
+    dst_fixed = analysis_dir / "jpy_thb_remittance_overlay.png"
+    dst_dated = analysis_dir / f"fx_overlay_{date}.png"
+
+    # atomic copy (tmp -> rename)
+    for dst in (dst_fixed, dst_dated):
+        tmp = dst.with_suffix(dst.suffix + ".tmp")
+        tmp.write_bytes(src_png.read_bytes())
+        tmp.replace(dst)
+
+    # 2) Create status json (stale/missing)
+    last_fx_date, reason = read_last_fx_date(dashboard_csv)
+    stale = False
+    if last_fx_date:
+        try:
+            stale = parse_date(last_fx_date) < parse_date(date)
+        except Exception:
+            stale = True
+            reason = (reason or "") + "|date_parse_error"
+    else:
+        stale = True
+
+    status = {
+        "target_date": date,
+        "stale": bool(stale),
+        "last_fx_date": last_fx_date,
+        "reason": reason or "",
+        "src_png": str(src_png).replace("\\", "/"),
+        "src_png_sha256": sha256_file(src_png),
+        "published_fixed": str(dst_fixed).replace("\\", "/"),
+        "published_dated": str(dst_dated).replace("\\", "/"),
+        "published_at": datetime.now().isoformat(timespec="seconds"),
+    }
+
+    import json
+
+    status_path = analysis_dir / f"fx_overlay_status_{date}.json"
+    latest_path = analysis_dir / "fx_overlay_status_latest.json"
+
+    for p in (status_path, latest_path):
+        tmp = p.with_suffix(p.suffix + ".tmp")
+        tmp.write_text(json.dumps(status, ensure_ascii=False, indent=2), encoding="utf-8")
+        tmp.replace(p)
+
     print("[OK] published FX overlay")
-    print(f"  src: {SRC_OVERLAY}")
-    print(f"  dst: {DST_STABLE}")
-    if out != DST_STABLE:
-        print(f"  dated: {out}")
+    print(f"  src:   {src_png}")
+    print(f"  dst:   {dst_fixed}")
+    print(f"  dated: {dst_dated}")
+    print(f"[OK] fx status: stale={stale} last_fx_date={last_fx_date} reason={reason or ''}")
     return 0
 
 

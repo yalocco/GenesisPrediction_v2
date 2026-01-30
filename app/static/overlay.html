@@ -1,208 +1,232 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Overlay (FX × Sentiment × Digest)</title>
+  <title>GenesisPrediction v2 - Overlay</title>
   <style>
     :root{
-      --bg:#0e1117; --panel:#111827; --panel2:#0b1220; --text:#e5e7eb; --muted:#94a3b8;
-      --line:#1f2937; --link:#93c5fd; --btn:#1f2937;
+      --bg:#0b0f14;
+      --card:#111827;
+      --border:rgba(255,255,255,.08);
+      --text:#e5e7eb;
+      --muted:#9ca3af;
     }
-    *{box-sizing:border-box}
-    body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:var(--bg); color:var(--text)}
-    header{position:sticky; top:0; z-index:10; background:rgba(0,0,0,0.7); backdrop-filter: blur(6px); border-bottom:1px solid var(--line)}
-    .bar{display:flex; gap:14px; align-items:center; padding:10px 14px}
-    .brand{font-weight:700}
-    nav a{color:var(--link); text-decoration:none; margin-right:10px; font-size:14px}
-    nav a:hover{text-decoration:underline}
-    main{padding:18px 14px; max-width:1200px; margin:0 auto}
-    .card{background:linear-gradient(180deg,var(--panel),var(--panel2)); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:14px}
-    .row{display:flex; flex-wrap:wrap; gap:10px; align-items:center}
-    .btn{display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; border:1px solid var(--line); background:var(--btn); color:var(--text); cursor:pointer; text-decoration:none; font-size:14px}
-    .btn:hover{background:#223049}
-    .pill{padding:4px 8px; border-radius:999px; border:1px solid var(--line); font-size:12px; color:var(--muted)}
-    .muted{color:var(--muted); font-size:13px}
-    iframe{width:100%; border:1px solid var(--line); border-radius:14px; background:#000}
-    img{max-width:100%; display:block; border-radius:14px; border:1px solid var(--line); background:#000}
-    .path{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px; color:var(--muted)}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: radial-gradient(1000px 500px at 20% 0%, rgba(245,158,11,.12), transparent 60%),
+                  radial-gradient(1000px 500px at 80% 0%, rgba(96,165,250,.12), transparent 60%),
+                  var(--bg);
+      color:var(--text);
+    }
+    a{color:#93c5fd;text-decoration:none}
+    a:hover{text-decoration:underline}
+
+    .topbar{
+      position:sticky;top:0;z-index:50;
+      backdrop-filter: blur(10px);
+      background: rgba(0,0,0,.45);
+      border-bottom:1px solid var(--border);
+      padding:14px 18px;
+      display:flex;align-items:center;justify-content:space-between;
+    }
+    .brand{font-weight:800;letter-spacing:.2px;font-size:22px}
+    .nav a{margin-left:14px;color:var(--text);opacity:.9}
+    .nav a:hover{opacity:1}
+
+    .container{max-width:1100px;margin:18px auto;padding:0 14px 60px}
+    .card{
+      background: linear-gradient(180deg, rgba(17,24,39,.92), rgba(15,23,42,.92));
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      margin-bottom:14px;
+    }
+    .sub{color:var(--muted);font-size:13px;margin-top:-4px}
+    .img{
+      width:100%;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:rgba(0,0,0,.2);
+      margin-top:12px;
+    }
+    canvas{
+      width:100%;
+      height:260px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:rgba(0,0,0,.18);
+      margin-top:12px;
+    }
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .btn{
+      display:inline-flex;align-items:center;
+      padding:10px 12px;border-radius:12px;
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.25);
+      color:var(--text);
+    }
+    .btn:hover{background: rgba(255,255,255,.06)}
   </style>
 </head>
 <body>
-<header>
-  <div class="bar">
+  <div class="topbar">
     <div class="brand">GenesisPrediction v2</div>
-    <nav>
-      <a id="navHome" href="/static/index.html">Home</a>
-      <a id="navOverlay" href="/static/overlay.html">Overlay</a>
-      <a id="navSent" href="/static/sentiment.html">Sentiment</a>
-    </nav>
-    <div style="margin-left:auto" class="muted">受動ビュー：正本（PNG/CSV/HTML）を読むだけ</div>
+    <div class="nav">
+      <a href="/static/index.html">Home</a>
+      <a href="/static/overlay.html">Overlay</a>
+      <a href="/static/sentiment.html">Sentiment</a>
+    </div>
+    <div class="sub">GUI is read-only (SST)</div>
   </div>
-</header>
 
-<main>
-  <div class="card">
-    <h1 style="margin:0 0 6px;">Overlay（FX × Sentiment × Digest）</h1>
-    <div class="muted">※ 日付は URL <span class="path">?date=YYYY-MM-DD</span> で指定（なければ Sentiment CSV の最新日）</div>
+  <div class="container">
+    <div class="card">
+      <h2 style="margin:0 0 10px 0">FX overlay</h2>
+      <div class="sub">Latest published overlay image</div>
+      <div class="row">
+        <a class="btn" href="/analysis/jpy_thb_remittance_overlay.png" target="_blank" rel="noopener">Open PNG</a>
+        <a class="btn" href="/analysis/fx_overlay_status_latest.json" target="_blank" rel="noopener">Open status JSON</a>
+      </div>
+      <img class="img" src="/analysis/jpy_thb_remittance_overlay.png" alt="FX overlay">
+    </div>
 
-    <div class="row" style="margin-top:10px;">
-      <span class="pill">DATE</span>
-      <input id="dateInput" type="date" style="padding:7px 10px; border-radius:10px; border:1px solid var(--line); background:#0b1020; color:var(--text)">
-      <button class="btn" id="todayBtn">today</button>
-      <button class="btn" id="prevBtn">-1d</button>
-      <button class="btn" id="nextBtn">+1d</button>
-      <button class="btn" id="reloadBtn">reload</button>
-      <a class="btn" id="openDigest" href="#" target="_blank" rel="noopener">open digest</a>
-      <a class="btn" id="openFX" href="#" target="_blank" rel="noopener">open fx</a>
+    <div class="card">
+      <h2 style="margin:0 0 10px 0">Sentiment timeseries</h2>
+      <div class="sub">Source: /analysis/sentiment_timeseries.csv</div>
+      <div class="row">
+        <a class="btn" href="/analysis/sentiment_timeseries.csv" target="_blank" rel="noopener">Open CSV</a>
+        <a class="btn" href="/analysis/sentiment_latest.json" target="_blank" rel="noopener">Open latest JSON</a>
+      </div>
+      <canvas id="chart" width="1100" height="260"></canvas>
+    </div>
+
+    <div class="card">
+      <h2 style="margin:0 0 10px 0">Daily digest</h2>
+      <div class="sub">Latest HTML digest</div>
+      <div class="row">
+        <a class="btn" href="/analysis/daily_news_digest_latest.html" target="_blank" rel="noopener">Open digest</a>
+      </div>
     </div>
   </div>
 
-  <div class="card">
-    <h2 style="margin:0 0 6px;">FX（overlay PNG）</h2>
-    <div class="path" id="fxPath">-</div>
-    <div style="margin-top:10px;">
-      <img id="fxImg" alt="FX overlay">
-    </div>
-  </div>
-
-  <div class="card">
-    <h2 style="margin:0 0 6px;">Sentiment</h2>
-    <div class="muted">※ Sentiment ページを埋め込み（CSVはfetchで読込）</div>
-    <iframe id="sentFrame" title="Sentiment" style="height:520px; margin-top:10px;"></iframe>
-  </div>
-
-  <div class="card">
-    <h2 style="margin:0 0 6px;">Digest（HTML）</h2>
-    <div class="path" id="digestPath">-</div>
-    <iframe id="digestFrame" title="Digest" style="height:760px; margin-top:10px;"></iframe>
-  </div>
-</main>
-
-<script>
-  function qs(name){ return new URLSearchParams(location.search).get(name); }
-  function setHref(id, url){ const el=document.getElementById(id); if(el) el.href=url; }
-  async function fetchText(url){
-    const r = await fetch(url, {cache:"no-store"});
-    if(!r.ok) throw new Error("HTTP " + r.status + " " + url);
-    return await r.text();
-  }
-  function parseCSV(text){
-    const lines = text.trim().split(/\r?\n/);
-    if(lines.length < 2) return [];
-    const headers = lines[0].split(",").map(s=>s.trim());
-    const rows = [];
-    for(let i=1;i<lines.length;i++){
-      const cols = lines[i].split(",");
-      const obj = {};
-      headers.forEach((h, idx)=> obj[h] = (cols[idx] ?? "").trim());
-      rows.push(obj);
+  <script>
+    function bust(url){
+      const ts = Date.now();
+      return url + (url.includes("?") ? "&" : "?") + "ts=" + ts;
     }
-    return rows;
-  }
-  function addDays(yyyy_mm_dd, delta){
-    const [y,m,d] = yyyy_mm_dd.split("-").map(Number);
-    const dt = new Date(Date.UTC(y, m-1, d));
-    dt.setUTCDate(dt.getUTCDate()+delta);
-    const yy = dt.getUTCFullYear();
-    const mm = String(dt.getUTCMonth()+1).padStart(2,"0");
-    const dd = String(dt.getUTCDate()).padStart(2,"0");
-    return `${yy}-${mm}-${dd}`;
-  }
-  async function pickFirstExists(urls){
-    for (const u of urls){
+
+    async function fetchText(url){
+      const res = await fetch(bust(url), { cache: "no-store" });
+      if(!res.ok) throw new Error("HTTP " + res.status + " for " + url);
+      return await res.text();
+    }
+
+    function parseCsv(text){
+      const lines = text.trim().split(/\r?\n/);
+      if(lines.length < 2) return [];
+      const header = lines[0].split(",").map(s => s.trim());
+      const out = [];
+      for(let i=1;i<lines.length;i++){
+        const cols = lines[i].split(",").map(s => s.trim());
+        const row = {};
+        header.forEach((h, idx) => row[h] = cols[idx]);
+        out.push({
+          date: row.date,
+          risk: parseFloat(row.risk||"0"),
+          positive: parseFloat(row.positive||"0"),
+          uncertainty: parseFloat(row.uncertainty||"0"),
+        });
+      }
+      return out;
+    }
+
+    function drawChart(canvas, series){
+      const ctx = canvas.getContext("2d");
+      const W = canvas.width, H = canvas.height;
+
+      // clear
+      ctx.clearRect(0,0,W,H);
+
+      // margins
+      const m = {l:50, r:16, t:12, b:28};
+      const x0=m.l, y0=m.t, x1=W-m.r, y1=H-m.b;
+
+      // grid
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = "rgba(255,255,255,0.10)";
+      ctx.lineWidth = 1;
+      for(let k=0;k<=4;k++){
+        const y = y0 + (y1-y0)*k/4;
+        ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(x1,y); ctx.stroke();
+      }
+
+      if(!series.length){
+        ctx.fillStyle="rgba(255,255,255,0.65)";
+        ctx.fillText("No data", x0, y0+20);
+        return;
+      }
+
+      // scale
+      let ymin=Infinity, ymax=-Infinity;
+      for(const p of series){
+        ymin = Math.min(ymin, p.risk, p.positive, p.uncertainty);
+        ymax = Math.max(ymax, p.risk, p.positive, p.uncertainty);
+      }
+      if(!isFinite(ymin) || !isFinite(ymax)){ ymin=0; ymax=1; }
+      if(ymax - ymin < 1e-6){ ymax = ymin + 1e-3; }
+
+      const n = series.length;
+      const x = (i) => x0 + (x1-x0) * (n<=1 ? 0 : i/(n-1));
+      const y = (v) => y1 - (y1-y0) * ((v - ymin)/(ymax-ymin));
+
+      function line(getV, stroke){
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for(let i=0;i<n;i++){
+          const p = series[i];
+          const xx = x(i), yy = y(getV(p));
+          if(i===0) ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy);
+        }
+        ctx.stroke();
+      }
+
+      // NOTE: 色指定は最小限（区別のため）
+      line(p=>p.risk, "rgba(245,158,11,0.95)");
+      line(p=>p.positive, "rgba(34,197,94,0.95)");
+      line(p=>p.uncertainty, "rgba(96,165,250,0.95)");
+
+      // labels
+      ctx.fillStyle = "rgba(255,255,255,0.75)";
+      ctx.font = "12px ui-sans-serif, system-ui";
+      ctx.fillText("risk", x0, y0+12);
+      ctx.fillText("positive", x0+42, y0+12);
+      ctx.fillText("uncertainty", x0+112, y0+12);
+
+      // x labels (first/last)
+      ctx.fillStyle="rgba(255,255,255,0.55)";
+      ctx.fillText(series[0].date, x0, H-10);
+      ctx.fillText(series[series.length-1].date, x1-92, H-10);
+    }
+
+    async function main(){
       try{
-        const r = await fetch(u, {method:"HEAD", cache:"no-store"});
-        if(r.ok) return u;
-      }catch(e){}
+        const csv = await fetchText("/analysis/sentiment_timeseries.csv");
+        const series = parseCsv(csv);
+        const canvas = document.getElementById("chart");
+        drawChart(canvas, series);
+      }catch(e){
+        console.error(e);
+        const canvas = document.getElementById("chart");
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "rgba(255,255,255,0.65)";
+        ctx.fillText("sentiment_timeseries.csv not found", 20, 40);
+      }
     }
-    return urls[urls.length-1];
-  }
-
-  (async ()=>{
-    const csvUrl = "/analysis/sentiment_timeseries.csv";
-    let date = qs("date");
-
-    // if date not given, infer from last row of sentiment csv
-    if(!date){
-      try{
-        const csv = await fetchText(csvUrl + "?t=" + Date.now());
-        const rows = parseCSV(csv);
-        if(rows.length) date = rows[rows.length-1].date;
-      }catch(e){}
-    }
-    if(!date){
-      // hard fallback
-      const now = new Date();
-      const y = now.getFullYear();
-      const m = String(now.getMonth()+1).padStart(2,"0");
-      const d = String(now.getDate()).padStart(2,"0");
-      date = `${y}-${m}-${d}`;
-    }
-
-    const dateInput = document.getElementById("dateInput");
-    dateInput.value = date;
-
-    const apply = async (d)=>{
-      // update nav links with date
-      setHref("navHome", "/static/index.html?date=" + encodeURIComponent(d));
-      setHref("navOverlay", "/static/overlay.html?date=" + encodeURIComponent(d));
-      setHref("navSent", "/static/sentiment.html?date=" + encodeURIComponent(d));
-
-      // digest
-      const digestUrl = "/analysis/daily_news_" + d + ".html";
-      document.getElementById("digestPath").textContent = digestUrl;
-      document.getElementById("digestFrame").src = digestUrl;
-      setHref("openDigest", digestUrl);
-
-      // fx (prefer dated)
-      const fxCandidates = [
-        "/analysis/fx_overlay_" + d + ".png",
-        "/analysis/jpy_thb_remittance_overlay.png"
-      ];
-      const fxUrl = await pickFirstExists(fxCandidates);
-      document.getElementById("fxPath").textContent = fxUrl;
-      document.getElementById("fxImg").src = fxUrl + "?t=" + Date.now();
-      setHref("openFX", fxUrl);
-
-      // sentiment (embed page)
-      document.getElementById("sentFrame").src = "/static/sentiment.html?date=" + encodeURIComponent(d);
-    };
-
-    await apply(date);
-
-    // buttons
-    document.getElementById("reloadBtn").addEventListener("click", ()=> apply(dateInput.value));
-    document.getElementById("prevBtn").addEventListener("click", ()=>{
-      const d = addDays(dateInput.value, -1);
-      dateInput.value = d;
-      apply(d);
-      history.replaceState(null,"", "/static/overlay.html?date=" + encodeURIComponent(d));
-    });
-    document.getElementById("nextBtn").addEventListener("click", ()=>{
-      const d = addDays(dateInput.value, +1);
-      dateInput.value = d;
-      apply(d);
-      history.replaceState(null,"", "/static/overlay.html?date=" + encodeURIComponent(d));
-    });
-    document.getElementById("todayBtn").addEventListener("click", ()=>{
-      const now = new Date();
-      const y = now.getFullYear();
-      const m = String(now.getMonth()+1).padStart(2,"0");
-      const dd = String(now.getDate()).padStart(2,"0");
-      const d = `${y}-${m}-${dd}`;
-      dateInput.value = d;
-      apply(d);
-      history.replaceState(null,"", "/static/overlay.html?date=" + encodeURIComponent(d));
-    });
-
-    // change date manually
-    dateInput.addEventListener("change", ()=>{
-      const d = dateInput.value;
-      apply(d);
-      history.replaceState(null,"", "/static/overlay.html?date=" + encodeURIComponent(d));
-    });
-  })();
-</script>
+    main();
+  </script>
 </body>
 </html>

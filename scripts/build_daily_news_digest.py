@@ -1,342 +1,316 @@
+# scripts/build_daily_news_digest.py
 from __future__ import annotations
 
 import argparse
 import html
 import json
 import re
+from dataclasses import dataclass
+from datetime import date as Date
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
-from urllib.parse import urlparse
+from typing import Any, Optional, Tuple
 
 
-# --- Priority keyword sets (B -> A) ---
-SECURITY_TERMS = {
-    "military","defense","security","war","conflict","strike","attack","escalation",
-    "missile","nuclear","drone","weapon","air force","navy","army","troops",
-    "sanction","sanctions","ceasefire","hostage","terror","insurgent",
-    "taiwan","strait","south china sea","red sea","gaza","ukraine","russia","iran","israel","yemen","hezbollah",
-    "ship","shipping","blockade","intercept","airstrike","bombing","artillery","mobilization",
-}
+# ----------------------------
+# Paths (repo-relative)
+# ----------------------------
+ROOT = Path(".")
+DATA_DIR = ROOT / "data" / "world_politics"
+ANALYSIS_DIR = DATA_DIR / "analysis"
 
-FIN_STOCK_TERMS = {
-    "market","markets","stock","stocks","equity","equities","share","shares",
-    "index","indices","dow","nasdaq","s&p","nikkei","topix",
-    "earnings","guidance","revenue","profit","loss","valuation","rally","selloff","volatility",
-    "ipo","merger","acquisition","m&a","sell-off","risk-off","risk on",
-}
-
-FIN_FX_TERMS = {
-    "fx","forex","currency","currencies","dollar","usd","eur","euro","jpy","yen","gbp","pound","cny","yuan",
-    "exchange rate","devaluation","appreciation","depreciation","intervention",
-    "usd/jpy","eur/usd","dxy",
-}
-
-FIN_ENERGY_TERMS = {
-    "oil","crude","brent","wti","gas","lng","energy","opec","pipeline","shipping","tanker",
-    "refinery","barrel","production cut","output",
-}
-
-FIN_RATES_TERMS = {
-    "bond","bonds","yield","yields","rate","rates","interest","treasury","gilts",
-    "inflation","cpi","ppi","central bank","fed","ecb","boj","bank of japan",
-    "tightening","easing","cut rates","rate cut","hike","rate hike",
-}
-
-ENTERTAINMENT_TERMS = {
-    "movie","film","actor","actress","celebrity","music","concert","album","box office",
-    "tv show","netflix","hollywood","awards","oscar","grammy","red carpet",
-}
-
-# Observed structural noise (Phase B): sports
-# We do NOT remove items; we only down-weight them in ranking.
-SPORTS_TERMS = {
-    "sport","sports","athlete","athletes","team","teams","league","match","matches",
-    "tournament","championship","final","playoff","playoffs","season","coach",
-    "nba","wnba","nfl","mlb","nhl",
-    "fifa","uefa","afc","caf","conmebol","concacaf",
-    "olympic","olympics","world cup","grand slam",
-    "boxing","mma","ufc","wwe",
-    "tennis","golf","soccer","football","baseball","basketball","hockey",
-    "formula 1","f1","motogp","indycar",
-}
-
-JAPAN_TERMS = {
-    "japan","tokyo","boj","bank of japan","yen","jpy","nikkei","topix",
-    "japanese","fukushima","tokyo stock exchange","tse",
-}
+OUT_LATEST_HTML = ANALYSIS_DIR / "daily_news_digest_latest.html"
 
 
-def _norm_text(s: str) -> str:
-    s = (s or "").lower()
-    s = re.sub(r"\s+", " ", s)
-    return s
+# ----------------------------
+# Helpers
+# ----------------------------
+DATE_RE = re.compile(r"(\d{4}-\d{2}-\d{2})")
 
 
-def read_jsonl(path: Path) -> List[Dict[str, Any]]:
-    out: List[Dict[str, Any]] = []
-    if not path.exists():
-        return out
-    for line in path.read_text(encoding="utf-8").splitlines():
-        s = line.strip()
-        if not s:
-            continue
-        try:
-            out.append(json.loads(s))
-        except Exception:
-            continue
-    return out
+def _extract_date_from_name(p: Path) -> Optional[str]:
+    m = DATE_RE.search(p.name)
+    return m.group(1) if m else None
 
 
-def pick(d: Dict[str, Any], *keys: str) -> Optional[Any]:
-    for k in keys:
-        if k in d and d[k] not in (None, ""):
-            return d[k]
-    return None
-
-
-def domain_from_url(u: str) -> str:
+def _safe_read_json(p: Path) -> Optional[dict]:
     try:
-        p = urlparse(u)
-        return p.netloc or ""
+        return json.loads(p.read_text(encoding="utf-8"))
     except Exception:
-        return ""
+        return None
 
 
-def first_line(s: str, n: int = 160) -> str:
-    s = " ".join((s or "").split())
-    if len(s) <= n:
-        return s
-    return s[: n - 1] + "…"
+def _list_dated_json_files(dir_path: Path) -> list[Path]:
+    if not dir_path.exists():
+        return []
+    cands = []
+    for p in dir_path.glob("*.json"):
+        d = _extract_date_from_name(p)
+        if d:
+            cands.append((d, p))
+    cands.sort(key=lambda x: x[0])
+    return [p for _, p in cands]
 
 
-def classify_tags(title: str, summary: str, domain: str) -> List[str]:
-    t = _norm_text(f"{title} {summary} {domain}")
-    tags: List[str] = []
-
-    if any(k in t for k in SECURITY_TERMS):
-        tags.append("SECURITY")
-
-    # Finance priority: A/B first
-    if any(k in t for k in FIN_STOCK_TERMS):
-        tags.append("FIN-STOCKS")
-    if any(k in t for k in FIN_FX_TERMS):
-        tags.append("FIN-FX")
-
-    # Next priority: C/D
-    if any(k in t for k in FIN_ENERGY_TERMS):
-        tags.append("FIN-ENERGY")
-    if any(k in t for k in FIN_RATES_TERMS):
-        tags.append("FIN-RATES")
-
-    if any(k in t for k in JAPAN_TERMS):
-        tags.append("JP")
-
-    if any(k in t for k in ENTERTAINMENT_TERMS):
-        tags.append("ENT")
-
-    # Sports: push down (do not remove)
-    if any(k in t for k in SPORTS_TERMS):
-        tags.append("SPORTS")
-
-    return tags
+@dataclass
+class ResolvedInput:
+    in_path: Path
+    resolved_date: str
+    payload: dict
 
 
-def score_item(tags: List[str]) -> int:
-    score = 0
-
-    # Security: highest
-    if "SECURITY" in tags:
-        score += 60
-
-    # Finance: A/B strongest
-    if "FIN-STOCKS" in tags:
-        score += 50
-    if "FIN-FX" in tags:
-        score += 50
-
-    # Finance: C/D next
-    if "FIN-ENERGY" in tags:
-        score += 30
-    if "FIN-RATES" in tags:
-        score += 30
-
-    # Japan relevance: modest boost
-    if "JP" in tags:
-        score += 15
-
-    # Entertainment: push down (do not remove)
-    if "ENT" in tags:
-        score -= 40
-
-    # Sports: observed structural noise in digest (do not remove)
-    if "SPORTS" in tags:
-        score -= 35
-
-    return score
-
-
-def render_md(date: str, items: List[Dict[str, Any]], out_path: Path) -> None:
-    lines: List[str] = []
-    lines.append(f"# Daily News Digest — {date}")
-    lines.append("")
-    lines.append(f"- items: {len(items)}")
-    lines.append("")
-
-    for i, ev in enumerate(items, 1):
-        url = str(pick(ev, "url", "link") or "").strip()
-        title = str(pick(ev, "title", "headline") or "(no title)").strip()
-        summary = str(pick(ev, "summary", "one_liner", "description", "snippet") or "").strip()
-        dom = domain_from_url(url) if url else str(pick(ev, "source", "domain") or "")
-
-        tags = classify_tags(title, summary, dom)
-        tag_s = ", ".join(tags) if tags else ""
-
-        anchors = pick(ev, "anchors", "tokens", "keywords")
-        if isinstance(anchors, list):
-            anchors_s = ", ".join(str(x) for x in anchors[:12])
-        else:
-            anchors_s = ""
-
-        lines.append(f"## {i}. {title}")
-        if url:
-            lines.append(f"- URL: {url}")
-        if dom:
-            lines.append(f"- Domain: {dom}")
-        if tag_s:
-            lines.append(f"- Tags: {tag_s}")
-        if summary:
-            lines.append(f"- Summary: {first_line(summary, 220)}")
-        if anchors_s:
-            lines.append(f"- Tokens: {anchors_s}")
-        lines.append("")
-
-    out_path.write_text("\n".join(lines), encoding="utf-8")
-
-
-def render_html(date: str, items: List[Dict[str, Any]], out_path: Path) -> None:
-    css = """
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-           margin: 24px; background: #0f1115; color: #e7e9ee; }
-    h1 { font-size: 22px; margin: 0 0 12px 0; }
-    .meta { color: #aeb4c0; margin-bottom: 18px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
-    .card { background: #151923; border: 1px solid #242a38; border-radius: 14px; padding: 14px; }
-    .title { font-size: 15px; font-weight: 650; margin: 0 0 8px 0; line-height: 1.35; }
-    .title a { color: #e7e9ee; text-decoration: none; }
-    .title a:hover { text-decoration: underline; }
-    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; color: #aeb4c0; font-size: 12px; margin-bottom: 10px; }
-    .pill { padding: 2px 8px; border: 1px solid #2a3142; border-radius: 999px; }
-    .sum { font-size: 13px; color: #d5d9e2; line-height: 1.45; margin: 0 0 10px 0; }
-    .tokens { font-size: 12px; color: #aeb4c0; line-height: 1.4; }
-    img.thumb { width: 100%; height: 180px; object-fit: cover; border-radius: 12px; border: 1px solid #242a38; margin-bottom: 10px; background: #0f1115; }
+def resolve_input(requested_date: str) -> ResolvedInput:
     """
-    parts: List[str] = []
-    parts.append("<!doctype html><html><head><meta charset='utf-8'/>")
-    parts.append(f"<title>Daily News Digest {html.escape(date)}</title>")
-    parts.append(f"<style>{css}</style></head><body>")
-    parts.append(f"<h1>Daily News Digest — {html.escape(date)}</h1>")
-    parts.append(f"<div class='meta'>items: {len(items)}</div>")
-    parts.append("<div class='grid'>")
+    We want to build digest even if the "expected" dated raw file is missing.
+    Priority:
+      1) data/world_politics/{date}.json
+      2) data/world_politics/analysis/daily_news_{date}.json
+      3) data/world_politics/analysis/daily_news_latest.json
+      4) data/world_politics/analysis/latest.json
+      5) newest dated json in data/world_politics/*.json
+    """
+    candidates: list[Tuple[Path, Optional[str]]] = [
+        (DATA_DIR / f"{requested_date}.json", requested_date),
+        (ANALYSIS_DIR / f"daily_news_{requested_date}.json", requested_date),
+        (ANALYSIS_DIR / "daily_news_latest.json", None),
+        (ANALYSIS_DIR / "latest.json", None),
+    ]
 
-    for ev in items:
-        url = str(pick(ev, "url", "link") or "").strip()
-        title = str(pick(ev, "title", "headline") or "(no title)").strip()
-        summary = str(pick(ev, "summary", "one_liner", "description", "snippet") or "").strip()
-        dom = domain_from_url(url) if url else str(pick(ev, "source", "domain") or "")
+    for p, forced_date in candidates:
+        if p.exists():
+            payload = _safe_read_json(p)
+            if isinstance(payload, dict):
+                d = forced_date or payload.get("date") or _extract_date_from_name(p) or requested_date
+                return ResolvedInput(in_path=p, resolved_date=str(d), payload=payload)
 
-        # Use image only if present in events
-        img_url = str(pick(ev, "image", "thumbnail", "image_url") or "").strip()
+    # fallback: newest dated json under data/world_politics
+    dated = _list_dated_json_files(DATA_DIR)
+    if dated:
+        p = dated[-1]
+        payload = _safe_read_json(p) or {}
+        d = payload.get("date") or _extract_date_from_name(p) or requested_date
+        return ResolvedInput(in_path=p, resolved_date=str(d), payload=payload)
 
-        tags = classify_tags(title, summary, dom)
+    raise FileNotFoundError(
+        f"input not found: tried {DATA_DIR}/{requested_date}.json, "
+        f"{ANALYSIS_DIR}/daily_news_{requested_date}.json, "
+        f"{ANALYSIS_DIR}/daily_news_latest.json, {ANALYSIS_DIR}/latest.json, "
+        f"and any dated json under {DATA_DIR}"
+    )
 
-        anchors = pick(ev, "anchors", "tokens", "keywords")
-        tokens = ""
-        if isinstance(anchors, list):
-            tokens = ", ".join(html.escape(str(x)) for x in anchors[:14])
 
-        parts.append("<div class='card'>")
-        if img_url:
-            parts.append(f"<img class='thumb' src='{html.escape(img_url)}' loading='lazy'/>")
-
-        if url:
-            parts.append(
-                f"<div class='title'><a href='{html.escape(url)}' target='_blank' rel='noreferrer'>"
-                f"{html.escape(title)}</a></div>"
+def _pick_articles(payload: dict) -> list[dict]:
+    """
+    Accept multiple schema shapes:
+      - {"articles": [ ... ]} (NewsAPI style)
+      - {"items": [ ... ]} (sentiment style - but we handle it anyway)
+    """
+    if isinstance(payload.get("articles"), list):
+        return payload["articles"]
+    if isinstance(payload.get("items"), list):
+        # normalize keys
+        items = []
+        for it in payload["items"]:
+            if not isinstance(it, dict):
+                continue
+            items.append(
+                {
+                    "title": it.get("title"),
+                    "url": it.get("url"),
+                    "urlToImage": it.get("image_url") or it.get("urlToImage"),
+                    "source": {"name": it.get("source")},
+                    "publishedAt": it.get("publishedAt"),
+                    "description": it.get("description"),
+                }
             )
-        else:
-            parts.append(f"<div class='title'>{html.escape(title)}</div>")
+        return items
+    return []
 
-        parts.append("<div class='row'>")
-        if dom:
-            parts.append(f"<span class='pill'>{html.escape(dom)}</span>")
-        for tg in tags:
-            parts.append(f"<span class='pill'>{html.escape(tg)}</span>")
-        parts.append("</div>")
 
-        if summary:
-            parts.append(f"<p class='sum'>{html.escape(first_line(summary, 260))}</p>")
-        if tokens:
-            parts.append(f"<div class='tokens'><b>Tokens:</b> {tokens}</div>")
+def _get_source_name(a: dict) -> str:
+    src = a.get("source")
+    if isinstance(src, dict):
+        return str(src.get("name") or src.get("id") or "")
+    if isinstance(src, str):
+        return src
+    return ""
 
-        parts.append("</div>")
 
-    parts.append("</div></body></html>")
-    out_path.write_text("".join(parts), encoding="utf-8")
+def _esc(s: Any) -> str:
+    return html.escape("" if s is None else str(s), quote=True)
+
+
+def render_digest_html(d: str, input_path: Path, articles: list[dict]) -> str:
+    rows = []
+    for a in articles:
+        title = _esc(a.get("title") or "(no title)")
+        url = _esc(a.get("url") or "")
+        src = _esc(_get_source_name(a) or "")
+        img = _esc(a.get("urlToImage") or "")
+        desc = _esc(a.get("description") or "")
+        # small card
+        rows.append(
+            f"""
+            <div class="card">
+              <div class="thumb">{f'<img src="{img}" alt="">' if img else ''}</div>
+              <div class="body">
+                <div class="title"><a href="{url}" target="_blank" rel="noopener noreferrer">{title}</a></div>
+                <div class="meta">{src}</div>
+                {f'<div class="desc">{desc}</div>' if desc else ''}
+              </div>
+            </div>
+            """
+        )
+
+    items_html = "\n".join(rows) if rows else '<div class="empty">No articles found in input.</div>'
+
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Daily News Digest {html.escape(d)}</title>
+  <style>
+    :root {{
+      color-scheme: dark;
+      --bg: #0b0f14;
+      --panel: rgba(20, 30, 45, 0.55);
+      --panel2: rgba(20, 30, 45, 0.35);
+      --stroke: rgba(255,255,255,0.10);
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.65);
+      --link: rgba(130, 200, 255, 0.95);
+    }}
+    html, body {{
+      margin: 0; padding: 0;
+      background: radial-gradient(1200px 700px at 20% 10%, rgba(50,120,160,0.20), transparent 60%),
+                  radial-gradient(900px 600px at 80% 30%, rgba(120,60,160,0.18), transparent 55%),
+                  var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji";
+    }}
+    .wrap {{
+      max-width: 1100px;
+      margin: 28px auto;
+      padding: 0 18px 40px;
+    }}
+    .header {{
+      background: var(--panel);
+      border: 1px solid var(--stroke);
+      border-radius: 18px;
+      padding: 18px 18px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+    }}
+    .h1 {{
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      margin: 0 0 6px;
+    }}
+    .sub {{
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }}
+    .grid {{
+      margin-top: 14px;
+      display: grid;
+      gap: 12px;
+    }}
+    .card {{
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 12px;
+      border-radius: 18px;
+      border: 1px solid var(--stroke);
+      background: var(--panel2);
+    }}
+    .thumb {{
+      width: 72px; height: 72px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.06);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+    }}
+    .thumb img {{
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }}
+    .title {{
+      font-size: 16px;
+      font-weight: 650;
+      line-height: 1.25;
+      margin: 2px 0 6px;
+    }}
+    .title a {{
+      color: var(--text);
+      text-decoration: none;
+    }}
+    .title a:hover {{
+      color: var(--link);
+      text-decoration: underline;
+    }}
+    .meta {{
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }}
+    .desc {{
+      font-size: 12px;
+      color: rgba(255,255,255,0.72);
+      line-height: 1.4;
+    }}
+    .empty {{
+      padding: 14px;
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      background: var(--panel2);
+      color: var(--muted);
+      font-size: 13px;
+    }}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div class="h1">Daily News Digest</div>
+      <p class="sub">date: <b>{html.escape(d)}</b> / input: <code>{html.escape(str(input_path))}</code></p>
+    </div>
+    <div class="grid">
+      {items_html}
+    </div>
+  </div>
+</body>
+</html>
+"""
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--date", default="", help="YYYY-MM-DD (optional; default: infer latest events file)")
-    ap.add_argument("--dir", default="data/world_politics/analysis", help="analysis dir")
-    ap.add_argument("--limit", type=int, default=40, help="max cards")
+    ap.add_argument("--date", default=Date.today().isoformat(), help="target date (YYYY-MM-DD)")
     args = ap.parse_args()
 
-    base = Path(args.dir)
-    if not base.exists():
-        print(f"[ERR] dir not found: {base}")
-        return 2
+    requested = str(args.date)
 
-    date = args.date.strip()
-    if date:
-        ev_path = base / f"events_{date}.jsonl"
-    else:
-        candidates = sorted(base.glob("events_*.jsonl"))
-        if not candidates:
-            print("[SKIP] no events_*.jsonl")
-            return 0
-        ev_path = candidates[-1]
-        date = ev_path.stem.replace("events_", "")
+    resolved = resolve_input(requested)
+    articles = _pick_articles(resolved.payload)
 
-    events = read_jsonl(ev_path)
-    if not events:
-        print(f"[SKIP] no events in {ev_path.name}")
-        return 0
+    ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
+    out_dated = ANALYSIS_DIR / f"daily_news_digest_{resolved.resolved_date}.html"
 
-    def sort_key(ev: Dict[str, Any]) -> Tuple[int, int, int]:
-        url = str(pick(ev, "url", "link") or "").strip()
-        title = str(pick(ev, "title", "headline") or "").strip()
-        summary = str(pick(ev, "summary", "one_liner", "description", "snippet") or "").strip()
-        dom = domain_from_url(url) if url else str(pick(ev, "source", "domain") or "")
+    html_text = render_digest_html(resolved.resolved_date, resolved.in_path, articles)
+    out_dated.write_text(html_text, encoding="utf-8")
+    OUT_LATEST_HTML.write_text(html_text, encoding="utf-8")
 
-        tags = classify_tags(title, summary, dom)
-        s = score_item(tags)
-
-        has_url = 1 if url else 0
-        has_title = 1 if title else 0
-
-        # Prefer "news-like" items if score ties
-        return (s, has_url + has_title, has_title)
-
-    events_sorted = sorted(events, key=sort_key, reverse=True)[: max(1, args.limit)]
-
-    md_out = base / f"daily_news_{date}.md"
-    html_out = base / f"daily_news_{date}.html"
-
-    render_md(date, events_sorted, md_out)
-    render_html(date, events_sorted, html_out)
-
-    print(f"[DONE] md   -> {md_out}")
-    print(f"[DONE] html -> {html_out}")
+    print("[OK] digest built")
+    print(f"  requested: {requested}")
+    print(f"  input:     {resolved.in_path}")
+    print(f"  resolved:  {resolved.resolved_date}")
+    print(f"  out:       {out_dated}")
+    print(f"  latest:    {OUT_LATEST_HTML}")
     return 0
 
 

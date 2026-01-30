@@ -2,206 +2,420 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GenesisPrediction v2 - Home</title>
-  <style>
-    :root{
-      --bg:#0e1117; --panel:#111827; --panel2:#0b1220; --text:#e5e7eb; --muted:#94a3b8;
-      --line:#1f2937; --link:#93c5fd; --btn:#1f2937; --btn2:#0b1220; --ok:#10b981;
-    }
-    *{box-sizing:border-box}
-    body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:var(--bg); color:var(--text)}
-    header{position:sticky; top:0; z-index:10; background:rgba(0,0,0,0.7); backdrop-filter: blur(6px); border-bottom:1px solid var(--line)}
-    .bar{display:flex; gap:14px; align-items:center; padding:10px 14px}
-    .brand{font-weight:700}
-    nav a{color:var(--link); text-decoration:none; margin-right:10px; font-size:14px}
-    nav a:hover{text-decoration:underline}
-    main{padding:18px 14px; max-width:1200px; margin:0 auto}
-    .grid{display:grid; gap:14px}
-    @media(min-width:980px){ .grid{grid-template-columns: 1.2fr 0.8fr;} }
-    .card{background:linear-gradient(180deg,var(--panel),var(--panel2)); border:1px solid var(--line); border-radius:14px; padding:14px}
-    .title{font-size:18px; font-weight:700; margin:0 0 8px}
-    .muted{color:var(--muted); font-size:13px}
-    .row{display:flex; flex-wrap:wrap; gap:10px; align-items:center}
-    .btn{display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; border:1px solid var(--line); background:var(--btn); color:var(--text); cursor:pointer; text-decoration:none; font-size:14px}
-    .btn:hover{background:#223049}
-    .btn:disabled{opacity:0.45; cursor:not-allowed}
-    .pill{padding:4px 8px; border-radius:999px; border:1px solid var(--line); font-size:12px; color:var(--muted)}
-    .kpi{display:grid; grid-template-columns: 110px 1fr; gap:6px 10px; margin-top:10px; font-size:14px}
-    .kpi div{padding:3px 0}
-    .kpi .k{color:var(--muted)}
-    .previewWrap{border:1px solid var(--line); border-radius:14px; overflow:hidden; background:#000}
-    iframe{width:100%; border:0}
-    img{max-width:100%; display:block; border-radius:12px; border:1px solid var(--line); background:#000}
-    .hr{height:1px; background:var(--line); margin:12px 0}
-    .small{font-size:12px}
-    .okdot{display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--ok); margin-right:6px}
-  </style>
+  <link rel="stylesheet" href="/static/app.css" />
 </head>
+
 <body>
-<header>
-  <div class="bar">
-    <div class="brand">GenesisPrediction v2</div>
-    <nav>
-      <a href="/static/index.html">Home</a>
-      <a id="navOverlay" href="/static/overlay.html">Overlay</a>
-      <a id="navSent" href="/static/sentiment.html">Sentiment</a>
-    </nav>
-    <div style="margin-left:auto" class="muted small">
-      <span class="okdot"></span>GUI is read-only (SST)
-    </div>
-  </div>
-</header>
+  <!-- Header (fixed) -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">GenesisPrediction v2</div>
 
-<main>
-  <div class="grid">
-    <!-- Left -->
-    <div class="card">
-      <h2 class="title">Today / Latest</h2>
-      <div class="muted">正本（PNG/CSV/HTML）を読むだけ。GUIは再計算しません。</div>
+      <nav class="nav">
+        <a class="nav-link is-active" href="/static/index.html">Home</a>
+        <a class="nav-link" href="/static/overlay.html">Overlay</a>
+        <a class="nav-link" href="/static/sentiment.html">Sentiment</a>
+      </nav>
 
-      <div class="row" style="margin-top:10px;">
-        <span class="pill">date: <span id="dateLabel">loading…</span></span>
-        <a class="btn" id="openOverlayBtn" href="/static/overlay.html">Open Overlay</a>
-        <a class="btn" id="openSentBtn" href="/static/sentiment.html">Open Sentiment</a>
-        <a class="btn" id="openDigestBtn" href="#" target="_blank" rel="noopener">Open Digest HTML</a>
-      </div>
-
-      <div class="kpi" id="kpi">
-        <div class="k">sentiment articles</div><div id="k_articles">-</div>
-        <div class="k">risk</div><div id="k_risk">-</div>
-        <div class="k">positive</div><div id="k_pos">-</div>
-        <div class="k">uncertainty</div><div id="k_unc">-</div>
-      </div>
-
-      <div class="hr"></div>
-
-      <h3 class="title" style="font-size:16px;">Digest preview</h3>
-      <div class="muted small">※ HTMLをそのまま埋め込み表示（パースしない）。</div>
-      <div class="previewWrap" style="margin-top:10px;">
-        <iframe id="digestFrame" title="Digest preview" style="height:680px;"></iframe>
+      <div class="badge" title="Single Source of Truth: files under /analysis/">
+        <span class="dot"></span>
+        <span>GUI is read-only (SST)</span>
       </div>
     </div>
+  </header>
 
-    <!-- Right -->
-    <div class="card">
-      <h2 class="title">Run (CLI only)</h2>
-      <div class="muted">日次生成は CLI/PowerShell で実行してください。</div>
+  <!-- Body -->
+  <main class="app-main">
+    <div class="container">
 
-      <div class="row" style="margin-top:10px;">
-        <button class="btn" disabled title="GUIから実行しません">Run Daily (disabled)</button>
-      </div>
+      <!-- Today / Latest -->
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Today / Latest</h2>
+            <div class="card-sub">正本（PNG/CSV/HTML）を読むだけ。GUIは再計算しません。</div>
+          </div>
 
-      <pre style="margin-top:10px; padding:10px; border:1px solid var(--line); border-radius:12px; background:#0b1020; color:#cbd5e1; overflow:auto;">
-docker compose run --rm analyzer
-# または
-scripts/run_daily.ps1
-      </pre>
+          <div class="date-controls">
+            <div class="pill" id="datePill">date: -</div>
+            <button class="btn" id="btnPrev">◀</button>
+            <button class="btn" id="btnNext">▶</button>
+            <button class="btn" id="btnToday">Today</button>
+            <button class="btn" id="btnLatest">Latest</button>
+          </div>
+        </div>
 
-      <div class="hr"></div>
+        <div class="kpi-grid">
+          <div class="kpi">
+            <div class="kpi-label">articles</div>
+            <div class="kpi-value" id="kpiArticles">-</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">risk</div>
+            <div class="kpi-value" id="kpiRisk">-</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">positive</div>
+            <div class="kpi-value" id="kpiPositive">-</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">uncertainty</div>
+            <div class="kpi-value" id="kpiUnc">-</div>
+          </div>
+        </div>
 
-      <h3 class="title" style="font-size:16px;">FX preview</h3>
-      <div class="muted small">dated があれば dated を優先。なければ latest にフォールバック。</div>
-      <div style="margin-top:10px;">
-        <div class="muted small" id="fxPathLabel">-</div>
-        <a id="fxOpenLink" class="btn" href="#" target="_blank" rel="noopener" style="margin:10px 0 8px;">open image</a>
-        <img id="fxImg" alt="FX overlay preview" />
-      </div>
+        <div class="actions">
+          <button class="btn btn-primary" id="btnOpenOverlay">Open Overlay</button>
+          <button class="btn btn-primary" id="btnOpenSentiment">Open Sentiment</button>
+          <button class="btn btn-primary" id="btnOpenDigest">Open Digest HTML</button>
+        </div>
+
+        <div class="warn" id="warnBox" style="display:none;"></div>
+      </section>
+
+      <!-- FX preview -->
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">FX preview</h2>
+            <div class="card-sub" id="fxSource">Source: -</div>
+          </div>
+          <div class="small-note">dated があれば dated を優先。なければ latest にフォールバック。</div>
+        </div>
+
+        <div class="img-wrap">
+          <img id="fxImg" alt="FX overlay" loading="lazy" />
+        </div>
+      </section>
+
+      <!-- Articles & Sentiment -->
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Articles & Sentiment</h2>
+            <div class="card-sub">/analysis/sentiment_latest.json をそのまま描画（Homeはダイジェストを埋め込みません）</div>
+          </div>
+          <div class="small-note" id="sentMeta">-</div>
+        </div>
+
+        <div class="list-head">
+          <div class="muted" id="sentCount">0 items</div>
+          <div class="row">
+            <button class="btn" id="btnCollapse">Collapse</button>
+            <button class="btn" id="btnExpand">Expand</button>
+          </div>
+        </div>
+
+        <div class="sent-list" id="sentList">
+          <!-- items inserted here -->
+        </div>
+
+        <div class="empty" id="sentEmpty" style="display:none;">
+          No sentiment items found.
+        </div>
+      </section>
+
     </div>
-  </div>
-</main>
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    GenesisPrediction v2 — static GUI (SST). Reads files under <code>/analysis/</code> only.
+  </footer>
 
 <script>
-  // ---------- helpers ----------
-  function qs(name){ return new URLSearchParams(location.search).get(name); }
-  function setHref(id, url){ const el=document.getElementById(id); if(el) el.href=url; }
-  function fmt(n){
-    const x = Number(n);
-    if (!isFinite(x)) return String(n ?? "-");
-    return x.toFixed(6);
-  }
-  async function fetchText(url){
-    const r = await fetch(url, {cache:"no-store"});
-    if(!r.ok) throw new Error("HTTP " + r.status + " " + url);
-    return await r.text();
-  }
-  function parseCSV(text){
-    const lines = text.trim().split(/\r?\n/);
-    if(lines.length < 2) return [];
-    const headers = lines[0].split(",").map(s=>s.trim());
-    const rows = [];
-    for(let i=1;i<lines.length;i++){
-      const cols = lines[i].split(",");
-      const obj = {};
-      headers.forEach((h, idx)=> obj[h] = (cols[idx] ?? "").trim());
-      rows.push(obj);
-    }
-    return rows;
-  }
-  async function pickFirstExists(urls){
-    for (const u of urls){
-      try{
-        const r = await fetch(u, {method:"HEAD", cache:"no-store"});
-        if(r.ok) return u;
-      }catch(e){}
-    }
-    return urls[urls.length-1];
+(() => {
+  // ----------------------------
+  // Helpers
+  // ----------------------------
+  const qs = new URLSearchParams(location.search);
+  const dateParam = qs.get("date"); // YYYY-MM-DD or null
+
+  const pad2 = (n) => String(n).padStart(2, "0");
+  const fmtDate = (d) => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+
+  const parseDate = (s) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || "");
+    if (!m) return null;
+    const dt = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    return Number.isFinite(dt.getTime()) ? dt : null;
+  };
+
+  const addDays = (d, delta) => {
+    const x = new Date(d.getTime());
+    x.setDate(x.getDate() + delta);
+    return x;
+  };
+
+  const setText = (id, v) => document.getElementById(id).textContent = v;
+
+  const toFixed6 = (v) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n.toFixed(6) : "-";
+  };
+
+  async function fetchJson(url){
+    const r = await fetch(url, { cache: "no-store" });
+    if(!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    return await r.json();
   }
 
-  // ---------- main ----------
-  (async ()=>{
-    // latest date from sentiment_timeseries.csv
-    const csvUrl = "/analysis/sentiment_timeseries.csv";
-    let latestDate = qs("date") || null;
+  async function exists(url){
+    try{
+      const r = await fetch(url, { method: "HEAD", cache: "no-store" });
+      return r.ok;
+    }catch(_){
+      return false;
+    }
+  }
+
+  function normalizeUrl(u){
+    try{
+      const x = new URL(u);
+      x.hash = "";
+      // remove typical tracking params
+      const dropPrefixes = ["utm_", "fbclid", "gclid", "yclid", "mc_cid", "mc_eid"];
+      for (const k of Array.from(x.searchParams.keys())){
+        const lk = k.toLowerCase();
+        if (dropPrefixes.some(p => lk.startsWith(p) || lk === p)){
+          x.searchParams.delete(k);
+        }
+      }
+      // normalize trailing slash
+      let s = x.toString();
+      if (s.endsWith("/")) s = s.slice(0, -1);
+      return s;
+    }catch(_){
+      return (u || "").trim();
+    }
+  }
+
+  function pickSourceName(src){
+    if (!src) return "-";
+    if (typeof src === "string") return src;
+    if (typeof src === "object") {
+      return src.name || src.id || "-";
+    }
+    return String(src);
+  }
+
+  function pill(label, value){
+    const el = document.createElement("span");
+    el.className = "chip";
+    el.textContent = `${label} ${toFixed6(value)}`;
+    return el;
+  }
+
+  function clear(el){ while(el.firstChild) el.removeChild(el.firstChild); }
+
+  // ----------------------------
+  // Paths
+  // ----------------------------
+  const SENT_LATEST = "/analysis/sentiment_latest.json";
+  const SENT_DATED  = (d) => `/analysis/sentiment_${d}.json`;
+
+  const DIGEST_LATEST = "/analysis/daily_news_digest_latest.html";
+  const DIGEST_DATED  = (d) => `/analysis/daily_news_digest_${d}.html`;
+
+  const FX_LATEST = "/analysis/jpy_thb_remittance_overlay.png";
+  const FX_DATED  = (d) => `/analysis/fx_overlay_${d}.png`;
+
+  // ----------------------------
+  // Buttons
+  // ----------------------------
+  const warnBox = document.getElementById("warnBox");
+
+  const gotoDate = (d) => location.href = `/static/index.html?date=${d}`;
+
+  document.getElementById("btnToday").addEventListener("click", () => gotoDate(fmtDate(new Date())));
+  document.getElementById("btnLatest").addEventListener("click", () => location.href = `/static/index.html`);
+
+  document.getElementById("btnPrev").addEventListener("click", () => {
+    const d = parseDate(dateParam) || new Date();
+    gotoDate(fmtDate(addDays(d, -1)));
+  });
+
+  document.getElementById("btnNext").addEventListener("click", () => {
+    const d = parseDate(dateParam) || new Date();
+    gotoDate(fmtDate(addDays(d, +1)));
+  });
+
+  document.getElementById("btnOpenOverlay").addEventListener("click", () => {
+    // keep date if present
+    const url = dateParam ? `/static/overlay.html?date=${dateParam}` : `/static/overlay.html`;
+    window.open(url, "_blank");
+  });
+
+  document.getElementById("btnOpenSentiment").addEventListener("click", () => {
+    const url = dateParam ? `/static/sentiment.html?date=${dateParam}` : `/static/sentiment.html`;
+    window.open(url, "_blank");
+  });
+
+  document.getElementById("btnOpenDigest").addEventListener("click", async () => {
+    // open dated if exists, else latest
+    if (dateParam) {
+      const dUrl = DIGEST_DATED(dateParam);
+      if (await exists(dUrl)) return window.open(dUrl, "_blank");
+    }
+    window.open(DIGEST_LATEST, "_blank");
+  });
+
+  // collapse/expand list
+  const sentList = document.getElementById("sentList");
+  document.getElementById("btnCollapse").addEventListener("click", () => sentList.classList.add("is-collapsed"));
+  document.getElementById("btnExpand").addEventListener("click", () => sentList.classList.remove("is-collapsed"));
+
+  // ----------------------------
+  // Load KPI + Sentiment list
+  // ----------------------------
+  async function loadSentiment(){
+    warnBox.style.display = "none";
+    warnBox.textContent = "";
+
+    let json = null;
+    let used = "latest";
 
     try{
-      const csv = await fetchText(csvUrl + "?t=" + Date.now());
-      const rows = parseCSV(csv);
-      if(rows.length){
-        const last = rows[rows.length-1];
-        latestDate = latestDate || last.date || latestDate;
-
-        document.getElementById("k_articles").textContent = last.articles ?? "-";
-        document.getElementById("k_risk").textContent = fmt(last.risk);
-        document.getElementById("k_pos").textContent = fmt(last.positive ?? last.pos);
-        document.getElementById("k_unc").textContent = fmt(last.uncertainty ?? last.unc);
-        document.getElementById("dateLabel").textContent = latestDate ?? "unknown";
+      if (dateParam) {
+        json = await fetchJson(SENT_DATED(dateParam));
+        used = "dated";
       } else {
-        document.getElementById("dateLabel").textContent = latestDate ?? "unknown";
+        json = await fetchJson(SENT_LATEST);
+        used = "latest";
       }
     }catch(e){
-      document.getElementById("dateLabel").textContent = latestDate ?? "unknown";
-    }
-
-    // nav links with date
-    const d = latestDate;
-    if(d){
-      setHref("navOverlay", "/static/overlay.html?date=" + encodeURIComponent(d));
-      setHref("openOverlayBtn", "/static/overlay.html?date=" + encodeURIComponent(d));
-      setHref("navSent", "/static/sentiment.html?date=" + encodeURIComponent(d));
-      setHref("openSentBtn", "/static/sentiment.html?date=" + encodeURIComponent(d));
-
-      const digestUrl = "/analysis/daily_news_" + d + ".html";
-      setHref("openDigestBtn", digestUrl);
-      document.getElementById("digestFrame").src = digestUrl;
-
-      // FX: prefer dated, fallback to latest
-      const fxCandidates = [
-        "/analysis/fx_overlay_" + d + ".png",
-        "/analysis/jpy_thb_remittance_overlay.png"
-      ];
-      const picked = await pickFirstExists(fxCandidates);
-      document.getElementById("fxPathLabel").textContent = picked;
-      document.getElementById("fxOpenLink").href = picked;
-      document.getElementById("fxImg").src = picked + "?t=" + Date.now();
-    }else{
       // fallback
-      const fallback = "/analysis/jpy_thb_remittance_overlay.png";
-      document.getElementById("fxPathLabel").textContent = fallback;
-      document.getElementById("fxOpenLink").href = fallback;
-      document.getElementById("fxImg").src = fallback + "?t=" + Date.now();
+      if (dateParam) {
+        try{
+          json = await fetchJson(SENT_LATEST);
+          used = "latest_fallback";
+        }catch(e2){
+          warnBox.style.display = "block";
+          warnBox.textContent = `sentiment json load failed: ${String(e2.message || e2)}`;
+          return null;
+        }
+      } else {
+        warnBox.style.display = "block";
+        warnBox.textContent = `sentiment_latest.json not found: ${String(e.message || e)}`;
+        return null;
+      }
     }
+
+    const date = (json && json.date) ? String(json.date) : (dateParam || fmtDate(new Date()));
+    setText("datePill", `date: ${date}`);
+
+    // KPI (top-level fields)
+    setText("kpiArticles", json.articles ?? json.items?.length ?? "-");
+    setText("kpiRisk", toFixed6(json.risk));
+    setText("kpiPositive", toFixed6(json.positive));
+    setText("kpiUnc", toFixed6(json.uncertainty));
+
+    // meta
+    const total = Array.isArray(json.items) ? json.items.length : 0;
+    setText("sentMeta", `date=${date} / source=${used}`);
+    setText("sentCount", `${total} items`);
+
+    // render list
+    const empty = document.getElementById("sentEmpty");
+    clear(sentList);
+
+    if (!total) {
+      empty.style.display = "block";
+      return json;
+    }
+    empty.style.display = "none";
+
+    // strong client-side dedup by normalized URL
+    const seen = new Set();
+    const items = [];
+    for (const it of json.items) {
+      const key = normalizeUrl(it.url);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      items.push(it);
+    }
+
+    // build DOM (no layout jumps)
+    for (const it of items) {
+      const row = document.createElement("div");
+      row.className = "item";
+
+      const img = document.createElement("img");
+      img.className = "thumb";
+      img.alt = "";
+      img.loading = "lazy";
+      img.src = it.image_url || "";
+      img.onerror = () => { img.src = ""; img.classList.add("thumb-empty"); };
+      row.appendChild(img);
+
+      const body = document.createElement("div");
+      body.className = "item-body";
+
+      const title = document.createElement("a");
+      title.className = "item-title";
+      title.href = it.url || "#";
+      title.target = "_blank";
+      title.rel = "noopener noreferrer";
+      title.textContent = it.title || "(no title)";
+      body.appendChild(title);
+
+      const meta = document.createElement("div");
+      meta.className = "item-meta";
+      meta.textContent = pickSourceName(it.source);
+      body.appendChild(meta);
+
+      const chips = document.createElement("div");
+      chips.className = "chips";
+
+      // ensure we always show net/risk/pos/unc in one-line shape
+      chips.appendChild(pill("net", it.net));
+      chips.appendChild(pill("risk", it.risk_score));
+      chips.appendChild(pill("pos", it.positive_score));
+      chips.appendChild(pill("unc", it.uncertainty_score));
+
+      body.appendChild(chips);
+      row.appendChild(body);
+
+      sentList.appendChild(row);
+    }
+
+    return json;
+  }
+
+  // ----------------------------
+  // Load FX preview
+  // ----------------------------
+  async function loadFx(){
+    const fxImg = document.getElementById("fxImg");
+    const fxSource = document.getElementById("fxSource");
+
+    let url = FX_LATEST;
+    let used = "latest";
+
+    if (dateParam) {
+      const dUrl = FX_DATED(dateParam);
+      if (await exists(dUrl)) {
+        url = dUrl;
+        used = "dated";
+      }
+    }
+
+    fxImg.src = url + `?t=${Date.now()}`;
+    fxSource.textContent = `Source: ${url} (${used})`;
+  }
+
+  // ----------------------------
+  // Boot
+  // ----------------------------
+  (async () => {
+    await loadSentiment();
+    await loadFx();
   })();
+
+})();
 </script>
+
 </body>
 </html>
