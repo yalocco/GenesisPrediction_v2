@@ -30,3 +30,6 @@ configs/stopwords_approved.txt
 
 
 requirements.txt
+
+Add-Content -Path .\.gitignore -Value "`n# Observation outputs (frozen / not versioned)`ndocs/observation/`n"
+

@@ -8,7 +8,6 @@
 </head>
 
 <body>
-  <!-- Header (fixed) -->
   <header class="app-header">
     <div class="header-inner">
       <div class="brand">GenesisPrediction v2</div>
@@ -26,11 +25,9 @@
     </div>
   </header>
 
-  <!-- Body -->
   <main class="app-main">
     <div class="container">
 
-      <!-- Today / Latest -->
       <section class="card">
         <div class="card-header">
           <div>
@@ -75,7 +72,6 @@
         <div class="warn" id="warnBox" style="display:none;"></div>
       </section>
 
-      <!-- FX preview -->
       <section class="card">
         <div class="card-header">
           <div>
@@ -90,7 +86,42 @@
         </div>
       </section>
 
-      <!-- Articles & Sentiment -->
+      <!-- FX decision (C: ViewModel-first, B: API fallback) -->
+      <section class="card" id="fxDecisionCard" style="display:none;">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">FX decision</h2>
+            <div class="card-sub" id="fxDecisionSource">Source: -</div>
+          </div>
+          <div class="small-note">ViewModel の fx_block を優先（無い場合のみ /api/fx_decision にフォールバック）</div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;">
+            <div style="font-size:18px; font-weight:700;">本日の判断：</div>
+            <div id="fxDecisionValue" style="font-size:22px; font-weight:800;">-</div>
+            <div class="muted" id="fxDecisionConf" style="margin-left:auto;">confidence: -</div>
+          </div>
+
+          <div>
+            <div style="font-weight:700; margin-bottom:6px;">為替要因</div>
+            <ul id="fxDecisionReasons" style="margin:0; padding-left:18px;"></ul>
+          </div>
+
+          <div id="fxDecisionRefWrap" style="display:none;">
+            <div style="font-weight:700; margin-bottom:6px;">国際情勢（参考）</div>
+            <ul id="fxDecisionRefs" style="margin:0; padding-left:18px;"></ul>
+          </div>
+
+          <div id="fxDecisionWatchWrap" style="display:none;">
+            <div style="font-weight:700; margin-bottom:6px;">注視（watchlist）</div>
+            <ul id="fxDecisionWatch" style="margin:0; padding-left:18px;"></ul>
+          </div>
+
+          <div class="muted" id="fxDecisionDisclaimer" style="font-size:12px; line-height:1.5;"></div>
+        </div>
+      </section>
+
       <section class="card">
         <div class="card-header">
           <div>
@@ -108,9 +139,7 @@
           </div>
         </div>
 
-        <div class="sent-list" id="sentList">
-          <!-- items inserted here -->
-        </div>
+        <div class="sent-list" id="sentList"></div>
 
         <div class="empty" id="sentEmpty" style="display:none;">
           No sentiment items found.
@@ -120,16 +149,12 @@
     </div>
   </main>
 
-  <!-- Footer -->
   <footer class="app-footer">
     GenesisPrediction v2 — static GUI (SST). Reads files under <code>/analysis/</code> only.
   </footer>
 
 <script>
 (() => {
-  // ----------------------------
-  // Helpers
-  // ----------------------------
   const qs = new URLSearchParams(location.search);
   const dateParam = qs.get("date"); // YYYY-MM-DD or null
 
@@ -171,48 +196,10 @@
     }
   }
 
-  function normalizeUrl(u){
-    try{
-      const x = new URL(u);
-      x.hash = "";
-      // remove typical tracking params
-      const dropPrefixes = ["utm_", "fbclid", "gclid", "yclid", "mc_cid", "mc_eid"];
-      for (const k of Array.from(x.searchParams.keys())){
-        const lk = k.toLowerCase();
-        if (dropPrefixes.some(p => lk.startsWith(p) || lk === p)){
-          x.searchParams.delete(k);
-        }
-      }
-      // normalize trailing slash
-      let s = x.toString();
-      if (s.endsWith("/")) s = s.slice(0, -1);
-      return s;
-    }catch(_){
-      return (u || "").trim();
-    }
-  }
-
-  function pickSourceName(src){
-    if (!src) return "-";
-    if (typeof src === "string") return src;
-    if (typeof src === "object") {
-      return src.name || src.id || "-";
-    }
-    return String(src);
-  }
-
-  function pill(label, value){
-    const el = document.createElement("span");
-    el.className = "chip";
-    el.textContent = `${label} ${toFixed6(value)}`;
-    return el;
-  }
-
   function clear(el){ while(el.firstChild) el.removeChild(el.firstChild); }
+  function safeText(x){ return (x === null || x === undefined) ? "" : String(x); }
 
-  // ----------------------------
   // Paths
-  // ----------------------------
   const SENT_LATEST = "/analysis/sentiment_latest.json";
   const SENT_DATED  = (d) => `/analysis/sentiment_${d}.json`;
 
@@ -222,11 +209,13 @@
   const FX_LATEST = "/analysis/jpy_thb_remittance_overlay.png";
   const FX_DATED  = (d) => `/analysis/fx_overlay_${d}.png`;
 
-  // ----------------------------
-  // Buttons
-  // ----------------------------
-  const warnBox = document.getElementById("warnBox");
+  // C: view_model API
+  const VIEWMODEL_API = (d) => `/api/view_model/${d}`;
+  // B: fx_decision API fallback
+  const FX_DECISION_API = (d) => `/api/fx_decision/${d}`;
 
+  // Buttons
+  const warnBox = document.getElementById("warnBox");
   const gotoDate = (d) => location.href = `/static/index.html?date=${d}`;
 
   document.getElementById("btnToday").addEventListener("click", () => gotoDate(fmtDate(new Date())));
@@ -243,7 +232,6 @@
   });
 
   document.getElementById("btnOpenOverlay").addEventListener("click", () => {
-    // keep date if present
     const url = dateParam ? `/static/overlay.html?date=${dateParam}` : `/static/overlay.html`;
     window.open(url, "_blank");
   });
@@ -254,7 +242,6 @@
   });
 
   document.getElementById("btnOpenDigest").addEventListener("click", async () => {
-    // open dated if exists, else latest
     if (dateParam) {
       const dUrl = DIGEST_DATED(dateParam);
       if (await exists(dUrl)) return window.open(dUrl, "_blank");
@@ -267,9 +254,7 @@
   document.getElementById("btnCollapse").addEventListener("click", () => sentList.classList.add("is-collapsed"));
   document.getElementById("btnExpand").addEventListener("click", () => sentList.classList.remove("is-collapsed"));
 
-  // ----------------------------
-  // Load KPI + Sentiment list
-  // ----------------------------
+  // Load sentiment (KPI source)
   async function loadSentiment(){
     warnBox.style.display = "none";
     warnBox.textContent = "";
@@ -286,7 +271,6 @@
         used = "latest";
       }
     }catch(e){
-      // fallback
       if (dateParam) {
         try{
           json = await fetchJson(SENT_LATEST);
@@ -306,18 +290,15 @@
     const date = (json && json.date) ? String(json.date) : (dateParam || fmtDate(new Date()));
     setText("datePill", `date: ${date}`);
 
-    // KPI (top-level fields)
     setText("kpiArticles", json.articles ?? json.items?.length ?? "-");
     setText("kpiRisk", toFixed6(json.risk));
     setText("kpiPositive", toFixed6(json.positive));
     setText("kpiUnc", toFixed6(json.uncertainty));
 
-    // meta
     const total = Array.isArray(json.items) ? json.items.length : 0;
     setText("sentMeta", `date=${date} / source=${used}`);
     setText("sentCount", `${total} items`);
 
-    // render list
     const empty = document.getElementById("sentEmpty");
     clear(sentList);
 
@@ -327,18 +308,8 @@
     }
     empty.style.display = "none";
 
-    // strong client-side dedup by normalized URL
-    const seen = new Set();
-    const items = [];
+    // minimal list render (title + source only)
     for (const it of json.items) {
-      const key = normalizeUrl(it.url);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      items.push(it);
-    }
-
-    // build DOM (no layout jumps)
-    for (const it of items) {
       const row = document.createElement("div");
       row.className = "item";
 
@@ -363,30 +334,17 @@
 
       const meta = document.createElement("div");
       meta.className = "item-meta";
-      meta.textContent = pickSourceName(it.source);
+      meta.textContent = (typeof it.source === "string") ? it.source : (it.source?.name || it.source?.id || "-");
       body.appendChild(meta);
 
-      const chips = document.createElement("div");
-      chips.className = "chips";
-
-      // ensure we always show net/risk/pos/unc in one-line shape
-      chips.appendChild(pill("net", it.net));
-      chips.appendChild(pill("risk", it.risk_score));
-      chips.appendChild(pill("pos", it.positive_score));
-      chips.appendChild(pill("unc", it.uncertainty_score));
-
-      body.appendChild(chips);
       row.appendChild(body);
-
       sentList.appendChild(row);
     }
 
     return json;
   }
 
-  // ----------------------------
   // Load FX preview
-  // ----------------------------
   async function loadFx(){
     const fxImg = document.getElementById("fxImg");
     const fxSource = document.getElementById("fxSource");
@@ -406,14 +364,133 @@
     fxSource.textContent = `Source: ${url} (${used})`;
   }
 
-  // ----------------------------
-  // Boot
-  // ----------------------------
-  (async () => {
-    await loadSentiment();
-    await loadFx();
-  })();
+  // Render FX card from fx_block shape
+  function renderFxDecisionFromBlock(fxBlock, sourceLabel){
+    const card = document.getElementById("fxDecisionCard");
+    const srcEl = document.getElementById("fxDecisionSource");
+    const decEl = document.getElementById("fxDecisionValue");
+    const confEl = document.getElementById("fxDecisionConf");
+    const reasonsUl = document.getElementById("fxDecisionReasons");
 
+    const refWrap = document.getElementById("fxDecisionRefWrap");
+    const refUl = document.getElementById("fxDecisionRefs");
+
+    const watchWrap = document.getElementById("fxDecisionWatchWrap");
+    const watchUl = document.getElementById("fxDecisionWatch");
+
+    const disEl = document.getElementById("fxDecisionDisclaimer");
+
+    // reset
+    card.style.display = "none";
+    srcEl.textContent = "Source: -";
+    decEl.textContent = "-";
+    confEl.textContent = "confidence: -";
+    reasonsUl.innerHTML = "";
+    refWrap.style.display = "none";
+    refUl.innerHTML = "";
+    watchWrap.style.display = "none";
+    watchUl.innerHTML = "";
+    disEl.textContent = "";
+
+    if (!fxBlock || typeof fxBlock !== "object") return;
+
+    card.style.display = "block";
+    srcEl.textContent = `Source: ${sourceLabel}`;
+
+    const decision = fxBlock.decision ?? fxBlock.fx_decision ?? "";
+    decEl.textContent = safeText(decision);
+
+    const conf = fxBlock.confidence;
+    confEl.textContent = `confidence: ${Number.isFinite(Number(conf)) ? Number(conf).toFixed(2) : "-"}`;
+
+    const reasons = Array.isArray(fxBlock.fx_reasons) ? fxBlock.fx_reasons : [];
+    if (reasons.length === 0) {
+      const li = document.createElement("li");
+      li.textContent = "(no reasons)";
+      reasonsUl.appendChild(li);
+    } else {
+      for (const t of reasons.slice(0, 3)) {
+        const li = document.createElement("li");
+        li.textContent = safeText(t);
+        reasonsUl.appendChild(li);
+      }
+    }
+
+    const refs = Array.isArray(fxBlock.reference) ? fxBlock.reference
+              : (Array.isArray(fxBlock.analyzer_reference) ? fxBlock.analyzer_reference : []);
+    if (refs.length) {
+      refWrap.style.display = "block";
+      for (const r of refs.slice(0, 5)) {
+        const li = document.createElement("li");
+        const topic = safeText(r.topic);
+        const label = safeText(r.label);
+        const impact = safeText(r.impact);
+        li.textContent = `${topic}${label ? " [" + label + "]" : ""}${impact ? " - " + impact : ""}`;
+        refUl.appendChild(li);
+      }
+    }
+
+    const watch = Array.isArray(fxBlock.watchlist) ? fxBlock.watchlist : [];
+    if (watch.length) {
+      watchWrap.style.display = "block";
+      for (const w of watch.slice(0, 5)) {
+        const li = document.createElement("li");
+        const topic = safeText(w.topic);
+        const status = safeText(w.status);
+        const reason = safeText(w.reason);
+        li.textContent = `${topic}${status ? " - " + status : ""}${reason ? " / " + reason : ""}`;
+        watchUl.appendChild(li);
+      }
+    }
+
+    disEl.textContent = safeText(fxBlock.disclaimer || "本判断は補助情報であり、最終的な送金判断は利用者自身の責任で行ってください。");
+  }
+
+  // Load FX decision: C (view_model.fx_block) -> B (api)
+  async function loadFxDecision(effectiveDate){
+    if (!effectiveDate) return;
+
+    // C: ViewModel first
+    try{
+      const vm = await fetchJson(VIEWMODEL_API(effectiveDate));
+      if (vm && vm.fx_block) {
+        return renderFxDecisionFromBlock(vm.fx_block, `view_model:${effectiveDate}`);
+      }
+    }catch(_e){
+      // ignore and fall back
+    }
+
+    // B: API fallback
+    try{
+      const obj = await fetchJson(FX_DECISION_API(effectiveDate));
+      // normalize api -> fx_block-ish
+      const fxBlock = {
+        date: effectiveDate,
+        decision: obj.fx_decision ?? obj.decision,
+        confidence: obj.confidence,
+        fx_reasons: obj.fx_reasons || [],
+        reference: obj.analyzer_reference || obj.reference || [],
+        watchlist: obj.watchlist || [],
+        disclaimer: obj.disclaimer
+      };
+      return renderFxDecisionFromBlock(fxBlock, `api_fx_decision:${effectiveDate}`);
+    }catch(_e2){
+      // no fx info -> keep hidden
+      return;
+    }
+  }
+
+  // Boot
+  (async () => {
+    const sent = await loadSentiment();
+    await loadFx();
+
+    const effectiveDate =
+      (sent && sent.date) ? String(sent.date) :
+      (dateParam || fmtDate(new Date()));
+
+    await loadFxDecision(effectiveDate);
+  })();
 })();
 </script>
 
