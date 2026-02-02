@@ -1,9 +1,9 @@
-version: "3.9"
-
 services:
   fetcher:
     build: ./docker/fetcher
     env_file: .env
+    environment:
+      - TZ=Asia/Tokyo
     volumes:
       - ./data:/data
     command: >
@@ -12,9 +12,12 @@ services:
 
   analyzer:
     build: ./docker/analyzer
+    env_file: .env
+    environment:
+      - TZ=Asia/Tokyo
     volumes:
       - ./data:/data
-      - ./resources:/app/resources:ro  
+      - ./resources:/app/resources:ro
     command: >
       python analyze.py
     depends_on:
