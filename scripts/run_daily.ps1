@@ -103,10 +103,14 @@ try {
   Exec $py @("scripts/build_digest_view_model.py", "--date", $d)
 
   # 2.1) Update ViewModel latest pointer so GUI default advances
+  # IMPORTANT: GUI expects latest under data/digest/view/view_model_latest.json
   Write-Section "2.1) Update ViewModel latest pointer"
-  $vmDated  = Join-Path $RepoRoot ("data\digest\view\" + $d + ".json")
-  $vmLatest = Join-Path $RepoRoot "data\digest\view_model_latest.json"
-  Copy-Force $vmDated $vmLatest | Out-Null
+  $vmDated      = Join-Path $RepoRoot ("data\digest\view\" + $d + ".json")
+  $vmLatestGood = Join-Path $RepoRoot "data\digest\view\view_model_latest.json"   # <- correct path
+  $vmLatestCompat = Join-Path $RepoRoot "data\digest\view_model_latest.json"      # <- backward compat
+
+  Copy-Force $vmDated $vmLatestGood   | Out-Null
+  Copy-Force $vmDated $vmLatestCompat | Out-Null
 
   # 3) Publish FX overlay
   if (-not $SkipFxOverlay) {
@@ -123,7 +127,11 @@ try {
   # 4) Publish FX decision
   if (-not $SkipFxDecision) {
     Write-Section "4) Publish FX decision (scripts/publish_fx_decision_to_analysis.py)"
-    Exec $py @("scripts/publish_fx_decision_to_analysis.py", "--date", $d)
+    if (Test-Path "scripts/publish_fx_decision_to_analysis.py") {
+      Exec $py @("scripts/publish_fx_decision_to_analysis.py", "--date", $d)
+    } else {
+      Write-Host "WARN: scripts/publish_fx_decision_to_analysis.py not found. Skipping." -ForegroundColor Yellow
+    }
   } else {
     Write-Section "4) FX decision skipped (-SkipFxDecision)"
   }
@@ -131,7 +139,11 @@ try {
   # 5) Attach fx_block to ViewModel
   if (-not $SkipFxDecision) {
     Write-Section "5) Attach fx_block to ViewModel (scripts/attach_fx_block_to_view_model.py)"
-    Exec $py @("scripts/attach_fx_block_to_view_model.py", "--date", $d)
+    if (Test-Path "scripts/attach_fx_block_to_view_model.py") {
+      Exec $py @("scripts/attach_fx_block_to_view_model.py", "--date", $d)
+    } else {
+      Write-Host "WARN: scripts/attach_fx_block_to_view_model.py not found. Skipping." -ForegroundColor Yellow
+    }
   }
 
   # 6) Build Daily News Digest HTML (latest + dated)
@@ -172,10 +184,10 @@ try {
 
   # 9) Output check
   Write-Section "9) Output check"
-  $sentLatest = Join-Path $RepoRoot "data\world_politics\analysis\sentiment_latest.json"
+  $sentLatest   = Join-Path $RepoRoot "data\world_politics\analysis\sentiment_latest.json"
   $digestLatest = Join-Path $RepoRoot "data\world_politics\analysis\daily_news_digest_latest.html"
 
-  foreach ($p in @($vmDated, $vmLatest, $dailyNewsDated, $sentLatest, $digestLatest)) {
+  foreach ($p in @($vmDated, $vmLatestGood, $dailyNewsDated, $sentLatest, $digestLatest)) {
     if (Test-Path $p) { Write-Host "OK: $p" -ForegroundColor Green }
     else { Write-Host "MISSING: $p" -ForegroundColor Yellow }
   }
