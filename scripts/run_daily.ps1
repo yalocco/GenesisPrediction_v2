@@ -1,200 +1,174 @@
-# scripts/run_daily.ps1
-# GenesisPrediction v2 - Daily Runner (stabilized, one-shot)
-#
-# Includes:
-# - docker analyzer
-# - build digest view_model
-# - publish fx overlay / decision
-# - attach fx_block
-# - update view_model_latest.json (so GUI default advances)
-# - build daily news digest html (latest + dated)
-# - ensure daily_news_YYYY-MM-DD.json exists (copy from daily_news_latest.json)
-# - build sentiment_latest.json (if possible) + normalize keys for GUI top cards
-
-[CmdletBinding()]
 param(
-  [string]$Date = "",
-  [switch]$NoDocker,
-  [switch]$SkipFxOverlay,
-  [switch]$SkipFxDecision,
-  [switch]$SkipDigestHtml,
-  [switch]$SkipSentiment
+  [string]$Date = ""
 )
 
 $ErrorActionPreference = "Stop"
-Set-StrictMode -Version Latest
+$ProgressPreference = "SilentlyContinue"
 
-function Write-Section([string]$Title) {
+function HR($title) {
   Write-Host ""
-  Write-Host "============================================================" -ForegroundColor Cyan
-  Write-Host $Title -ForegroundColor Cyan
-  Write-Host "============================================================" -ForegroundColor Cyan
+  Write-Host ("=" * 78) -ForegroundColor DarkCyan
+  Write-Host $title -ForegroundColor Cyan
+  Write-Host ("=" * 78) -ForegroundColor DarkCyan
 }
+function OK($msg)   { Write-Host "[OK]  $msg" -ForegroundColor Green }
+function WARN($msg) { Write-Host "[WARN] $msg" -ForegroundColor Yellow }
+function ERR($msg)  { Write-Host "[ERR] $msg" -ForegroundColor Red }
 
-function Resolve-Date([string]$DateArg) {
-  if ([string]::IsNullOrWhiteSpace($DateArg)) {
-    return (Get-Date).ToString("yyyy-MM-dd")
-  }
-  if ($DateArg -notmatch '^\d{4}-\d{2}-\d{2}$') {
-    throw "Invalid -Date format. Use YYYY-MM-DD. Given: $DateArg"
-  }
-  return $DateArg
-}
-
-function Ensure-VenvPython([string]$RepoRoot) {
-  $py = Join-Path $RepoRoot ".venv\Scripts\python.exe"
-  if (!(Test-Path $py)) { throw "Python not found: $py" }
-  return $py
-}
-
-# Do NOT use parameter name "$Args" (conflicts with automatic variable)
-function Exec([string]$Cmd, [string[]]$CmdArgs) {
-  $argText = ""
-  if ($null -ne $CmdArgs -and $CmdArgs.Count -gt 0) {
-    $argText = " " + ($CmdArgs -join " ")
-  }
-  Write-Host ">> $Cmd$argText" -ForegroundColor DarkGray
-  & $Cmd @CmdArgs
-}
-
-function Ensure-Dir([string]$Path) {
-  if (!(Test-Path $Path)) { New-Item -ItemType Directory -Force -Path $Path | Out-Null }
-}
-
-function Copy-Force([string]$Src, [string]$Dst) {
-  if (!(Test-Path $Src)) {
-    Write-Host "WARN: missing source: $Src" -ForegroundColor Yellow
-    return $false
-  }
-  Ensure-Dir (Split-Path -Parent $Dst)
-  Copy-Item -Force $Src $Dst
-  Write-Host "OK: $Dst" -ForegroundColor Green
-  return $true
-}
-
-# RepoRoot resolution (this file is under scripts/)
-$thisScript = $MyInvocation.MyCommand.Path
-$scriptDir  = Split-Path -Parent $thisScript
-$RepoRoot   = Split-Path -Parent $scriptDir
-
+# ----------------------------
+# Context
+# ----------------------------
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 Push-Location $RepoRoot
+
 try {
-  $d  = Resolve-Date $Date
-  $py = Ensure-VenvPython $RepoRoot
+  $PY = (Resolve-Path ".\.venv\Scripts\python.exe").Path
 
-  Write-Section "GenesisPrediction v2 | Daily Runner | date=$d"
-  Write-Host ("RepoRoot: " + $RepoRoot) -ForegroundColor DarkGray
-
-  $analysisDir = Join-Path $RepoRoot "data\world_politics\analysis"
-  $viewDir     = Join-Path $RepoRoot "data\digest\view"
-  Ensure-Dir $analysisDir
-  Ensure-Dir $viewDir
-
-  # 1) Analyzer (Docker) - optional
-  if (-not $NoDocker) {
-    Write-Section "1) Analyzer (docker compose run --rm analyzer)"
-    Exec "docker" @("compose", "run", "--rm", "analyzer")
-  } else {
-    Write-Section "1) Analyzer skipped (-NoDocker)"
+  if ([string]::IsNullOrWhiteSpace($Date)) {
+    # Tokyo local date
+    $Date = (Get-Date).ToString("yyyy-MM-dd")
   }
 
+  HR "GenesisPrediction v2 | Daily Runner | date=$Date"
+  OK "RepoRoot: $RepoRoot"
+
+  # ----------------------------
+  # 1) Analyzer
+  # ----------------------------
+  HR "1) Analyzer (docker compose run --rm analyzer)"
+  & docker compose run --rm analyzer
+
+  # ----------------------------
   # 2) Build Digest ViewModel
-  Write-Section "2) Build Digest ViewModel (scripts/build_digest_view_model.py)"
-  Exec $py @("scripts/build_digest_view_model.py", "--date", $d)
+  # ----------------------------
+  HR "2) Build Digest ViewModel (scripts/build_digest_view_model.py)"
+  if (Test-Path "scripts/build_digest_view_model.py") {
+    & $PY "scripts/build_digest_view_model.py" --date $Date
+  } else {
+    WARN "missing script: scripts/build_digest_view_model.py"
+  }
 
-  # 2.1) Update ViewModel latest pointer so GUI default advances
-  # IMPORTANT: GUI expects latest under data/digest/view/view_model_latest.json
-  Write-Section "2.1) Update ViewModel latest pointer"
-  $vmDated      = Join-Path $RepoRoot ("data\digest\view\" + $d + ".json")
-  $vmLatestGood = Join-Path $RepoRoot "data\digest\view\view_model_latest.json"   # <- correct path
-  $vmLatestCompat = Join-Path $RepoRoot "data\digest\view_model_latest.json"      # <- backward compat
+  # ----------------------------
+  # 2.1) Update ViewModel latest pointer (robust)
+  # ----------------------------
+  HR "2.1) Update ViewModel latest pointer"
+  $VM_DATED   = Join-Path $RepoRoot "data\digest\view\$Date.json"
+  $VM_LATEST_A = Join-Path $RepoRoot "data\digest\view_model_latest.json"
+  $VM_LATEST_B = Join-Path $RepoRoot "data\digest\view\view_model_latest.json"
 
-  Copy-Force $vmDated $vmLatestGood   | Out-Null
-  Copy-Force $vmDated $vmLatestCompat | Out-Null
+  if (Test-Path $VM_DATED) {
+    Copy-Item -Force $VM_DATED $VM_LATEST_A
+    Copy-Item -Force $VM_DATED $VM_LATEST_B
+    OK "updated: $VM_LATEST_A"
+    OK "updated: $VM_LATEST_B"
+  } else {
+    WARN "view_model not found: $VM_DATED"
+  }
 
+  # ----------------------------
   # 3) Publish FX overlay
-  if (-not $SkipFxOverlay) {
-    Write-Section "3) Publish FX overlay (scripts/publish_fx_overlay_to_analysis.py)"
-    if (Test-Path "scripts/publish_fx_overlay_to_analysis.py") {
-      Exec $py @("scripts/publish_fx_overlay_to_analysis.py", "--date", $d)
-    } else {
-      Write-Host "WARN: scripts/publish_fx_overlay_to_analysis.py not found. Skipping." -ForegroundColor Yellow
-    }
+  # ----------------------------
+  HR "3) Publish FX overlay (scripts/publish_fx_overlay_to_analysis.py)"
+  if (Test-Path "scripts/publish_fx_overlay_to_analysis.py") {
+    & $PY "scripts/publish_fx_overlay_to_analysis.py" --date $Date
   } else {
-    Write-Section "3) FX overlay skipped (-SkipFxOverlay)"
+    WARN "missing script: scripts/publish_fx_overlay_to_analysis.py"
   }
 
-  # 4) Publish FX decision
-  if (-not $SkipFxDecision) {
-    Write-Section "4) Publish FX decision (scripts/publish_fx_decision_to_analysis.py)"
-    if (Test-Path "scripts/publish_fx_decision_to_analysis.py") {
-      Exec $py @("scripts/publish_fx_decision_to_analysis.py", "--date", $d)
-    } else {
-      Write-Host "WARN: scripts/publish_fx_decision_to_analysis.py not found. Skipping." -ForegroundColor Yellow
-    }
+  # ----------------------------
+  # 4) Publish FX decision (optional)
+  # ----------------------------
+  HR "4) Publish FX decision (scripts/publish_fx_decision_to_analysis.py)"
+  if (Test-Path "scripts/publish_fx_decision_to_analysis.py") {
+    & $PY "scripts/publish_fx_decision_to_analysis.py" --date $Date
   } else {
-    Write-Section "4) FX decision skipped (-SkipFxDecision)"
+    WARN "missing script: scripts/publish_fx_decision_to_analysis.py"
   }
 
-  # 5) Attach fx_block to ViewModel
-  if (-not $SkipFxDecision) {
-    Write-Section "5) Attach fx_block to ViewModel (scripts/attach_fx_block_to_view_model.py)"
-    if (Test-Path "scripts/attach_fx_block_to_view_model.py") {
-      Exec $py @("scripts/attach_fx_block_to_view_model.py", "--date", $d)
-    } else {
-      Write-Host "WARN: scripts/attach_fx_block_to_view_model.py not found. Skipping." -ForegroundColor Yellow
-    }
-  }
-
-  # 6) Build Daily News Digest HTML (latest + dated)
-  if (-not $SkipDigestHtml) {
-    Write-Section "6) Build Daily News Digest HTML (scripts/build_daily_news_digest.py)"
-    if (Test-Path "scripts/build_daily_news_digest.py") {
-      Exec $py @("scripts/build_daily_news_digest.py", "--date", $d)
-    } else {
-      Write-Host "WARN: scripts/build_daily_news_digest.py not found. Skipping digest html." -ForegroundColor Yellow
-    }
+  # ----------------------------
+  # 5) Attach FX block to ViewModel (optional)
+  # ----------------------------
+  HR "5) Attach FX block to ViewModel (scripts/attach_fx_block_to_view_model.py)"
+  if (Test-Path "scripts/attach_fx_block_to_view_model.py") {
+    & $PY "scripts/attach_fx_block_to_view_model.py" --date $Date
   } else {
-    Write-Section "6) Digest HTML skipped (-SkipDigestHtml)"
+    WARN "missing script: scripts/attach_fx_block_to_view_model.py"
   }
 
-  # 7) Ensure daily_news_YYYY-MM-DD.json exists (needed by build_daily_sentiment.py)
-  Write-Section "7) Ensure daily_news dated exists"
-  $dailyNewsLatest = Join-Path $RepoRoot "data\world_politics\analysis\daily_news_latest.json"
-  $dailyNewsDated  = Join-Path $RepoRoot ("data\world_politics\analysis\daily_news_" + $d + ".json")
-  $okNews = Copy-Force $dailyNewsLatest $dailyNewsDated
-
-  # 8) Build sentiment_latest.json (and normalize keys for GUI)
-  if (-not $SkipSentiment) {
-    Write-Section "8) Build Sentiment (scripts/build_daily_sentiment.py) + normalize"
-    if ((Test-Path "scripts/build_daily_sentiment.py") -and $okNews) {
-      Exec $py @("scripts/build_daily_sentiment.py", "--date", $d)
-
-      if (Test-Path "scripts/normalize_sentiment_latest.py") {
-        Exec $py @("scripts/normalize_sentiment_latest.py")
-      } else {
-        Write-Host "WARN: scripts/normalize_sentiment_latest.py not found. Skipping normalization." -ForegroundColor Yellow
-      }
-    } else {
-      Write-Host "WARN: sentiment skipped (missing build_daily_sentiment.py or daily_news dated)." -ForegroundColor Yellow
-    }
+  # ----------------------------
+  # 6) Build Daily News Digest HTML
+  # ----------------------------
+  HR "6) Build Daily News Digest HTML (scripts/build_daily_news_digest.py)"
+  if (Test-Path "scripts/build_daily_news_digest.py") {
+    & $PY "scripts/build_daily_news_digest.py" --date $Date
   } else {
-    Write-Section "8) Sentiment skipped (-SkipSentiment)"
+    WARN "missing script: scripts/build_daily_news_digest.py"
   }
 
-  # 9) Output check
-  Write-Section "9) Output check"
-  $sentLatest   = Join-Path $RepoRoot "data\world_politics\analysis\sentiment_latest.json"
-  $digestLatest = Join-Path $RepoRoot "data\world_politics\analysis\daily_news_digest_latest.html"
+  # ----------------------------
+  # 7) Ensure daily_news dated exists (sanity)
+  # ----------------------------
+  HR "7) Ensure daily_news dated exists"
+  $DAILY_NEWS = Join-Path $RepoRoot "data\world_politics\analysis\daily_news_$Date.json"
+  if (Test-Path $DAILY_NEWS) { OK $DAILY_NEWS } else { WARN "missing: $DAILY_NEWS" }
 
-  foreach ($p in @($vmDated, $vmLatestGood, $dailyNewsDated, $sentLatest, $digestLatest)) {
-    if (Test-Path $p) { Write-Host "OK: $p" -ForegroundColor Green }
-    else { Write-Host "MISSING: $p" -ForegroundColor Yellow }
+  # ----------------------------
+  # 8) Build Sentiment + normalize
+  # ----------------------------
+  HR "8) Build Sentiment (scripts/build_daily_sentiment.py) + normalize"
+  if (Test-Path "scripts/build_daily_sentiment.py") {
+    & $PY "scripts/build_daily_sentiment.py" --date $Date
+  } else {
+    WARN "missing script: scripts/build_daily_sentiment.py"
   }
 
-  Write-Section "DONE"
-  Write-Host ("Open GUI: http://127.0.0.1:8000/static/index.html") -ForegroundColor Cyan
-  Write-Host ("Tip: Ctrl+F5 (hard refresh) if cached") -ForegroundColor Cyan
+  if (Test-Path "scripts/normalize_sentiment_latest.py") {
+    & $PY "scripts/normalize_sentiment_latest.py"
+  } elseif (Test-Path "scripts/normalize_sentiment_file.py") {
+    & $PY "scripts/normalize_sentiment_file.py" --in "data\world_politics\analysis\sentiment_latest.json"
+  } else {
+    WARN "missing normalize script(s)"
+  }
+
+  # ----------------------------
+  # 8.1) Patch ViewModel with sentiment summary (CRITICAL for top cards)
+  # ----------------------------
+  HR "8.1) Ensure ViewModel sentiment summary (scripts/ensure_view_model_sentiment_summary.py)"
+  if (Test-Path "scripts/ensure_view_model_sentiment_summary.py") {
+    & $PY "scripts/ensure_view_model_sentiment_summary.py" --date $Date
+  } else {
+    WARN "missing script: scripts/ensure_view_model_sentiment_summary.py"
+  }
+
+  # ----------------------------
+  # 8.2) Build sentiment time-series CSV (sentiment.html uses this)
+  # ----------------------------
+  HR "8.2) Build sentiment time-series CSV (scripts/build_sentiment_timeseries_csv.py)"
+  if (Test-Path "scripts/build_sentiment_timeseries_csv.py") {
+    & $PY "scripts/build_sentiment_timeseries_csv.py"
+  } else {
+    WARN "missing script: scripts/build_sentiment_timeseries_csv.py"
+  }
+
+  # ----------------------------
+  # 10) Output check
+  # ----------------------------
+  HR "10) Output check"
+  $VM_OUT      = Join-Path $RepoRoot "data\digest\view\$Date.json"
+  $VM_LATEST   = Join-Path $RepoRoot "data\digest\view_model_latest.json"
+  $SENT_LATEST = Join-Path $RepoRoot "data\world_politics\analysis\sentiment_latest.json"
+  $DIGEST_LATEST = Join-Path $RepoRoot "data\world_politics\analysis\daily_news_digest_latest.html"
+  $SENT_CSV    = Join-Path $RepoRoot "data\world_politics\analysis\sentiment_timeseries.csv"
+
+  if (Test-Path $VM_OUT)      { OK $VM_OUT }      else { WARN "missing: $VM_OUT" }
+  if (Test-Path $VM_LATEST)   { OK $VM_LATEST }   else { WARN "missing: $VM_LATEST" }
+  if (Test-Path $SENT_LATEST) { OK $SENT_LATEST } else { WARN "missing: $SENT_LATEST" }
+  if (Test-Path $DIGEST_LATEST) { OK $DIGEST_LATEST } else { WARN "missing: $DIGEST_LATEST" }
+  if (Test-Path $SENT_CSV)    { OK $SENT_CSV }    else { WARN "missing: $SENT_CSV" }
+
+  HR "DONE"
+  OK "Open GUI: http://127.0.0.1:8000/static/index.html?date=$Date"
+  OK "Tip: Ctrl+F5 (hard refresh) if cached"
 }
 finally {
   Pop-Location
