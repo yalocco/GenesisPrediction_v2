@@ -56,6 +56,7 @@
       cursor:pointer;
       font-weight:800;
       font-size:12px;
+      user-select:none;
     }
     .btn:hover{border-color: rgba(45,212,191,.35)}
     .pill{
@@ -85,6 +86,40 @@
       white-space:pre-wrap;
       display:none;
     }
+
+    .controls2{
+      margin-top:10px;
+      display:grid;
+      grid-template-columns: 1fr 180px 200px 160px;
+      gap:10px;
+      align-items:end;
+    }
+    @media (max-width: 980px){
+      .controls2{grid-template-columns: 1fr 1fr; }
+    }
+    label{display:block; font-size:12px; color:var(--muted); margin-bottom:6px}
+    input[type="text"], select{
+      width:100%;
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.22);
+      color:var(--text);
+      outline:none;
+    }
+    input[type="text"]::placeholder{color:rgba(159,176,211,.75)}
+    .checkline{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.22);
+      border-radius:12px;
+      padding:10px;
+      height:42px;
+    }
+    .checkline input{transform:translateY(1px)}
+    .countline{margin-top:8px; font-size:12px; color:var(--muted)}
     table{width:100%; border-collapse:collapse; margin-top:10px}
     th,td{border-bottom:1px solid var(--line); padding:10px 8px; vertical-align:top}
     th{color:#cfe0ff; font-weight:800; font-size:12px; text-align:left; background:rgba(0,0,0,.18); position:sticky; top:0}
@@ -146,100 +181,147 @@
   </style>
 </head>
 <body>
-  <header>
-    <div class="wrap">
-      <div class="topbar">
-        <div class="brand"><span class="dot"></span><span>GenesisPrediction v2</span></div>
-        <div class="nav">
-          <a href="/static/index.html">Home</a>
-          <a href="/static/overlay.html">Overlay</a>
-          <a href="/static/sentiment.html">Sentiment</a>
-        </div>
-        <div class="pill"><span class="dot"></span><span id="pillText">loading…</span></div>
+<header>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand"><span class="dot"></span><span>GenesisPrediction v2</span></div>
+      <div class="nav">
+        <a href="/static/index.html">Home</a>
+        <a href="/static/overlay.html">Overlay</a>
+        <a href="/static/sentiment.html">Sentiment</a>
       </div>
+      <div class="pill"><span class="dot"></span><span id="pillText">loading…</span></div>
     </div>
-  </header>
+  </div>
+</header>
 
-  <main>
-    <div class="wrap">
-      <h1>Sentiment（記事別）</h1>
-      <p class="sub">
-        /analysis/view_model_latest.json と /analysis/sentiment_latest.json を結合して、記事ごとの risk / positive / uncertainty / net を一覧表示します。<br>
-        さらに /analysis/sentiment_timeseries.csv があれば、直近の推移グラフを表示します（GUIは読み取り専用）。<br>
-        サムネは <b>A方式</b>（ありがちな画像URLフィールドのみ）で、<b>view_model → sentiment の順</b>に拾います。
-      </p>
+<main>
+  <div class="wrap">
+    <h1>Sentiment（記事別）</h1>
+    <p class="sub">
+      /analysis/view_model_latest.json と /analysis/sentiment_latest.json を結合して、記事ごとの risk / positive / uncertainty / net を一覧表示します。<br>
+      さらに /analysis/sentiment_timeseries.csv があれば、直近の推移グラフを表示します（GUIは読み取り専用）。<br>
+      並び替え＋フィルタ対応（運用強化版）＋ 画像の堅牢化（no-referrer / async decode / onerror）。
+    </p>
 
-      <div class="grid">
-        <section class="card">
-          <h2 style="margin:0 0 10px;">Controls</h2>
-          <div class="row">
-            <button class="btn" id="btnReload">Reload</button>
-            <button class="btn" id="btnOpenVM">Open view_model_latest.json</button>
-            <button class="btn" id="btnOpenSent">Open sentiment_latest.json</button>
-            <button class="btn" id="btnOpenSeries">Open sentiment_timeseries.csv</button>
-          </div>
-
-          <div class="kpis">
-            <div class="kpi"><div class="label">date</div><div class="value mono" id="kDate">—</div></div>
-            <div class="kpi"><div class="label">articles</div><div class="value mono" id="kArticles">—</div></div>
-            <div class="kpi"><div class="label">risk</div><div class="value mono" id="kRisk">—</div></div>
-            <div class="kpi"><div class="label">positive</div><div class="value mono" id="kPos">—</div></div>
-          </div>
-          <div class="kpis" style="grid-template-columns:repeat(2,1fr); margin-top:10px;">
-            <div class="kpi"><div class="label">uncertainty</div><div class="value mono" id="kUnc">—</div></div>
-            <div class="kpi"><div class="label">note</div><div class="value mono" id="kNote">join: URL優先 → title fallback</div></div>
-          </div>
-
-          <div class="chart-wrap">
-            <div class="chart-head">
-              <div class="chart-title">Sentiment Trend</div>
-              <div class="chart-note mono" id="chartMeta">timeseries: loading…</div>
-            </div>
-            <canvas id="trendCanvas" width="1100" height="220"></canvas>
-            <div class="chart-note" id="chartHint">※ risk / positive / uncertainty を同一スケールで描画。</div>
-          </div>
-
-          <div class="err" id="errBox"></div>
-        </section>
-
-        <section class="card">
-          <h2 style="margin:0 0 10px;">How it works</h2>
-          <div class="muted" style="font-size:12px; line-height:1.6;">
-            1) GET /analysis/view_model_latest.json<br>
-            2) GET /analysis/sentiment_latest.json<br>
-            3) join key: URL 優先 → 無ければ title fallback<br>
-            4) 表に描画<br><br>
-            <span class="mono">debug:</span> <span class="mono" id="metaLine">loading…</span>
-          </div>
-        </section>
-      </div>
-
-      <section class="card" style="margin-top:14px;">
-        <h2 style="margin:0 0 8px;">Articles & Sentiment</h2>
-        <div style="overflow:auto;">
-          <table>
-            <thead>
-              <tr>
-                <th style="min-width:92px;">thumb</th>
-                <th style="min-width:420px;">title</th>
-                <th style="min-width:110px;">status</th>
-                <th class="right" style="min-width:110px;">risk</th>
-                <th class="right" style="min-width:110px;">positive</th>
-                <th class="right" style="min-width:130px;">uncertainty</th>
-                <th class="right" style="min-width:110px;">net*</th>
-              </tr>
-            </thead>
-            <tbody id="tbody">
-              <tr><td colspan="7" class="muted">loading…</td></tr>
-            </tbody>
-          </table>
+    <div class="grid">
+      <section class="card">
+        <h2 style="margin:0 0 10px;">Controls</h2>
+        <div class="row">
+          <button class="btn" id="btnReload">Reload</button>
+          <button class="btn" id="btnReset">Reset filters</button>
+          <button class="btn" id="btnOpenVM">Open view_model_latest.json</button>
+          <button class="btn" id="btnOpenSent">Open sentiment_latest.json</button>
+          <button class="btn" id="btnOpenSeries">Open sentiment_timeseries.csv</button>
         </div>
-        <div class="muted" style="font-size:12px; margin-top:8px;">
-          * net は存在する場合のみ表示。無ければ pos-risk の推定（可能なら）／不可能なら “—”
+
+        <div class="kpis">
+          <div class="kpi"><div class="label">date</div><div class="value mono" id="kDate">—</div></div>
+          <div class="kpi"><div class="label">articles</div><div class="value mono" id="kArticles">—</div></div>
+          <div class="kpi"><div class="label">risk</div><div class="value mono" id="kRisk">—</div></div>
+          <div class="kpi"><div class="label">positive</div><div class="value mono" id="kPos">—</div></div>
+        </div>
+        <div class="kpis" style="grid-template-columns:repeat(2,1fr); margin-top:10px;">
+          <div class="kpi"><div class="label">uncertainty</div><div class="value mono" id="kUnc">—</div></div>
+          <div class="kpi"><div class="label">note</div><div class="value mono" id="kNote">join: URL優先 → title fallback</div></div>
+        </div>
+
+        <!-- B: Filter + Sort -->
+        <div class="controls2">
+          <div>
+            <label for="q">search (title/source)</label>
+            <input id="q" type="text" placeholder="e.g. nigeria / foxnews / congress" />
+          </div>
+
+          <div>
+            <label for="srcSel">source</label>
+            <select id="srcSel">
+              <option value="">All</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="sortSel">sort</label>
+            <select id="sortSel">
+              <option value="risk:desc">risk ↓</option>
+              <option value="risk:asc">risk ↑</option>
+              <option value="positive:desc">positive ↓</option>
+              <option value="positive:asc">positive ↑</option>
+              <option value="uncertainty:desc">uncertainty ↓</option>
+              <option value="uncertainty:asc">uncertainty ↑</option>
+              <option value="net:desc">net ↓</option>
+              <option value="net:asc">net ↑</option>
+              <option value="title:asc">title A→Z</option>
+              <option value="title:desc">title Z→A</option>
+              <option value="source:asc">source A→Z</option>
+              <option value="source:desc">source Z→A</option>
+            </select>
+          </div>
+
+          <div>
+            <label>&nbsp;</label>
+            <div class="checkline">
+              <input id="showMissing" type="checkbox" checked />
+              <span class="muted">show missing</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="countline">
+          showing: <span class="mono" id="showCount">0</span> /
+          total: <span class="mono" id="totalCount">0</span>
+        </div>
+
+        <div class="chart-wrap">
+          <div class="chart-head">
+            <div class="chart-title">Sentiment Trend</div>
+            <div class="chart-note mono" id="chartMeta">timeseries: loading…</div>
+          </div>
+          <canvas id="trendCanvas" width="1100" height="220"></canvas>
+          <div class="chart-note" id="chartHint">※ risk / positive / uncertainty を同一スケールで描画。</div>
+        </div>
+
+        <div class="err" id="errBox"></div>
+      </section>
+
+      <section class="card">
+        <h2 style="margin:0 0 10px;">How it works</h2>
+        <div class="muted" style="font-size:12px; line-height:1.6;">
+          1) GET /analysis/view_model_latest.json<br>
+          2) GET /analysis/sentiment_latest.json<br>
+          3) join key: URL 優先 → 無ければ title fallback<br>
+          4) 表に描画<br><br>
+          <span class="mono">debug:</span> <span class="mono" id="metaLine">loading…</span>
         </div>
       </section>
     </div>
-  </main>
+
+    <section class="card" style="margin-top:14px;">
+      <h2 style="margin:0 0 8px;">Articles & Sentiment</h2>
+      <div style="overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th style="min-width:92px;">thumb</th>
+              <th style="min-width:420px;">title</th>
+              <th style="min-width:110px;">status</th>
+              <th class="right" style="min-width:110px;">risk</th>
+              <th class="right" style="min-width:110px;">positive</th>
+              <th class="right" style="min-width:130px;">uncertainty</th>
+              <th class="right" style="min-width:110px;">net*</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="7" class="muted">loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="muted" style="font-size:12px; margin-top:8px;">
+        * net は存在する場合のみ表示。無ければ pos-risk の推定（可能なら）／不可能なら “—”
+      </div>
+    </section>
+  </div>
+</main>
 
 <script>
 (function(){
@@ -248,6 +330,10 @@
   const PATH_VM = "/analysis/view_model_latest.json";
   const PATH_SENT = "/analysis/sentiment_latest.json";
   const PATH_SERIES = "/analysis/sentiment_timeseries.csv";
+
+  // state
+  let ALL = [];           // joined full
+  let SOURCES = [];       // unique source list
 
   function showErr(msg){
     const box = $("errBox");
@@ -259,30 +345,25 @@
     box.style.display = "none";
     box.textContent = "";
   }
-
   function cacheBust(url){
     const u = new URL(url, location.origin);
     u.searchParams.set("t", Date.now().toString());
     return u.toString();
   }
-
   async function loadJSON(path){
     const res = await fetch(cacheBust(path), {cache:"no-store"});
     if (!res.ok) throw new Error(`${path} HTTP ${res.status}`);
     return await res.json();
   }
-
   async function loadText(path){
     const res = await fetch(cacheBust(path), {cache:"no-store"});
     if (!res.ok) throw new Error(`${path} HTTP ${res.status}`);
     return await res.text();
   }
-
   function qs(name){
     const u = new URL(location.href);
     return u.searchParams.get(name);
   }
-
   function pick(obj, keys){
     for (const k of keys){
       if (!obj) continue;
@@ -290,7 +371,6 @@
     }
     return undefined;
   }
-
   function toNum(v){
     if (v === null || v === undefined) return null;
     if (typeof v === "number") return Number.isFinite(v) ? v : null;
@@ -302,13 +382,11 @@
     }
     return null;
   }
-
   function fmt(x){
     if (x === null || x === undefined || Number.isNaN(x)) return "—";
     if (typeof x === "number") return x.toFixed(6);
     return String(x);
   }
-
   function escapeHtml(s){
     return String(s)
       .replaceAll("&","&amp;")
@@ -317,8 +395,6 @@
       .replaceAll('"',"&quot;")
       .replaceAll("'","&#39;");
   }
-
-  // 見た目改善：&#x27; 等をデコード（HTML注入はしない）
   function decodeHtmlEntities(s){
     const t = String(s ?? "");
     if (!t.includes("&")) return t;
@@ -333,13 +409,10 @@
       today: null,
       items: null
     };
-
     const today = pick(doc, ["today","latest","summary","totals"]);
     if (today && typeof today === "object") out.today = today;
-
     const items = pick(doc, ["items","articles","rows","data"]);
     if (Array.isArray(items)) out.items = items;
-
     return out;
   }
 
@@ -353,7 +426,6 @@
       return String(u).trim();
     }
   }
-
   function getKeyForJoin(x){
     if (!x) return "";
     const url = pick(x, ["url","link","href","norm_url"]);
@@ -392,7 +464,6 @@
     return `<span class="badge ok"><span class="b"></span>ok</span>`;
   }
 
-  // view_model の記事配列抽出（現行は sections[].cards[]）
   function extractVmItems(vm){
     if (!vm || typeof vm !== "object") return [];
     const direct = pick(vm, ["items","articles"]);
@@ -411,39 +482,20 @@
     return [];
   }
 
-  // ✅ A方式：ありがちな画像URLフィールドのみ拾う（深掘りしない）
+  // A方式：ありがちな画像URLフィールドのみ（view_model → sentiment）
   function resolveThumb(obj){
     if (!obj || typeof obj !== "object") return "";
-
-    // 1) 直下
     const cand1 = pick(obj, [
-      "image",
-      "image_url",
-      "imageUrl",
-      "urlToImage",          // ←重要：sentiment_latest.json にある
-      "thumbnail",
-      "thumbnail_url",
-      "thumbnailUrl",
-      "thumb",
-      "thumb_url",
-      "thumbUrl",
-      "og_image",
-      "ogImage",
-      "og_image_url",
-      "ogImageUrl",
-      "og:image",
-      "og:image:url",
-      "twitter:image",
-      "twitter_image",
-      "twitterImage",
-      "banner",
-      "cover",
-      "cover_image",
-      "coverImage"
+      "image","image_url","imageUrl","urlToImage",
+      "thumbnail","thumbnail_url","thumbnailUrl",
+      "thumb","thumb_url","thumbUrl",
+      "og_image","ogImage","og_image_url","ogImageUrl",
+      "og:image","og:image:url",
+      "twitter:image","twitter_image","twitterImage",
+      "banner","cover","cover_image","coverImage"
     ]);
     if (typeof cand1 === "string" && cand1.trim()) return cand1.trim();
 
-    // 2) data 1階層だけ
     const d = obj.data;
     if (d && typeof d === "object"){
       const cand2 = pick(d, [
@@ -453,17 +505,22 @@
       ]);
       if (typeof cand2 === "string" && cand2.trim()) return cand2.trim();
     }
-
     return "";
   }
 
+  function normalizeSourceText(x){
+    const s = String(x || "").trim();
+    if (!s) return "";
+    // If already looks like domain, keep; else keep label.
+    return s;
+  }
+
   // --------------------------
-  // timeseries csv -> chart
+  // chart
   // --------------------------
   function parseCsv(text){
     const lines = String(text || "").replace(/\r/g,"").split("\n").filter(l => l.trim().length);
     if (lines.length < 2) return {headers:[], rows:[]};
-
     const split = (line)=>line.split(",").map(s=>s.trim());
     const headers = split(lines[0]).map(h => h.replace(/^"|"$/g,""));
     const rows = [];
@@ -471,14 +528,11 @@
       const cols = split(line);
       if (!cols.length) continue;
       const obj = {};
-      for (let i=0;i<headers.length;i++){
-        obj[headers[i]] = (cols[i] ?? "");
-      }
+      for (let i=0;i<headers.length;i++) obj[headers[i]] = (cols[i] ?? "");
       rows.push(obj);
     }
     return {headers, rows};
   }
-
   function findCol(headers, aliases){
     const lower = headers.map(h => String(h).toLowerCase());
     for (const a of aliases){
@@ -487,105 +541,94 @@
     }
     return null;
   }
-
   function drawTrend(canvas, series){
     const ctx = canvas.getContext("2d");
-    const w = canvas.width;
-    const h = canvas.height;
-
+    const w = canvas.width, h = canvas.height;
     ctx.clearRect(0,0,w,h);
 
-    const padL = 44, padR = 12, padT = 10, padB = 26;
-    const iw = w - padL - padR;
-    const ih = h - padT - padB;
+    const padL=44, padR=12, padT=10, padB=26;
+    const iw=w-padL-padR, ih=h-padT-padB;
 
-    ctx.globalAlpha = 1;
-    ctx.strokeStyle = "rgba(255,255,255,0.12)";
-    ctx.strokeRect(padL, padT, iw, ih);
+    ctx.strokeStyle="rgba(255,255,255,0.12)";
+    ctx.strokeRect(padL,padT,iw,ih);
 
     if (!series.length){
-      ctx.fillStyle = "rgba(255,255,255,0.65)";
-      ctx.font = "12px ui-monospace, Menlo, Consolas, monospace";
-      ctx.fillText("no timeseries", padL + 10, padT + 18);
+      ctx.fillStyle="rgba(255,255,255,0.65)";
+      ctx.font="12px ui-monospace, Menlo, Consolas, monospace";
+      ctx.fillText("no timeseries", padL+10, padT+18);
       return;
     }
 
-    let ymin = Infinity, ymax = -Infinity;
+    let ymin=Infinity, ymax=-Infinity;
     for (const p of series){
       for (const k of ["risk","positive","uncertainty"]){
-        const v = p[k];
-        if (typeof v === "number" && Number.isFinite(v)){
-          ymin = Math.min(ymin, v);
-          ymax = Math.max(ymax, v);
+        const v=p[k];
+        if (typeof v==="number" && Number.isFinite(v)){
+          ymin=Math.min(ymin,v); ymax=Math.max(ymax,v);
         }
       }
     }
-    if (!Number.isFinite(ymin) || !Number.isFinite(ymax)){ ymin = 0; ymax = 1; }
-    if (Math.abs(ymax - ymin) < 1e-9){ ymax = ymin + 1; }
+    if (!Number.isFinite(ymin)||!Number.isFinite(ymax)){ ymin=0; ymax=1; }
+    if (Math.abs(ymax-ymin)<1e-9){ ymax=ymin+1; }
 
-    ctx.strokeStyle = "rgba(255,255,255,0.08)";
-    ctx.fillStyle = "rgba(255,255,255,0.60)";
-    ctx.font = "11px ui-monospace, Menlo, Consolas, monospace";
-
-    const gridN = 4;
+    ctx.strokeStyle="rgba(255,255,255,0.08)";
+    ctx.fillStyle="rgba(255,255,255,0.60)";
+    ctx.font="11px ui-monospace, Menlo, Consolas, monospace";
+    const gridN=4;
     for (let i=0;i<=gridN;i++){
-      const y = padT + (ih * i / gridN);
-      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL+iw, y); ctx.stroke();
-      const val = (ymax - (ymax-ymin)*(i/gridN));
-      ctx.fillText(val.toFixed(3), 6, y + 4);
+      const y=padT+(ih*i/gridN);
+      ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+iw,y); ctx.stroke();
+      const val=(ymax-(ymax-ymin)*(i/gridN));
+      ctx.fillText(val.toFixed(3), 6, y+4);
     }
 
-    const first = series[0].date || "";
-    const last  = series[series.length-1].date || "";
-    ctx.fillText(String(first), padL, padT + ih + 18);
-    const lastW = ctx.measureText(String(last)).width;
-    ctx.fillText(String(last), padL + iw - lastW, padT + ih + 18);
+    const first=series[0].date||"", last=series[series.length-1].date||"";
+    ctx.fillText(String(first), padL, padT+ih+18);
+    const lastW=ctx.measureText(String(last)).width;
+    ctx.fillText(String(last), padL+iw-lastW, padT+ih+18);
 
-    function xy(idx, val){
-      const x = padL + (iw * (idx / Math.max(1, series.length-1)));
-      const y = padT + (ih * (1 - (val - ymin) / (ymax - ymin)));
+    function xy(idx,val){
+      const x=padL+(iw*(idx/Math.max(1,series.length-1)));
+      const y=padT+(ih*(1-(val-ymin)/(ymax-ymin)));
       return {x,y};
     }
 
-    const keys = ["risk","positive","uncertainty"];
-    const styles = [
-      "rgba(251,113,133,0.95)",  // risk
-      "rgba(45,212,191,0.95)",   // positive
-      "rgba(251,191,36,0.95)"    // uncertainty
+    const keys=["risk","positive","uncertainty"];
+    const styles=[
+      "rgba(251,113,133,0.95)",
+      "rgba(45,212,191,0.95)",
+      "rgba(251,191,36,0.95)"
     ];
 
-    for (let ki=0; ki<keys.length; ki++){
-      const key = keys[ki];
-      ctx.strokeStyle = styles[ki];
-      ctx.lineWidth = 2;
-
-      let started = false;
+    for (let ki=0;ki<keys.length;ki++){
+      const key=keys[ki];
+      ctx.strokeStyle=styles[ki];
+      ctx.lineWidth=2;
+      let started=false;
       ctx.beginPath();
       for (let i=0;i<series.length;i++){
-        const v = series[i][key];
-        if (!(typeof v === "number" && Number.isFinite(v))){
-          started = false;
-          continue;
+        const v=series[i][key];
+        if (!(typeof v==="number" && Number.isFinite(v))){
+          started=false; continue;
         }
-        const p = xy(i, v);
-        if (!started){ ctx.moveTo(p.x, p.y); started = true; }
-        else{ ctx.lineTo(p.x, p.y); }
+        const p=xy(i,v);
+        if (!started){ ctx.moveTo(p.x,p.y); started=true; }
+        else ctx.lineTo(p.x,p.y);
       }
       ctx.stroke();
     }
 
-    const legend = [
+    const legend=[
       {label:"risk", c:styles[0]},
       {label:"positive", c:styles[1]},
       {label:"uncertainty", c:styles[2]},
     ];
-    let lx = padL + 10, ly = padT + 18;
-    ctx.font = "12px ui-monospace, Menlo, Consolas, monospace";
+    let lx=padL+10, ly=padT+18;
+    ctx.font="12px ui-monospace, Menlo, Consolas, monospace";
     for (const it of legend){
-      ctx.fillStyle = it.c;
-      ctx.fillRect(lx, ly-9, 10, 10);
-      ctx.fillStyle = "rgba(255,255,255,0.75)";
-      ctx.fillText(it.label, lx + 14, ly);
+      ctx.fillStyle=it.c; ctx.fillRect(lx,ly-9,10,10);
+      ctx.fillStyle="rgba(255,255,255,0.75)";
+      ctx.fillText(it.label, lx+14, ly);
       lx += 120;
     }
   }
@@ -625,11 +668,157 @@
     }
   }
 
+  // --------------------------
+  // B: filter/sort render
+  // --------------------------
+  function getSortSpec(){
+    const v = $("sortSel").value || "risk:desc";
+    const [key, dir] = v.split(":");
+    return {key, dir: (dir === "asc" ? "asc" : "desc")};
+  }
+
+  function cmpStr(a,b,dir){
+    const aa = String(a||"").toLowerCase();
+    const bb = String(b||"").toLowerCase();
+    if (aa < bb) return dir==="asc" ? -1 : 1;
+    if (aa > bb) return dir==="asc" ? 1 : -1;
+    return 0;
+  }
+
+  function cmpNum(a,b,dir){
+    const aa = (typeof a==="number" && Number.isFinite(a)) ? a : null;
+    const bb = (typeof b==="number" && Number.isFinite(b)) ? b : null;
+
+    // numbers first, nulls last
+    if (aa===null && bb===null) return 0;
+    if (aa===null) return 1;
+    if (bb===null) return -1;
+
+    if (aa < bb) return dir==="asc" ? -1 : 1;
+    if (aa > bb) return dir==="asc" ? 1 : -1;
+    return 0;
+  }
+
+  function applyFilterSort(){
+    const q = String($("q").value || "").trim().toLowerCase();
+    const src = String($("srcSel").value || "").trim().toLowerCase();
+    const showMissing = $("showMissing").checked;
+    const {key, dir} = getSortSpec();
+
+    let list = ALL.slice();
+
+    if (!showMissing){
+      list = list.filter(x => x.hasAnyScore);
+    }
+
+    if (src){
+      list = list.filter(x => String(x.source||"").toLowerCase() === src);
+    }
+
+    if (q){
+      list = list.filter(x => {
+        const t = String(x.title||"").toLowerCase();
+        const s = String(x.source||"").toLowerCase();
+        return t.includes(q) || s.includes(q);
+      });
+    }
+
+    list.sort((a,b) => {
+      switch(key){
+        case "risk": return cmpNum(a.r, b.r, dir);
+        case "positive": return cmpNum(a.p, b.p, dir);
+        case "uncertainty": return cmpNum(a.u, b.u, dir);
+        case "net": return cmpNum(a.net, b.net, dir);
+        case "title": return cmpStr(a.title, b.title, dir);
+        case "source": return cmpStr(a.source, b.source, dir);
+        default: return cmpNum(a.r, b.r, "desc");
+      }
+    });
+
+    return list;
+  }
+
+  function thumbHtml(thumb){
+    if (!thumb) return `<div class="thumb">—</div>`;
+    // A: 失敗しても崩れない onerror（即プレースホルダに置換）
+    const safe = escapeHtml(thumb);
+    return `
+      <div class="thumb">
+        <img
+          src="${safe}"
+          alt="thumb"
+          loading="lazy"
+          decoding="async"
+          referrerpolicy="no-referrer"
+          onerror="this.onerror=null; const p=this.parentElement; if(p){p.textContent='—';}"
+        />
+      </div>
+    `;
+  }
+
+  function renderTable(list){
+    const tbody = $("tbody");
+    $("totalCount").textContent = String(ALL.length);
+    $("showCount").textContent = String(list.length);
+
+    if (!list.length){
+      tbody.innerHTML = `<tr><td colspan="7" class="muted">no items (filtered)</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = list.map(x => {
+      const badge = statusBadge(x.r, x.p, x.u);
+      const titleHtml = x.url
+        ? `<div class="title"><a href="${escapeHtml(x.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(x.title)}</a></div>`
+        : `<div class="title">${escapeHtml(x.title)}</div>`;
+      const srcHtml = x.source ? `<div class="src">${escapeHtml(String(x.source))}</div>` : "";
+      return `
+        <tr>
+          <td>${thumbHtml(x.thumb)}</td>
+          <td>${titleHtml}${srcHtml}</td>
+          <td>${badge}</td>
+          <td class="right mono">${fmt(x.r)}</td>
+          <td class="right mono">${fmt(x.p)}</td>
+          <td class="right mono">${fmt(x.u)}</td>
+          <td class="right mono">${x.net===null ? "—" : fmt(x.net)}</td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  function rebuildSourceDropdown(){
+    const sel = $("srcSel");
+    const current = sel.value || "";
+    sel.innerHTML = `<option value="">All</option>` + SOURCES.map(s => {
+      const esc = escapeHtml(s);
+      return `<option value="${esc}">${esc}</option>`;
+    }).join("");
+    // restore if possible
+    if (current && SOURCES.includes(current)) sel.value = current;
+  }
+
+  function wireFilterHandlers(){
+    const rerender = ()=>renderTable(applyFilterSort());
+    $("q").addEventListener("input", rerender);
+    $("srcSel").addEventListener("change", rerender);
+    $("sortSel").addEventListener("change", rerender);
+    $("showMissing").addEventListener("change", rerender);
+  }
+
+  function resetFilters(){
+    $("q").value = "";
+    $("srcSel").value = "";
+    $("sortSel").value = "risk:desc";
+    $("showMissing").checked = true;
+    renderTable(applyFilterSort());
+  }
+
   async function main(){
     clearErr();
     $("pillText").textContent = "loading…";
 
     $("btnReload").onclick = ()=>main();
+    $("btnReset").onclick = ()=>resetFilters();
     $("btnOpenVM").onclick = ()=>window.open(PATH_VM, "_blank");
     $("btnOpenSent").onclick = ()=>window.open(PATH_SENT, "_blank");
     $("btnOpenSeries").onclick = ()=>window.open(PATH_SERIES, "_blank");
@@ -678,9 +867,7 @@
 
       if (!sIt){
         const t = pick(it, ["title","headline","name"]);
-        if (t){
-          sIt = map.get("t:" + String(t).trim()) || null;
-        }
+        if (t) sIt = map.get("t:" + String(t).trim()) || null;
       }
 
       const fromVM = extractScoresFromAny(it);
@@ -691,61 +878,41 @@
       const u = fromVM.unc  ?? fromS.unc;
 
       const net = (fromVM.net ?? fromS.net);
-      const net2 = (net!==null ? net : (p!==null || r!==null ? ( (p||0) - (r||0) ) : null));
+      const net2 = (net!==null ? net : (p!==null || r!==null ? ((p||0)-(r||0)) : null));
 
       const titleRaw = pick(it, ["title","headline","name"]) || "(no title)";
       const title = decodeHtmlEntities(titleRaw);
 
       const url = pick(it, ["url","link","href"]) || "";
-      const source = pick(it, ["source","publisher","site","domain"]) || "";
+      const source = normalizeSourceText(pick(it, ["source","publisher","site","domain"])) ||
+                     normalizeSourceText(pick(sIt, ["source","publisher","site","domain"])) ||
+                     (url ? (function(){ try{ return new URL(url).hostname; }catch(_){ return ""; }})() : "");
 
-      // ✅ここが今回の核心：view_model → sentiment の順に拾う
       const thumb = resolveThumb(it) || resolveThumb(sIt);
 
-      return {title, url, source, thumb, r, p, u, net: net2};
+      const hasAnyScore = [r,p,u].some(v => v !== null && v !== undefined);
+
+      return {title, url, source, thumb, r, p, u, net: net2, hasAnyScore};
     });
+
+    ALL = joined;
+    SOURCES = Array.from(new Set(joined.map(x => x.source).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+
+    rebuildSourceDropdown();
 
     $("metaLine").textContent =
       `date=${date} / vmItems=${vmItems.length} / sentItems=${Array.isArray(sentItems)?sentItems.length:0} / joinMap=${map.size} / joined=${joined.length}`;
 
-    const tbody = $("tbody");
-    if (!joined.length){
-      tbody.innerHTML = `<tr><td colspan="7" class="muted">no items</td></tr>`;
-      $("pillText").textContent = `OK: ${date}`;
-      return;
-    }
-
-    tbody.innerHTML = joined.map(({title,url,source,thumb,r,p,u,net})=>{
-      const badge = statusBadge(r,p,u);
-
-      const titleHtml = url
-        ? `<div class="title"><a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(title)}</a></div>`
-        : `<div class="title">${escapeHtml(title)}</div>`;
-
-      const srcHtml = source ? `<div class="src">${escapeHtml(String(source))}</div>` : "";
-
-      const thumbHtml = thumb
-        ? `<div class="thumb"><img src="${escapeHtml(thumb)}" alt="thumb" loading="lazy" /></div>`
-        : `<div class="thumb">—</div>`;
-
-      return `
-        <tr>
-          <td>${thumbHtml}</td>
-          <td>
-            ${titleHtml}
-            ${srcHtml}
-          </td>
-          <td>${badge}</td>
-          <td class="right mono">${fmt(r)}</td>
-          <td class="right mono">${fmt(p)}</td>
-          <td class="right mono">${fmt(u)}</td>
-          <td class="right mono">${net===null ? "—" : fmt(net)}</td>
-        </tr>
-      `;
-    }).join("");
-
     $("pillText").textContent = `OK: ${date}`;
 
+    // wire once (idempotent enough)
+    wireFilterHandlers();
+
+    // render default (risk desc)
+    $("sortSel").value = "risk:desc";
+    renderTable(applyFilterSort());
+
+    // chart (non-fatal)
     await loadAndDrawTimeseries();
   }
 

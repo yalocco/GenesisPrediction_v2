@@ -72,6 +72,37 @@
         <div class="warn" id="warnBox" style="display:none;"></div>
       </section>
 
+      <!-- Health card -->
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Data Health</h2>
+            <div class="card-sub">朝一で「何が欠けてるか」を即判断。MISSING は赤で出ます。</div>
+          </div>
+          <div class="small-note" id="healthMeta">checking…</div>
+        </div>
+
+        <!-- ✅ run_daily "last generated" -->
+        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+          <div style="border:1px solid rgba(255,255,255,0.10); border-radius:14px; padding:10px 12px; background:rgba(0,0,0,0.20);">
+            <div style="font-size:12px; opacity:0.8;">run_daily last generated</div>
+            <div id="lastGenerated" style="font-weight:900; font-size:14px; margin-top:4px;">-</div>
+          </div>
+          <div style="border:1px solid rgba(255,255,255,0.10); border-radius:14px; padding:10px 12px; background:rgba(0,0,0,0.20);">
+            <div style="font-size:12px; opacity:0.8;">source</div>
+            <div id="lastGeneratedSrc" style="font-weight:800; font-size:14px; margin-top:4px;">-</div>
+          </div>
+        </div>
+
+        <div id="healthGrid" style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;">
+          <!-- JSで埋める -->
+        </div>
+
+        <div class="muted" style="margin-top:10px; font-size:12px; line-height:1.5;">
+          ※ dated 指定時は dated を優先し、無ければ latest をフォールバックします。
+        </div>
+      </section>
+
       <section class="card">
         <div class="card-header">
           <div>
@@ -86,7 +117,6 @@
         </div>
       </section>
 
-      <!-- FX decision (C: ViewModel-first, B: API fallback) -->
       <section class="card" id="fxDecisionCard" style="display:none;">
         <div class="card-header">
           <div>
@@ -109,7 +139,7 @@
           </div>
 
           <div id="fxDecisionRefWrap" style="display:none;">
-            <div style="font-weight:700; margin-bottom:6px;">国際情勢（参考）</div>
+            <div style="font-weight:700; margin-bottom:6px;">参照</div>
             <ul id="fxDecisionRefs" style="margin:0; padding-left:18px;"></ul>
           </div>
 
@@ -125,8 +155,8 @@
       <section class="card">
         <div class="card-header">
           <div>
-            <h2 class="card-title">Articles & Sentiment</h2>
-            <div class="card-sub">/analysis/sentiment_latest.json をそのまま描画（Homeはダイジェストを埋め込みません）</div>
+            <h2 class="card-title">Sentiment preview (Top risk)</h2>
+            <div class="card-sub">Home は「玄関」：重い一覧は sentiment.html に寄せ、ここは上位N件だけ表示</div>
           </div>
           <div class="small-note" id="sentMeta">-</div>
         </div>
@@ -143,6 +173,10 @@
 
         <div class="empty" id="sentEmpty" style="display:none;">
           No sentiment items found.
+        </div>
+
+        <div class="muted" style="margin-top:10px; font-size:12px; line-height:1.5;">
+          ※ “全部の並び替え・検索・サムネ安定表示” は <b>Sentiment</b> ページ側が本体です。
         </div>
       </section>
 
@@ -199,9 +233,93 @@
   function clear(el){ while(el.firstChild) el.removeChild(el.firstChild); }
   function safeText(x){ return (x === null || x === undefined) ? "" : String(x); }
 
+  function pick(obj, keys){
+    for (const k of keys){
+      if (!obj) continue;
+      if (Object.prototype.hasOwnProperty.call(obj, k)) return obj[k];
+    }
+    return undefined;
+  }
+
+  function toNum(v){
+    if (v === null || v === undefined) return null;
+    if (typeof v === "number") return Number.isFinite(v) ? v : null;
+    if (typeof v === "string"){
+      const t = v.trim();
+      if (!t) return null;
+      const n = Number(t);
+      return Number.isFinite(n) ? n : null;
+    }
+    return null;
+  }
+
+  function extractItemScore(it){
+    const risk = toNum(pick(it, ["risk","riskScore","risk_score"])) ??
+                 toNum(pick(it?.sentiment, ["risk","riskScore","risk_score"])) ??
+                 toNum(pick(it?.scores, ["risk","riskScore","risk_score"])) ??
+                 toNum(pick(it?.sent, ["risk","riskScore","risk_score"]));
+
+    const pos  = toNum(pick(it, ["positive","pos","posScore","pos_score","positiveScore","positive_score"])) ??
+                 toNum(pick(it?.sentiment, ["positive","pos","posScore","pos_score","positiveScore","positive_score"])) ??
+                 toNum(pick(it?.scores, ["positive","pos","posScore","pos_score","positiveScore","positive_score"])) ??
+                 toNum(pick(it?.sent, ["positive","pos","posScore","pos_score","positiveScore","positive_score"]));
+
+    const unc  = toNum(pick(it, ["uncertainty","unc","uncScore","unc_score","uncertaintyScore","uncertainty_score"])) ??
+                 toNum(pick(it?.sentiment, ["uncertainty","unc","uncScore","unc_score","uncertaintyScore","uncertainty_score"])) ??
+                 toNum(pick(it?.scores, ["uncertainty","unc","uncScore","unc_score","uncertaintyScore","uncertainty_score"])) ??
+                 toNum(pick(it?.sent, ["uncertainty","unc","uncScore","unc_score","uncertaintyScore","uncertainty_score"]));
+
+    const net  = toNum(pick(it, ["net","score","sentiment_score","sentimentScore","raw_score","rawScore"])) ??
+                 toNum(pick(it?.sentiment, ["net","score"])) ??
+                 toNum(pick(it?.scores, ["net","score"])) ??
+                 toNum(pick(it?.sent, ["net","score"]));
+
+    const net2 = (net !== null) ? net :
+                 ((pos !== null || risk !== null) ? ((pos||0) - Math.max(0,(risk||0))) : null);
+
+    return {risk, pos, unc, net: net2};
+  }
+
+  function extractKpisFromSentimentJson(json){
+    const items = Array.isArray(json?.items) ? json.items : [];
+
+    const block =
+      pick(json, ["today","latest","summary","totals","total","kpi","overall"]) ||
+      pick(json?.data, ["today","latest","summary","totals","total","kpi","overall"]) ||
+      null;
+
+    const bRisk = toNum(pick(block, ["risk","riskScore","risk_score"]));
+    const bPos  = toNum(pick(block, ["positive","pos","posScore","pos_score","positiveScore","positive_score"]));
+    const bUnc  = toNum(pick(block, ["uncertainty","unc","uncScore","unc_score","uncertaintyScore","uncertainty_score"]));
+
+    let risk = bRisk, pos = bPos, unc = bUnc;
+
+    if (risk === null) risk = toNum(pick(json, ["risk","riskScore","risk_score"]));
+    if (pos  === null) pos  = toNum(pick(json, ["positive","pos","posScore","pos_score","positiveScore","positive_score"]));
+    if (unc  === null) unc  = toNum(pick(json, ["uncertainty","unc","uncScore","unc_score","uncertaintyScore","uncertainty_score"]));
+
+    if (risk === null || pos === null || unc === null){
+      let sr=0, sp=0, su=0, cr=0, cp=0, cu=0;
+      for (const it of items){
+        const s = extractItemScore(it);
+        if (risk === null && s.risk !== null){ sr += s.risk; cr++; }
+        if (pos  === null && s.pos  !== null){ sp += s.pos;  cp++; }
+        if (unc  === null && s.unc  !== null){ su += s.unc;  cu++; }
+      }
+      if (risk === null && cr>0) risk = sr/cr;
+      if (pos  === null && cp>0) pos  = sp/cp;
+      if (unc  === null && cu>0) unc  = su/cu;
+    }
+
+    return {risk, pos, unc};
+  }
+
   // Paths
   const SENT_LATEST = "/analysis/sentiment_latest.json";
   const SENT_DATED  = (d) => `/analysis/sentiment_${d}.json`;
+
+  const VIEWMODEL_LATEST = "/analysis/view_model_latest.json";
+  const VIEWMODEL_DATED  = (d) => `/analysis/view_model_${d}.json`;
 
   const DIGEST_LATEST = "/analysis/daily_news_digest_latest.html";
   const DIGEST_DATED  = (d) => `/analysis/daily_news_digest_${d}.html`;
@@ -209,12 +327,9 @@
   const FX_LATEST = "/analysis/jpy_thb_remittance_overlay.png";
   const FX_DATED  = (d) => `/analysis/fx_overlay_${d}.png`;
 
-  // C: view_model API
-  const VIEWMODEL_API = (d) => `/api/view_model/${d}`;
-  // B: fx_decision API fallback
-  const FX_DECISION_API = (d) => `/api/fx_decision/${d}`;
+  const OVERLAY_PAGE = (d) => d ? `/static/overlay.html?date=${d}` : `/static/overlay.html`;
+  const SENTIMENT_PAGE = (d) => d ? `/static/sentiment.html?date=${d}` : `/static/sentiment.html`;
 
-  // Buttons
   const warnBox = document.getElementById("warnBox");
   const gotoDate = (d) => location.href = `/static/index.html?date=${d}`;
 
@@ -231,15 +346,8 @@
     gotoDate(fmtDate(addDays(d, +1)));
   });
 
-  document.getElementById("btnOpenOverlay").addEventListener("click", () => {
-    const url = dateParam ? `/static/overlay.html?date=${dateParam}` : `/static/overlay.html`;
-    window.open(url, "_blank");
-  });
-
-  document.getElementById("btnOpenSentiment").addEventListener("click", () => {
-    const url = dateParam ? `/static/sentiment.html?date=${dateParam}` : `/static/sentiment.html`;
-    window.open(url, "_blank");
-  });
+  document.getElementById("btnOpenOverlay").addEventListener("click", () => window.open(OVERLAY_PAGE(dateParam), "_blank"));
+  document.getElementById("btnOpenSentiment").addEventListener("click", () => window.open(SENTIMENT_PAGE(dateParam), "_blank"));
 
   document.getElementById("btnOpenDigest").addEventListener("click", async () => {
     if (dateParam) {
@@ -249,12 +357,182 @@
     window.open(DIGEST_LATEST, "_blank");
   });
 
-  // collapse/expand list
   const sentList = document.getElementById("sentList");
   document.getElementById("btnCollapse").addEventListener("click", () => sentList.classList.add("is-collapsed"));
   document.getElementById("btnExpand").addEventListener("click", () => sentList.classList.remove("is-collapsed"));
 
-  // Load sentiment (KPI source)
+  function healthTile({label, url, ok, used, hint}){
+    const div = document.createElement("div");
+    div.style.border = "1px solid rgba(255,255,255,0.10)";
+    div.style.borderRadius = "14px";
+    div.style.padding = "12px";
+    div.style.background = "rgba(0,0,0,0.20)";
+    div.style.display = "flex";
+    div.style.alignItems = "center";
+    div.style.justifyContent = "space-between";
+    div.style.gap = "10px";
+
+    const left = document.createElement("div");
+    left.style.display = "flex";
+    left.style.flexDirection = "column";
+    left.style.gap = "4px";
+
+    const t = document.createElement("div");
+    t.style.fontWeight = "800";
+    t.textContent = label;
+
+    const sub = document.createElement("div");
+    sub.style.fontSize = "12px";
+    sub.style.opacity = "0.85";
+    sub.textContent = hint || (used ? `used: ${used}` : "");
+
+    left.appendChild(t);
+    left.appendChild(sub);
+
+    const right = document.createElement("div");
+    right.style.display = "flex";
+    right.style.alignItems = "center";
+    right.style.gap = "8px";
+
+    const badge = document.createElement("span");
+    badge.textContent = ok ? "OK" : "MISSING";
+    badge.style.fontWeight = "900";
+    badge.style.fontSize = "12px";
+    badge.style.padding = "6px 10px";
+    badge.style.borderRadius = "999px";
+    badge.style.border = ok ? "1px solid rgba(45,212,191,0.35)" : "1px solid rgba(251,113,133,0.45)";
+    badge.style.background = ok ? "rgba(45,212,191,0.10)" : "rgba(251,113,133,0.10)";
+
+    const btn = document.createElement("button");
+    btn.className = "btn";
+    btn.textContent = "Open";
+    btn.disabled = !ok;
+    btn.style.opacity = ok ? "1" : "0.5";
+    btn.addEventListener("click", () => window.open(url, "_blank"));
+
+    right.appendChild(badge);
+    right.appendChild(btn);
+
+    div.appendChild(left);
+    div.appendChild(right);
+    return div;
+  }
+
+  // ✅ run_daily最終更新の抽出（view_modelから）
+  function extractGeneratedAt(vm){
+    if (!vm || typeof vm !== "object") return {value:null, from:null};
+
+    const direct = pick(vm, ["generated_at","generatedAt","created_at","createdAt","updated_at","updatedAt","build_time","buildTime","timestamp","time"]);
+    if (direct) return {value: String(direct), from: "view_model root"};
+
+    const meta = vm.meta && typeof vm.meta === "object" ? vm.meta : null;
+    const m = meta ? pick(meta, ["generated_at","generatedAt","created_at","createdAt","updated_at","updatedAt","build_time","buildTime","timestamp","time"]) : null;
+    if (m) return {value: String(m), from: "view_model meta"};
+
+    const date = pick(vm, ["date","asof","as_of"]);
+    if (date) return {value: String(date), from: "view_model date"};
+
+    return {value:null, from:null};
+  }
+
+  async function loadLastGenerated(){
+    const el = document.getElementById("lastGenerated");
+    const src = document.getElementById("lastGeneratedSrc");
+
+    el.textContent = "-";
+    src.textContent = "-";
+
+    // dated を優先。無ければ latest
+    const candidates = [];
+    if (dateParam) candidates.push({url: VIEWMODEL_DATED(dateParam), label: `view_model_${dateParam}.json`});
+    candidates.push({url: VIEWMODEL_LATEST, label: "view_model_latest.json"});
+
+    for (const c of candidates){
+      try{
+        const vm = await fetchJson(c.url);
+        const g = extractGeneratedAt(vm);
+        if (g.value){
+          el.textContent = g.value;
+          src.textContent = `${c.label} (${g.from})`;
+          return;
+        }
+        // dateだけでも出す（最低限）
+        const d = pick(vm, ["date","asof","as_of"]);
+        if (d){
+          el.textContent = String(d);
+          src.textContent = `${c.label} (date fallback)`;
+          return;
+        }
+      }catch(_){
+        // continue
+      }
+    }
+
+    el.textContent = "(not available)";
+    src.textContent = "view_model missing or no timestamp fields";
+  }
+
+  async function buildHealth(){
+    const grid = document.getElementById("healthGrid");
+    const meta = document.getElementById("healthMeta");
+    clear(grid);
+
+    const d = dateParam;
+
+    const checks = [
+      { label: "Sentiment JSON", dated: d ? SENT_DATED(d) : null, latest: SENT_LATEST },
+      { label: "ViewModel JSON", dated: d ? VIEWMODEL_DATED(d) : null, latest: VIEWMODEL_LATEST },
+      { label: "Digest HTML",   dated: d ? DIGEST_DATED(d) : null, latest: DIGEST_LATEST },
+      { label: "FX Overlay PNG",dated: d ? FX_DATED(d) : null, latest: FX_LATEST },
+      { label: "Overlay page",  dated: d ? OVERLAY_PAGE(d) : null, latest: OVERLAY_PAGE(null), isPage:true },
+      { label: "Sentiment page",dated: d ? SENTIMENT_PAGE(d) : null, latest: SENTIMENT_PAGE(null), isPage:true }
+    ];
+
+    let okCount = 0;
+    let totalCount = 0;
+
+    for (const c of checks){
+      totalCount++;
+
+      if (c.isPage){
+        const url = c.dated || c.latest;
+        okCount++;
+        grid.appendChild(healthTile({label: c.label, url, ok:true, used:"page", hint:`link: ${url}`}));
+        continue;
+      }
+
+      let used = "latest";
+      let url = c.latest;
+      let ok = await exists(c.latest);
+
+      if (c.dated){
+        const okD = await exists(c.dated);
+        if (okD){
+          used = "dated";
+          url = c.dated;
+          ok = true;
+        }else{
+          used = ok ? "latest" : "missing";
+          url = ok ? c.latest : c.dated;
+        }
+      }else{
+        used = ok ? "latest" : "missing";
+      }
+
+      if (ok) okCount++;
+
+      grid.appendChild(healthTile({
+        label: c.label,
+        url,
+        ok,
+        used,
+        hint: c.dated ? `dated→latest fallback (${used})` : `latest (${used})`
+      }));
+    }
+
+    meta.textContent = `ok=${okCount}/${totalCount} ${d ? `(date=${d})` : "(latest)"}`;
+  }
+
   async function loadSentiment(){
     warnBox.style.display = "none";
     warnBox.textContent = "";
@@ -290,26 +568,51 @@
     const date = (json && json.date) ? String(json.date) : (dateParam || fmtDate(new Date()));
     setText("datePill", `date: ${date}`);
 
-    setText("kpiArticles", json.articles ?? json.items?.length ?? "-");
-    setText("kpiRisk", toFixed6(json.risk));
-    setText("kpiPositive", toFixed6(json.positive));
-    setText("kpiUnc", toFixed6(json.uncertainty));
+    const items = Array.isArray(json.items) ? json.items : [];
+    const total = items.length;
 
-    const total = Array.isArray(json.items) ? json.items.length : 0;
+    const k = extractKpisFromSentimentJson(json);
+
+    setText("kpiArticles", String(json.articles ?? total ?? "-"));
+    setText("kpiRisk", toFixed6(k.risk));
+    setText("kpiPositive", toFixed6(k.pos));
+    setText("kpiUnc", toFixed6(k.unc));
+
     setText("sentMeta", `date=${date} / source=${used}`);
-    setText("sentCount", `${total} items`);
 
     const empty = document.getElementById("sentEmpty");
     clear(sentList);
 
     if (!total) {
+      setText("sentCount", `0 items`);
       empty.style.display = "block";
       return json;
     }
     empty.style.display = "none";
 
-    // minimal list render (title + source only)
-    for (const it of json.items) {
+    const TOP_N = 8;
+    const getRiskForSort = (it) => {
+      const s = extractItemScore(it);
+      return (s.risk === null) ? -1 : s.risk;
+    };
+
+    const getSourceName = (it) => {
+      const s = it.source;
+      if (typeof s === "string") return s;
+      return (s && (s.name || s.id)) ? String(s.name || s.id) : "-";
+    };
+
+    const getImage = (it) => {
+      const u = pick(it, ["image_url","urlToImage","image","imageUrl","thumbnail","thumb"]);
+      return (typeof u === "string" && u.trim()) ? u.trim() : "";
+    };
+
+    const sorted = items.slice().sort((a,b) => getRiskForSort(b) - getRiskForSort(a));
+    const shown = sorted.slice(0, TOP_N);
+
+    setText("sentCount", `showing: ${shown.length} / total: ${total} (top risk)`);
+
+    for (const it of shown) {
       const row = document.createElement("div");
       row.className = "item";
 
@@ -317,7 +620,9 @@
       img.className = "thumb";
       img.alt = "";
       img.loading = "lazy";
-      img.src = it.image_url || "";
+      img.decoding = "async";
+      img.referrerPolicy = "no-referrer";
+      img.src = getImage(it) || "";
       img.onerror = () => { img.src = ""; img.classList.add("thumb-empty"); };
       row.appendChild(img);
 
@@ -334,17 +639,25 @@
 
       const meta = document.createElement("div");
       meta.className = "item-meta";
-      meta.textContent = (typeof it.source === "string") ? it.source : (it.source?.name || it.source?.id || "-");
+
+      const src = getSourceName(it);
+      const s = extractItemScore(it);
+
+      meta.textContent =
+        `${src}  |  risk=${(s.risk!==null? s.risk.toFixed(6):"-")}  ` +
+        `pos=${(s.pos!==null? s.pos.toFixed(6):"-")}  ` +
+        `unc=${(s.unc!==null? s.unc.toFixed(6):"-")}  ` +
+        `net=${(s.net!==null? s.net.toFixed(6):"-")}`;
       body.appendChild(meta);
 
       row.appendChild(body);
       sentList.appendChild(row);
     }
 
+    sentList.classList.add("is-collapsed");
     return json;
   }
 
-  // Load FX preview
   async function loadFx(){
     const fxImg = document.getElementById("fxImg");
     const fxSource = document.getElementById("fxSource");
@@ -364,7 +677,6 @@
     fxSource.textContent = `Source: ${url} (${used})`;
   }
 
-  // Render FX card from fx_block shape
   function renderFxDecisionFromBlock(fxBlock, sourceLabel){
     const card = document.getElementById("fxDecisionCard");
     const srcEl = document.getElementById("fxDecisionSource");
@@ -380,7 +692,6 @@
 
     const disEl = document.getElementById("fxDecisionDisclaimer");
 
-    // reset
     card.style.display = "none";
     srcEl.textContent = "Source: -";
     decEl.textContent = "-";
@@ -397,102 +708,80 @@
     card.style.display = "block";
     srcEl.textContent = `Source: ${sourceLabel}`;
 
-    const decision = fxBlock.decision ?? fxBlock.fx_decision ?? "";
-    decEl.textContent = safeText(decision);
+    const decision = safeText(pick(fxBlock, ["decision","status","mode"]));
+    const conf = safeText(pick(fxBlock, ["confidence","conf"]));
+    decEl.textContent = decision || "-";
+    confEl.textContent = `confidence: ${conf || "-"}`;
 
-    const conf = fxBlock.confidence;
-    confEl.textContent = `confidence: ${Number.isFinite(Number(conf)) ? Number(conf).toFixed(2) : "-"}`;
-
-    const reasons = Array.isArray(fxBlock.fx_reasons) ? fxBlock.fx_reasons : [];
-    if (reasons.length === 0) {
-      const li = document.createElement("li");
-      li.textContent = "(no reasons)";
-      reasonsUl.appendChild(li);
-    } else {
-      for (const t of reasons.slice(0, 3)) {
+    const reasons = pick(fxBlock, ["reasons","why","bullets"]) || [];
+    if (Array.isArray(reasons)){
+      for (const r of reasons){
         const li = document.createElement("li");
-        li.textContent = safeText(t);
+        li.textContent = safeText(r);
         reasonsUl.appendChild(li);
       }
     }
 
-    const refs = Array.isArray(fxBlock.reference) ? fxBlock.reference
-              : (Array.isArray(fxBlock.analyzer_reference) ? fxBlock.analyzer_reference : []);
-    if (refs.length) {
+    const refs = pick(fxBlock, ["refs","references"]) || [];
+    if (Array.isArray(refs) && refs.length){
       refWrap.style.display = "block";
-      for (const r of refs.slice(0, 5)) {
+      for (const rr of refs){
         const li = document.createElement("li");
-        const topic = safeText(r.topic);
-        const label = safeText(r.label);
-        const impact = safeText(r.impact);
-        li.textContent = `${topic}${label ? " [" + label + "]" : ""}${impact ? " - " + impact : ""}`;
+        li.textContent = safeText(rr);
         refUl.appendChild(li);
       }
     }
 
-    const watch = Array.isArray(fxBlock.watchlist) ? fxBlock.watchlist : [];
-    if (watch.length) {
+    const watch = pick(fxBlock, ["watch","watchlist"]) || [];
+    if (Array.isArray(watch) && watch.length){
       watchWrap.style.display = "block";
-      for (const w of watch.slice(0, 5)) {
+      for (const w of watch){
         const li = document.createElement("li");
-        const topic = safeText(w.topic);
-        const status = safeText(w.status);
-        const reason = safeText(w.reason);
-        li.textContent = `${topic}${status ? " - " + status : ""}${reason ? " / " + reason : ""}`;
+        li.textContent = safeText(w);
         watchUl.appendChild(li);
       }
     }
 
-    disEl.textContent = safeText(fxBlock.disclaimer || "本判断は補助情報であり、最終的な送金判断は利用者自身の責任で行ってください。");
+    const dis = safeText(pick(fxBlock, ["disclaimer","note"]));
+    disEl.textContent = dis || "";
   }
 
-  // Load FX decision: C (view_model.fx_block) -> B (api)
-  async function loadFxDecision(effectiveDate){
-    if (!effectiveDate) return;
+  async function loadFxDecision(){
+    const d = dateParam || null;
+    if (!d) return;
 
-    // C: ViewModel first
     try{
-      const vm = await fetchJson(VIEWMODEL_API(effectiveDate));
-      if (vm && vm.fx_block) {
-        return renderFxDecisionFromBlock(vm.fx_block, `view_model:${effectiveDate}`);
+      const r = await fetch(`/api/view_model/${d}`, { cache:"no-store" });
+      if (r.ok){
+        const vm = await r.json();
+        const fxBlock = vm && vm.fx_block;
+        if (fxBlock){
+          renderFxDecisionFromBlock(fxBlock, `view_model ${d}`);
+          return;
+        }
       }
-    }catch(_e){
-      // ignore and fall back
-    }
+    }catch(_){}
 
-    // B: API fallback
     try{
-      const obj = await fetchJson(FX_DECISION_API(effectiveDate));
-      // normalize api -> fx_block-ish
-      const fxBlock = {
-        date: effectiveDate,
-        decision: obj.fx_decision ?? obj.decision,
-        confidence: obj.confidence,
-        fx_reasons: obj.fx_reasons || [],
-        reference: obj.analyzer_reference || obj.reference || [],
-        watchlist: obj.watchlist || [],
-        disclaimer: obj.disclaimer
-      };
-      return renderFxDecisionFromBlock(fxBlock, `api_fx_decision:${effectiveDate}`);
-    }catch(_e2){
-      // no fx info -> keep hidden
-      return;
-    }
+      const r2 = await fetch(`/api/fx_decision/${d}`, { cache:"no-store" });
+      if (r2.ok){
+        const j = await r2.json();
+        if (j){
+          renderFxDecisionFromBlock(j, `api fx_decision ${d}`);
+          return;
+        }
+      }
+    }catch(_){}
   }
 
-  // Boot
   (async () => {
-    const sent = await loadSentiment();
+    await loadSentiment();
+    await loadLastGenerated();
+    await buildHealth();
     await loadFx();
-
-    const effectiveDate =
-      (sent && sent.date) ? String(sent.date) :
-      (dateParam || fmtDate(new Date()));
-
-    await loadFxDecision(effectiveDate);
+    await loadFxDecision();
   })();
 })();
 </script>
-
 </body>
 </html>
