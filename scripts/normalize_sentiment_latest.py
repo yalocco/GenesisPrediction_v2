@@ -1,131 +1,159 @@
 # scripts/normalize_sentiment_latest.py
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
-
-IN_PATH = Path("data/world_politics/analysis/sentiment_latest.json")
+from typing import Any, Dict, List, Optional, Tuple
 
 
-def _as_float(x: Any) -> Optional[float]:
-    try:
-        if x is None:
-            return None
-        return float(x)
-    except Exception:
-        return None
+DEFAULT_IN = Path("data/world_politics/analysis/sentiment_latest.json")
+DEFAULT_OUT = Path("data/world_politics/analysis/sentiment_latest.json")
 
 
-def _pick_first(d: Dict[str, Any], keys: Tuple[str, ...]) -> Optional[Any]:
+def _get_number(d: Dict[str, Any], keys: List[str], default: float = 0.0) -> float:
     for k in keys:
-        if k in d:
-            return d[k]
-    return None
+        v = d.get(k, None)
+        if isinstance(v, (int, float)):
+            return float(v)
+        # strings like "0.123"
+        if isinstance(v, str):
+            try:
+                return float(v)
+            except Exception:
+                pass
+    return float(default)
 
 
-def _extract(doc: Dict[str, Any]) -> Tuple[Optional[float], Optional[float], Optional[float], Optional[float]]:
+def _extract_item_scores(item: Dict[str, Any]) -> Tuple[float, float, float]:
     """
-    Return (risk, pos, unc, net) from many possible layouts.
+    Returns (risk, positive, uncertainty) for one item.
+    Accept multiple schema variants.
     """
-    # nested first
-    for base in ("scores", "sentiment"):
-        obj = doc.get(base)
-        if isinstance(obj, dict):
-            risk = _pick_first(obj, ("risk", "risk_score", "riskScore"))
-            pos  = _pick_first(obj, ("pos", "positive", "pos_score", "posScore", "positive_score", "positiveScore"))
-            unc  = _pick_first(obj, ("unc", "uncertainty", "unc_score", "uncScore", "uncertainty_score", "uncertaintyScore"))
-            net  = _pick_first(obj, ("net", "score", "raw_score", "rawScore", "sentiment_score"))
-            return _as_float(risk), _as_float(pos), _as_float(unc), _as_float(net)
+    s = item.get("sentiment", {})
+    if not isinstance(s, dict):
+        s = {}
 
-    # top-level
-    risk = _pick_first(doc, ("risk", "risk_score", "riskScore"))
-    pos  = _pick_first(doc, ("pos", "positive", "pos_score", "posScore", "positive_score", "positiveScore"))
-    unc  = _pick_first(doc, ("unc", "uncertainty", "unc_score", "uncScore", "uncertainty_score", "uncertaintyScore"))
-    net  = _pick_first(doc, ("net", "score", "raw_score", "rawScore", "sentiment_score"))
+    risk = _get_number(s, ["risk", "riskScore", "negative", "negative_score"], 0.0)
+    pos = _get_number(s, ["positive", "pos", "posScore", "positive_score"], 0.0)
+    unc = _get_number(s, ["uncertainty", "unc", "uncScore", "uncertainty_score"], 0.0)
 
-    # fallback summary (your generator uses this)
-    if risk is None and pos is None and unc is None:
-        summ = doc.get("summary")
-        if isinstance(summ, dict):
-            # fallback_score is basically "pos"
-            pos = summ.get("fallback_score", pos)
-            # fallback_unc is basically "unc"
-            unc = summ.get("fallback_unc", unc)
-            # risk doesn't exist in fallback -> treat as 0
-            risk = 0.0 if risk is None else risk
+    # Some pipelines store net only; derive risk/pos if needed
+    net = _get_number(s, ["net", "score"], 0.0)
+    if risk == 0.0 and pos == 0.0 and net != 0.0:
+        risk = max(0.0, -net)
+        pos = max(0.0, net)
 
-    return _as_float(risk), _as_float(pos), _as_float(unc), _as_float(net)
+    return (risk, pos, unc)
+
+
+def _summarize_items(items: List[Dict[str, Any]]) -> Dict[str, Any]:
+    n = len(items)
+    if n == 0:
+        return {
+            "articles": 0,
+            "risk": 0.0,
+            "positive": 0.0,
+            "uncertainty": 0.0,
+        }
+
+    r_sum = 0.0
+    p_sum = 0.0
+    u_sum = 0.0
+    for it in items:
+        r, p, u = _extract_item_scores(it if isinstance(it, dict) else {})
+        r_sum += r
+        p_sum += p
+        u_sum += u
+
+    # mean
+    risk = r_sum / n
+    pos = p_sum / n
+    unc = u_sum / n
+
+    return {
+        "articles": n,
+        "risk": risk,
+        "positive": pos,
+        "uncertainty": unc,
+    }
+
+
+def _normalize_today(root: Dict[str, Any]) -> None:
+    """
+    Ensure root['today'] exists and has usable numeric summary.
+    If missing/invalid, compute from root['items'].
+    Also ensure alias keys riskScore/posScore/uncScore exist.
+    """
+    items = root.get("items", [])
+    if not isinstance(items, list):
+        items = []
+
+    today = root.get("today", {})
+    if not isinstance(today, dict):
+        today = {}
+
+    # detect "broken" today: missing keys OR all None
+    articles = today.get("articles", None)
+    risk = today.get("risk", None)
+    pos = today.get("positive", None)
+    unc = today.get("uncertainty", None)
+
+    broken = False
+    if not isinstance(articles, int):
+        broken = True
+    if not isinstance(risk, (int, float)):
+        broken = True
+    if not isinstance(pos, (int, float)):
+        broken = True
+    if not isinstance(unc, (int, float)):
+        broken = True
+
+    # also treat "articles=0 but items exist" as broken
+    if isinstance(articles, int) and articles == 0 and len(items) > 0:
+        broken = True
+
+    if broken:
+        s = _summarize_items([it for it in items if isinstance(it, dict)])
+        today["articles"] = int(s["articles"])
+        today["risk"] = float(s["risk"])
+        today["positive"] = float(s["positive"])
+        today["uncertainty"] = float(s["uncertainty"])
+
+    # Add aliases used by some UIs
+    today["riskScore"] = float(_get_number(today, ["riskScore", "risk"], 0.0))
+    today["posScore"] = float(_get_number(today, ["posScore", "positive"], 0.0))
+    today["uncScore"] = float(_get_number(today, ["uncScore", "uncertainty"], 0.0))
+
+    root["today"] = today
 
 
 def main() -> int:
-    if not IN_PATH.exists():
-        raise FileNotFoundError(f"not found: {IN_PATH}")
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--in", dest="inp", default=str(DEFAULT_IN))
+    ap.add_argument("--out", dest="out", default=str(DEFAULT_OUT))
+    ap.add_argument("--quiet", action="store_true")
+    args = ap.parse_args()
 
-    doc = json.loads(IN_PATH.read_text(encoding="utf-8"))
+    inp = Path(args.inp)
+    out = Path(args.out)
 
-    # Keep existing date/items if any
-    date = doc.get("date")
-    items = doc.get("items")
+    if not inp.exists():
+        raise SystemExit(f"[ERR] missing input: {inp}")
 
-    risk, pos, unc, net = _extract(doc)
+    root = json.loads(inp.read_text(encoding="utf-8"))
+    if not isinstance(root, dict):
+        raise SystemExit("[ERR] sentiment_latest.json is not an object")
 
-    # --- Top-level keys (GUI friendly) ---
-    if date is not None:
-        doc["date"] = date
-    if items is not None:
-        doc["items"] = items
+    _normalize_today(root)
 
-    if risk is not None:
-        doc["risk"] = risk
-        doc["risk_score"] = risk
-        doc["riskScore"] = risk
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(root, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    if pos is not None:
-        # provide every common alias
-        doc["positive"] = pos
-        doc["pos"] = pos
-        doc["pos_score"] = pos
-        doc["posScore"] = pos
-        doc["positive_score"] = pos
-        doc["positiveScore"] = pos
-
-    if unc is not None:
-        doc["uncertainty"] = unc
-        doc["unc"] = unc
-        doc["unc_score"] = unc
-        doc["uncScore"] = unc
-        doc["uncertainty_score"] = unc
-        doc["uncertaintyScore"] = unc
-
-    if net is not None:
-        doc["net"] = net
-        doc["sentiment_score"] = net
-
-    # --- Stable nested form too ---
-    doc.setdefault("scores", {})
-    if isinstance(doc["scores"], dict):
-        if risk is not None:
-            doc["scores"]["risk"] = risk
-            doc["scores"]["risk_score"] = risk
-        if pos is not None:
-            doc["scores"]["positive"] = pos
-            doc["scores"]["pos"] = pos
-            doc["scores"]["pos_score"] = pos
-        if unc is not None:
-            doc["scores"]["uncertainty"] = unc
-            doc["scores"]["unc"] = unc
-            doc["scores"]["unc_score"] = unc
-        if net is not None:
-            doc["scores"]["net"] = net
-
-    IN_PATH.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
-    print("[OK] normalized:", str(IN_PATH))
-    print("  date =", doc.get("date"))
-    print("  items =", doc.get("items"))
-    print("  risk =", doc.get("risk"))
-    print("  pos/positive =", doc.get("pos"), doc.get("positive"))
-    print("  unc/uncertainty =", doc.get("unc"), doc.get("uncertainty"))
+    if not args.quiet:
+        t = root.get("today", {})
+        print(f"[OK] normalized: {out}")
+        print(f"  articles={t.get('articles')} risk={t.get('risk')} positive={t.get('positive')} uncertainty={t.get('uncertainty')}")
     return 0
 
 
