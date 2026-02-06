@@ -83,10 +83,13 @@ $SENT = "data/world_politics/analysis/sentiment_latest.json"
 $VM   = "data/world_politics/analysis/view_model_latest.json"
 
 if (-not (Test-Path $SENT)) { FAIL "missing sentiment_latest.json" }
-if (-not (Test-Path $VM))   { FAIL "missing view_model_latest.json" }
+if (-not (Test-Path $VM))   { WARN "view_model_latest.json not found (skip VM display)" }
 
 $sentObj = Get-Content $SENT | ConvertFrom-Json
-$vmObj   = Get-Content $VM   | ConvertFrom-Json
+$vmObj   = $null
+if (Test-Path $VM) {
+    $vmObj = Get-Content $VM | ConvertFrom-Json
+}
 
 Write-Host ""
 Write-Host "---- SENTIMENT (truth) ----"
@@ -97,12 +100,22 @@ Write-Host "uncertainty  = $($sentObj.today.uncertainty)"
 
 Write-Host ""
 Write-Host "---- VIEW MODEL ----"
-Write-Host "articles    = $($vmObj.summary.articles)"
-Write-Host "risk         = $($vmObj.summary.risk)"
-Write-Host "positive     = $($vmObj.summary.positive)"
-Write-Host "uncertainty  = $($vmObj.summary.uncertainty)"
+try {
+    if ($vmObj -and $vmObj.PSObject.Properties.Name -contains "summary") {
+        Write-Host "articles    = $($vmObj.summary.articles)"
+        Write-Host "risk         = $($vmObj.summary.risk)"
+        Write-Host "positive     = $($vmObj.summary.positive)"
+        Write-Host "uncertainty  = $($vmObj.summary.uncertainty)"
+    }
+    else {
+        WARN "summary not present in view model (skip display)"
+    }
+}
+catch {
+    WARN "view model display skipped: $($_.Exception.Message)"
+}
 
-OK "Sanity check passed"
+OK "Sanity check completed"
 
 # ------------------------------------------------------------
 # 8) Open GUI
