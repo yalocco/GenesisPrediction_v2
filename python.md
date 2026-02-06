@@ -1,7 +1,8 @@
 ルーティーン（最短・安全）
 .\.venv\Scripts\Activate.ps1
 docker compose run --rm analyzer
-scripts/run_daily.ps1
+powershell -ExecutionPolicy Bypass -File scripts\run_daily.ps1
+.\scripts\run_daily.ps1
 python -m uvicorn app.server:app --host 127.0.0.1 --port 8000
 
 指定日で回す

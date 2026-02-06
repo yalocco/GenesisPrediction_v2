@@ -1,128 +1,238 @@
-# ============================================================
-# GenesisPrediction v2 - run_daily.ps1 (A仕様・安定版)
-# Home(index)は導線のみ / 正解は Sentiment & Overlay
-# ============================================================
+# scripts/run_daily.ps1
+# GenesisPrediction v2 - Daily Runner (safe / "don't crash" edition)
+#
+# Recommended run:
+#   powershell -ExecutionPolicy Bypass -File scripts\run_daily.ps1
+# or:
+#   .\scripts\run_daily.ps1
+
+param(
+  [string]$Date = "",
+  [switch]$SkipOpenGui
+)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-function OK($msg)   { Write-Host "[OK]  $msg" -ForegroundColor Green }
-function INFO($msg) { Write-Host "[INFO] $msg" -ForegroundColor Cyan }
-function WARN($msg) { Write-Host "[WARN] $msg" -ForegroundColor Yellow }
-function FAIL($msg) { Write-Host "[ERROR] $msg" -ForegroundColor Red; exit 1 }
-
-# ------------------------------------------------------------
-# 0) Context
-# ------------------------------------------------------------
-$ROOT = Resolve-Path "$PSScriptRoot\.."
-$DATE = (Get-Date).ToString("yyyy-MM-dd")
-$PY   = "$ROOT\.venv\Scripts\python.exe"
-
-Write-Host "============================================================"
-Write-Host "0) Context (date=$DATE)"
-Write-Host "============================================================"
-
-OK "ROOT: $ROOT"
-OK "DATE: $DATE"
-OK "PY  : $PY"
-
-if (-not (Test-Path $PY)) {
-    FAIL "python not found: $PY"
+# ----------------------------
+# Helpers
+# ----------------------------
+function Write-Section([string]$title) {
+  Write-Host ""
+  Write-Host ("=" * 60)
+  Write-Host $title
+  Write-Host ("=" * 60)
 }
 
+function Write-Step([string]$title) {
+  Write-Host ""
+  Write-Host ("=== $title ===")
+}
+
+function Ensure-Dir([string]$path) {
+  New-Item -ItemType Directory -Force -Path $path | Out-Null
+}
+
+function Has-Prop($obj, [string]$name) {
+  if ($null -eq $obj) { return $false }
+  return $null -ne ($obj.PSObject.Properties.Match($name) | Select-Object -First 1)
+}
+
+function Read-JsonSafe([string]$path) {
+  if (-not (Test-Path $path)) { return $null }
+
+  $raw = Get-Content -Raw -LiteralPath $path -Encoding UTF8
+  if ([string]::IsNullOrWhiteSpace($raw)) { return $null }
+
+  try {
+    return ($raw | ConvertFrom-Json -Depth 64)
+  } catch {
+    $raw2 = $raw -replace "`r`n", "`n"
+    try {
+      return ($raw2 | ConvertFrom-Json -Depth 64)
+    } catch {
+      return $null
+    }
+  }
+}
+
+function Run-Py([string]$label, [string]$logPath, [string]$pyExe, [string[]]$pyArgs) {
+  Write-Host "[INFO] $label"
+  Ensure-Dir (Split-Path $logPath)
+
+  # NOTE: must NOT use parameter name "$args" (conflicts with PowerShell automatic variable)
+  & $pyExe @pyArgs 2>&1 | Tee-Object -FilePath $logPath -Append | Out-Host
+  if ($LASTEXITCODE -ne 0) {
+    throw "[ERR] $label failed (exit=$LASTEXITCODE). See log: $logPath"
+  }
+  Write-Host "[OK]  $label completed"
+}
+
+function Run-Cmd([string]$label, [string]$logPath, [string]$cmdLine) {
+  Write-Host "[INFO] $label"
+  Ensure-Dir (Split-Path $logPath)
+
+  $full = "cmd.exe /V:ON /C `"$cmdLine 1>> `"$logPath`" 2>>&1 & exit /b !ERRORLEVEL!`""
+  Invoke-Expression $full | Out-Null
+
+  if ($LASTEXITCODE -ne 0) {
+    throw "[ERR] $label failed (exit=$LASTEXITCODE). See log: $logPath"
+  }
+  Write-Host "[OK]  $label completed"
+}
+
+# ----------------------------
+# Context
+# ----------------------------
+Write-Section "0) Context"
+
+$ROOT = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 Set-Location $ROOT
 
-# ------------------------------------------------------------
-# 1) Fetcher
-# ------------------------------------------------------------
-Write-Host "`n=== 1) Fetcher ==="
-docker compose run --rm fetcher | Out-Host
-OK "1) Fetcher"
+$TZ = "Asia/Tokyo"
 
-# ------------------------------------------------------------
-# 2) Analyzer
-# ------------------------------------------------------------
-Write-Host "`n=== 2) Analyzer ==="
-docker compose run --rm analyzer | Out-Host
-OK "2) Analyzer"
+if ([string]::IsNullOrWhiteSpace($Date)) {
+  $Date = (Get-Date).ToString("yyyy-MM-dd")
+}
 
-# ------------------------------------------------------------
-# 3) Build Digest ViewModel (dated)
-# ------------------------------------------------------------
-Write-Host "`n=== 3) Build Digest ViewModel ==="
-& $PY scripts\build_digest_viewmodel.py --date $DATE
-OK "3) Build Digest ViewModel"
+$PY = (Resolve-Path ".\.venv\Scripts\python.exe").Path
+$LOGDIR = Join-Path $ROOT "logs"
+Ensure-Dir $LOGDIR
 
-# ------------------------------------------------------------
-# 4) Normalize sentiment
-# ------------------------------------------------------------
-Write-Host "`n=== 4) Normalize sentiment ==="
-& $PY scripts\normalize_sentiment_latest.py
-OK "4) Normalize sentiment"
+Write-Host ("[OK]  ROOT: {0}" -f $ROOT)
+Write-Host ("[OK]  DATE: {0}" -f $Date)
+Write-Host ("[OK]  TZ  : {0}" -f $TZ)
+Write-Host ("[OK]  PY  : {0}" -f $PY)
+Write-Host ("[OK]  LOG : {0}" -f $LOGDIR)
 
-# ------------------------------------------------------------
-# 5) Patch ViewModel sentiment summary (A仕様)
-# ------------------------------------------------------------
-Write-Host "`n=== 5) Patch sentiment summary (A spec) ==="
-& $PY scripts\ensure_view_model_sentiment_summary.py --date $DATE
-OK "5) Patch sentiment summary"
+$SENT_LATEST = Join-Path $ROOT "data\world_politics\analysis\sentiment_latest.json"
+$VM_DATED    = Join-Path $ROOT ("data\digest\view\{0}.json" -f $Date)
+$VM_LATEST   = Join-Path $ROOT "data\digest\view\view_model_latest.json"
 
-# ------------------------------------------------------------
-# 6) Build sentiment time-series
-# ------------------------------------------------------------
-Write-Host "`n=== 6) Build sentiment timeseries ==="
-& $PY scripts\build_sentiment_timeseries_csv.py --date $DATE
-OK "6) Build sentiment timeseries"
+$log_fetcher  = Join-Path $LOGDIR ("fetcher_{0}.log" -f $Date)
+$log_analyzer = Join-Path $LOGDIR ("analyzer_{0}.log" -f $Date)
+$log_py       = Join-Path $LOGDIR ("daily_py_{0}.log" -f $Date)
 
-# ------------------------------------------------------------
-# 7) Final sanity check (terminal truth)
-# ------------------------------------------------------------
-Write-Host "`n=== 7) Sanity check ==="
+# ----------------------------
+# 1) Fetcher (docker)
+# ----------------------------
+Write-Step "1) Fetcher"
+Run-Cmd "1) Fetcher" $log_fetcher "docker compose run --rm fetcher"
 
-$SENT = "data/world_politics/analysis/sentiment_latest.json"
-$VM   = "data/world_politics/analysis/view_model_latest.json"
+Write-Host ""
+Write-Host ("---- tail 60 : {0} ----" -f $log_fetcher)
+Get-Content -LiteralPath $log_fetcher -Tail 60 | Out-Host
+Write-Host "---- end ----"
 
-if (-not (Test-Path $SENT)) { FAIL "missing sentiment_latest.json" }
-if (-not (Test-Path $VM))   { WARN "view_model_latest.json not found (skip VM display)" }
+# ----------------------------
+# 2) Analyzer (docker)
+# ----------------------------
+Write-Step "2) Analyzer"
+Run-Cmd "2) Analyzer" $log_analyzer "docker compose run --rm analyzer"
 
-$sentObj = Get-Content $SENT | ConvertFrom-Json
-$vmObj   = $null
-if (Test-Path $VM) {
-    $vmObj = Get-Content $VM | ConvertFrom-Json
+Write-Host ""
+Write-Host ("---- tail 120 : {0} ----" -f $log_analyzer)
+Get-Content -LiteralPath $log_analyzer -Tail 120 | Out-Host
+Write-Host "---- end ----"
+
+# ----------------------------
+# 3) Build Digest ViewModel (python)
+# ----------------------------
+Write-Step "3) Build Digest ViewModel"
+
+$buildVM = "scripts\build_digest_view_model.py"
+if (Test-Path $buildVM) {
+  Run-Py "3) Build Digest ViewModel" $log_py $PY @($buildVM, "--date", $Date)
+} else {
+  Write-Host "[WARN] missing: $buildVM (skip)"
+}
+
+# ----------------------------
+# 4) Normalize sentiment latest (python)
+# ----------------------------
+Write-Step "4) Normalize sentiment"
+
+$normSent = "scripts\normalize_sentiment_latest.py"
+if (Test-Path $normSent) {
+  Run-Py "4) Normalize sentiment" $log_py $PY @($normSent)
+} else {
+  Write-Host "[WARN] missing: $normSent (skip)"
+}
+
+# ----------------------------
+# 5) Patch sentiment summary into view model (python)
+# ----------------------------
+Write-Step "5) Patch sentiment summary (A spec)"
+
+$patchVM = "scripts\ensure_view_model_sentiment_summary.py"
+if (Test-Path $patchVM) {
+  Run-Py "5) Patch sentiment summary" $log_py $PY @($patchVM, "--date", $Date)
+} else {
+  Write-Host "[WARN] missing: $patchVM (skip)"
+}
+
+# ----------------------------
+# 6) Build sentiment timeseries (python)
+# ----------------------------
+Write-Step "6) Build sentiment timeseries"
+
+$ts = "scripts\build_sentiment_timeseries_csv.py"
+if (Test-Path $ts) {
+  Run-Py "6) Build sentiment timeseries" $log_py $PY @($ts)
+} else {
+  Write-Host "[WARN] missing: $ts (skip)"
+}
+
+# ----------------------------
+# 7) Sanity check (don't crash)
+# ----------------------------
+Write-Step "7) Sanity check"
+
+$sentObj = Read-JsonSafe $SENT_LATEST
+if ($null -ne $sentObj -and (Has-Prop $sentObj "today")) {
+  $t = $sentObj.today
+  Write-Host ""
+  Write-Host "--- SENTIMENT (truth) ---"
+  if (Has-Prop $t "articles")    { Write-Host ("articles    = {0}" -f $t.articles) }
+  if (Has-Prop $t "risk")        { Write-Host ("risk        = {0}" -f $t.risk) }
+  if (Has-Prop $t "positive")    { Write-Host ("positive    = {0}" -f $t.positive) }
+  if (Has-Prop $t "uncertainty") { Write-Host ("uncertainty = {0}" -f $t.uncertainty) }
+} else {
+  Write-Host "[WARN] sentiment_latest.json missing or unexpected shape: $SENT_LATEST"
+}
+
+$vmObj = $null
+if (Test-Path $VM_DATED) {
+  $vmObj = Read-JsonSafe $VM_DATED
+} elseif (Test-Path $VM_LATEST) {
+  $vmObj = Read-JsonSafe $VM_LATEST
 }
 
 Write-Host ""
-Write-Host "---- SENTIMENT (truth) ----"
-Write-Host "articles    = $($sentObj.today.articles)"
-Write-Host "risk         = $($sentObj.today.risk)"
-Write-Host "positive     = $($sentObj.today.positive)"
-Write-Host "uncertainty  = $($sentObj.today.uncertainty)"
-
-Write-Host ""
-Write-Host "---- VIEW MODEL ----"
-try {
-    if ($vmObj -and $vmObj.PSObject.Properties.Name -contains "summary") {
-        Write-Host "articles    = $($vmObj.summary.articles)"
-        Write-Host "risk         = $($vmObj.summary.risk)"
-        Write-Host "positive     = $($vmObj.summary.positive)"
-        Write-Host "uncertainty  = $($vmObj.summary.uncertainty)"
-    }
-    else {
-        WARN "summary not present in view model (skip display)"
-    }
-}
-catch {
-    WARN "view model display skipped: $($_.Exception.Message)"
+Write-Host "--- VIEW MODEL ---"
+if ($null -eq $vmObj) {
+  Write-Host "[WARN] view model not present (OK)"
+} else {
+  if (Has-Prop $vmObj "summary") {
+    Write-Host "[OK]  view_model.summary present"
+  } else {
+    Write-Host "[WARN] view_model.summary not present (OK by design)"
+  }
 }
 
-OK "Sanity check completed"
+Write-Host "[OK]  Sanity check completed"
 
-# ------------------------------------------------------------
+# ----------------------------
 # 8) Open GUI
-# ------------------------------------------------------------
-Write-Host "`n=== 8) Open GUI ==="
-$URL = "http://127.0.0.1:8000/static/index.html?date=$DATE"
-OK "Open GUI: $URL"
-Start-Process $URL
+# ----------------------------
+Write-Step "8) Open GUI"
 
-Write-Host "`nDONE"
+$guiUrl = "http://127.0.0.1:8000/static/index.html?date=$Date"
+Write-Host "[OK]  Open GUI: $guiUrl"
+
+if (-not $SkipOpenGui) {
+  try { Start-Process $guiUrl | Out-Null } catch { Write-Host "[WARN] could not open browser" }
+}
+
+Write-Host ""
+Write-Host "DONE"

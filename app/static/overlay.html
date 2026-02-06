@@ -1,232 +1,82 @@
+<!-- app/static/overlay.html -->
 <!doctype html>
-<html lang="en">
+<html lang="ja">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>GenesisPrediction v2 - Overlay</title>
-  <style>
-    :root{
-      --bg:#0b0f14;
-      --card:#111827;
-      --border:rgba(255,255,255,.08);
-      --text:#e5e7eb;
-      --muted:#9ca3af;
-    }
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-      background: radial-gradient(1000px 500px at 20% 0%, rgba(245,158,11,.12), transparent 60%),
-                  radial-gradient(1000px 500px at 80% 0%, rgba(96,165,250,.12), transparent 60%),
-                  var(--bg);
-      color:var(--text);
-    }
-    a{color:#93c5fd;text-decoration:none}
-    a:hover{text-decoration:underline}
-
-    .topbar{
-      position:sticky;top:0;z-index:50;
-      backdrop-filter: blur(10px);
-      background: rgba(0,0,0,.45);
-      border-bottom:1px solid var(--border);
-      padding:14px 18px;
-      display:flex;align-items:center;justify-content:space-between;
-    }
-    .brand{font-weight:800;letter-spacing:.2px;font-size:22px}
-    .nav a{margin-left:14px;color:var(--text);opacity:.9}
-    .nav a:hover{opacity:1}
-
-    .container{max-width:1100px;margin:18px auto;padding:0 14px 60px}
-    .card{
-      background: linear-gradient(180deg, rgba(17,24,39,.92), rgba(15,23,42,.92));
-      border:1px solid var(--border);
-      border-radius:18px;
-      padding:16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.25);
-      margin-bottom:14px;
-    }
-    .sub{color:var(--muted);font-size:13px;margin-top:-4px}
-    .img{
-      width:100%;
-      border-radius:14px;
-      border:1px solid var(--border);
-      background:rgba(0,0,0,.2);
-      margin-top:12px;
-    }
-    canvas{
-      width:100%;
-      height:260px;
-      border-radius:14px;
-      border:1px solid var(--border);
-      background:rgba(0,0,0,.18);
-      margin-top:12px;
-    }
-    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-    .btn{
-      display:inline-flex;align-items:center;
-      padding:10px 12px;border-radius:12px;
-      border:1px solid var(--border);
-      background: rgba(0,0,0,.25);
-      color:var(--text);
-    }
-    .btn:hover{background: rgba(255,255,255,.06)}
-  </style>
+  <link rel="stylesheet" href="/static/app.css" />
 </head>
 <body>
-  <div class="topbar">
-    <div class="brand">GenesisPrediction v2</div>
-    <div class="nav">
-      <a href="/static/index.html">Home</a>
-      <a href="/static/overlay.html">Overlay</a>
-      <a href="/static/sentiment.html">Sentiment</a>
-    </div>
-    <div class="sub">GUI is read-only (SST)</div>
-  </div>
-
-  <div class="container">
-    <div class="card">
-      <h2 style="margin:0 0 10px 0">FX overlay</h2>
-      <div class="sub">Latest published overlay image</div>
-      <div class="row">
-        <a class="btn" href="/analysis/jpy_thb_remittance_overlay.png" target="_blank" rel="noopener">Open PNG</a>
-        <a class="btn" href="/analysis/fx_overlay_status_latest.json" target="_blank" rel="noopener">Open status JSON</a>
+  <div class="app">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">GenesisPrediction v2</div>
+        <nav class="nav">
+          <a class="nav-link" href="/static/index.html">Home</a>
+          <a class="nav-link is-active" href="/static/overlay.html">Overlay</a>
+          <a class="nav-link" href="/static/sentiment.html">Sentiment</a>
+        </nav>
+        <div class="badge">
+          <span class="dot"></span>
+          <span>GUI is read-only (SST)</span>
+        </div>
       </div>
-      <img class="img" src="/analysis/jpy_thb_remittance_overlay.png" alt="FX overlay">
-    </div>
+    </header>
 
-    <div class="card">
-      <h2 style="margin:0 0 10px 0">Sentiment timeseries</h2>
-      <div class="sub">Source: /analysis/sentiment_timeseries.csv</div>
-      <div class="row">
-        <a class="btn" href="/analysis/sentiment_timeseries.csv" target="_blank" rel="noopener">Open CSV</a>
-        <a class="btn" href="/analysis/sentiment_latest.json" target="_blank" rel="noopener">Open latest JSON</a>
-      </div>
-      <canvas id="chart" width="1100" height="260"></canvas>
-    </div>
+    <main class="container">
+      <section class="card">
+        <h2 style="margin:0 0 6px; font-size:22px;">Overlays</h2>
+        <div style="font-size:13px; color:#9ca3af;">
+          dated / latest を読むだけ。GUIは再計算しません。
+        </div>
+      </section>
 
-    <div class="card">
-      <h2 style="margin:0 0 10px 0">Daily digest</h2>
-      <div class="sub">Latest HTML digest</div>
-      <div class="row">
-        <a class="btn" href="/analysis/daily_news_digest_latest.html" target="_blank" rel="noopener">Open digest</a>
-      </div>
-    </div>
+      <section class="card">
+        <h3 style="margin:0 0 12px; font-size:18px;">FX Major Pairs</h3>
+
+        <div class="img-wrap">
+          <div style="margin:0 0 6px; color:#9ca3af; font-size:12px;">USDJPY</div>
+          <img id="img_usdjpy" alt="USDJPY overlay" />
+        </div>
+
+        <div class="img-wrap">
+          <div style="margin:0 0 6px; color:#9ca3af; font-size:12px;">EURJPY</div>
+          <img id="img_eurjpy" alt="EURJPY overlay" />
+        </div>
+
+        <div class="img-wrap">
+          <div style="margin:0 0 6px; color:#9ca3af; font-size:12px;">EURUSD</div>
+          <img id="img_eurusd" alt="EURUSD overlay" />
+        </div>
+
+        <div style="margin-top:10px; color:#9ca3af; font-size:12px;">
+          source: /analysis/fx_*_(dated|latest).png
+        </div>
+      </section>
+    </main>
   </div>
 
   <script>
-    function bust(url){
-      const ts = Date.now();
-      return url + (url.includes("?") ? "&" : "?") + "ts=" + ts;
-    }
+    (function () {
+      const qs = new URLSearchParams(location.search);
+      const date = qs.get("date"); // YYYY-MM-DD or null
 
-    async function fetchText(url){
-      const res = await fetch(bust(url), { cache: "no-store" });
-      if(!res.ok) throw new Error("HTTP " + res.status + " for " + url);
-      return await res.text();
-    }
-
-    function parseCsv(text){
-      const lines = text.trim().split(/\r?\n/);
-      if(lines.length < 2) return [];
-      const header = lines[0].split(",").map(s => s.trim());
-      const out = [];
-      for(let i=1;i<lines.length;i++){
-        const cols = lines[i].split(",").map(s => s.trim());
-        const row = {};
-        header.forEach((h, idx) => row[h] = cols[idx]);
-        out.push({
-          date: row.date,
-          risk: parseFloat(row.risk||"0"),
-          positive: parseFloat(row.positive||"0"),
-          uncertainty: parseFloat(row.uncertainty||"0"),
-        });
-      }
-      return out;
-    }
-
-    function drawChart(canvas, series){
-      const ctx = canvas.getContext("2d");
-      const W = canvas.width, H = canvas.height;
-
-      // clear
-      ctx.clearRect(0,0,W,H);
-
-      // margins
-      const m = {l:50, r:16, t:12, b:28};
-      const x0=m.l, y0=m.t, x1=W-m.r, y1=H-m.b;
-
-      // grid
-      ctx.globalAlpha = 1;
-      ctx.strokeStyle = "rgba(255,255,255,0.10)";
-      ctx.lineWidth = 1;
-      for(let k=0;k<=4;k++){
-        const y = y0 + (y1-y0)*k/4;
-        ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(x1,y); ctx.stroke();
+      function srcFor(pair) {
+        if (date) return `/analysis/fx_${pair}_${date}.png`;
+        return `/analysis/fx_${pair}_latest.png`;
       }
 
-      if(!series.length){
-        ctx.fillStyle="rgba(255,255,255,0.65)";
-        ctx.fillText("No data", x0, y0+20);
-        return;
+      const map = {
+        usdjpy: document.getElementById("img_usdjpy"),
+        eurjpy: document.getElementById("img_eurjpy"),
+        eurusd: document.getElementById("img_eurusd"),
+      };
+
+      for (const k of Object.keys(map)) {
+        map[k].src = srcFor(k);
       }
-
-      // scale
-      let ymin=Infinity, ymax=-Infinity;
-      for(const p of series){
-        ymin = Math.min(ymin, p.risk, p.positive, p.uncertainty);
-        ymax = Math.max(ymax, p.risk, p.positive, p.uncertainty);
-      }
-      if(!isFinite(ymin) || !isFinite(ymax)){ ymin=0; ymax=1; }
-      if(ymax - ymin < 1e-6){ ymax = ymin + 1e-3; }
-
-      const n = series.length;
-      const x = (i) => x0 + (x1-x0) * (n<=1 ? 0 : i/(n-1));
-      const y = (v) => y1 - (y1-y0) * ((v - ymin)/(ymax-ymin));
-
-      function line(getV, stroke){
-        ctx.strokeStyle = stroke;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        for(let i=0;i<n;i++){
-          const p = series[i];
-          const xx = x(i), yy = y(getV(p));
-          if(i===0) ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy);
-        }
-        ctx.stroke();
-      }
-
-      // NOTE: 色指定は最小限（区別のため）
-      line(p=>p.risk, "rgba(245,158,11,0.95)");
-      line(p=>p.positive, "rgba(34,197,94,0.95)");
-      line(p=>p.uncertainty, "rgba(96,165,250,0.95)");
-
-      // labels
-      ctx.fillStyle = "rgba(255,255,255,0.75)";
-      ctx.font = "12px ui-sans-serif, system-ui";
-      ctx.fillText("risk", x0, y0+12);
-      ctx.fillText("positive", x0+42, y0+12);
-      ctx.fillText("uncertainty", x0+112, y0+12);
-
-      // x labels (first/last)
-      ctx.fillStyle="rgba(255,255,255,0.55)";
-      ctx.fillText(series[0].date, x0, H-10);
-      ctx.fillText(series[series.length-1].date, x1-92, H-10);
-    }
-
-    async function main(){
-      try{
-        const csv = await fetchText("/analysis/sentiment_timeseries.csv");
-        const series = parseCsv(csv);
-        const canvas = document.getElementById("chart");
-        drawChart(canvas, series);
-      }catch(e){
-        console.error(e);
-        const canvas = document.getElementById("chart");
-        const ctx = canvas.getContext("2d");
-        ctx.fillStyle = "rgba(255,255,255,0.65)";
-        ctx.fillText("sentiment_timeseries.csv not found", 20, 40);
-      }
-    }
-    main();
+    })();
   </script>
 </body>
 </html>
