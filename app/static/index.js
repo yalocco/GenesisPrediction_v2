@@ -1,7 +1,8 @@
 /* app/static/index.js
- * Home page stabilizer
- * - KPI: never flips to "—" due to key mismatch (robust key resolution + fallback chain)
- * - Data Health: always rendered as cards (DOM construction, not raw object dump)
+ * Home page stabilizer + Data Health summary line
+ *
+ * - KPI: robust key resolution + fallback chain
+ * - Data Health: always rendered as cards + top summary line (OK/WARN/NG + thresholds)
  * - Sentiment preview: never prints [object Object] (safe string + link normalization)
  *
  * NOTE: GUI is read-only. We only fetch /analysis JSON files.
@@ -32,7 +33,6 @@
     if (x === undefined || x === null) return null;
     const n = Number(x);
     if (!Number.isFinite(n)) return null;
-    // Keep compact but stable; sentiment metrics are typically 0..1
     if (Math.abs(n) < 10) return n.toFixed(6);
     return String(n);
   };
@@ -51,7 +51,6 @@
   const url = new URL(window.location.href);
   const dateParam = (url.searchParams.get("date") || "latest").trim();
 
-  // For navigation prev/next, we only support YYYY-MM-DD. If "latest", we keep it.
   const addDays = (iso, delta) => {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
     if (!m) return iso;
@@ -70,7 +69,7 @@
   };
 
   // ----------------------------
-  // Fetch helpers (robust, cache-busted)
+  // Fetch helpers
   // ----------------------------
   async function fetchJson(path) {
     const bust = `cb=${Date.now()}`;
@@ -105,14 +104,7 @@
   }
 
   function resolveKpiFromAny(root) {
-    // Try common shapes without assuming exact schema.
-    // We will look for:
-    // - root.kpi.{articles,risk,positive,uncertainty}
-    // - root.sentiment.{...}
-    // - root.summary.sentiment / root.summary.kpi
-    // - root.today / root.latest blocks
     const candidates = [];
-
     if (root) candidates.push(root);
     if (root && root.summary) candidates.push(root.summary);
     if (root && root.kpi) candidates.push(root.kpi);
@@ -124,14 +116,7 @@
     if (root && root.latest && root.latest.sentiment) candidates.push(root.latest.sentiment);
     if (root && root.today && root.today.sentiment) candidates.push(root.today.sentiment);
 
-    // Some pipelines store metrics under different key names
-    // (pos vs positive, unc vs uncertainty, count vs articles, etc.)
-    const out = {
-      articles: null,
-      risk: null,
-      positive: null,
-      uncertainty: null,
-    };
+    const out = { articles: null, risk: null, positive: null, uncertainty: null };
 
     for (const c of candidates) {
       if (!c || typeof c !== "object") continue;
@@ -159,14 +144,12 @@
       }
     }
 
-    // Normalize articles to integer if possible
     if (out.articles !== null && out.articles !== undefined) {
       const n = Number(out.articles);
       if (Number.isFinite(n)) out.articles = String(Math.trunc(n));
       else out.articles = String(out.articles);
     }
 
-    // Return null if nothing found
     const any =
       (out.articles !== null && out.articles !== undefined) ||
       (out.risk !== null && out.risk !== undefined) ||
@@ -180,23 +163,14 @@
   // Data Health rendering
   // ----------------------------
   function normalizeHealth(any) {
-    // Accept:
-    // - {checks:[{name,status,detail,updated_at,path,exists,bytes}]}
-    // - [{...}, {...}]
-    // - {something:{...}, ...} -> convert to list
     if (!any) return [];
     if (Array.isArray(any)) return any;
-
     if (any.checks && Array.isArray(any.checks)) return any.checks;
-
     if (typeof any === "object") {
       const list = [];
       for (const [k, v] of Object.entries(any)) {
-        if (v && typeof v === "object" && !Array.isArray(v)) {
-          list.push({ name: k, ...v });
-        } else {
-          list.push({ name: k, value: v });
-        }
+        if (v && typeof v === "object" && !Array.isArray(v)) list.push({ name: k, ...v });
+        else list.push({ name: k, value: v });
       }
       return list;
     }
@@ -211,13 +185,59 @@
     return "health-badge";
   }
 
-  function renderHealth(list, sourceLabel) {
+  function extractHealthSummary(root, items) {
+    // Prefer explicit summary from health json
+    const s = root && root.summary ? root.summary : null;
+    const t = root && root.thresholds ? root.thresholds : null;
+
+    let ok = null, warn = null, ng = null, total = null;
+    if (s && typeof s === "object") {
+      ok = (s.ok !== undefined) ? s.ok : ok;
+      warn = (s.warn !== undefined) ? s.warn : warn;
+      ng = (s.ng !== undefined) ? s.ng : ng;
+      total = (s.total !== undefined) ? s.total : total;
+    }
+
+    // If missing, compute from items
+    if (ok === null || warn === null || ng === null || total === null) {
+      let _ok = 0, _warn = 0, _ng = 0;
+      for (const it of items) {
+        const st = String(it.status ?? it.freshness ?? it.ok ?? it.state ?? "").toUpperCase();
+        if (st === "OK") _ok++;
+        else if (st === "WARN") _warn++;
+        else if (st === "NG" || st === "FAIL") _ng++;
+      }
+      ok = ok ?? _ok;
+      warn = warn ?? _warn;
+      ng = ng ?? _ng;
+      total = total ?? items.length;
+    }
+
+    const okH = t && t.ok_age_hours !== undefined ? t.ok_age_hours : null;
+    const warnH = t && t.warn_age_hours !== undefined ? t.warn_age_hours : null;
+
+    return { ok, warn, ng, total, okH, warnH };
+  }
+
+  function renderHealth(root, sourceLabel) {
     const grid = $("#healthGrid");
     const hint = $("#healthHint");
     if (!grid) return;
 
     grid.innerHTML = "";
-    const items = normalizeHealth(list);
+
+    const items = normalizeHealth(root);
+
+    // Top summary line
+    const summary = extractHealthSummary(root, items);
+    const summaryTextParts = [];
+    summaryTextParts.push(`Health Summary: OK=${summary.ok}  WARN=${summary.warn}  NG=${summary.ng}  total=${summary.total}`);
+    if (summary.okH !== null && summary.warnH !== null) {
+      summaryTextParts.push(`(OK<=${summary.okH}h  WARN<=${summary.warnH}h)`);
+    }
+    const summaryLine = el("div", "muted", summaryTextParts.join("  "));
+    summaryLine.style.marginBottom = "10px";
+    grid.appendChild(summaryLine);
 
     if (hint) hint.textContent = sourceLabel ? `Health source: ${sourceLabel}` : "Health source: -";
 
@@ -231,7 +251,7 @@
       const head = el("div", "health-head");
 
       const name = it.name || it.key || it.id || it.path || "item";
-      const status = it.status ?? it.ok ?? it.state ?? it.exists ?? it.present;
+      const status = it.status ?? it.freshness ?? it.ok ?? it.state ?? it.exists ?? it.present;
       const badge = el("span", healthBadgeClass(status), (status === undefined ? "-" : String(status)));
 
       head.appendChild(el("div", "health-name", String(name)));
@@ -258,6 +278,7 @@
       if (it.bytes !== undefined) meta.push(`bytes=${it.bytes}`);
       if (it.size !== undefined) meta.push(`size=${it.size}`);
       if (it.updated_at) meta.push(`updated_at=${it.updated_at}`);
+      if (it.age_hours !== undefined) meta.push(`age_h=${it.age_hours}`);
       if (it.date) meta.push(`date=${it.date}`);
 
       if (meta.length) body.appendChild(el("div", "health-meta", meta.join(" / ")));
@@ -275,10 +296,7 @@
     if (x === undefined || x === null) return "";
     if (typeof x === "string") return x;
     if (typeof x === "number" || typeof x === "boolean") return String(x);
-    // avoid [object Object]
     if (typeof x === "object") {
-      // common link object patterns:
-      // {title,url,source}
       const t = x.title || x.name || x.text || "";
       const u = x.url || x.href || "";
       const s = x.source || x.site || "";
@@ -292,10 +310,6 @@
   }
 
   function normalizeArticlesFromAny(any) {
-    // Accept:
-    // - {items:[{title,url,source,...}]}
-    // - [{title,url,source}, ...]
-    // - {articles:[...]}
     if (!any) return [];
     if (Array.isArray(any)) return any;
     if (any.items && Array.isArray(any.items)) return any.items;
@@ -318,7 +332,6 @@
       return;
     }
 
-    // show up to 12
     const top = items.slice(0, 12);
 
     for (const it of top) {
@@ -343,7 +356,6 @@
 
       if (source) left.appendChild(el("div", "sentiment-src", source));
 
-      // metrics (optional)
       const right = el("div", "sentiment-right");
       const net = fmtNum(it.net ?? it.score ?? it.sentiment ?? it.polarity);
       const risk = fmtNum(it.risk ?? it.neg);
@@ -370,11 +382,9 @@
   // Load flow (fallback chain)
   // ----------------------------
   async function loadAll() {
-    // Date pill
     const datePill = $("#datePill");
     if (datePill) datePill.textContent = `date: ${dateParam}`;
 
-    // Buttons
     const btnPrev = $("#btnPrev");
     const btnNext = $("#btnNext");
     const btnToday = $("#btnToday");
@@ -395,7 +405,7 @@
       btnToday.addEventListener("click", () => setDateParam(nowISODate()));
     }
 
-    // KPI defaults (do not leave blank)
+    // KPI defaults
     setText("kpi_articles", "—");
     setText("kpi_risk", "—");
     setText("kpi_positive", "—");
@@ -403,12 +413,9 @@
 
     const kpiHint = $("#kpiHint");
 
-    // 1) Try daily_summary (dated->latest)
-    // 2) If missing, fallback to sentiment_latest.json
     const summaryCandidates = [];
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
       summaryCandidates.push(`/analysis/daily_summary_${dateParam}.json`);
-      summaryCandidates.push(`/analysis/daily_summary_${dateParam}.json`); // intentional duplicate safe
     }
     summaryCandidates.push(`/analysis/daily_summary_latest.json`);
 
@@ -439,7 +446,7 @@
       setText("kpi_uncertainty", kpi.uncertainty ?? "—");
     }
 
-    // Health: try typical names
+    // Health
     try {
       const { path, json } = await firstJson([
         "/analysis/health_latest.json",
@@ -449,12 +456,10 @@
       ]);
       renderHealth(json, path);
     } catch (e) {
-      renderHealth([], "not found");
+      renderHealth({ checks: [], summary: { ok: 0, warn: 0, ng: 0, total: 0 } }, "not found");
     }
 
-    // Sentiment preview:
-    // Prefer dated daily_news if date is YYYY-MM-DD
-    // else fallback to daily_news_latest.json then sentiment_latest.json
+    // Sentiment preview
     const newsCandidates = [];
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
       newsCandidates.push(`/analysis/daily_news_${dateParam}.json`);
@@ -464,17 +469,14 @@
 
     try {
       const { path, json } = await firstJson(newsCandidates);
-      // If daily_news JSON shape has {items:[...]} or {articles:[...]}, normalize handles it.
       renderSentimentPreview(json, path);
     } catch (e) {
       renderSentimentPreview([], "not found");
     }
   }
 
-  // Run
   window.addEventListener("DOMContentLoaded", () => {
     loadAll().catch((e) => {
-      // Fail-safe: never break layout
       console.error(e);
       const kpiHint = $("#kpiHint");
       if (kpiHint) kpiHint.textContent = "KPI source: error (see console)";
