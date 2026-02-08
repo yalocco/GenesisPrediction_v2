@@ -50,3 +50,5 @@ GenesisPrediction v2 は、
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\run_daily.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\run_daily_guard.ps1
+
+詳細な日次運用手順、障害時の対処、設計意図の全体像については docs/runbook.md を正本（SST）として参照してください。
