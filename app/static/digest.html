@@ -1,0 +1,388 @@
+<!-- app/static/digest.html -->
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GenesisPrediction v2 - Digest</title>
+  <link rel="stylesheet" href="/static/app.css" />
+
+  <!-- digest-only (scoped): avoid future collisions -->
+  <style>
+    .digest-page{
+      min-height: 100vh;
+    }
+
+    .d-wrap{
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .d-card{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.06);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+      margin-bottom: 14px;
+    }
+
+    .d-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+    }
+
+    .d-btn{
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.25);
+      color:inherit;
+      padding:8px 10px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:800;
+      font-size:12px;
+      user-select:none;
+    }
+    .d-btn:hover{ border-color: rgba(45,212,191,.35); }
+
+    .d-muted{ color:#9fb0d3; font-size:12px; }
+    .d-mono{ font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+
+    .d-title{
+      margin: 8px 0 2px;
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .d-kpis{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    @media (max-width: 980px){
+      .d-kpis{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    .d-kpi{
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.22);
+      border-radius: 12px;
+      padding: 10px;
+    }
+    .d-kpi .label{ color:#9fb0d3; font-size:12px; }
+    .d-kpi .value{ margin-top:4px; font-size:18px; font-weight:900; }
+
+    .d-pre{
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 13px;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .d-list{
+      margin: 0;
+      padding-left: 18px;
+    }
+    .d-list li{ margin: 6px 0; }
+
+    .d-err{
+      border:1px solid rgba(251,113,133,.35);
+      background: rgba(251,113,133,.10);
+      color:#ffd6dd;
+      border-radius:12px;
+      padding:10px 12px;
+      font-size:12px;
+      white-space: pre-wrap;
+      display:none;
+    }
+
+    .d-raw{
+      margin-top: 10px;
+      border-top: 1px solid rgba(255,255,255,.10);
+      padding-top: 10px;
+    }
+  </style>
+</head>
+
+<body style="margin:0;">
+  <div class="digest-page">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">GenesisPrediction v2</div>
+
+        <nav class="nav">
+          <a class="nav-link" href="/static/index.html">Home</a>
+          <a class="nav-link" href="/static/overlay.html">Overlay</a>
+          <a class="nav-link" href="/static/sentiment.html">Sentiment</a>
+          <a class="nav-link is-active" href="/static/digest.html">Digest</a>
+        </nav>
+
+        <div class="badge">
+          <span class="dot"></span>
+          <span id="pillText">loading…</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="d-wrap">
+        <section class="d-card">
+          <div class="d-row">
+            <button class="d-btn" id="btnReload">Reload</button>
+            <button class="d-btn" id="btnOpenLatest">Open latest JSON</button>
+            <button class="d-btn" id="btnOpenDated">Open dated JSON</button>
+          </div>
+
+          <div class="d-title">Daily Digest</div>
+          <div class="d-muted">
+            GUI は読み取り専用（SST）。<span class="d-mono">/analysis/</span> の内容を表示するだけで再計算しません。
+          </div>
+
+          <div class="d-kpis">
+            <div class="d-kpi"><div class="label">date</div><div class="value d-mono" id="kDate">—</div></div>
+            <div class="d-kpi"><div class="label">status</div><div class="value d-mono" id="kStatus">—</div></div>
+            <div class="d-kpi"><div class="label">sections</div><div class="value d-mono" id="kSections">—</div></div>
+            <div class="d-kpi"><div class="label">cards</div><div class="value d-mono" id="kCards">—</div></div>
+          </div>
+
+          <div class="d-err" id="errBox"></div>
+        </section>
+
+        <section class="d-card">
+          <h2 style="margin:0 0 10px; font-size:18px;">Summary</h2>
+          <p class="d-pre" id="summaryText">loading…</p>
+        </section>
+
+        <section class="d-card">
+          <h2 style="margin:0 0 10px; font-size:18px;">Key Points</h2>
+          <ul class="d-list" id="pointsList">
+            <li class="d-muted">loading…</li>
+          </ul>
+        </section>
+
+        <section class="d-card">
+          <h2 style="margin:0 0 10px; font-size:18px;">Sections</h2>
+          <div id="sectionsBox" class="d-muted">loading…</div>
+        </section>
+
+        <section class="d-card">
+          <h2 style="margin:0 0 10px; font-size:18px;">Raw (debug)</h2>
+          <div class="d-muted">必要なら JSON の一部を表示（長すぎる場合は省略）</div>
+          <div class="d-raw">
+            <pre class="d-pre d-mono" id="rawBox">{}</pre>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+  (function(){
+    const $ = (id)=>document.getElementById(id);
+
+    const PATH_LATEST = "/analysis/daily_summary_latest.json";      // 推奨（存在すれば）
+    const PATH_DATED  = (date)=>`/analysis/daily_summary_${date}.json`; // 予備
+
+    function cacheBust(url){
+      const u = new URL(url, location.origin);
+      u.searchParams.set("t", Date.now().toString());
+      return u.toString();
+    }
+
+    async function loadJSON(url){
+      const res = await fetch(cacheBust(url), {cache:"no-store"});
+      if (!res.ok) throw new Error(`${url} HTTP ${res.status}`);
+      return await res.json();
+    }
+
+    function qs(name){
+      const u = new URL(location.href);
+      return u.searchParams.get(name);
+    }
+
+    function showErr(msg){
+      const box = $("errBox");
+      box.style.display = "block";
+      box.textContent = msg;
+    }
+    function clearErr(){
+      const box = $("errBox");
+      box.style.display = "none";
+      box.textContent = "";
+    }
+
+    function pick(obj, keys){
+      for (const k of keys){
+        if (!obj) continue;
+        if (Object.prototype.hasOwnProperty.call(obj, k)) return obj[k];
+      }
+      return undefined;
+    }
+
+    function asText(v){
+      if (v === null || v === undefined) return "";
+      if (typeof v === "string") return v;
+      if (typeof v === "number" || typeof v === "boolean") return String(v);
+      try { return JSON.stringify(v, null, 2); } catch(_){ return String(v); }
+    }
+
+    function safeJsonPreview(obj, maxChars=6000){
+      let s = "";
+      try { s = JSON.stringify(obj, null, 2); }
+      catch(_){ s = String(obj); }
+      if (s.length <= maxChars) return s;
+      return s.slice(0, maxChars) + "\n…(truncated)…";
+    }
+
+    function normalizeDigest(doc){
+      // いろいろなスキーマに耐える “表示専用” 正規化
+      const date = pick(doc, ["date","asof","as_of","today_date"]) || "latest";
+      const status = pick(doc, ["status","state","result"]) || "ok";
+
+      const summary =
+        pick(doc, ["summary","digest","overview","message"]) ||
+        pick(doc, ["text","body"]) ||
+        "";
+
+      const points =
+        pick(doc, ["key_points","keyPoints","highlights","bullets","points"]) ||
+        [];
+
+      const sections =
+        pick(doc, ["sections","cards","items","blocks"]) ||
+        [];
+
+      return {date, status, summary, points, sections};
+    }
+
+    function countCards(sections){
+      // sections が配列なら、cards/items をそれっぽく数える
+      if (!Array.isArray(sections)) return 0;
+      let n = 0;
+      for (const s of sections){
+        const cards = pick(s, ["cards","items","rows"]);
+        if (Array.isArray(cards)) n += cards.length;
+      }
+      return n;
+    }
+
+    function renderSections(sections){
+      const box = $("sectionsBox");
+      if (!Array.isArray(sections) || sections.length === 0){
+        box.textContent = "no sections";
+        box.className = "d-muted";
+        return;
+      }
+
+      const html = sections.map((s, i)=>{
+        const title = pick(s, ["title","name","section"]) || `Section ${i+1}`;
+        const cards = pick(s, ["cards","items","rows"]);
+        const n = Array.isArray(cards) ? cards.length : 0;
+
+        const list = Array.isArray(cards) ? cards.slice(0, 12).map(c=>{
+          const ct = pick(c, ["title","name","headline"]) || "(no title)";
+          const url = pick(c, ["url","link","href"]) || "";
+          const src = pick(c, ["source","publisher","site","domain"]) || "";
+          const line = `${ct}${src ? " — " + src : ""}`;
+          return url
+            ? `<li><a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(line)}</a></li>`
+            : `<li>${escapeHtml(line)}</li>`;
+        }).join("") : "";
+
+        const more = (Array.isArray(cards) && cards.length > 12)
+          ? `<div class="d-muted">… and ${cards.length - 12} more</div>` : "";
+
+        return `
+          <div style="margin:0 0 14px;">
+            <div style="font-weight:900; margin-bottom:6px;">${escapeHtml(title)} <span class="d-muted">(cards: ${n})</span></div>
+            ${list ? `<ul class="d-list">${list}</ul>` : `<div class="d-muted">no cards</div>`}
+            ${more}
+          </div>
+        `;
+      }).join("");
+
+      box.className = "";
+      box.innerHTML = html;
+    }
+
+    function escapeHtml(s){
+      return String(s)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#39;");
+    }
+
+    async function main(){
+      clearErr();
+      $("pillText").textContent = "loading…";
+
+      const date = qs("date"); // YYYY-MM-DD
+      const urlDated = date ? PATH_DATED(date) : null;
+
+      $("btnOpenLatest").onclick = ()=>window.open(PATH_LATEST, "_blank");
+      $("btnOpenDated").onclick = ()=>{
+        if (date) window.open(urlDated, "_blank");
+        else alert("query param ?date=YYYY-MM-DD がありません");
+      };
+      $("btnReload").onclick = ()=>main();
+
+      let doc = null;
+      let used = "";
+
+      // 1) latest を優先
+      try{
+        doc = await loadJSON(PATH_LATEST);
+        used = PATH_LATEST;
+      }catch(e1){
+        // 2) date 指定があれば dated を試す
+        if (urlDated){
+          try{
+            doc = await loadJSON(urlDated);
+            used = urlDated;
+          }catch(e2){
+            showErr(String(e2 && e2.stack ? e2.stack : e2));
+            $("pillText").textContent = "error";
+            return;
+          }
+        }else{
+          // 3) latest も date も無ければ latest エラーを表示
+          showErr(String(e1 && e1.stack ? e1.stack : e1));
+          $("pillText").textContent = "error";
+          return;
+        }
+      }
+
+      const d = normalizeDigest(doc);
+
+      $("kDate").textContent = String(d.date || (date || "latest"));
+      $("kStatus").textContent = String(d.status || "ok");
+      $("kSections").textContent = Array.isArray(d.sections) ? String(d.sections.length) : "0";
+      $("kCards").textContent = String(countCards(d.sections));
+
+      $("summaryText").textContent = d.summary ? asText(d.summary) : "—";
+
+      const points = Array.isArray(d.points) ? d.points : (d.points ? [d.points] : []);
+      const ul = $("pointsList");
+      if (!points.length){
+        ul.innerHTML = `<li class="d-muted">—</li>`;
+      }else{
+        ul.innerHTML = points.slice(0, 20).map(p=>`<li>${escapeHtml(asText(p))}</li>`).join("");
+      }
+
+      renderSections(d.sections);
+
+      $("rawBox").textContent = safeJsonPreview({ used, normalized: d, raw: doc });
+      $("pillText").textContent = `OK: ${used}`;
+    }
+
+    main();
+  })();
+  </script>
+</body>
+</html>
