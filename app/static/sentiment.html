@@ -178,6 +178,16 @@
     .chart-note{color:var(--muted); font-size:12px}
     canvas{width:100%; height:220px; display:block}
     @media (max-width: 980px){ canvas{height:200px} }
+
+    /* =========================================================
+       net* highlight (risk only)  ★今回の未達成をここで完了
+       - JSで <tr data-status="risk"> を付与
+       - risk行の .net だけ赤太字
+       ========================================================= */
+    tr[data-status="risk"] .net{
+      color: var(--danger);
+      font-weight: 900;
+    }
   </style>
 </head>
 <body>
@@ -455,12 +465,21 @@
     return {risk, pos, unc, net};
   }
 
-  function statusBadge(risk, pos, unc){
+  // ★ status判定を「見た目HTML」だけでなく「キー」としても返す（risk行のnet強調に使う）
+  function statusKey(risk, pos, unc){
     const any = [risk,pos,unc].some(v => v !== null && v !== undefined);
-    if (!any) return `<span class="badge"><span class="b"></span>missing</span>`;
+    if (!any) return "missing";
     const s = (risk||0) + (pos||0) + (unc||0);
-    if (s < 1e-6) return `<span class="badge warn"><span class="b"></span>zero</span>`;
-    if ((risk||0) > (pos||0) * 1.2) return `<span class="badge bad"><span class="b"></span>risk</span>`;
+    if (s < 1e-6) return "zero";
+    if ((risk||0) > (pos||0) * 1.2) return "risk";
+    return "ok";
+  }
+
+  function statusBadge(risk, pos, unc){
+    const k = statusKey(risk, pos, unc);
+    if (k === "missing") return `<span class="badge"><span class="b"></span>missing</span>`;
+    if (k === "zero")    return `<span class="badge warn"><span class="b"></span>zero</span>`;
+    if (k === "risk")    return `<span class="badge bad"><span class="b"></span>risk</span>`;
     return `<span class="badge ok"><span class="b"></span>ok</span>`;
   }
 
@@ -511,7 +530,6 @@
   function normalizeSourceText(x){
     const s = String(x || "").trim();
     if (!s) return "";
-    // If already looks like domain, keep; else keep label.
     return s;
   }
 
@@ -689,7 +707,6 @@
     const aa = (typeof a==="number" && Number.isFinite(a)) ? a : null;
     const bb = (typeof b==="number" && Number.isFinite(b)) ? b : null;
 
-    // numbers first, nulls last
     if (aa===null && bb===null) return 0;
     if (aa===null) return 1;
     if (bb===null) return -1;
@@ -740,7 +757,6 @@
 
   function thumbHtml(thumb){
     if (!thumb) return `<div class="thumb">—</div>`;
-    // A: 失敗しても崩れない onerror（即プレースホルダに置換）
     const safe = escapeHtml(thumb);
     return `
       <div class="thumb">
@@ -767,20 +783,23 @@
     }
 
     tbody.innerHTML = list.map(x => {
+      const status = statusKey(x.r, x.p, x.u);   // ★追加：risk行だけ強調に使う
       const badge = statusBadge(x.r, x.p, x.u);
+
       const titleHtml = x.url
         ? `<div class="title"><a href="${escapeHtml(x.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(x.title)}</a></div>`
         : `<div class="title">${escapeHtml(x.title)}</div>`;
       const srcHtml = x.source ? `<div class="src">${escapeHtml(String(x.source))}</div>` : "";
+
       return `
-        <tr>
+        <tr data-status="${status}">
           <td>${thumbHtml(x.thumb)}</td>
           <td>${titleHtml}${srcHtml}</td>
           <td>${badge}</td>
           <td class="right mono">${fmt(x.r)}</td>
           <td class="right mono">${fmt(x.p)}</td>
           <td class="right mono">${fmt(x.u)}</td>
-          <td class="right mono">${x.net===null ? "—" : fmt(x.net)}</td>
+          <td class="right mono"><span class="net">${x.net===null ? "—" : fmt(x.net)}</span></td>
         </tr>
       `;
     }).join("");
@@ -793,7 +812,6 @@
       const esc = escapeHtml(s);
       return `<option value="${esc}">${esc}</option>`;
     }).join("");
-    // restore if possible
     if (current && SOURCES.includes(current)) sel.value = current;
   }
 
@@ -905,14 +923,11 @@
 
     $("pillText").textContent = `OK: ${date}`;
 
-    // wire once (idempotent enough)
     wireFilterHandlers();
 
-    // render default (risk desc)
     $("sortSel").value = "risk:desc";
     renderTable(applyFilterSort());
 
-    // chart (non-fatal)
     await loadAndDrawTimeseries();
   }
 
