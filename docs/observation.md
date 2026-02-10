@@ -121,3 +121,61 @@ Genesis出力の『秩序再設計（通貨・安全保障）』フェーズ判�
 
 
 <!-- /OBS:2026-01-19 -->
+
+<!-- OBS:2026-02-07 -->
+## 2026-02-07
+
+### Historical analogs
+- tags: `bloc_polarization, financial_regime, arms_race, debt_cycle`
+
+### Confidence
+- confidence_of_hypotheses: **0.8800**
+
+### Top analogs (3)
+
+#### 1. WWI → Interwar Instability → WWII → Bretton Woods Order
+- score: **8.5000**
+- matched_tags: `arms_race, bloc_polarization, debt_cycle, debt_overhang, financial_regime`
+
+**Summary**
+
+総力戦→賠償/債務→不況/過激化→再戦→金融秩序再設計、という連鎖型。
+
+<details>
+<summary>Notes</summary>
+
+Genesis出力の『秩序再設計（通貨・安全保障）』フェーズ判定に使える。
+
+</details>
+
+#### 2. Industrial Revolution, Gold Standard Era, and Imperial Competition
+- score: **5.5000**
+- matched_tags: `arms_race, bloc_polarization, financial_regime`
+
+**Summary**
+
+産業力・金融覇権・通貨体制（信用）・帝国競争が結合する型。
+
+<details>
+<summary>Notes</summary>
+
+『通貨体制の制約＋覇権競争＋同盟固定化』は大戦前夜の型。
+
+</details>
+
+#### 3. Age of Discovery: Global Silver Flows and Price Revolution
+- score: **3.0000**
+- matched_tags: `debt_cycle, debt_overhang`
+
+**Summary**
+
+資源流入（銀）＋交易網拡大が物価・国家財政・覇権競争を変える型。
+
+<details>
+<summary>Notes</summary>
+
+資源流入や通貨供給増は『物価→財政→戦争』に繋がりやすい。
+
+</details>
+
+<!-- /OBS:2026-02-07 -->

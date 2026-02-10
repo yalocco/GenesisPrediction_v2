@@ -4,79 +4,168 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>GenesisPrediction v2 - Overlay</title>
-  <link rel="stylesheet" href="/static/app.css" />
+  <title>Overlay</title>
+
+  <link rel="stylesheet" href="./app.css" />
+  <style>
+    .ov-wrap { max-width: 1200px; margin: 0 auto; padding: 12px; }
+    .ov-head { display:flex; gap:12px; align-items:baseline; justify-content:space-between; flex-wrap:wrap; }
+    .ov-title { font-weight: 700; font-size: 16px; }
+    .ov-meta  { font-size: 12px; opacity: .85; }
+    .ov-card  { margin-top: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,.08); overflow:hidden; }
+    .ov-frame { width: 100%; aspect-ratio: 16/9; background: rgba(0,0,0,.25); display:flex; align-items:center; justify-content:center; }
+    .ov-frame img { width: 100%; height: 100%; object-fit: contain; display:block; }
+    .ov-fallback { padding: 10px 12px; font-size: 12px; opacity: .9; }
+    .ov-debug { margin-top: 10px; font-size: 12px; opacity: .9; white-space: pre-wrap; word-break: break-word; }
+    .ov-badge { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,.15); opacity: .9; }
+  </style>
 </head>
+
 <body>
-  <div class="app">
-    <header class="topbar">
-      <div class="topbar-inner">
-        <div class="brand">GenesisPrediction v2</div>
-        <nav class="nav">
-          <a class="nav-link" href="/static/index.html">Home</a>
-          <a class="nav-link is-active" href="/static/overlay.html">Overlay</a>
-          <a class="nav-link" href="/static/sentiment.html">Sentiment</a>
-        </nav>
-        <div class="badge">
-          <span class="dot"></span>
-          <span>GUI is read-only (SST)</span>
-        </div>
+  <div class="ov-wrap">
+    <div class="ov-head">
+      <div>
+        <div class="ov-title">Overlay</div>
+        <div class="ov-meta" id="ov-meta">loading…</div>
       </div>
-    </header>
+      <div class="ov-badge" id="ov-badge">init</div>
+    </div>
 
-    <main class="container">
-      <section class="card">
-        <h2 style="margin:0 0 6px; font-size:22px;">Overlays</h2>
-        <div style="font-size:13px; color:#9ca3af;">
-          dated / latest を読むだけ。GUIは再計算しません。
-        </div>
-      </section>
+    <div class="ov-card">
+      <div class="ov-frame">
+        <img id="ov-img" alt="overlay image" />
+      </div>
+      <div class="ov-fallback" id="ov-fallback" style="display:none;"></div>
+    </div>
 
-      <section class="card">
-        <h3 style="margin:0 0 12px; font-size:18px;">FX Major Pairs</h3>
-
-        <div class="img-wrap">
-          <div style="margin:0 0 6px; color:#9ca3af; font-size:12px;">USDJPY</div>
-          <img id="img_usdjpy" alt="USDJPY overlay" />
-        </div>
-
-        <div class="img-wrap">
-          <div style="margin:0 0 6px; color:#9ca3af; font-size:12px;">EURJPY</div>
-          <img id="img_eurjpy" alt="EURJPY overlay" />
-        </div>
-
-        <div class="img-wrap">
-          <div style="margin:0 0 6px; color:#9ca3af; font-size:12px;">EURUSD</div>
-          <img id="img_eurusd" alt="EURUSD overlay" />
-        </div>
-
-        <div style="margin-top:10px; color:#9ca3af; font-size:12px;">
-          source: /analysis/fx_*_(dated|latest).png
-        </div>
-      </section>
-    </main>
+    <div class="ov-debug" id="ov-debug" style="display:none;"></div>
   </div>
 
-  <script>
-    (function () {
-      const qs = new URLSearchParams(location.search);
-      const date = qs.get("date"); // YYYY-MM-DD or null
+<script>
+(() => {
+  // ✅ server.py は /analysis を mount している（/data は無い）
+  const PATHS = {
+    latest: "/analysis/jpy_thb_remittance_overlay.png",
+    datedTemplate: "/analysis/fx_overlay_{DATE}.png",
+    placeholder: "/static/img/no_overlay.png",
+  };
 
-      function srcFor(pair) {
-        if (date) return `/analysis/fx_${pair}_${date}.png`;
-        return `/analysis/fx_${pair}_latest.png`;
+  // ✅ server.py のAPIに合わせる
+  const VIEWMODEL_CANDIDATES = [
+    "/api/view_model/latest",   // ← server.py: /api/view_model/latest
+  ];
+
+  const $ = (id) => document.getElementById(id);
+
+  function getParam(name) {
+    return new URLSearchParams(location.search).get(name);
+  }
+
+  function isValidDateYYYYMMDD(s) {
+    return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
+  }
+
+  function toCacheBuster(vm) {
+    if (vm && typeof vm === "object") {
+      const epoch = vm.overlay_updated_at_epoch || vm.updated_at_epoch || vm.view_updated_at_epoch;
+      if (epoch) return String(epoch);
+      const iso = vm.overlay_updated_at || vm.updated_at || vm.view_updated_at;
+      if (iso && typeof iso === "string") {
+        const ms = Date.parse(iso);
+        if (Number.isFinite(ms)) return String(ms);
       }
+    }
+    const date = getParam("date");
+    if (isValidDateYYYYMMDD(date)) return date;
+    return String(Math.floor(Date.now() / 60000));
+  }
 
-      const map = {
-        usdjpy: document.getElementById("img_usdjpy"),
-        eurjpy: document.getElementById("img_eurjpy"),
-        eurusd: document.getElementById("img_eurusd"),
+  function withT(url, t) {
+    return t ? url + (url.includes("?") ? "&" : "?") + "t=" + encodeURIComponent(t) : url;
+  }
+
+  async function fetchFirstJson(urls, timeoutMs = 2500) {
+    for (const u of urls) {
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+        const res = await fetch(u, { cache: "no-store", signal: ctrl.signal });
+        clearTimeout(timer);
+        if (!res.ok) continue;
+        return { url: u, json: await res.json() };
+      } catch (_) {}
+    }
+    return { url: null, json: null };
+  }
+
+  function buildCandidateUrls(date, t) {
+    const list = [];
+    if (isValidDateYYYYMMDD(date)) {
+      list.push(withT(PATHS.datedTemplate.replace("{DATE}", date), t));
+    }
+    list.push(withT(PATHS.latest, t));
+    list.push(withT(PATHS.placeholder, t));
+    return list;
+  }
+
+  function loadImageSequential(imgEl, urls) {
+    return new Promise((resolve) => {
+      let i = 0;
+      const next = () => {
+        if (i >= urls.length) return resolve({ ok: false, used: null });
+        const src = urls[i++];
+        imgEl.onerror = () => next();
+        imgEl.onload = () => resolve({ ok: true, used: src });
+        imgEl.src = src;
       };
+      next();
+    });
+  }
 
-      for (const k of Object.keys(map)) {
-        map[k].src = srcFor(k);
+  function showFallback(msg) {
+    const el = $("ov-fallback");
+    el.textContent = msg;
+    el.style.display = "block";
+  }
+
+  (async () => {
+    const date = getParam("date");
+    const debug = getParam("debug") === "1";
+
+    const vmRes = await fetchFirstJson(VIEWMODEL_CANDIDATES);
+    const t = toCacheBuster(vmRes.json);
+
+    const candidates = buildCandidateUrls(date, t);
+
+    $("ov-meta").textContent = `date=${isValidDateYYYYMMDD(date) ? date : "latest"} / t=${t}`;
+    $("ov-badge").textContent = "loading";
+
+    const r = await loadImageSequential($("ov-img"), candidates);
+
+    if (r.ok) {
+      if (r.used && r.used.includes(PATHS.placeholder)) {
+        $("ov-badge").textContent = "placeholder";
+        showFallback("overlay image not generated yet (showing placeholder)");
+      } else {
+        $("ov-badge").textContent = "ok";
       }
-    })();
-  </script>
+    } else {
+      $("ov-badge").textContent = "no-image";
+      showFallback("overlay image not generated yet (run_daily.ps1 not executed or output missing)");
+      $("ov-img").removeAttribute("src");
+    }
+
+    if (debug) {
+      $("ov-debug").style.display = "block";
+      $("ov-debug").textContent = JSON.stringify({
+        viewModelUrl: vmRes.url,
+        cacheBuster: t,
+        candidates,
+        result: r
+      }, null, 2);
+    }
+  })();
+})();
+</script>
 </body>
 </html>

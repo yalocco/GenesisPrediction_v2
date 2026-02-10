@@ -1,10 +1,39 @@
 ルーティーン（最短・安全）
 .\.venv\Scripts\Activate.ps1
-powershell -ExecutionPolicy Bypass -File scripts/run_daily.ps1
-powershell -ExecutionPolicy Bypass -File scripts/run_daily_guard.ps1
-powershell -ExecutionPolicy Bypass -File scripts/report_sentiment_gaps.ps1 -Days 30
+powershell -ExecutionPolicy Bypass -File scripts\run_daily.ps1
+powershell -ExecutionPolicy Bypass -File scripts\run_daily_guard.ps1
+FX
+powershell -ExecutionPolicy Bypass -File scripts/run_daily_fx_rates.ps1
+powershell -ExecutionPolicy Bypass -File scripts/run_daily_fx_inputs.ps1
+powershell -ExecutionPolicy Bypass -File scripts/run_daily_fx_overlay.ps1
+
+確実に出すなら
+powershell -ExecutionPolicy Bypass -File scripts\run_daily_fx_inputs.ps1 -Strict
+powershell -ExecutionPolicy Bypass -File scripts\run_daily_fx_overlay.ps1 -Strict
 
 python -m uvicorn app.server:app --host 127.0.0.1 --port 8000
+
+週一で
+report_sentiment_gaps.ps1
+backfill_missing_sentiment.ps1
+
+画像正整☑
+Get-Item .\data\world_politics\analysis\jpy_thb_remittance_overlay.png | Select-Object LastWriteTime
+powershell -ExecutionPolicy Bypass -File scripts/report_sentiment_gaps.ps1 -Days 30
+
+# (1) 日次パイプラインを回したあと
+.\.venv\Scripts\python.exe scripts\build_daily_observation_log.py --date (Get-Date -Format "yyyy-MM-dd")
+
+# (2) まとめMDが欲しい日だけ
+.\.venv\Scripts\python.exe scripts\update_observation_md.py --date (Get-Date -Format "yyyy-MM-dd")
+
+欠損の棚卸し
+powershell -ExecutionPolicy Bypass -File scripts/report_sentiment_gaps.ps1 -Days 60
+
+欠損を埋めて timeseries を作り直す（週1とかでOK）
+powershell -ExecutionPolicy Bypass -File scripts/backfill_missing_sentiment.ps1 -Days 60
+
+
 
 指定日で回す
 .\scripts\run_daily.ps1 -date 2026-01-25
