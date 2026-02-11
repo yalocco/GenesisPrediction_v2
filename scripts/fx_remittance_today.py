@@ -1,146 +1,222 @@
-"""
-fx_remittance_today.py
-
-目的:
-- 今日のJPY→THB仕送り判断 (ON/WARN/OFF) を表示する
-- 推奨行動 (recommended_action) と理由 (recommended_reason) を表示する
-
-注意:
-- Windows / venv / 直接実行でも import が壊れないように
-  sys.path に repo root を追加してから import する
-"""
-
+# scripts/fx_remittance_today.py
 from __future__ import annotations
 
 import argparse
-import sys
-from datetime import date
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 import pandas as pd
 
-# ---- ensure repo root on sys.path ----
-REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
+ROOT = Path(__file__).resolve().parents[1]
+FX_DIR = ROOT / "data" / "fx"
 
-# ---- safe import ----
-from scripts.fx_remittance_recommend import recommend_action
+USDJPY_CSV = FX_DIR / "usdjpy.csv"
+USDTHB_CSV = FX_DIR / "usdthb.csv"
+DASH_CSV = FX_DIR / "jpy_thb_remittance_dashboard.csv"
 
-
-# ---- Paths ----
-DATA_DIR = REPO_ROOT / "data" / "fx"
-
-USDJPY_NOISE_PATH = DATA_DIR / "usdjpy_noise_forecast.csv"
-USDTHB_NOISE_PATH = DATA_DIR / "usdthb_noise_forecast.csv"
-DECISION_LOG_PATH = DATA_DIR / "jpy_thb_remittance_decision_log.csv"
-
-# ---- Thresholds ----
-ON_TH = 0.45
-WARN_TH = 0.60
+# optional forecast files (best effort)
+USDJPY_FORE = FX_DIR / "usdjpy_noise_forecast.csv"
+USDTHB_FORE = FX_DIR / "usdthb_noise_forecast.csv"
 
 
-def _read_noise_prob(csv_path: Path, target_date: str) -> float:
-    if not csv_path.exists():
-        raise FileNotFoundError(f"Missing required file: {csv_path}")
+def _load_rates(path: Path, name: str) -> pd.DataFrame:
+    if not path.exists():
+        raise FileNotFoundError(f"missing rates: {path}")
+    df = pd.read_csv(path)
+    if "date" not in df.columns or "rate" not in df.columns:
+        raise ValueError(f"{name} must have columns: date,rate -> {path}")
+    df = df[["date", "rate"]].copy()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df["rate"] = pd.to_numeric(df["rate"], errors="coerce")
+    df = df.dropna().sort_values("date").reset_index(drop=True)
+    df["date"] = df["date"].dt.strftime("%Y-%m-%d")
+    return df
 
-    df = pd.read_csv(csv_path)
 
-    date_cols = [c for c in df.columns if c.lower() in ("date", "ds", "day")]
-    if not date_cols:
-        date_cols = [df.columns[0]]
-    dcol = date_cols[0]
-
-    df[dcol] = pd.to_datetime(df[dcol]).dt.strftime("%Y-%m-%d")
-
-    cand = ["noise_prob", "prob", "p", "noise_probability", "yhat", "yhat_prob"]
+def _load_forecast(path: Path) -> Optional[pd.Series]:
+    """
+    Expect CSV with columns: date, prob (or probability/noise_prob).
+    Returns Series indexed by date(str)->prob(float).
+    """
+    if not path.exists():
+        return None
+    df = pd.read_csv(path)
+    cols = {c.lower(): c for c in df.columns}
+    if "date" not in cols:
+        return None
+    dcol = cols["date"]
     pcol = None
-    lower_map = {c.lower(): c for c in df.columns}
-    for k in cand:
-        if k in lower_map:
-            pcol = lower_map[k]
+    for key in ("prob", "probability", "noise_prob", "noise_probability"):
+        if key in cols:
+            pcol = cols[key]
             break
     if pcol is None:
-        num_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
-        if not num_cols:
-            raise ValueError(f"No numeric probability column found in {csv_path}")
-        pcol = num_cols[-1]
+        return None
 
-    row = df.loc[df[dcol] == target_date]
-    if row.empty:
-        row = df.tail(1)
-
-    val = float(row.iloc[0][pcol])
-    return max(0.0, min(1.0, val))
+    s = df[[dcol, pcol]].copy()
+    s[dcol] = pd.to_datetime(s[dcol], errors="coerce").dt.strftime("%Y-%m-%d")
+    s[pcol] = pd.to_numeric(s[pcol], errors="coerce")
+    s = s.dropna()
+    ser = pd.Series(s[pcol].values, index=s[dcol].values)
+    return ser
 
 
-def _decision_from_noise(combined_noise_prob: float) -> str:
-    if combined_noise_prob < ON_TH:
+def _decision(prob: float) -> str:
+    # matches your observed behavior:
+    # OFF around 0.71, WARN around 0.57, ON around 0.23
+    if prob <= 0.35:
         return "ON"
-    if combined_noise_prob < WARN_TH:
+    if prob <= 0.65:
         return "WARN"
     return "OFF"
 
 
-def _default_note(decision: str) -> str:
-    if decision == "ON":
-        return "normal"
-    if decision == "WARN":
+def _note(dec: str) -> str:
+    if dec == "ON":
+        return "send"
+    if dec == "WARN":
         return "split_or_small"
     return "split_or_wait"
 
 
-def _load_recent_log(n_recent: int = 30) -> Optional[pd.DataFrame]:
-    if not DECISION_LOG_PATH.exists():
-        return None
-    df = pd.read_csv(DECISION_LOG_PATH)
-    if "date" in df.columns:
-        df["date"] = pd.to_datetime(df["date"]).dt.strftime("%Y-%m-%d")
-        df = df.sort_values("date")
-    return df.tail(n_recent).reset_index(drop=True)
+def _build_dashboard_until(latest: str) -> pd.DataFrame:
+    usdjpy = _load_rates(USDJPY_CSV, "USDJPY")
+    usdthb = _load_rates(USDTHB_CSV, "USDTHB")
 
+    last_common = min(usdjpy["date"].iloc[-1], usdthb["date"].iloc[-1])
+    if latest > last_common:
+        # clamp: you asked a date newer than available rates
+        latest = last_common
 
-def build_today_row(target_date: str) -> dict:
-    usdjpy = _read_noise_prob(USDJPY_NOISE_PATH, target_date)
-    usdthb = _read_noise_prob(USDTHB_NOISE_PATH, target_date)
-    combined = max(usdjpy, usdthb)
-    decision = _decision_from_noise(combined)
-    note = _default_note(decision)
+    # load existing dashboard if present
+    if DASH_CSV.exists():
+        dash = pd.read_csv(DASH_CSV)
+    else:
+        dash = pd.DataFrame(columns=[
+            "date",
+            "usd_jpy_noise_prob","usd_jpy_decision","usd_jpy_close",
+            "usd_thb_noise_prob","usd_thb_decision","usd_thb_close",
+            "jpy_thb",
+            "combined_noise_prob","combined_decision","remit_note"
+        ])
 
-    return {
-        "date": target_date,
-        "decision": decision,
-        "combined_noise_prob": combined,
-        "usd_jpy_noise_prob": usdjpy,
-        "usd_thb_noise_prob": usdthb,
-        "remit_note": note,
-    }
+    # normalize existing
+    if "date" not in dash.columns:
+        dash["date"] = []
+
+    dash["date"] = pd.to_datetime(dash["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+    dash = dash.dropna(subset=["date"]).sort_values("date").reset_index(drop=True)
+
+    # determine start date to append
+    start = dash["date"].iloc[-1] if len(dash) else None
+
+    # join closes for all dates up to latest
+    m = usdjpy.merge(usdthb, on="date", suffixes=("_jpy", "_thb"))
+    m = m[m["date"] <= latest].copy()
+    m.rename(columns={"rate_jpy": "usd_jpy_close", "rate_thb": "usd_thb_close"}, inplace=True)
+    m["jpy_thb"] = (m["usd_thb_close"] / m["usd_jpy_close"]).astype(float)
+
+    # forecasts best-effort (fallback to 0.5)
+    f_jpy = _load_forecast(USDJPY_FORE)
+    f_thb = _load_forecast(USDTHB_FORE)
+
+    def prob_for(date: str, f: Optional[pd.Series]) -> float:
+        if f is None:
+            return 0.5
+        v = f.get(date)
+        if v is None:
+            return 0.5
+        try:
+            return float(v)
+        except Exception:
+            return 0.5
+
+    # fill rows
+    rows = []
+    for _, r in m.iterrows():
+        d = r["date"]
+        if start is not None and d <= start:
+            continue
+
+        pj = prob_for(d, f_jpy)
+        pt = prob_for(d, f_thb)
+        dj = _decision(pj)
+        dt = _decision(pt)
+
+        combined = max(pj, pt)  # conservative (matches your past combined==usd_jpy often)
+        dcomb = _decision(combined)
+
+        rows.append({
+            "date": d,
+            "usd_jpy_noise_prob": pj,
+            "usd_jpy_decision": dj,
+            "usd_jpy_close": float(r["usd_jpy_close"]),
+            "usd_thb_noise_prob": pt,
+            "usd_thb_decision": dt,
+            "usd_thb_close": float(r["usd_thb_close"]),
+            "jpy_thb": float(r["jpy_thb"]),
+            "combined_noise_prob": combined,
+            "combined_decision": dcomb,
+            "remit_note": _note(dcomb),
+        })
+
+    if rows:
+        dash = pd.concat([dash, pd.DataFrame(rows)], ignore_index=True)
+
+    # keep last per date, sorted
+    dash = dash.sort_values("date").groupby("date", as_index=False).tail(1)
+    dash = dash.sort_values("date").reset_index(drop=True)
+
+    # enforce column order
+    cols = [
+        "date",
+        "usd_jpy_noise_prob","usd_jpy_decision","usd_jpy_close",
+        "usd_thb_noise_prob","usd_thb_decision","usd_thb_close",
+        "jpy_thb",
+        "combined_noise_prob","combined_decision","remit_note"
+    ]
+    for c in cols:
+        if c not in dash.columns:
+            dash[c] = None
+    dash = dash[cols]
+
+    DASH_CSV.parent.mkdir(parents=True, exist_ok=True)
+    dash.to_csv(DASH_CSV, index=False)
+    return dash
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Show today's JPY→THB remittance decision with recommendation.")
-    parser.add_argument("--date", default=None, help="Target date (YYYY-MM-DD). Default: today.")
-    parser.add_argument("--recent", type=int, default=30, help="Recent days for recommendation (default: 30).")
-    args = parser.parse_args()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--date", default=pd.Timestamp.today().strftime("%Y-%m-%d"))
+    ap.add_argument("--recent", type=int, default=0)
+    args = ap.parse_args()
 
-    target_date = args.date or date.today().strftime("%Y-%m-%d")
+    # clamp date to available rates common last day
+    usdjpy = _load_rates(USDJPY_CSV, "USDJPY")
+    usdthb = _load_rates(USDTHB_CSV, "USDTHB")
+    last_common = min(usdjpy["date"].iloc[-1], usdthb["date"].iloc[-1])
+    target = min(args.date, last_common)
 
-    today_row = build_today_row(target_date)
+    dash = _build_dashboard_until(target)
 
-    recent_df = _load_recent_log(args.recent)
-    if recent_df is None:
-        recent_df = pd.DataFrame([today_row])
+    # print today line (target)
+    row = dash[dash["date"] == target]
+    if row.empty:
+        print(f"{args.date} | decision=OFF | noise=0.500 | USDJPY=0.500 USDTHB=0.500 | note=split_or_wait | action=wait | reason=rate not available")
+        return 0
 
-    action_code, reason = recommend_action(today_row, recent_df)
+    r = row.iloc[-1]
+    decision = r["combined_decision"]
+    noise = float(r["combined_noise_prob"])
+    uj = float(r["usd_jpy_noise_prob"])
+    ut = float(r["usd_thb_noise_prob"])
+    note = r["remit_note"]
 
-    print(
-        f"{today_row['date']} | decision={today_row['decision']} | "
-        f"noise={today_row['combined_noise_prob']:.3f} | "
-        f"USDJPY={today_row['usd_jpy_noise_prob']:.3f} USDTHB={today_row['usd_thb_noise_prob']:.3f} | "
-        f"note={today_row['remit_note']} | "
-        f"action={action_code} | reason={reason}"
-    )
+    # action text aligned with prior logs
+    action = "wait" if decision == "OFF" else ("split_or_small" if decision == "WARN" else "send")
+    reason = "ノイズ高水準のため見送り推奨" if decision == "OFF" else ("軽度WARNのため分割または少額推奨" if decision == "WARN" else "低ノイズのため送金可")
+
+    print(f"{args.date} | decision={decision} | noise={noise:.3f} | USDJPY={uj:.3f} USDTHB={ut:.3f} | note={note} | action={action} | reason={reason}")
     return 0
 
 
