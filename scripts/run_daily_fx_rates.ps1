@@ -24,7 +24,10 @@ Log "START FX rates strict=$strict"
 
 try {
     $args = @("--pair", "both")
-    if ($strict) { $args += "--strict" }  # fx_materialize_rates.py が対応してる場合のみ有効（未対応なら消してOK）
+    if ($strict) {
+        # strict=True: オンライン取得が失敗したら既存CSV継続ではなく「停止」する
+        $args += "--strict"
+    }
 
     RunPy "fx_materialize_rates.py" $args
 

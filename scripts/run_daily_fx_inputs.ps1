@@ -1,6 +1,5 @@
 param(
-    [string]$date = (Get-Date -Format "yyyy-MM-dd"),
-    [switch]$strict
+    [string]$date = (Get-Date -Format "yyyy-MM-dd")
 )
 
 $ErrorActionPreference = "Stop"
@@ -20,13 +19,13 @@ function RunPy([string]$script, [string[]]$args) {
     if ($LASTEXITCODE -ne 0) { throw "Python failed ($script) exit=$LASTEXITCODE" }
 }
 
-Log "START FX inputs date=$date strict=$strict"
+Log "START FX inputs date=$date"
 
 try {
-    $args = @("--date", $date)
-    if ($strict) { $args += "--recent"; $args += "0" }  # strict相当の挙動に寄せたい場合。不要なら削除OK
+    $base = @("--date", $date)
 
-    RunPy "fx_remittance_today.py" $args
+    RunPy "fx_remittance_today.py" ($base + @("--pair", "jpy_thb"))
+    RunPy "fx_remittance_today.py" ($base + @("--pair", "jpy_usd"))
 
     Log "DONE FX inputs"
 }
