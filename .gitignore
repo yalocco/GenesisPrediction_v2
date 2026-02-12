@@ -1,35 +1,39 @@
-# secrets
+# --- secrets ---
 .env
 
-# runtime data
+# --- runtime data ---
 data/
 out/
 analysis/
 
-# python
+# --- python ---
 __pycache__/
 *.pyc
 
-# docker
+# --- docker / logs ---
 *.log
 
-# OS
+# --- OS ---
 .DS_Store
 Thumbs.db
 
-# local japanese notes
+# --- local japanese notes ---
 *ログ*.txt
 *作業*.txt
 
-# local approved stopwords (do not commit)
+# --- local approved stopwords (do not commit) ---
 configs/stopwords_approved.txt
 
-# Keep design assets in Git
+# --- keep design assets in Git ---
 !resources/
 !resources/**/*
 
+# --- deploy artifacts (local only, do not commit) ---
+dist/
+docs/DEPLOY_LABOS_RUNBOOK.md
+scripts/build_labos_deploy_payload.ps1
+scripts/run_deploy_labos.ps1
 
-requirements.txt
-
-Add-Content -Path .\.gitignore -Value "`n# Observation outputs (frozen / not versioned)`ndocs/observation/`n"
-
+# --- backup files ---
+*.bak
+*.broken_*.bak
