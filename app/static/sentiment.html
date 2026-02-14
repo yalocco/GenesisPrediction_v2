@@ -160,6 +160,35 @@
       object-fit:cover;
       display:block;
     }
+
+    .thumb-ph{
+      width:100%;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:900;
+      letter-spacing:.3px;
+      color:rgba(231,238,252,.85);
+      background:
+        radial-gradient(120px 60px at 20% 30%, rgba(45,212,191,.22), transparent 60%),
+        radial-gradient(120px 60px at 80% 70%, rgba(251,113,133,.18), transparent 60%),
+        rgba(0,0,0,.22);
+      text-transform:uppercase;
+      user-select:none;
+    }
+    .thumb-ph small{
+      font-weight:800;
+      font-size:10px;
+      color:rgba(159,176,211,.85);
+      margin-left:6px;
+      letter-spacing:0;
+      text-transform:none;
+    }
+    .thumb-cell{
+      width:92px;
+      min-width:92px;
+    }
     .chart-wrap{
       margin-top:10px;
       border:1px solid var(--line);
@@ -312,7 +341,7 @@
         <table>
           <thead>
             <tr>
-              <th style="min-width:92px;">thumb</th>
+              <th style="width:92px; min-width:92px;">thumb</th>
               <th style="min-width:420px;">title</th>
               <th style="min-width:110px;">status</th>
               <th class="right" style="min-width:110px;">risk</th>
@@ -755,8 +784,36 @@
     return list;
   }
 
-  function thumbHtml(thumb){
-    if (!thumb) return `<div class="thumb">—</div>`;
+  function hostLabel(url, source){
+    // prefer hostname, fallback to source text
+    try{
+      if (url){
+        const h = new URL(String(url), location.origin).hostname || "";
+        if (h) return h.replace(/^www\./,"");
+      }
+    }catch(_){}
+    const s = String(source || "").trim();
+    return s ? s : "";
+  }
+
+  function initialsFromHost(host){
+    const h = String(host || "").trim();
+    if (!h) return "—";
+    const parts = h.split(".").filter(Boolean);
+    const a = parts[0] ? parts[0][0] : "—";
+    const b = parts.length >= 2 ? parts[parts.length-2][0] : "";
+    const out = (a + (b||"")).toUpperCase();
+    return out.length ? out : "—";
+  }
+
+  function thumbHtml(thumb, url, source){
+    // 画像が無い場合でも「崩れない」＋「何かしら視覚情報」を出す（外部リクエスト無し）
+    if (!thumb){
+      const host = hostLabel(url, source);
+      const ini = initialsFromHost(host);
+      const sub = host ? `<small>${escapeHtml(host)}</small>` : "";
+      return `<div class="thumb"><div class="thumb-ph">${escapeHtml(ini)}${sub}</div></div>`;
+    }
     const safe = escapeHtml(thumb);
     return `
       <div class="thumb">
@@ -766,7 +823,7 @@
           loading="lazy"
           decoding="async"
           referrerpolicy="no-referrer"
-          onerror="this.onerror=null; const p=this.parentElement; if(p){p.textContent='—';}"
+          onerror="this.onerror=null; const p=this.parentElement; if(p){p.innerHTML='<div class=&quot;thumb-ph&quot;>—</div>';}"
         />
       </div>
     `;
@@ -793,7 +850,7 @@
 
       return `
         <tr data-status="${status}">
-          <td>${thumbHtml(x.thumb)}</td>
+          <td class="thumb-cell">${thumbHtml(x.thumb, x.url, x.source)}</td>
           <td>${titleHtml}${srcHtml}</td>
           <td>${badge}</td>
           <td class="right mono">${fmt(x.r)}</td>

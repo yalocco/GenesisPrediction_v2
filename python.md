@@ -1,6 +1,6 @@
 ルーティーン（最短・安全）
 .\.venv\Scripts\Activate.ps1
-powershell -ExecutionPolicy Bypass -File scripts\run_daily.ps1
+powershell -ExecutionPolicy Bypass -File scripts\run_daily_with_publish.ps1
 powershell -ExecutionPolicy Bypass -File scripts\run_daily_guard.ps1
 FX
 powershell -ExecutionPolicy Bypass -File scripts/run_daily_fx_rates.ps1
