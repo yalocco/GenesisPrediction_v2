@@ -1,17 +1,23 @@
 ルーティーン（最短・安全）
-.\.venv\Scripts\Activate.ps1
-powershell -ExecutionPolicy Bypass -File scripts\run_daily_with_publish.ps1
-powershell -ExecutionPolicy Bypass -File scripts\run_daily_guard.ps1
-FX
+
+サーバー
+python -m uvicorn app.server:app --host 127.0.0.1 --port 8000
+
+powershell -ExecutionPolicy Bypass -File scripts/run_daily_with_publish.ps1
+
+FX軽取得
 powershell -ExecutionPolicy Bypass -File scripts/run_daily_fx_rates.ps1
 powershell -ExecutionPolicy Bypass -File scripts/run_daily_fx_inputs.ps1
 powershell -ExecutionPolicy Bypass -File scripts/run_daily_fx_overlay.ps1
 
-確実に出すなら
-powershell -ExecutionPolicy Bypass -File scripts\run_daily_fx_inputs.ps1 -Strict
-powershell -ExecutionPolicy Bypass -File scripts\run_daily_fx_overlay.ps1 -Strict
+最後に
+powershell -ExecutionPolicy Bypass -File scripts/run_daily_with_publish.ps1 -RunGuard
 
-python -m uvicorn app.server:app --host 127.0.0.1 --port 8000
+公開したい日だけdeploy
+powershell -ExecutionPolicy Bypass -File scripts/run_deploy_labos.ps1
+
+
+
 
 週一で
 report_sentiment_gaps.ps1
