@@ -15,9 +15,9 @@ import argparse
 import json
 import re
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -203,14 +203,13 @@ def main() -> int:
         avg_risk = sum(x["risk"] for x in out_items) / n
         avg_pos = sum(x["positive"] for x in out_items) / n
         avg_unc = sum(x["uncertainty"] for x in out_items) / n
-        # net average (not clipped)
         avg_net = sum(x["net"] for x in out_items) / n
     else:
         avg_risk = avg_pos = avg_unc = avg_net = 0.0
 
     payload = {
         "date": date,
-        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "items": out_items,
         "today": {
             "articles": n,
