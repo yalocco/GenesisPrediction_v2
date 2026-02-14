@@ -320,3 +320,24 @@ a:hover {
     font-size: 22px;
   }
 }
+/* -------------------------------------------------
+   Minimal header alignment with sentiment
+   (SAFE ADDITION – no overrides removed)
+------------------------------------------------- */
+
+.topbar-inner {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+.nav {
+  gap: 18px;
+}
+
+.nav-link {
+  opacity: 0.9;
+}
+
+.nav-link:hover {
+  opacity: 1;
+}
