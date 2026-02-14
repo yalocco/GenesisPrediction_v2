@@ -1,244 +1,938 @@
+<!-- app/static/sentiment.html -->
 <!doctype html>
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sentiment</title>
-  <link rel="stylesheet" href="/static/app.css" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GenesisPrediction v2 - Sentiment</title>
   <style>
-    /* 保険：app.css が想定外でも最低限崩れない */
-    .page { padding: 16px; }
-    .topbar { padding: 12px 16px; }
-    .topbar-inner { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
-    .topbar-title { font-size: 28px; font-weight: 700; }
-    .topbar-nav a { margin-right: 10px; text-decoration:none; }
-    .grid { display:grid; grid-template-columns: 1fr; gap: 14px; }
-    .card { border-radius: 14px; padding: 14px; }
-    .muted { opacity: .75; }
-    .articles { margin-top: 12px; }
-    .row { display:flex; gap:12px; align-items:flex-start; padding: 10px 0; border-top: 1px solid rgba(255,255,255,.08); }
-    .row:first-child { border-top: 0; }
-    .thumbBox { width: 56px; height: 40px; flex: 0 0 56px; display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius: 10px; background: rgba(255,255,255,.06); }
-    .thumbBox img { width:100%; height:100%; object-fit: cover; display:block; }
-    .thumbBox .noimg { font-size: 12px; opacity:.6; }
-    .title { font-weight: 700; line-height: 1.3; }
-    .meta { font-size: 12px; opacity:.75; margin-top: 4px; }
-    .pill { display:inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; margin-left: 8px; background: rgba(255,255,255,.08); }
-    .kpi { display:flex; gap:12px; flex-wrap:wrap; margin-top: 10px; }
-    .kpi .box { padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.06); }
-    .kpi .num { font-size: 22px; font-weight: 800; }
-    .kpi .lbl { font-size: 12px; opacity: .75; margin-top: 2px; }
-    .err { padding: 10px 12px; border-radius: 12px; background: rgba(255,80,80,.10); }
+    :root{
+      --bg:#0b1020;
+      --panel:rgba(255,255,255,.06);
+      --line:rgba(255,255,255,.10);
+      --text:#e7eefc;
+      --muted:#9fb0d3;
+      --accent:#2dd4bf;
+      --warn:#fbbf24;
+      --danger:#fb7185;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+      background:linear-gradient(180deg,var(--bg),#070a12);
+      color:var(--text);
+    }
+    a{color:var(--accent); text-decoration:none}
+    a:hover{text-decoration:underline}
+    .wrap{max-width:1200px; margin:0 auto; padding:16px}
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:12px 14px; border:1px solid var(--line); border-radius:14px;
+      background:rgba(16,26,51,.7); backdrop-filter: blur(8px);
+    }
+    .brand{display:flex; align-items:center; gap:10px; font-weight:800}
+    .dot{width:9px;height:9px;border-radius:50%;background:var(--accent); box-shadow:0 0 0 3px rgba(45,212,191,.18)}
+    .nav a{color:var(--muted); margin-left:10px; padding:6px 10px; border-radius:10px}
+    .nav a:hover{background:rgba(255,255,255,.06); color:var(--text)}
+    h1{margin:16px 0 6px; font-size:28px}
+    .sub{margin:0 0 14px; color:var(--muted); font-size:13px; line-height:1.5}
+    .grid{display:grid; grid-template-columns: 1.2fr .8fr; gap:14px}
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr;} }
+    .card{
+      border:1px solid var(--line);
+      background:var(--panel);
+      border-radius:14px;
+      padding:14px;
+      box-shadow:0 12px 30px rgba(0,0,0,.25);
+    }
+    .row{display:flex; flex-wrap:wrap; gap:10px; align-items:center}
+    .btn{
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.25);
+      color:var(--text);
+      padding:8px 10px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:800;
+      font-size:12px;
+      user-select:none;
+    }
+    .btn:hover{border-color: rgba(45,212,191,.35)}
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.25);
+      color:var(--muted);
+      font-size:12px;
+      white-space:nowrap;
+    }
+    .kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:10px}
+    @media (max-width: 980px){ .kpis{grid-template-columns:repeat(2,minmax(0,1fr));} }
+    .kpi{border:1px solid var(--line); background:rgba(0,0,0,.22); border-radius:12px; padding:10px}
+    .kpi .label{color:var(--muted); font-size:12px}
+    .kpi .value{margin-top:4px; font-size:20px; font-weight:900}
+    .mono{font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;}
+    .muted{color:var(--muted)}
+    .err{
+      margin-top:10px;
+      border:1px solid rgba(251,113,133,.35);
+      background: rgba(251,113,133,.10);
+      color:#ffd6dd;
+      border-radius:12px;
+      padding:10px 12px;
+      font-size:12px;
+      white-space:pre-wrap;
+      display:none;
+    }
+
+    .controls2{
+      margin-top:10px;
+      display:grid;
+      grid-template-columns: 1fr 180px 200px 160px;
+      gap:10px;
+      align-items:end;
+    }
+    @media (max-width: 980px){
+      .controls2{grid-template-columns: 1fr 1fr; }
+    }
+    label{display:block; font-size:12px; color:var(--muted); margin-bottom:6px}
+    input[type="text"], select{
+      width:100%;
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.22);
+      color:var(--text);
+      outline:none;
+    }
+    input[type="text"]::placeholder{color:rgba(159,176,211,.75)}
+    .checkline{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.22);
+      border-radius:12px;
+      padding:10px;
+      height:42px;
+    }
+    .checkline input{transform:translateY(1px)}
+    .countline{margin-top:8px; font-size:12px; color:var(--muted)}
+    table{width:100%; border-collapse:collapse; margin-top:10px}
+    th,td{border-bottom:1px solid var(--line); padding:10px 8px; vertical-align:top}
+    th{color:#cfe0ff; font-weight:800; font-size:12px; text-align:left; background:rgba(0,0,0,.18); position:sticky; top:0}
+    td{font-size:13px}
+    tr:hover td{background:rgba(45,212,191,.06)}
+    .title a{color:var(--text); text-decoration:none}
+    .title a:hover{text-decoration:underline}
+    .src{color:var(--muted); font-size:12px; margin-top:4px}
+    .right{text-align:right}
+    .badge{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:3px 8px; border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.25);
+      color:var(--muted);
+      font-size:12px;
+      white-space:nowrap;
+    }
+    .badge .b{width:7px;height:7px;border-radius:50%}
+    .badge.ok .b{background:var(--accent)}
+    .badge.warn .b{background:var(--warn)}
+    .badge.bad .b{background:var(--danger)}
+    .thumb{
+      width:72px; height:42px;
+      border-radius:10px;
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.25);
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:var(--muted);
+      font-size:11px;
+    }
+    .thumb img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+    .chart-wrap{
+      margin-top:10px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:rgba(0,0,0,.20);
+      padding:10px;
+    }
+    .chart-head{
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:8px;
+    }
+    .chart-title{font-weight:900}
+    .chart-note{color:var(--muted); font-size:12px}
+    canvas{width:100%; height:220px; display:block}
+    @media (max-width: 980px){ canvas{height:200px} }
+
+    /* =========================================================
+       net* highlight (risk only)  ★今回の未達成をここで完了
+       - JSで <tr data-status="risk"> を付与
+       - risk行の .net だけ赤太字
+       ========================================================= */
+    tr[data-status="risk"] .net{
+      color: var(--danger);
+      font-weight: 900;
+    }
   </style>
 </head>
-
 <body>
-  <header class="topbar">
-    <div class="topbar-inner">
-      <div class="topbar-title">Sentiment</div>
-      <nav class="topbar-nav" aria-label="Primary">
-        <a href="/static/index.html">Index</a>
+<header>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand"><span class="dot"></span><span>GenesisPrediction v2</span></div>
+      <div class="nav">
+        <a href="/static/index.html">Home</a>
         <a href="/static/overlay.html">Overlay</a>
-        <a href="/static/sentiment.html" aria-current="page">Sentiment</a>
-      </nav>
-    </div>
-  </header>
-
-  <main class="page">
-    <section class="card">
-      <div class="muted">Latest sentiment / articles</div>
-
-      <div id="status" class="muted" style="margin-top:8px;">loading...</div>
-
-      <div class="kpi" id="kpi" style="display:none;">
-        <div class="box"><div class="num" id="kpiArticles">-</div><div class="lbl">Articles</div></div>
-        <div class="box"><div class="num" id="kpiNet">-</div><div class="lbl">Net</div></div>
-        <div class="box"><div class="num" id="kpiRisk">-</div><div class="lbl">Risk</div></div>
-        <div class="box"><div class="num" id="kpiPos">-</div><div class="lbl">Positive</div></div>
-        <div class="box"><div class="num" id="kpiUnc">-</div><div class="lbl">Uncertainty</div></div>
+        <a href="/static/sentiment.html">Sentiment</a>
       </div>
+      <div class="pill"><span class="dot"></span><span id="pillText">loading…</span></div>
+    </div>
+  </div>
+</header>
 
-      <div class="articles" id="articles"></div>
+<main>
+  <div class="wrap">
+    <h1>Sentiment（記事別）</h1>
+    <p class="sub">
+      /analysis/view_model_latest.json と /analysis/sentiment_latest.json を結合して、記事ごとの risk / positive / uncertainty / net を一覧表示します。<br>
+      さらに /analysis/sentiment_timeseries.csv があれば、直近の推移グラフを表示します（GUIは読み取り専用）。<br>
+      並び替え＋フィルタ対応（運用強化版）＋ 画像の堅牢化（no-referrer / async decode / onerror）。
+    </p>
+
+    <div class="grid">
+      <section class="card">
+        <h2 style="margin:0 0 10px;">Controls</h2>
+        <div class="row">
+          <button class="btn" id="btnReload">Reload</button>
+          <button class="btn" id="btnReset">Reset filters</button>
+          <button class="btn" id="btnOpenVM">Open view_model_latest.json</button>
+          <button class="btn" id="btnOpenSent">Open sentiment_latest.json</button>
+          <button class="btn" id="btnOpenSeries">Open sentiment_timeseries.csv</button>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi"><div class="label">date</div><div class="value mono" id="kDate">—</div></div>
+          <div class="kpi"><div class="label">articles</div><div class="value mono" id="kArticles">—</div></div>
+          <div class="kpi"><div class="label">risk</div><div class="value mono" id="kRisk">—</div></div>
+          <div class="kpi"><div class="label">positive</div><div class="value mono" id="kPos">—</div></div>
+        </div>
+        <div class="kpis" style="grid-template-columns:repeat(2,1fr); margin-top:10px;">
+          <div class="kpi"><div class="label">uncertainty</div><div class="value mono" id="kUnc">—</div></div>
+          <div class="kpi"><div class="label">note</div><div class="value mono" id="kNote">join: URL優先 → title fallback</div></div>
+        </div>
+
+        <!-- B: Filter + Sort -->
+        <div class="controls2">
+          <div>
+            <label for="q">search (title/source)</label>
+            <input id="q" type="text" placeholder="e.g. nigeria / foxnews / congress" />
+          </div>
+
+          <div>
+            <label for="srcSel">source</label>
+            <select id="srcSel">
+              <option value="">All</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="sortSel">sort</label>
+            <select id="sortSel">
+              <option value="risk:desc">risk ↓</option>
+              <option value="risk:asc">risk ↑</option>
+              <option value="positive:desc">positive ↓</option>
+              <option value="positive:asc">positive ↑</option>
+              <option value="uncertainty:desc">uncertainty ↓</option>
+              <option value="uncertainty:asc">uncertainty ↑</option>
+              <option value="net:desc">net ↓</option>
+              <option value="net:asc">net ↑</option>
+              <option value="title:asc">title A→Z</option>
+              <option value="title:desc">title Z→A</option>
+              <option value="source:asc">source A→Z</option>
+              <option value="source:desc">source Z→A</option>
+            </select>
+          </div>
+
+          <div>
+            <label>&nbsp;</label>
+            <div class="checkline">
+              <input id="showMissing" type="checkbox" checked />
+              <span class="muted">show missing</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="countline">
+          showing: <span class="mono" id="showCount">0</span> /
+          total: <span class="mono" id="totalCount">0</span>
+        </div>
+
+        <div class="chart-wrap">
+          <div class="chart-head">
+            <div class="chart-title">Sentiment Trend</div>
+            <div class="chart-note mono" id="chartMeta">timeseries: loading…</div>
+          </div>
+          <canvas id="trendCanvas" width="1100" height="220"></canvas>
+          <div class="chart-note" id="chartHint">※ risk / positive / uncertainty を同一スケールで描画。</div>
+        </div>
+
+        <div class="err" id="errBox"></div>
+      </section>
+
+      <section class="card">
+        <h2 style="margin:0 0 10px;">How it works</h2>
+        <div class="muted" style="font-size:12px; line-height:1.6;">
+          1) GET /analysis/view_model_latest.json<br>
+          2) GET /analysis/sentiment_latest.json<br>
+          3) join key: URL 優先 → 無ければ title fallback<br>
+          4) 表に描画<br><br>
+          <span class="mono">debug:</span> <span class="mono" id="metaLine">loading…</span>
+        </div>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:14px;">
+      <h2 style="margin:0 0 8px;">Articles & Sentiment</h2>
+      <div style="overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th style="min-width:92px;">thumb</th>
+              <th style="min-width:420px;">title</th>
+              <th style="min-width:110px;">status</th>
+              <th class="right" style="min-width:110px;">risk</th>
+              <th class="right" style="min-width:110px;">positive</th>
+              <th class="right" style="min-width:130px;">uncertainty</th>
+              <th class="right" style="min-width:110px;">net*</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="7" class="muted">loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="muted" style="font-size:12px; margin-top:8px;">
+        * net は存在する場合のみ表示。無ければ pos-risk の推定（可能なら）／不可能なら “—”
+      </div>
     </section>
-  </main>
+  </div>
+</main>
 
-  <script>
-    // ----------------------------
-    // Helpers
-    // ----------------------------
-    function fmtNum(x, digits=3){
-      if (x === null || x === undefined || Number.isNaN(Number(x))) return "-";
-      return Number(x).toFixed(digits);
-    }
+<script>
+(function(){
+  const $ = (id)=>document.getElementById(id);
 
-    function domainFromUrl(u){
-      try { return (new URL(u)).hostname; } catch(e){ return ""; }
-    }
-    function faviconUrlFor(articleUrl){
-      const d = domainFromUrl(articleUrl);
-      if(!d) return "";
-      // no local save, always online
-      return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(d)}&sz=64`;
-    }
+  const PATH_VM = "/analysis/view_model_latest.json";
+  const PATH_SENT = "/analysis/sentiment_latest.json";
+  const PATH_SERIES = "/analysis/sentiment_timeseries.csv";
 
-    // Candidate keys commonly used across pipelines
-    function pickImageUrl(item){
-      const keys = ["image", "urlToImage", "thumbnail", "thumb", "image_url", "imageUrl", "og_image"];
-      for (const k of keys){
-        const v = item && item[k];
-        if (typeof v === "string" && v.trim().startsWith("http")) return v.trim();
+  // state
+  let ALL = [];           // joined full
+  let SOURCES = [];       // unique source list
+
+  function showErr(msg){
+    const box = $("errBox");
+    box.style.display = "block";
+    box.textContent = msg;
+  }
+  function clearErr(){
+    const box = $("errBox");
+    box.style.display = "none";
+    box.textContent = "";
+  }
+  function cacheBust(url){
+    const u = new URL(url, location.origin);
+    u.searchParams.set("t", Date.now().toString());
+    return u.toString();
+  }
+  async function loadJSON(path){
+    const res = await fetch(cacheBust(path), {cache:"no-store"});
+    if (!res.ok) throw new Error(`${path} HTTP ${res.status}`);
+    return await res.json();
+  }
+  async function loadText(path){
+    const res = await fetch(cacheBust(path), {cache:"no-store"});
+    if (!res.ok) throw new Error(`${path} HTTP ${res.status}`);
+    return await res.text();
+  }
+  function qs(name){
+    const u = new URL(location.href);
+    return u.searchParams.get(name);
+  }
+  function pick(obj, keys){
+    for (const k of keys){
+      if (!obj) continue;
+      if (Object.prototype.hasOwnProperty.call(obj, k)) return obj[k];
+    }
+    return undefined;
+  }
+  function toNum(v){
+    if (v === null || v === undefined) return null;
+    if (typeof v === "number") return Number.isFinite(v) ? v : null;
+    if (typeof v === "string"){
+      const t = v.trim();
+      if (!t) return null;
+      const n = Number(t);
+      return Number.isFinite(n) ? n : null;
+    }
+    return null;
+  }
+  function fmt(x){
+    if (x === null || x === undefined || Number.isNaN(x)) return "—";
+    if (typeof x === "number") return x.toFixed(6);
+    return String(x);
+  }
+  function escapeHtml(s){
+    return String(s)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#39;");
+  }
+  function decodeHtmlEntities(s){
+    const t = String(s ?? "");
+    if (!t.includes("&")) return t;
+    const textarea = document.createElement("textarea");
+    textarea.innerHTML = t;
+    return textarea.value;
+  }
+
+  function normSentDoc(doc){
+    const out = {
+      date: pick(doc, ["date","today_date","asof","as_of"]),
+      today: null,
+      items: null
+    };
+    const today = pick(doc, ["today","latest","summary","totals"]);
+    if (today && typeof today === "object") out.today = today;
+    const items = pick(doc, ["items","articles","rows","data"]);
+    if (Array.isArray(items)) out.items = items;
+    return out;
+  }
+
+  function normalizeUrl(u){
+    if (!u) return "";
+    try{
+      const x = new URL(String(u).trim());
+      x.hash = "";
+      return x.toString();
+    }catch(_){
+      return String(u).trim();
+    }
+  }
+  function getKeyForJoin(x){
+    if (!x) return "";
+    const url = pick(x, ["url","link","href","norm_url"]);
+    const title = pick(x, ["title","headline","name"]);
+    if (url && typeof url === "string") return "u:" + normalizeUrl(url);
+    if (title && typeof title === "string") return "t:" + title.trim();
+    return "";
+  }
+
+  function extractScoresFromAny(obj){
+    let risk = toNum(pick(obj, ["risk","riskScore","risk_score"]));
+    let pos  = toNum(pick(obj, ["positive","pos","posScore","pos_score","positive_score","positiveScore"]));
+    let unc  = toNum(pick(obj, ["uncertainty","unc","uncScore","unc_score","uncertainty_score","uncertaintyScore"]));
+
+    if ((risk===null || pos===null || unc===null) && obj && typeof obj === "object"){
+      for (const base of ["scores","sentiment","sent"]){
+        const b = obj[base];
+        if (b && typeof b === "object"){
+          if (risk===null) risk = toNum(pick(b, ["risk","riskScore","risk_score"]));
+          if (pos===null)  pos  = toNum(pick(b, ["positive","pos","posScore","pos_score","positive_score","positiveScore"]));
+          if (unc===null)  unc  = toNum(pick(b, ["uncertainty","unc","uncScore","unc_score","uncertainty_score","uncertaintyScore"]));
+        }
       }
-      return "";
     }
 
-    function safeText(s){
-      return (s === null || s === undefined) ? "" : String(s);
+    const net = toNum(pick(obj, ["net","score","raw_score","rawScore","sentiment_score","sentimentScore"]));
+    return {risk, pos, unc, net};
+  }
+
+  // ★ status判定を「見た目HTML」だけでなく「キー」としても返す（risk行のnet強調に使う）
+  function statusKey(risk, pos, unc){
+    const any = [risk,pos,unc].some(v => v !== null && v !== undefined);
+    if (!any) return "missing";
+    const s = (risk||0) + (pos||0) + (unc||0);
+    if (s < 1e-6) return "zero";
+    if ((risk||0) > (pos||0) * 1.2) return "risk";
+    return "ok";
+  }
+
+  function statusBadge(risk, pos, unc){
+    const k = statusKey(risk, pos, unc);
+    if (k === "missing") return `<span class="badge"><span class="b"></span>missing</span>`;
+    if (k === "zero")    return `<span class="badge warn"><span class="b"></span>zero</span>`;
+    if (k === "risk")    return `<span class="badge bad"><span class="b"></span>risk</span>`;
+    return `<span class="badge ok"><span class="b"></span>ok</span>`;
+  }
+
+  function extractVmItems(vm){
+    if (!vm || typeof vm !== "object") return [];
+    const direct = pick(vm, ["items","articles"]);
+    if (Array.isArray(direct)) return direct;
+
+    if (Array.isArray(vm.sections)){
+      const out = [];
+      for (const sec of vm.sections){
+        if (!sec || !Array.isArray(sec.cards)) continue;
+        for (const c of sec.cards){
+          if (c) out.push(c);
+        }
+      }
+      return out;
+    }
+    return [];
+  }
+
+  // A方式：ありがちな画像URLフィールドのみ（view_model → sentiment）
+  function resolveThumb(obj){
+    if (!obj || typeof obj !== "object") return "";
+    const cand1 = pick(obj, [
+      "image","image_url","imageUrl","urlToImage",
+      "thumbnail","thumbnail_url","thumbnailUrl",
+      "thumb","thumb_url","thumbUrl",
+      "og_image","ogImage","og_image_url","ogImageUrl",
+      "og:image","og:image:url",
+      "twitter:image","twitter_image","twitterImage",
+      "banner","cover","cover_image","coverImage"
+    ]);
+    if (typeof cand1 === "string" && cand1.trim()) return cand1.trim();
+
+    const d = obj.data;
+    if (d && typeof d === "object"){
+      const cand2 = pick(d, [
+        "image","image_url","imageUrl","urlToImage",
+        "thumbnail","thumbnail_url","thumbnailUrl","thumb",
+        "og_image","ogImage","og:image","twitter:image"
+      ]);
+      if (typeof cand2 === "string" && cand2.trim()) return cand2.trim();
+    }
+    return "";
+  }
+
+  function normalizeSourceText(x){
+    const s = String(x || "").trim();
+    if (!s) return "";
+    return s;
+  }
+
+  // --------------------------
+  // chart
+  // --------------------------
+  function parseCsv(text){
+    const lines = String(text || "").replace(/\r/g,"").split("\n").filter(l => l.trim().length);
+    if (lines.length < 2) return {headers:[], rows:[]};
+    const split = (line)=>line.split(",").map(s=>s.trim());
+    const headers = split(lines[0]).map(h => h.replace(/^"|"$/g,""));
+    const rows = [];
+    for (const line of lines.slice(1)){
+      const cols = split(line);
+      if (!cols.length) continue;
+      const obj = {};
+      for (let i=0;i<headers.length;i++) obj[headers[i]] = (cols[i] ?? "");
+      rows.push(obj);
+    }
+    return {headers, rows};
+  }
+  function findCol(headers, aliases){
+    const lower = headers.map(h => String(h).toLowerCase());
+    for (const a of aliases){
+      const idx = lower.indexOf(a);
+      if (idx >= 0) return headers[idx];
+    }
+    return null;
+  }
+  function drawTrend(canvas, series){
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0,0,w,h);
+
+    const padL=44, padR=12, padT=10, padB=26;
+    const iw=w-padL-padR, ih=h-padT-padB;
+
+    ctx.strokeStyle="rgba(255,255,255,0.12)";
+    ctx.strokeRect(padL,padT,iw,ih);
+
+    if (!series.length){
+      ctx.fillStyle="rgba(255,255,255,0.65)";
+      ctx.font="12px ui-monospace, Menlo, Consolas, monospace";
+      ctx.fillText("no timeseries", padL+10, padT+18);
+      return;
     }
 
-    // ----------------------------
-    // Rendering
-    // ----------------------------
-    function renderKpi(vm){
-      const a = (vm && vm.articles) ? vm.articles : [];
-      document.getElementById("kpiArticles").textContent = a.length;
+    let ymin=Infinity, ymax=-Infinity;
+    for (const p of series){
+      for (const k of ["risk","positive","uncertainty"]){
+        const v=p[k];
+        if (typeof v==="number" && Number.isFinite(v)){
+          ymin=Math.min(ymin,v); ymax=Math.max(ymax,v);
+        }
+      }
+    }
+    if (!Number.isFinite(ymin)||!Number.isFinite(ymax)){ ymin=0; ymax=1; }
+    if (Math.abs(ymax-ymin)<1e-9){ ymax=ymin+1; }
 
-      // try multiple possible locations
-      const overall = vm.overall || vm.summary || vm.sentiment || {};
-      const net = overall.net ?? vm.net ?? null;
-      const risk = overall.risk ?? vm.risk ?? null;
-      const pos = overall.pos ?? overall.positive ?? vm.pos ?? vm.positive ?? null;
-      const unc = overall.unc ?? overall.uncertainty ?? vm.unc ?? vm.uncertainty ?? null;
-
-      document.getElementById("kpiNet").textContent  = fmtNum(net);
-      document.getElementById("kpiRisk").textContent = fmtNum(risk);
-      document.getElementById("kpiPos").textContent  = fmtNum(pos);
-      document.getElementById("kpiUnc").textContent  = fmtNum(unc);
-
-      document.getElementById("kpi").style.display = "flex";
+    ctx.strokeStyle="rgba(255,255,255,0.08)";
+    ctx.fillStyle="rgba(255,255,255,0.60)";
+    ctx.font="11px ui-monospace, Menlo, Consolas, monospace";
+    const gridN=4;
+    for (let i=0;i<=gridN;i++){
+      const y=padT+(ih*i/gridN);
+      ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+iw,y); ctx.stroke();
+      const val=(ymax-(ymax-ymin)*(i/gridN));
+      ctx.fillText(val.toFixed(3), 6, y+4);
     }
 
-    function renderArticles(vm){
-      const host = document.getElementById("articles");
-      host.innerHTML = "";
+    const first=series[0].date||"", last=series[series.length-1].date||"";
+    ctx.fillText(String(first), padL, padT+ih+18);
+    const lastW=ctx.measureText(String(last)).width;
+    ctx.fillText(String(last), padL+iw-lastW, padT+ih+18);
 
-      const items = (vm && vm.articles) ? vm.articles : (vm && vm.items) ? vm.items : [];
-      if (!items || items.length === 0){
-        host.innerHTML = `<div class="muted">no articles</div>`;
+    function xy(idx,val){
+      const x=padL+(iw*(idx/Math.max(1,series.length-1)));
+      const y=padT+(ih*(1-(val-ymin)/(ymax-ymin)));
+      return {x,y};
+    }
+
+    const keys=["risk","positive","uncertainty"];
+    const styles=[
+      "rgba(251,113,133,0.95)",
+      "rgba(45,212,191,0.95)",
+      "rgba(251,191,36,0.95)"
+    ];
+
+    for (let ki=0;ki<keys.length;ki++){
+      const key=keys[ki];
+      ctx.strokeStyle=styles[ki];
+      ctx.lineWidth=2;
+      let started=false;
+      ctx.beginPath();
+      for (let i=0;i<series.length;i++){
+        const v=series[i][key];
+        if (!(typeof v==="number" && Number.isFinite(v))){
+          started=false; continue;
+        }
+        const p=xy(i,v);
+        if (!started){ ctx.moveTo(p.x,p.y); started=true; }
+        else ctx.lineTo(p.x,p.y);
+      }
+      ctx.stroke();
+    }
+
+    const legend=[
+      {label:"risk", c:styles[0]},
+      {label:"positive", c:styles[1]},
+      {label:"uncertainty", c:styles[2]},
+    ];
+    let lx=padL+10, ly=padT+18;
+    ctx.font="12px ui-monospace, Menlo, Consolas, monospace";
+    for (const it of legend){
+      ctx.fillStyle=it.c; ctx.fillRect(lx,ly-9,10,10);
+      ctx.fillStyle="rgba(255,255,255,0.75)";
+      ctx.fillText(it.label, lx+14, ly);
+      lx += 120;
+    }
+  }
+
+  async function loadAndDrawTimeseries(){
+    const canvas = $("trendCanvas");
+    try{
+      const text = await loadText(PATH_SERIES);
+      const {headers, rows} = parseCsv(text);
+
+      const colDate = findCol(headers, ["date","day","asof"]);
+      const colRisk = findCol(headers, ["risk"]);
+      const colPos  = findCol(headers, ["positive","pos"]);
+      const colUnc  = findCol(headers, ["uncertainty","unc"]);
+
+      if (!colDate || (!colRisk && !colPos && !colUnc)){
+        $("chartMeta").textContent = `timeseries: unsupported header`;
+        drawTrend(canvas, []);
         return;
       }
 
-      for (const it of items){
-        const url = safeText(it.url || it.link || "");
-        const title = safeText(it.title || it.headline || "(no title)");
-        const source = safeText(it.source || it.site || domainFromUrl(url));
-        const published = safeText(it.publishedAt || it.published_at || it.date || "");
+      const series = rows.map(r => ({
+        date: (colDate ? String(r[colDate] ?? "").trim() : ""),
+        risk: (colRisk ? toNum(r[colRisk]) : null),
+        positive: (colPos ? toNum(r[colPos]) : null),
+        uncertainty: (colUnc ? toNum(r[colUnc]) : null),
+      })).filter(p => p.date);
 
-        const imgUrl = pickImageUrl(it);
-        const fallback = faviconUrlFor(url);
+      const N = 90;
+      const sliced = series.length > N ? series.slice(series.length - N) : series;
 
-        const row = document.createElement("div");
-        row.className = "row";
+      $("chartMeta").textContent = `timeseries: points=${sliced.length} (last ${Math.min(N, series.length)} days)`;
+      drawTrend(canvas, sliced);
+    }catch(_e){
+      $("chartMeta").textContent = `timeseries: not found`;
+      drawTrend($("trendCanvas"), []);
+    }
+  }
 
-        const thumb = document.createElement("div");
-        thumb.className = "thumbBox";
+  // --------------------------
+  // B: filter/sort render
+  // --------------------------
+  function getSortSpec(){
+    const v = $("sortSel").value || "risk:desc";
+    const [key, dir] = v.split(":");
+    return {key, dir: (dir === "asc" ? "asc" : "desc")};
+  }
 
-        if (imgUrl || fallback){
-          const im = document.createElement("img");
-          im.loading = "lazy";
-          im.decoding = "async";
-          im.referrerPolicy = "no-referrer"; // hotlink mitigation
-          im.src = imgUrl || fallback;
+  function cmpStr(a,b,dir){
+    const aa = String(a||"").toLowerCase();
+    const bb = String(b||"").toLowerCase();
+    if (aa < bb) return dir==="asc" ? -1 : 1;
+    if (aa > bb) return dir==="asc" ? 1 : -1;
+    return 0;
+  }
 
-          // if external hotlink is rejected, fallback to favicon; if that fails, show "no image"
-          im.onerror = () => {
-            if (im.src !== fallback && fallback){
-              im.src = fallback;
-              return;
-            }
-            im.remove();
-            const no = document.createElement("div");
-            no.className = "noimg";
-            no.textContent = "no image";
-            thumb.appendChild(no);
-          };
-          thumb.appendChild(im);
-        } else {
-          const no = document.createElement("div");
-          no.className = "noimg";
-          no.textContent = "no image";
-          thumb.appendChild(no);
-        }
+  function cmpNum(a,b,dir){
+    const aa = (typeof a==="number" && Number.isFinite(a)) ? a : null;
+    const bb = (typeof b==="number" && Number.isFinite(b)) ? b : null;
 
-        const body = document.createElement("div");
-        body.style.flex = "1";
+    if (aa===null && bb===null) return 0;
+    if (aa===null) return 1;
+    if (bb===null) return -1;
 
-        const a = document.createElement("a");
-        a.className = "title";
-        a.href = url || "#";
-        a.target = "_blank";
-        a.rel = "noopener noreferrer";
-        a.textContent = title;
+    if (aa < bb) return dir==="asc" ? -1 : 1;
+    if (aa > bb) return dir==="asc" ? 1 : -1;
+    return 0;
+  }
 
-        const meta = document.createElement("div");
-        meta.className = "meta";
-        meta.textContent = [source, published].filter(Boolean).join(" · ");
+  function applyFilterSort(){
+    const q = String($("q").value || "").trim().toLowerCase();
+    const src = String($("srcSel").value || "").trim().toLowerCase();
+    const showMissing = $("showMissing").checked;
+    const {key, dir} = getSortSpec();
 
-        // optional score pill (if exists)
-        const net = (it.net !== undefined) ? it.net : (it.sentiment_net !== undefined) ? it.sentiment_net : null;
-        if (net !== null && net !== undefined && !Number.isNaN(Number(net))){
-          const pill = document.createElement("span");
-          pill.className = "pill";
-          pill.textContent = `net ${fmtNum(net)}`;
-          a.appendChild(pill);
-        }
+    let list = ALL.slice();
 
-        body.appendChild(a);
-        body.appendChild(meta);
+    if (!showMissing){
+      list = list.filter(x => x.hasAnyScore);
+    }
 
-        row.appendChild(thumb);
-        row.appendChild(body);
-        host.appendChild(row);
+    if (src){
+      list = list.filter(x => String(x.source||"").toLowerCase() === src);
+    }
+
+    if (q){
+      list = list.filter(x => {
+        const t = String(x.title||"").toLowerCase();
+        const s = String(x.source||"").toLowerCase();
+        return t.includes(q) || s.includes(q);
+      });
+    }
+
+    list.sort((a,b) => {
+      switch(key){
+        case "risk": return cmpNum(a.r, b.r, dir);
+        case "positive": return cmpNum(a.p, b.p, dir);
+        case "uncertainty": return cmpNum(a.u, b.u, dir);
+        case "net": return cmpNum(a.net, b.net, dir);
+        case "title": return cmpStr(a.title, b.title, dir);
+        case "source": return cmpStr(a.source, b.source, dir);
+        default: return cmpNum(a.r, b.r, "desc");
+      }
+    });
+
+    return list;
+  }
+
+  function thumbHtml(thumb){
+    if (!thumb) return `<div class="thumb">—</div>`;
+    const safe = escapeHtml(thumb);
+    return `
+      <div class="thumb">
+        <img
+          src="${safe}"
+          alt="thumb"
+          loading="lazy"
+          decoding="async"
+          referrerpolicy="no-referrer"
+          onerror="this.onerror=null; const p=this.parentElement; if(p){p.textContent='—';}"
+        />
+      </div>
+    `;
+  }
+
+  function renderTable(list){
+    const tbody = $("tbody");
+    $("totalCount").textContent = String(ALL.length);
+    $("showCount").textContent = String(list.length);
+
+    if (!list.length){
+      tbody.innerHTML = `<tr><td colspan="7" class="muted">no items (filtered)</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = list.map(x => {
+      const status = statusKey(x.r, x.p, x.u);   // ★追加：risk行だけ強調に使う
+      const badge = statusBadge(x.r, x.p, x.u);
+
+      const titleHtml = x.url
+        ? `<div class="title"><a href="${escapeHtml(x.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(x.title)}</a></div>`
+        : `<div class="title">${escapeHtml(x.title)}</div>`;
+      const srcHtml = x.source ? `<div class="src">${escapeHtml(String(x.source))}</div>` : "";
+
+      return `
+        <tr data-status="${status}">
+          <td>${thumbHtml(x.thumb)}</td>
+          <td>${titleHtml}${srcHtml}</td>
+          <td>${badge}</td>
+          <td class="right mono">${fmt(x.r)}</td>
+          <td class="right mono">${fmt(x.p)}</td>
+          <td class="right mono">${fmt(x.u)}</td>
+          <td class="right mono"><span class="net">${x.net===null ? "—" : fmt(x.net)}</span></td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  function rebuildSourceDropdown(){
+    const sel = $("srcSel");
+    const current = sel.value || "";
+    sel.innerHTML = `<option value="">All</option>` + SOURCES.map(s => {
+      const esc = escapeHtml(s);
+      return `<option value="${esc}">${esc}</option>`;
+    }).join("");
+    if (current && SOURCES.includes(current)) sel.value = current;
+  }
+
+  function wireFilterHandlers(){
+    const rerender = ()=>renderTable(applyFilterSort());
+    $("q").addEventListener("input", rerender);
+    $("srcSel").addEventListener("change", rerender);
+    $("sortSel").addEventListener("change", rerender);
+    $("showMissing").addEventListener("change", rerender);
+  }
+
+  function resetFilters(){
+    $("q").value = "";
+    $("srcSel").value = "";
+    $("sortSel").value = "risk:desc";
+    $("showMissing").checked = true;
+    renderTable(applyFilterSort());
+  }
+
+  async function main(){
+    clearErr();
+    $("pillText").textContent = "loading…";
+
+    $("btnReload").onclick = ()=>main();
+    $("btnReset").onclick = ()=>resetFilters();
+    $("btnOpenVM").onclick = ()=>window.open(PATH_VM, "_blank");
+    $("btnOpenSent").onclick = ()=>window.open(PATH_SENT, "_blank");
+    $("btnOpenSeries").onclick = ()=>window.open(PATH_SERIES, "_blank");
+
+    let vm, sent;
+    try{
+      [vm, sent] = await Promise.all([loadJSON(PATH_VM), loadJSON(PATH_SENT)]);
+    }catch(e){
+      showErr(String(e && e.stack ? e.stack : e));
+      $("pillText").textContent = "error";
+      return;
+    }
+
+    const sentDoc = normSentDoc(sent);
+    const date = qs("date") || sentDoc.date || pick(vm, ["date","asof","as_of"]) || "latest";
+
+    const vmItems = extractVmItems(vm);
+    const sentItems = sentDoc.items || [];
+
+    const articlesCount = toNum(pick(vm, ["articles","n_articles","count"])) ?? vmItems.length;
+
+    const sFromVM = extractScoresFromAny(vm);
+    const sFromSentToday = extractScoresFromAny(sentDoc.today || {});
+    const risk = sFromVM.risk ?? sFromSentToday.risk;
+    const pos  = sFromVM.pos  ?? sFromSentToday.pos;
+    const unc  = sFromVM.unc  ?? sFromSentToday.unc;
+
+    $("kDate").textContent = date;
+    $("kArticles").textContent = String(articlesCount);
+    $("kRisk").textContent = fmt(risk);
+    $("kPos").textContent = fmt(pos);
+    $("kUnc").textContent = fmt(unc);
+
+    const map = new Map();
+    if (Array.isArray(sentItems)){
+      for (const it of sentItems){
+        const key = getKeyForJoin(it);
+        if (!key) continue;
+        map.set(key, it);
       }
     }
 
-    // ----------------------------
-    // Data loading
-    // Priority:
-    //  1) view_model_latest.json  (if it contains articles)
-    //  2) sentiment_latest.json   (fallback)
-    // ----------------------------
-    async function fetchJson(url){
-      const r = await fetch(url, { cache: "no-store" });
-      if (!r.ok) throw new Error(`${r.status} ${r.statusText} for ${url}`);
-      return await r.json();
-    }
+    const joined = vmItems.map((it)=>{
+      const key = getKeyForJoin(it);
+      let sIt = key ? map.get(key) : null;
 
-    async function main(){
-      const status = document.getElementById("status");
-      try{
-        // try view_model first
-        let vm = null;
-        try{
-          vm = await fetchJson("/analysis/view_model_latest.json?v=" + Date.now());
-        }catch(e){
-          vm = null;
-        }
-
-        if (!vm || !(vm.articles && vm.articles.length)){
-          // fallback to sentiment
-          vm = await fetchJson("/analysis/sentiment_latest.json?v=" + Date.now());
-        }
-
-        status.textContent = "OK";
-        renderKpi(vm);
-        renderArticles(vm);
-
-      }catch(err){
-        status.innerHTML = `<div class="err">load failed: ${safeText(err.message || err)}</div>`;
+      if (!sIt){
+        const t = pick(it, ["title","headline","name"]);
+        if (t) sIt = map.get("t:" + String(t).trim()) || null;
       }
-    }
 
-    main();
-  </script>
+      const fromVM = extractScoresFromAny(it);
+      const fromS  = sIt ? extractScoresFromAny(sIt) : {risk:null,pos:null,unc:null,net:null};
+
+      const r = fromVM.risk ?? fromS.risk;
+      const p = fromVM.pos  ?? fromS.pos;
+      const u = fromVM.unc  ?? fromS.unc;
+
+      const net = (fromVM.net ?? fromS.net);
+      const net2 = (net!==null ? net : (p!==null || r!==null ? ((p||0)-(r||0)) : null));
+
+      const titleRaw = pick(it, ["title","headline","name"]) || "(no title)";
+      const title = decodeHtmlEntities(titleRaw);
+
+      const url = pick(it, ["url","link","href"]) || "";
+      const source = normalizeSourceText(pick(it, ["source","publisher","site","domain"])) ||
+                     normalizeSourceText(pick(sIt, ["source","publisher","site","domain"])) ||
+                     (url ? (function(){ try{ return new URL(url).hostname; }catch(_){ return ""; }})() : "");
+
+      const thumb = resolveThumb(it) || resolveThumb(sIt);
+
+      const hasAnyScore = [r,p,u].some(v => v !== null && v !== undefined);
+
+      return {title, url, source, thumb, r, p, u, net: net2, hasAnyScore};
+    });
+
+    ALL = joined;
+    SOURCES = Array.from(new Set(joined.map(x => x.source).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
+
+    rebuildSourceDropdown();
+
+    $("metaLine").textContent =
+      `date=${date} / vmItems=${vmItems.length} / sentItems=${Array.isArray(sentItems)?sentItems.length:0} / joinMap=${map.size} / joined=${joined.length}`;
+
+    $("pillText").textContent = `OK: ${date}`;
+
+    wireFilterHandlers();
+
+    $("sortSel").value = "risk:desc";
+    renderTable(applyFilterSort());
+
+    await loadAndDrawTimeseries();
+  }
+
+  main();
+})();
+</script>
 </body>
 </html>
