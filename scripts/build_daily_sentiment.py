@@ -1,344 +1,241 @@
 # scripts/build_daily_sentiment.py
-r"""
-Daily Sentiment Builder (C: fallback) + MAX compat for GUI.
-
-What this fixes:
-- Some GUI variants read risk/pos/unc from different key names (aliases).
-- We output many aliases at:
-    top-level, sentiment(obj), scores(obj), sent(obj)
-
-Also:
-- When reason == fallback_background, we set unc to a small default (>0)
-  so "undetected == uncertain" becomes visible in GUI.
-
-Run:
-  ./.venv/Scripts/python.exe scripts/build_daily_sentiment.py --date 2026-01-30
-"""
-
+# Build sentiment_latest.json (and dated sentiment_YYYY-MM-DD.json) from daily_news_YYYY-MM-DD.json
+#
+# Goals
+# - Deterministic (no network, no LLM) and stable
+# - Avoid "all same" values by using lightweight lexical scoring on title/description
+# - Output schema compatible with sentiment.html (url/title/source + risk/positive/uncertainty/net)
+#
+# Run:
+#   .\.venv\Scripts\python.exe scripts/build_daily_sentiment.py --date 2026-02-14
+#
 from __future__ import annotations
 
 import argparse
 import json
-import math
 import re
 from dataclasses import dataclass
-from datetime import date as Date
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
+from typing import Any, Dict, List, Optional, Tuple
 
 
-ANALYSIS_DIR = Path("data/world_politics/analysis")
-DEFAULT_NEWS_TMPL = "daily_news_{date}.json"
+ROOT = Path(__file__).resolve().parents[1]
 
-OUT_LATEST = "sentiment_latest.json"
-OUT_DATED_TMPL = "sentiment_{date}.json"
+ANALYSIS_DIR = ROOT / "data" / "world_politics" / "analysis"
+DAILY_NEWS_TMPL = ANALYSIS_DIR / "daily_news_{date}.json"
+OUT_LATEST = ANALYSIS_DIR / "sentiment_latest.json"
+OUT_DATED_TMPL = ANALYSIS_DIR / "sentiment_{date}.json"
 
-FALLBACK_SCORE = 0.10
-FALLBACK_UNC = 0.20  # <-- NEW: fallback を「未検出＝不確実」として見える化
-MIN_ABS_RAW_TO_KEEP = 0.15
 
-POS_WEIGHT = +1.00
-NEG_WEIGHT = -1.00
-UNC_WEIGHT = +0.60
-
-NEG_TOKENS = {
-    "attack", "war", "strike", "crisis", "collapse", "kill", "killed", "dead", "death",
-    "terror", "terrorist", "bomb", "explosion", "sanction", "sanctions",
-    "inflation", "recession", "default", "missile", "hostage", "riot",
-    "shooting", "violence", "clash", "conflict", "invasion", "threat",
-    "nuclear", "outage", "blackout", "earthquake", "tsunami", "flood",
-}
-POS_TOKENS = {
-    "deal", "agreement", "peace", "ceasefire", "growth", "recover", "recovery",
-    "approval", "aid", "support", "rescue", "success", "stabilize", "stability",
-    "increase", "improve", "improvement",
-}
-UNC_TOKENS = {
-    "may", "might", "could", "unclear", "uncertainty", "unknown", "reportedly",
-    "alleged", "allegedly", "suspected", "rumor", "speculation",
-    "possible", "potential", "expected", "likely", "risk",
+# -------------------------
+# Lightweight lexicons
+# -------------------------
+NEG_WORDS = {
+    # conflict / violence
+    "war","wars","battle","battles","attack","attacks","attacked","assault","bomb","bombing","missile","rocket",
+    "strike","strikes","shelling","shooting","shot","killed","kill","dead","death","fatal","massacre","terror","terrorist",
+    "hostage","abduct","abduction","kidnap","kidnapped","explosion","explosive","blast","violence","violent",
+    # crisis / disaster
+    "crisis","collapse","disaster","earthquake","flood","wildfire","hurricane","typhoon","storm","drought",
+    "outbreak","epidemic","pandemic","disease","infected","infection",
+    # economy / hardship
+    "recession","inflation","unemployment","poverty","hunger","famine","shortage","default","bankrupt","bankruptcy",
+    # politics / instability
+    "coup","sanction","sanctions","arrest","arrested","detained","detention","raid","crackdown","protest","protests",
+    "riot","riots","fraud","corruption","scandal","resign","resignation","impeach","impeachment",
+    # misc negative
+    "threat","threats","warning","warns","risk","risky","danger","dangerous","failed","failure","decline","declines",
+    "loss","losses","lose","losing","cut","cuts","slashed","ban","banned","lawsuit","sue","suing","court","trial",
+    "hate","racist","racism",
 }
 
-DROP_QUERY_KEYS = {
-    "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
-    "fbclid", "gclid", "igshid", "mc_cid", "mc_eid", "ref", "ref_src",
+POS_WORDS = {
+    "peace","deal","ceasefire","truce","agreement","accord","talks","negotiation","negotiations",
+    "aid","relief","support","help","rescue","rescued","donation","funding","grant",
+    "growth","recover","recovery","improve","improves","improved","boost","record","surge",
+    "win","wins","won","success","successful","progress","breakthrough","advance","advances","achieve","achieved",
+    "election","elected","vote","voted",
+    "launch","released","opens","opened","announce","announces","announced",
+    "safe","safer","stability","stable","partnership","cooperate","cooperation",
+}
+
+RISK_WORDS = {
+    # words that imply risk/uncertainty even if net isn't strongly negative
+    "uncertain","uncertainty","volatile","volatility","tension","tensions","escalate","escalation","stand-off","standoff",
+    "probe","investigation","investigate","investigating","allegation","allegations",
+    "concern","concerns","fear","fears","doubt","doubts",
 }
 
 
-def clip(x: float, lo: float, hi: float) -> float:
-    return max(lo, min(hi, x))
+TOKEN_RE = re.compile(r"[a-z0-9']+")
 
 
-def load_json(path: Path) -> Any:
-    with path.open("r", encoding="utf-8") as f:
-        return json.load(f)
+def _pick(obj: Dict[str, Any], keys: List[str]) -> Any:
+    for k in keys:
+        if k in obj and obj[k] is not None:
+            return obj[k]
+    return None
 
 
-def write_json(path: Path, obj: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    with tmp.open("w", encoding="utf-8") as f:
-        json.dump(obj, f, ensure_ascii=False, indent=2)
-    tmp.replace(path)
-
-
-def infer_date_from_news_path(news_path: Path) -> Optional[str]:
-    m = re.search(r"daily_news_(\d{4}-\d{2}-\d{2})\.json$", news_path.name)
-    return m.group(1) if m else None
-
-
-def normalize_url(url: str) -> str:
-    if not url:
-        return ""
-    url = url.strip()
-
-    if url.startswith("//"):
-        url = "https:" + url
-    elif not re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*://", url):
-        if "." in url.split("/")[0]:
-            url = "https://" + url
-
-    parts = urlsplit(url)
-    scheme = (parts.scheme or "https").lower()
-    netloc = (parts.netloc or "").lower()
-
-    q = []
-    for k, v in parse_qsl(parts.query, keep_blank_values=True):
-        if k.lower() in DROP_QUERY_KEYS:
-            continue
-        q.append((k, v))
-    query = urlencode(q, doseq=True)
-
-    fragment = ""
-    path = parts.path or ""
-    if path != "/" and path.endswith("/"):
-        path = path[:-1]
-
-    return urlunsplit((scheme, netloc, path, query, fragment))
-
-
-_WORD_RE = re.compile(r"[A-Za-z0-9']+")
-
-
-def tokenize_light(text: str) -> List[str]:
-    if not text:
-        return []
-    return [m.group(0).lower() for m in _WORD_RE.finditer(text)]
-
-
-def extract_news_items(news_json: Any) -> List[Dict[str, Any]]:
-    if news_json is None:
-        return []
-    if isinstance(news_json, list):
-        return [x for x in news_json if isinstance(x, dict)]
-    if isinstance(news_json, dict):
-        if isinstance(news_json.get("items"), list):
-            return [x for x in news_json["items"] if isinstance(x, dict)]
-        if isinstance(news_json.get("articles"), list):
-            return [x for x in news_json["articles"] if isinstance(x, dict)]
+def _extract_items(doc: Dict[str, Any]) -> List[Dict[str, Any]]:
+    # Supports various shapes
+    for k in ["items", "articles", "data", "news", "rows"]:
+        v = doc.get(k)
+        if isinstance(v, list):
+            return [x for x in v if isinstance(x, dict)]
+    # sometimes nested: {"daily_news": {"items":[...]}}
+    for k in ["daily_news", "payload", "result"]:
+        v = doc.get(k)
+        if isinstance(v, dict):
+            items = _extract_items(v)
+            if items:
+                return items
     return []
 
 
-def pick_image_url(it: Dict[str, Any]) -> str:
-    for k in ("image_url", "imageUrl", "urlToImage", "image", "thumbnail", "thumb"):
-        v = it.get(k)
-        if isinstance(v, str) and v.strip():
-            return v.strip()
-    return ""
+def _tokenize(text: str) -> List[str]:
+    return TOKEN_RE.findall(text.lower())
 
 
 @dataclass
-class ScoreResult:
-    raw_score: float
-    unc_score: float
-    final_score: float
-    reason: str
+class Score:
+    risk: float
+    positive: float
+    uncertainty: float
+    net: float
+    method: str  # "lex" or "fallback"
 
 
-def score_text(title: str, description: str, content: str, *, fallback_score: float) -> ScoreResult:
-    blob = " ".join([title or "", description or "", content or ""]).strip()
-    toks = tokenize_light(blob)
+def score_text(title: str, desc: str) -> Score:
+    text = f"{title} {desc}".strip()
+    toks = _tokenize(text)
 
-    hits_pos = sum(1 for t in toks if t in POS_TOKENS)
-    hits_neg = sum(1 for t in toks if t in NEG_TOKENS)
-    hits_unc = sum(1 for t in toks if t in UNC_TOKENS)
+    if not toks:
+        # pure fallback
+        return Score(risk=0.0, positive=0.0, uncertainty=0.25, net=0.0, method="fallback")
 
-    raw = (hits_pos * POS_WEIGHT) + (hits_neg * NEG_WEIGHT)
-    denom = math.sqrt(max(40.0, float(len(toks))))
-    raw = raw / denom
+    pos = sum(1 for t in toks if t in POS_WORDS)
+    neg = sum(1 for t in toks if t in NEG_WORDS)
+    rsk = sum(1 for t in toks if t in RISK_WORDS)
 
-    unc = (hits_unc * UNC_WEIGHT) / denom
+    # If nothing matched, still try a tiny signal from generic patterns (safe)
+    if (pos + neg + rsk) == 0:
+        # common weak cues
+        weak_neg = sum(1 for t in toks if t in {"down","fall","falls","drop","drops","slump","slumps","weaken","weaker","crash"})
+        weak_pos = sum(1 for t in toks if t in {"up","rise","rises","gain","gains","strong","stronger","record"})
+        pos += weak_pos
+        neg += weak_neg
 
-    if abs(raw) < MIN_ABS_RAW_TO_KEEP:
-        raw = 0.0
+    hits = pos + neg + rsk
+    if hits == 0:
+        return Score(risk=0.0, positive=0.0, uncertainty=0.25, net=0.0, method="fallback")
 
-    if raw != 0.0:
-        final = raw
-        reason = "rule_hit"
-    else:
-        final = float(fallback_score)
-        reason = "fallback_background"
+    # net score: pos is positive, neg and risk are negative-ish (risk has smaller weight)
+    raw = (pos - neg) - 0.5 * rsk
 
-    return ScoreResult(
-        raw_score=clip(raw, -1.0, 1.0),
-        unc_score=clip(unc, 0.0, 1.0),
-        final_score=clip(final, -1.0, 1.0),
-        reason=reason,
-    )
+    # normalize (keep small amplitude; stable)
+    denom = max(6.0, float(hits) * 2.0)
+    net = max(-1.0, min(1.0, raw / denom))
 
-
-def make_legacy(final_score: float, unc_score: float) -> Dict[str, float]:
-    net = float(final_score)
-    pos = max(0.0, net)
+    positive = max(0.0, net)
     risk = max(0.0, -net)
-    unc = float(unc_score)
-    return {"net": net, "pos": pos, "risk": risk, "unc": unc}
 
+    # uncertainty: higher when |net| is small, lower when strong signal
+    # range about 0.12 .. 0.30
+    uncertainty = 0.12 + 0.18 * (1.0 - min(1.0, abs(net) * 2.0))
 
-def add_aliases(dst: Dict[str, Any], legacy: Dict[str, float]) -> None:
-    # canonical
-    dst["net"] = legacy["net"]
-    dst["risk"] = legacy["risk"]
-    dst["pos"] = legacy["pos"]
-    dst["unc"] = legacy["unc"]
-
-    # snake
-    dst["risk_score"] = legacy["risk"]
-    dst["pos_score"] = legacy["pos"]
-    dst["unc_score"] = legacy["unc"]
-
-    # camel
-    dst["riskScore"] = legacy["risk"]
-    dst["posScore"] = legacy["pos"]
-    dst["uncScore"] = legacy["unc"]
-
-    # extra common variants (pos/unc が出ない時の保険)
-    dst["positive"] = legacy["pos"]
-    dst["positive_score"] = legacy["pos"]
-    dst["positiveScore"] = legacy["pos"]
-
-    dst["negative"] = legacy["risk"]
-    dst["neg"] = legacy["risk"]
-    dst["negative_score"] = legacy["risk"]
-    dst["negativeScore"] = legacy["risk"]
-
-    dst["uncert"] = legacy["unc"]
-    dst["uncertainty_score"] = legacy["unc"]
-    dst["uncertaintyScore"] = legacy["unc"]
+    return Score(
+        risk=float(risk),
+        positive=float(positive),
+        uncertainty=float(uncertainty),
+        net=float(net),
+        method="lex",
+    )
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--date", default=None, help="YYYY-MM-DD")
-    ap.add_argument("--news", default=None, help="Path to daily_news_YYYY-MM-DD.json")
-    ap.add_argument("--analysis-dir", default=str(ANALYSIS_DIR))
-    ap.add_argument("--fallback-score", type=float, default=FALLBACK_SCORE)
-    ap.add_argument("--fallback-unc", type=float, default=FALLBACK_UNC)
+    ap.add_argument("--date", required=True, help="YYYY-MM-DD")
     args = ap.parse_args()
 
-    analysis_dir = Path(args.analysis_dir)
+    date = args.date.strip()
+    src = DAILY_NEWS_TMPL.with_name(f"daily_news_{date}.json")
+    if not src.exists():
+        raise SystemExit(f"[ERR] missing daily news: {src}")
 
-    news_path: Optional[Path] = Path(args.news) if args.news else None
-    date_str = args.date
-    if not date_str and news_path:
-        date_str = infer_date_from_news_path(news_path)
-    if not date_str:
-        date_str = Date.today().isoformat()
-
-    if not news_path:
-        news_path = analysis_dir / DEFAULT_NEWS_TMPL.format(date=date_str)
-
-    if not news_path.exists():
-        raise FileNotFoundError(f"news not found: {news_path}")
-
-    news_json = load_json(news_path)
-    news_items = extract_news_items(news_json)
+    doc = json.loads(src.read_text(encoding="utf-8"))
+    items = _extract_items(doc)
 
     out_items: List[Dict[str, Any]] = []
-    n_rule = 0
-    n_fallback = 0
+    rule_hit = 0
+    fallback = 0
 
-    for it in news_items:
-        url = (it.get("url") or "").strip()
-        norm = normalize_url(url)
-        title = (it.get("title") or "").strip()
-        desc = (it.get("description") or "").strip()
-        content = (it.get("content") or "").strip()
-        image_url = pick_image_url(it)
+    for it in items:
+        url = _pick(it, ["url", "link", "href"]) or ""
+        title = _pick(it, ["title", "headline", "name"]) or ""
+        desc = _pick(it, ["description", "summary", "content", "snippet"]) or ""
+        source = _pick(it, ["source", "publisher", "site", "domain"]) or ""
 
-        sr = score_text(title, desc, content, fallback_score=float(args.fallback_score))
-
-        # if fallback, treat as "undetected => uncertain"
-        unc_for_legacy = sr.unc_score
-        if sr.reason == "fallback_background":
-            unc_for_legacy = max(unc_for_legacy, float(args.fallback_unc))
-
-        legacy = make_legacy(sr.final_score, unc_for_legacy)
-
-        if sr.reason.startswith("rule_hit"):
-            n_rule += 1
+        s = score_text(str(title), str(desc))
+        if s.method == "lex":
+            rule_hit += 1
         else:
-            n_fallback += 1
+            fallback += 1
 
-        sentiment_obj: Dict[str, Any] = {}
-        add_aliases(sentiment_obj, legacy)
+        out_items.append(
+            {
+                "url": url,
+                "title": title,
+                "source": source,
+                "description": desc,
+                "risk": round(s.risk, 6),
+                "positive": round(s.positive, 6),
+                "uncertainty": round(s.uncertainty, 6),
+                "net": round(s.net, 6),
+                "method": s.method,
+            }
+        )
 
-        scores_obj: Dict[str, Any] = {}
-        add_aliases(scores_obj, legacy)
-
-        sent_obj: Dict[str, Any] = {}
-        add_aliases(sent_obj, legacy)
-
-        row: Dict[str, Any] = {
-            "url": url,
-            "norm_url": norm,
-            "title": title,
-            "source": it.get("source"),
-            "published_at": it.get("published_at") or it.get("publishedAt"),
-            "image_url": image_url,
-            "urlToImage": image_url,
-
-            # primary numeric
-            "score": sr.final_score,
-            "raw_score": sr.raw_score,
-            "uncertainty": unc_for_legacy,
-            "reason": sr.reason,
-
-            # BOTH styles:
-            "sentiment": sentiment_obj,         # object (GUI-friendly)
-            "sentiment_score": sr.final_score,  # float alias
-            "scores": scores_obj,
-            "sent": sent_obj,
-        }
-
-        # top-level aliases too
-        add_aliases(row, legacy)
-
-        out_items.append(row)
+    # aggregate "today"
+    n = len(out_items)
+    if n:
+        avg_risk = sum(x["risk"] for x in out_items) / n
+        avg_pos = sum(x["positive"] for x in out_items) / n
+        avg_unc = sum(x["uncertainty"] for x in out_items) / n
+        # net average (not clipped)
+        avg_net = sum(x["net"] for x in out_items) / n
+    else:
+        avg_risk = avg_pos = avg_unc = avg_net = 0.0
 
     payload = {
-        "date": date_str,
+        "date": date,
+        "generated_at": datetime.utcnow().isoformat() + "Z",
         "items": out_items,
-        "summary": {
-            "n_items": len(out_items),
-            "n_rule_hit": n_rule,
-            "n_fallback_background": n_fallback,
-            "fallback_score": float(args.fallback_score),
-            "fallback_unc": float(args.fallback_unc),
+        "today": {
+            "articles": n,
+            "risk": round(avg_risk, 6),
+            "positive": round(avg_pos, 6),
+            "uncertainty": round(avg_unc, 6),
+            "net": round(avg_net, 6),
         },
+        "summary": {
+            "rule_hit": int(rule_hit),
+            "fallback": int(fallback),
+        },
+        "base": date,
+        "base_date": date,
     }
 
-    out_latest = analysis_dir / OUT_LATEST
-    out_dated = analysis_dir / OUT_DATED_TMPL.format(date=date_str)
-    write_json(out_latest, payload)
-    write_json(out_dated, payload)
+    OUT_LATEST.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    out_dated = OUT_DATED_TMPL.with_name(f"sentiment_{date}.json")
+    out_dated.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
     print("[OK] built sentiment")
-    print(f"  news : {news_path}")
-    print(f"  out  : {out_latest}")
-    print(f"  dated: {out_dated}")
-    print(f"  items={len(out_items)} rule_hit={n_rule} fallback={n_fallback} fallback_score={float(args.fallback_score)} fallback_unc={float(args.fallback_unc)}")
+    print(f"  news : {src.as_posix()}")
+    print(f"  out  : {OUT_LATEST.as_posix()}")
+    print(f"  dated: {out_dated.as_posix()}")
+    print(f"  items={n} rule_hit={rule_hit} fallback={fallback}")
     return 0
 
 
