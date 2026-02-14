@@ -1,21 +1,14 @@
 # scripts/publish_view_model_latest.ps1
-# Publish "WORLD" view_model_latest.json for GUI/Sentiment without breaking join.
+# Publish WORLD view_model_latest.json for localhost-served analysis and dist package.
 #
-# Facts from your environment:
-# - localhost (/analysis/...) is served from: data/world_politics/analysis
-# - digest view_model_latest.json is small (~1-2KB) and must NOT overwrite world.
+# Localhost serves /analysis from: data/world_politics/analysis
+# So WORLD source MUST be taken from data/world_politics/analysis only.
 #
-# This script:
-# 1) Finds the newest "WORLD-like" view_model*.json (size >= 3000 AND contains "world_politics")
-# 2) Publishes it to:
-#    - data/world_politics/analysis/view_model_latest.json   (served)
-#    - dist/labos_deploy/analysis/view_model_latest.json     (deploy package)
-# 3) Publishes digest view model (optional) to dist only under:
-#    - dist/labos_deploy/analysis/view_model_digest_latest.json
+# Digest view model is published to dist only under a different name to avoid conflicts.
 #
 # Safety:
-# - Never copies digest into data/world_politics/analysis
-# - Skips copy if src == dst (prevents "overwrite itself" error)
+# - Never overwrite world with digest
+# - Skip copy if src == dst
 
 $ErrorActionPreference = "Stop"
 
@@ -33,7 +26,7 @@ function Ensure-Dir([string]$dirPath) {
 function Copy-WithReport([string]$src, [string]$dst) {
   $srcFull = (Resolve-Path $src).Path
   $dstFull = $dst
-  try { $dstFull = (Resolve-Path $dst).Path } catch { } # dst may not exist yet
+  try { $dstFull = (Resolve-Path $dst).Path } catch { }
 
   if ($srcFull -eq $dstFull) {
     $s = Get-Item $srcFull
@@ -55,36 +48,29 @@ function Copy-WithReport([string]$src, [string]$dst) {
   Write-Host "     DST: $($d.FullName)  ($($d.Length) bytes, $($d.LastWriteTime))"
 }
 
-function Is-WorldViewModel([string]$path) {
-  try {
-    $fi = Get-Item $path
-    if ($fi.Length -lt 3000) { return $false } # digest is small
-    # quick signature checks (fast, no full JSON parse)
-    $hit1 = Select-String -Path $path -Pattern '"sections"' -SimpleMatch -Quiet
-    if (-not $hit1) { return $false }
-    $hit2 = Select-String -Path $path -Pattern 'world_politics' -SimpleMatch -Quiet
-    if (-not $hit2) { return $false }
-    return $true
-  } catch {
-    return $false
+function Pick-WorldSource([string]$root) {
+  $analysisDir = Join-Path $root "data\world_politics\analysis"
+
+  # Prefer view_model_latest.json if it's present and non-trivial
+  $vmLatest = Join-Path $analysisDir "view_model_latest.json"
+  if (Test-Path $vmLatest -PathType Leaf) {
+    $fi = Get-Item $vmLatest
+    # Must not be empty model
+    if ($fi.Length -ge 3000) { return $vmLatest }
   }
-}
 
-function Find-WorldViewModel([string]$root) {
-  # Search broadly, but exclude digest folder to prevent accidental selection.
-  $candidates = Get-ChildItem -Path $root -Recurse -File -Filter "view_model*.json" -ErrorAction SilentlyContinue |
-    Where-Object { $_.FullName -notmatch "\\data\\digest\\" }
-
-  $world = $candidates |
-    Where-Object { Is-WorldViewModel $_.FullName } |
+  # Otherwise, pick newest big view_model*.json in the same folder (dated ones)
+  $cand = Get-ChildItem -Path $analysisDir -File -Filter "view_model*.json" -ErrorAction SilentlyContinue |
+    Where-Object { $_.Length -ge 3000 } |
     Sort-Object LastWriteTime -Descending |
     Select-Object -First 1
 
-  if ($null -eq $world) { return $null }
-  return $world.FullName
+  if ($cand) { return $cand.FullName }
+
+  return $null
 }
 
-function Find-OptionalDigest([string]$root) {
+function Pick-OptionalDigest([string]$root) {
   $candidates = @(
     (Join-Path $root "data\digest\view\view_model_latest.json"),
     (Join-Path $root "data\digest\view_model_latest.json")
@@ -103,10 +89,10 @@ $root = Resolve-RepoRoot
 $servedAnalysisDir = Join-Path $root "data\world_politics\analysis"
 $distAnalysisDir   = Join-Path $root "dist\labos_deploy\analysis"
 
-$srcWorld = Find-WorldViewModel $root
+$srcWorld = Pick-WorldSource $root
 if (-not $srcWorld) {
-  Write-Host "[ERR] WORLD view_model*.json not found (size>=3000 + contains 'world_politics')."
-  Write-Host "Hint: run the pipeline that generates world view_model, then retry."
+  Write-Host "[ERR] WORLD view_model not found in data/world_politics/analysis (>=3000 bytes)."
+  Write-Host "Hint: generate it first (run daily pipeline that builds view_model), then retry."
   exit 2
 }
 
@@ -115,7 +101,7 @@ Write-Host "       SRC(world): $srcWorld"
 Copy-WithReport $srcWorld (Join-Path $servedAnalysisDir "view_model_latest.json")
 Copy-WithReport $srcWorld (Join-Path $distAnalysisDir   "view_model_latest.json")
 
-$srcDigest = Find-OptionalDigest $root
+$srcDigest = Pick-OptionalDigest $root
 if ($srcDigest) {
   Write-Host "[INFO] Publishing DIGEST view_model as view_model_digest_latest.json (dist only)..."
   Write-Host "       SRC(digest): $srcDigest"
