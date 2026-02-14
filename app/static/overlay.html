@@ -1,1 +1,64 @@
-﻿<!doctype html> <html lang="ja"> <head> <meta charset="utf-8" /> <meta name="viewport" content="width=device-width, initial-scale=1" /> <title>FX Overlay</title> <!-- 既存の商用UIスタイルを尊重（触らない） --> <link rel="stylesheet" href="/static/app.css" /> </head> <body> <!-- 既存CSSのクラスが不明でも最低限見える構造 --> <header class="topbar"> <div class="topbar-inner"> <div class="topbar-left"> <div class="topbar-title">Overlay</div> </div> <nav class="topbar-nav" aria-label="Primary"> <a href="/static/index.html">Index</a> <a href="/static/sentiment.html">Sentiment</a> <a href="/static/overlay.html" aria-current="page">Overlay</a> </nav> </div> </header> <main class="container"> <section class="card"> <h2>JPY → THB</h2> <p class="muted">JPY to THB Overlay</p> <img class="overlay-img" src="/analysis/fx_jpy_thb_overlay.png" alt="JPY to THB Overlay" /> </section> <section class="card"> <h2>JPY → USD</h2> <p class="muted">JPY to USD Overlay</p> <img class="overlay-img" src="/analysis/fx_jpy_usd_overlay.png" alt="JPY to USD Overlay" /> </section> </main> <!-- app.cssに依存しない最低限の保険（既存デザインを大きく壊さない範囲） --> <style> /* app.css に同名があればそちらが勝つ想定。なければこれが効く */ .topbar { padding: 12px 16px; } .topbar-inner { display:flex; align-items:center; gap:16px; justify-content:space-between; flex-wrap:wrap; } .topbar-title { font-size: 28px; font-weight: 700; } .topbar-nav a { margin-right: 10px; text-decoration: none; } .container { padding: 16px; } .card { margin: 16px 0; padding: 16px; border-radius: 14px; } .muted { opacity: 0.75; margin-top: 6px; } .overlay-img { display:block; width: 100%; height: auto; border-radius: 12px; margin-top: 10px; } </style> </body> </html> 
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FX Overlay</title>
+
+  <!-- 既存の商用UIスタイルを尊重（触らない） -->
+  <link rel="stylesheet" href="/static/app.css" />
+</head>
+
+<body>
+  <!-- 既存CSSのクラスが不明でも最低限見える構造 -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="topbar-left">
+        <div class="topbar-title">Overlay</div>
+      </div>
+
+      <nav class="topbar-nav" aria-label="Primary">
+        <a href="/static/index.html">Index</a>
+        <a href="/static/sentiment.html">Sentiment</a>
+        <a href="/static/digest.html">Digest</a>
+        <a href="/static/overlay.html" aria-current="page">Overlay</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>JPY → THB</h2>
+      <p class="muted">JPY to THB Overlay</p>
+      <img
+        class="overlay-img"
+        src="/analysis/fx_jpy_thb_overlay.png"
+        alt="JPY to THB Overlay"
+      />
+    </section>
+
+    <section class="card">
+      <h2>JPY → USD</h2>
+      <p class="muted">JPY to USD Overlay</p>
+      <img
+        class="overlay-img"
+        src="/analysis/fx_jpy_usd_overlay.png"
+        alt="JPY to USD Overlay"
+      />
+    </section>
+  </main>
+
+  <!-- app.cssに依存しない最低限の保険（既存デザインを大きく壊さない範囲） -->
+  <style>
+    /* app.css に同名があればそちらが勝つ想定。なければこれが効く */
+    .topbar { padding: 12px 16px; }
+    .topbar-inner { display:flex; align-items:center; gap:16px; justify-content:space-between; flex-wrap:wrap; }
+    .topbar-title { font-size: 28px; font-weight: 700; }
+    .topbar-nav a { margin-right: 10px; text-decoration: none; }
+    .container { padding: 16px; }
+    .card { margin: 16px 0; padding: 16px; border-radius: 14px; }
+    .muted { opacity: 0.75; margin-top: 6px; }
+    .overlay-img { display:block; width: 100%; height: auto; border-radius: 12px; margin-top: 10px; }
+  </style>
+</body>
+</html>
