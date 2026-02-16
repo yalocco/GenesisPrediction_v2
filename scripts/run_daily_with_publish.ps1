@@ -3,7 +3,8 @@
 # - Runs analyzer
 # - Publishes daily_news_latest (for sentiment pipeline) WITHOUT interactive prompts
 # - Ensures dated daily_news_YYYY-MM-DD.html exists (self-healing)
-# - Runs FX overlay generation (self-healing: ensures fx_overlay_YYYY-MM-DD.png exists)
+# - Runs FX overlay generation (self-healing)
+# - Ensures Health alias fx_overlay_YYYY-MM-DD.png exists (self-healing)
 # - Normalizes "latest" artifacts (self-healing)
 # - Optional: run guard after publish
 #
@@ -107,7 +108,6 @@ Run-Step `
 
 # ----------------------------
 # 4) FX Overlay (self-healing)
-#    - Fixes Health WARN: fx_overlay_YYYY-MM-DD.png (missing)
 #    - Runs the existing FX overlay daily routine.
 # ----------------------------
 $fxOverlayPs1 = Join-Path $ROOT "scripts\run_daily_fx_overlay.ps1"
@@ -118,6 +118,22 @@ if (-not (Test-Path $fxOverlayPs1)) {
 Run-Step `
   -Title "4) FX Overlay (run_daily_fx_overlay.ps1)" `
   -CommandLine "cd `"$ROOT`"; powershell -ExecutionPolicy Bypass -File `"$fxOverlayPs1`""
+
+# ----------------------------
+# 4.5) Health alias: fx_overlay_YYYY-MM-DD.png (self-healing)
+#    Health expects fx_overlay_YYYY-MM-DD.png, but FX pipeline produces
+#    fx_jpy_thb_overlay_YYYY-MM-DD.png. Create an alias copy to satisfy Health.
+# ----------------------------
+$analysisDir = Join-Path $ROOT "data\world_politics\analysis"
+$srcAlias = Join-Path $analysisDir ("fx_jpy_thb_overlay_{0}.png" -f $Date)
+$dstAlias = Join-Path $analysisDir ("fx_overlay_{0}.png" -f $Date)
+
+if (Test-Path $srcAlias) {
+  Copy-Item -Path $srcAlias -Destination $dstAlias -Force
+  Write-Host ("[OK] health alias created: {0}" -f (Split-Path $dstAlias -Leaf))
+} else {
+  Write-Host ("[WARN] health alias source missing: {0}" -f (Split-Path $srcAlias -Leaf))
+}
 
 # ----------------------------
 # 5) Normalize "latest" artifacts (self-healing; no manual ops)
