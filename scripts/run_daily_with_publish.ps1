@@ -2,6 +2,7 @@
 # GenesisPrediction v2 - run_daily_with_publish
 # - Runs analyzer
 # - Publishes daily_news_latest (for sentiment pipeline) WITHOUT interactive prompts
+# - Normalizes "latest" artifacts (self-healing)
 # - Optional: run guard after publish
 #
 # Usage:
@@ -90,7 +91,37 @@ Run-Step `
   -CommandLine "cd `"$ROOT`"; `"$PY`" `"$publishPy`" --date $Date"
 
 # ----------------------------
-# 3) Optional Guard
+# 3) Normalize "latest" artifacts (self-healing; no manual ops)
+#    - daily_summary_latest.json must always track the newest dated summary
+# ----------------------------
+Write-Host ""
+Write-Host ("[{0}] === 3) Normalize latest artifacts ===" -f (NowStamp))
+
+$summaryDirs = @(
+  (Join-Path $PSScriptRoot "..\data\world_politics\analysis"),
+  (Join-Path $PSScriptRoot "..\data\world_politics")
+) | ForEach-Object { (Resolve-Path $_ -ErrorAction SilentlyContinue).Path } | Where-Object { $_ }
+
+$latestSummary = $null
+foreach ($dir in $summaryDirs) {
+  $cand = Get-ChildItem -Path $dir -Filter "daily_summary_*.json" -File -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name -match "^daily_summary_\d{4}-\d{2}-\d{2}\.json$" } |
+    Sort-Object Name -Descending |
+    Select-Object -First 1
+
+  if ($cand) { $latestSummary = $cand; break }
+}
+
+if ($latestSummary) {
+  $dest = Join-Path $latestSummary.DirectoryName "daily_summary_latest.json"
+  Copy-Item -Path $latestSummary.FullName -Destination $dest -Force
+  Write-Host ("[OK] normalized daily_summary_latest.json <- {0}" -f $latestSummary.Name)
+} else {
+  Write-Host "[WARN] no dated daily_summary_YYYY-MM-DD.json found; cannot normalize daily_summary_latest.json"
+}
+
+# ----------------------------
+# 4) Optional Guard
 # ----------------------------
 if ($Guard) {
   $guardPs1 = Join-Path $ROOT "scripts\run_daily_guard.ps1"
@@ -99,7 +130,7 @@ if ($Guard) {
   }
 
   Run-Step `
-    -Title "3) Guard (materialize dated + refresh latest where possible)" `
+    -Title "4) Guard (materialize dated + refresh latest where possible)" `
     -CommandLine "cd `"$ROOT`"; powershell -ExecutionPolicy Bypass -File `"$guardPs1`""
 }
 
