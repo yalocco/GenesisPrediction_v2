@@ -2,6 +2,7 @@
 # GenesisPrediction v2 - run_daily_with_publish
 # - Runs analyzer
 # - Publishes daily_news_latest (for sentiment pipeline) WITHOUT interactive prompts
+# - Ensures dated daily_news_YYYY-MM-DD.html exists (self-healing)
 # - Normalizes "latest" artifacts (self-healing)
 # - Optional: run guard after publish
 #
@@ -91,11 +92,24 @@ Run-Step `
   -CommandLine "cd `"$ROOT`"; `"$PY`" `"$publishPy`" --date $Date"
 
 # ----------------------------
-# 3) Normalize "latest" artifacts (self-healing; no manual ops)
+# 3) Ensure dated daily_news_YYYY-MM-DD.html exists (self-healing)
+#    - Fixes Health WARN: daily_news_YYYY-MM-DD.html (missing)
+# ----------------------------
+$ensureDatedPy = Join-Path $ROOT "scripts\ensure_daily_news_dated.py"
+if (-not (Test-Path $ensureDatedPy)) {
+  throw ("[ERROR] missing file: {0}" -f $ensureDatedPy)
+}
+
+Run-Step `
+  -Title "3) Ensure daily_news_YYYY-MM-DD.html exists" `
+  -CommandLine "cd `"$ROOT`"; `"$PY`" `"$ensureDatedPy`" --date $Date"
+
+# ----------------------------
+# 4) Normalize "latest" artifacts (self-healing; no manual ops)
 #    - daily_summary_latest.json must always track the newest dated summary
 # ----------------------------
 Write-Host ""
-Write-Host ("[{0}] === 3) Normalize latest artifacts ===" -f (NowStamp))
+Write-Host ("[{0}] === 4) Normalize latest artifacts ===" -f (NowStamp))
 
 $summaryDirs = @(
   (Join-Path $PSScriptRoot "..\data\world_politics\analysis"),
@@ -121,7 +135,7 @@ if ($latestSummary) {
 }
 
 # ----------------------------
-# 4) Optional Guard
+# 5) Optional Guard
 # ----------------------------
 if ($Guard) {
   $guardPs1 = Join-Path $ROOT "scripts\run_daily_guard.ps1"
@@ -130,7 +144,7 @@ if ($Guard) {
   }
 
   Run-Step `
-    -Title "4) Guard (materialize dated + refresh latest where possible)" `
+    -Title "5) Guard (materialize dated + refresh latest where possible)" `
     -CommandLine "cd `"$ROOT`"; powershell -ExecutionPolicy Bypass -File `"$guardPs1`""
 }
 
