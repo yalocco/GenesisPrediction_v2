@@ -4,6 +4,7 @@
  * - KPI: robust key resolution + fallback chain
  * - Data Health: always rendered as cards + top summary line (OK/WARN/NG + thresholds)
  * - Sentiment preview: never prints [object Object] (safe string + link normalization)
+ * - Sentiment category jump: Index -> Sentiment (cat + date)
  *
  * NOTE: GUI is read-only. We only fetch /analysis JSON files.
  */
@@ -67,6 +68,52 @@
     u.searchParams.set("date", newDate);
     window.location.href = u.toString();
   };
+
+  // ----------------------------
+  // Sentiment category jump (Index -> Sentiment)
+  // ----------------------------
+  function openSentimentWithCat(cat) {
+    const u = new URL("/static/sentiment.html", window.location.origin);
+
+    // keep the same date context
+    if (dateParam) u.searchParams.set("date", dateParam);
+
+    // cat=all は Sentiment 側の default(all) に任せる（URLを綺麗にする）
+    if (cat && cat !== "all") u.searchParams.set("cat", cat);
+
+    window.location.href = u.toString();
+  }
+
+  function setActiveCatButton(cat) {
+    const bar = $("#sentCatBar");
+    if (!bar) return;
+    const buttons = bar.querySelectorAll("button[data-cat]");
+    buttons.forEach((b) => {
+      const c = (b.getAttribute("data-cat") || "all").toLowerCase();
+      if (c === (cat || "all")) b.classList.add("is-active");
+      else b.classList.remove("is-active");
+    });
+  }
+
+  function wireSentimentCatBar() {
+    const bar = $("#sentCatBar");
+    if (!bar) return;
+
+    bar.addEventListener("click", (ev) => {
+      const btn = ev.target && ev.target.closest ? ev.target.closest("button[data-cat]") : null;
+      if (!btn) return;
+      const cat = (btn.getAttribute("data-cat") || "all").toLowerCase();
+
+      // UI feedback (念のため)
+      setActiveCatButton(cat);
+
+      // jump
+      openSentimentWithCat(cat);
+    });
+
+    // 初期状態は All をアクティブに見せる
+    setActiveCatButton("all");
+  }
 
   // ----------------------------
   // Fetch helpers
@@ -339,14 +386,14 @@
 
       const title = toSafeString(it.title || it.headline || it.name || it.text || "");
       const source = toSafeString(it.source || it.publisher || it.site || "");
-      const url = toSafeString(it.url || it.link || it.href || "");
+      const linkUrl = toSafeString(it.url || it.link || it.href || "");
 
       const row = el("div", "sentiment-row");
       const left = el("div", "sentiment-left");
 
-      if (url) {
-        const a = el("a", "sentiment-link", title || url);
-        a.href = url;
+      if (linkUrl) {
+        const a = el("a", "sentiment-link", title || linkUrl);
+        a.href = linkUrl;
         a.target = "_blank";
         a.rel = "noopener noreferrer";
         left.appendChild(a);
@@ -384,6 +431,9 @@
   async function loadAll() {
     const datePill = $("#datePill");
     if (datePill) datePill.textContent = `date: ${dateParam}`;
+
+    // wire sentiment category bar (Index -> Sentiment)
+    wireSentimentCatBar();
 
     const btnPrev = $("#btnPrev");
     const btnNext = $("#btnNext");

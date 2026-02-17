@@ -88,12 +88,24 @@
         <div class="card-header">
           <div>
             <h2 class="card-title">Sentiment preview</h2>
-            <div class="card-sub">リンク行に [object Object] が出ないように正規化表示</div>
+            <div class="card-sub">カテゴリ別ページへジャンプ（Index→Sentiment）。リンク行に [object Object] が出ないように正規化表示</div>
           </div>
         </div>
 
         <div class="card-body">
-          <ul class="sentiment-list" id="sentimentList"></ul>
+          <!-- Category jump buttons -->
+          <div class="muted" style="margin-bottom:10px;">Open Sentiment by category:</div>
+          <div class="row" id="sentCatBar" style="gap:8px; flex-wrap:wrap;">
+            <button class="btn is-active" type="button" data-cat="all">All</button>
+            <button class="btn" type="button" data-cat="security">Security</button>
+            <button class="btn" type="button" data-cat="economy">Economy</button>
+            <button class="btn" type="button" data-cat="ai_it">AI/IT</button>
+            <button class="btn" type="button" data-cat="tech">Tech</button>
+            <button class="btn" type="button" data-cat="climate">Climate</button>
+            <button class="btn" type="button" data-cat="general">General</button>
+          </div>
+
+          <ul class="sentiment-list" id="sentimentList" style="margin-top:12px;"></ul>
           <div class="muted" id="sentHint" style="margin-top:10px;">Sentiment source: loading…</div>
         </div>
       </section>

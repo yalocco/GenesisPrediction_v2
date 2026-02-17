@@ -1,995 +1,937 @@
-<!-- app/static/sentiment.html -->
 <!doctype html>
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GenesisPrediction v2 - Sentiment</title>
+
+  <!-- SST: app.css を使う（GUIの見た目はここに寄せる） -->
+  <link rel="stylesheet" href="./app.css" />
+
   <style>
-    :root{
-      --bg:#0b1020;
-      --panel:rgba(255,255,255,.06);
-      --line:rgba(255,255,255,.10);
-      --text:#e7eefc;
-      --muted:#9fb0d3;
-      --accent:#2dd4bf;
-      --warn:#fbbf24;
-      --danger:#fb7185;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
-      background:linear-gradient(180deg,var(--bg),#070a12);
-      color:var(--text);
-    }
-    a{color:var(--accent); text-decoration:none}
-    a:hover{text-decoration:underline}
-    .wrap{max-width:1200px; margin:0 auto; padding:16px}
-    .topbar{
-      display:flex; align-items:center; justify-content:space-between; gap:12px;
-      padding:12px 14px; border:1px solid var(--line); border-radius:14px;
-      background:rgba(16,26,51,.7); backdrop-filter: blur(8px);
-    }
-    .brand{display:flex; align-items:center; gap:10px; font-weight:800}
-    .dot{width:9px;height:9px;border-radius:50%;background:var(--accent); box-shadow:0 0 0 3px rgba(45,212,191,.18)}
-    .nav a{color:var(--muted); margin-left:10px; padding:6px 10px; border-radius:10px}
-    .nav a:hover{background:rgba(255,255,255,.06); color:var(--text)}
-    h1{margin:16px 0 6px; font-size:28px}
-    .sub{margin:0 0 14px; color:var(--muted); font-size:13px; line-height:1.5}
-    .grid{display:grid; grid-template-columns: 1.2fr .8fr; gap:14px}
-    @media (max-width: 980px){ .grid{grid-template-columns:1fr;} }
-    .card{
-      border:1px solid var(--line);
-      background:var(--panel);
-      border-radius:14px;
-      padding:14px;
-      box-shadow:0 12px 30px rgba(0,0,0,.25);
-    }
-    .row{display:flex; flex-wrap:wrap; gap:10px; align-items:center}
-    .btn{
-      border:1px solid var(--line);
-      background:rgba(0,0,0,.25);
-      color:var(--text);
-      padding:8px 10px;
-      border-radius:12px;
-      cursor:pointer;
-      font-weight:800;
-      font-size:12px;
-      user-select:none;
-    }
-    .btn:hover{border-color: rgba(45,212,191,.35)}
-    .pill{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:6px 10px; border-radius:999px;
-      border:1px solid var(--line);
-      background:rgba(0,0,0,.25);
-      color:var(--muted);
-      font-size:12px;
-      white-space:nowrap;
-    }
-    .kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:10px}
-    @media (max-width: 980px){ .kpis{grid-template-columns:repeat(2,minmax(0,1fr));} }
-    .kpi{border:1px solid var(--line); background:rgba(0,0,0,.22); border-radius:12px; padding:10px}
-    .kpi .label{color:var(--muted); font-size:12px}
-    .kpi .value{margin-top:4px; font-size:20px; font-weight:900}
-    .mono{font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;}
-    .muted{color:var(--muted)}
-    .err{
-      margin-top:10px;
-      border:1px solid rgba(251,113,133,.35);
-      background: rgba(251,113,133,.10);
-      color:#ffd6dd;
-      border-radius:12px;
-      padding:10px 12px;
-      font-size:12px;
-      white-space:pre-wrap;
-      display:none;
-    }
-
-    .controls2{
-      margin-top:10px;
-      display:grid;
-      grid-template-columns: 1fr 180px 200px 160px;
-      gap:10px;
-      align-items:end;
-    }
-    @media (max-width: 980px){
-      .controls2{grid-template-columns: 1fr 1fr; }
-    }
-    label{display:block; font-size:12px; color:var(--muted); margin-bottom:6px}
-    input[type="text"], select{
-      width:100%;
-      padding:10px 10px;
-      border-radius:12px;
-      border:1px solid var(--line);
-      background:rgba(0,0,0,.22);
-      color:var(--text);
-      outline:none;
-    }
-    input[type="text"]::placeholder{color:rgba(159,176,211,.75)}
-    .checkline{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      border:1px solid var(--line);
-      background:rgba(0,0,0,.22);
-      border-radius:12px;
-      padding:10px;
-      height:42px;
-    }
-    .checkline input{transform:translateY(1px)}
-    .countline{margin-top:8px; font-size:12px; color:var(--muted)}
-    table{width:100%; border-collapse:collapse; margin-top:10px}
-    th,td{border-bottom:1px solid var(--line); padding:10px 8px; vertical-align:top}
-    th{color:#cfe0ff; font-weight:800; font-size:12px; text-align:left; background:rgba(0,0,0,.18); position:sticky; top:0}
+    /* app.css が想定外でも最低限「崩壊」しないための保険（最小） */
+    .gp-container{max-width:1100px;margin:0 auto;padding:24px 16px 48px;}
+    .gp-topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:10px 0 18px;}
+    .gp-brand{display:flex;align-items:center;gap:10px;min-width:200px;}
+    .gp-dot{width:10px;height:10px;border-radius:999px;background:#2dd4bf;box-shadow:0 0 0 3px rgba(45,212,191,.15);}
+    .gp-nav{display:flex;gap:10px;align-items:center;justify-content:center;flex:1;}
+    .gp-nav a{display:inline-block;padding:6px 12px;border-radius:999px;text-decoration:none;border:1px solid rgba(255,255,255,.12);color:inherit;opacity:.9}
+    .gp-nav a:hover{opacity:1}
+    .gp-pill{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.12)}
+    .gp-grid{display:grid;grid-template-columns: 1.1fr .9fr;gap:16px;align-items:start}
+    @media (max-width: 980px){.gp-grid{grid-template-columns:1fr}}
+    .gp-card{border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:16px;background:rgba(255,255,255,.02)}
+    .gp-title{font-size:34px;margin:8px 0 6px}
+    .gp-sub{opacity:.85;line-height:1.5;margin:0 0 14px}
+    .gp-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
+    @media (max-width: 980px){.gp-kpis{grid-template-columns:repeat(2,1fr)}}
+    .gp-kpi{border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:10px 12px}
+    .gp-kpi .k{opacity:.75;font-size:12px}
+    .gp-kpi .v{font-size:20px;margin-top:4px;font-variant-numeric:tabular-nums}
+    .gp-controls{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 10px}
+    .gp-btn{cursor:pointer;border:1px solid rgba(255,255,255,.12);background:transparent;color:inherit;border-radius:999px;padding:6px 10px;font-size:12px}
+    .gp-btn:hover{border-color:rgba(255,255,255,.22)}
+    .gp-filters{display:grid;grid-template-columns: 1fr 170px 170px auto;gap:10px;align-items:end;margin-top:10px}
+    @media (max-width: 980px){.gp-filters{grid-template-columns:1fr 1fr;}}
+    .gp-field label{display:block;font-size:12px;opacity:.8;margin-bottom:6px}
+    .gp-field input,.gp-field select{width:100%;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.15);color:inherit}
+    .gp-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+    .gp-tab{cursor:pointer;border:1px solid rgba(255,255,255,.12);background:transparent;color:inherit;border-radius:999px;padding:6px 10px;font-size:12px;opacity:.9}
+    .gp-tab.active{border-color:rgba(45,212,191,.6);box-shadow:0 0 0 3px rgba(45,212,191,.12);opacity:1}
+    .gp-small{font-size:12px;opacity:.75}
+    .gp-tablewrap{margin-top:16px}
+    table{width:100%;border-collapse:collapse}
+    th,td{border-bottom:1px solid rgba(255,255,255,.08);padding:10px 8px;vertical-align:top}
+    th{font-size:12px;opacity:.75;text-align:left}
     td{font-size:13px}
-    tr:hover td{background:rgba(45,212,191,.06)}
-    .title a{color:var(--text); text-decoration:none}
-    .title a:hover{text-decoration:underline}
-    .src{color:var(--muted); font-size:12px; margin-top:4px}
-    .right{text-align:right}
-    .badge{
-      display:inline-flex; align-items:center; gap:6px;
-      padding:3px 8px; border-radius:999px;
-      border:1px solid var(--line);
-      background:rgba(0,0,0,.25);
-      color:var(--muted);
-      font-size:12px;
-      white-space:nowrap;
-    }
-    .badge .b{width:7px;height:7px;border-radius:50%}
-    .badge.ok .b{background:var(--accent)}
-    .badge.warn .b{background:var(--warn)}
-    .badge.bad .b{background:var(--danger)}
-    .thumb{
-      width:72px; height:42px;
-      border-radius:10px;
-      border:1px solid var(--line);
-      background:rgba(0,0,0,.25);
-      overflow:hidden;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      color:var(--muted);
-      font-size:11px;
-    }
-    .thumb img{
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      display:block;
-    }
-
-    .thumb-ph{
-      width:100%;
-      height:100%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-weight:900;
-      letter-spacing:.3px;
-      color:rgba(231,238,252,.85);
-      background:
-        radial-gradient(120px 60px at 20% 30%, rgba(45,212,191,.22), transparent 60%),
-        radial-gradient(120px 60px at 80% 70%, rgba(251,113,133,.18), transparent 60%),
-        rgba(0,0,0,.22);
-      text-transform:uppercase;
-      user-select:none;
-    }
-    .thumb-ph small{
-      font-weight:800;
-      font-size:10px;
-      color:rgba(159,176,211,.85);
-      margin-left:6px;
-      letter-spacing:0;
-      text-transform:none;
-    }
-    .thumb-cell{
-      width:92px;
-      min-width:92px;
-    }
-    .chart-wrap{
-      margin-top:10px;
-      border:1px solid var(--line);
-      border-radius:14px;
-      background:rgba(0,0,0,.20);
-      padding:10px;
-    }
-    .chart-head{
-      display:flex;
-      align-items:baseline;
-      justify-content:space-between;
-      gap:10px;
-      margin-bottom:8px;
-    }
-    .chart-title{font-weight:900}
-    .chart-note{color:var(--muted); font-size:12px}
-    canvas{width:100%; height:220px; display:block}
-    @media (max-width: 980px){ canvas{height:200px} }
-
-    /* =========================================================
-       net* highlight (risk only)  ★今回の未達成をここで完了
-       - JSで <tr data-status="risk"> を付与
-       - risk行の .net だけ赤太字
-       ========================================================= */
-    tr[data-status="risk"] .net{
-      color: var(--danger);
-      font-weight: 900;
-    }
+    .thumb{width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04)}
+    .t-title a{color:inherit;text-decoration:none}
+    .t-title a:hover{text-decoration:underline}
+    .badge{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:2px 8px;font-size:12px;opacity:.95}
+    .dot{width:8px;height:8px;border-radius:999px;background:#94a3b8}
+    .dot.ok{background:#2dd4bf}
+    .dot.risk{background:#fb7185}
+    .net{font-variant-numeric:tabular-nums}
+    .net.pos{color:#2dd4bf;font-weight:700}
+    .net.neg{color:#fb7185;font-weight:700}
+    .num{font-variant-numeric:tabular-nums}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+    .chartbox{margin-top:12px}
+    canvas{width:100%;height:180px;border:1px solid rgba(255,255,255,.10);border-radius:12px;background:rgba(0,0,0,.10)}
   </style>
 </head>
-<body>
-<header>
-  <div class="wrap">
-    <div class="topbar">
-      <div class="brand"><span class="dot"></span><span>GenesisPrediction v2</span></div>
-      <div class="nav">
-        <a href="/static/index.html">Home</a>
-        <a href="/static/overlay.html">Overlay</a>
-        <a href="/static/sentiment.html">Sentiment</a>
-      </div>
-      <div class="pill"><span class="dot"></span><span id="pillText">loading…</span></div>
-    </div>
-  </div>
-</header>
 
-<main>
-  <div class="wrap">
-    <h1>Sentiment（記事別）</h1>
-    <p class="sub">
-      /analysis/view_model_latest.json と /analysis/sentiment_latest.json を結合して、記事ごとの risk / positive / uncertainty / net を一覧表示します。<br>
-      さらに /analysis/sentiment_timeseries.csv があれば、直近の推移グラフを表示します（GUIは読み取り専用）。<br>
-      並び替え＋フィルタ対応（運用強化版）＋ 画像の堅牢化（no-referrer / async decode / onerror）。
+<body>
+  <div class="gp-container">
+    <div class="gp-topbar">
+      <div class="gp-brand">
+        <span class="gp-dot" aria-hidden="true"></span>
+        <div class="mono" style="font-size:14px;opacity:.95;">GenesisPrediction v2</div>
+      </div>
+
+      <div class="gp-nav mono">
+        <a href="./index.html">Home</a>
+        <a href="./overlay.html">Overlay</a>
+        <a href="./sentiment.html">Sentiment</a>
+      </div>
+
+      <div class="gp-pill mono" id="healthPill">
+        <span class="dot ok" id="healthDot"></span>
+        <span id="healthText">OK: --</span>
+      </div>
+    </div>
+
+    <h1 class="gp-title">Sentiment（記事別）</h1>
+    <p class="gp-sub">
+      <span class="mono">/analysis/sentiment_latest.json</span>（items）と
+      <span class="mono">/analysis/daily_news_categorized_latest.json</span>（母集団）を join して表示します（GUI読み取り専用）。
+      join が成立しない日（overlap=0 等）は、自動で <b>sentiment 側を母集団</b>に切り替えて「スコアが出ない事故」を避けます（B）。
     </p>
 
-    <div class="grid">
-      <section class="card">
-        <h2 style="margin:0 0 10px;">Controls</h2>
-        <div class="row">
-          <button class="btn" id="btnReload">Reload</button>
-          <button class="btn" id="btnReset">Reset filters</button>
-          <button class="btn" id="btnOpenVM">Open view_model_latest.json</button>
-          <button class="btn" id="btnOpenSent">Open sentiment_latest.json</button>
-          <button class="btn" id="btnOpenSeries">Open sentiment_timeseries.csv</button>
+    <div class="gp-grid">
+      <div class="gp-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <div class="mono" style="font-size:18px;font-weight:700;">Controls</div>
+          <div class="gp-small mono" id="noteLine">loading...</div>
         </div>
 
-        <div class="kpis">
-          <div class="kpi"><div class="label">date</div><div class="value mono" id="kDate">—</div></div>
-          <div class="kpi"><div class="label">articles</div><div class="value mono" id="kArticles">—</div></div>
-          <div class="kpi"><div class="label">risk</div><div class="value mono" id="kRisk">—</div></div>
-          <div class="kpi"><div class="label">positive</div><div class="value mono" id="kPos">—</div></div>
-        </div>
-        <div class="kpis" style="grid-template-columns:repeat(2,1fr); margin-top:10px;">
-          <div class="kpi"><div class="label">uncertainty</div><div class="value mono" id="kUnc">—</div></div>
-          <div class="kpi"><div class="label">note</div><div class="value mono" id="kNote">join: URL優先 → title fallback</div></div>
+        <div class="gp-controls">
+          <button class="gp-btn mono" id="btnReload">Reload</button>
+          <button class="gp-btn mono" id="btnReset">Reset filters</button>
+
+          <button class="gp-btn mono" id="btnOpenCategorized">Open daily_news_categorized*.json</button>
+          <button class="gp-btn mono" id="btnOpenSentiment">Open sentiment_latest.json</button>
+          <button class="gp-btn mono" id="btnOpenTimeseries">Open sentiment_timeseries.csv</button>
         </div>
 
-        <!-- B: Filter + Sort -->
-        <div class="controls2">
-          <div>
-            <label for="q">search (title/source)</label>
-            <input id="q" type="text" placeholder="e.g. nigeria / foxnews / congress" />
+        <div class="gp-kpis">
+          <div class="gp-kpi">
+            <div class="k mono">date</div>
+            <div class="v mono" id="kpiDate">--</div>
           </div>
-
-          <div>
-            <label for="srcSel">source</label>
-            <select id="srcSel">
-              <option value="">All</option>
-            </select>
+          <div class="gp-kpi">
+            <div class="k mono">articles</div>
+            <div class="v mono" id="kpiArticles">--</div>
           </div>
+          <div class="gp-kpi">
+            <div class="k mono">risk</div>
+            <div class="v mono num" id="kpiRisk">--</div>
+          </div>
+          <div class="gp-kpi">
+            <div class="k mono">positive</div>
+            <div class="v mono num" id="kpiPos">--</div>
+          </div>
+          <div class="gp-kpi" style="grid-column: span 2;">
+            <div class="k mono">uncertainty</div>
+            <div class="v mono num" id="kpiUnc">--</div>
+          </div>
+          <div class="gp-kpi" style="grid-column: span 2;">
+            <div class="k mono">note</div>
+            <div class="v mono" style="font-size:13px;line-height:1.3;" id="kpiNote">--</div>
+          </div>
+        </div>
 
-          <div>
-            <label for="sortSel">sort</label>
+        <div class="gp-tabs" id="catTabs"></div>
+
+        <div class="gp-filters">
+          <div class="gp-field">
+            <label class="mono">search (title/source)</label>
+            <input id="q" placeholder="e.g. nigeria / russia / trump ..." />
+          </div>
+          <div class="gp-field">
+            <label class="mono">source</label>
+            <select id="sourceSel"></select>
+          </div>
+          <div class="gp-field">
+            <label class="mono">sort</label>
             <select id="sortSel">
-              <option value="risk:desc">risk ↓</option>
-              <option value="risk:asc">risk ↑</option>
-              <option value="positive:desc">positive ↓</option>
-              <option value="positive:asc">positive ↑</option>
-              <option value="uncertainty:desc">uncertainty ↓</option>
-              <option value="uncertainty:asc">uncertainty ↑</option>
-              <option value="net:desc">net ↓</option>
-              <option value="net:asc">net ↑</option>
-              <option value="title:asc">title A→Z</option>
-              <option value="title:desc">title Z→A</option>
-              <option value="source:asc">source A→Z</option>
-              <option value="source:desc">source Z→A</option>
+              <option value="risk_desc">risk ↓</option>
+              <option value="pos_desc">positive ↓</option>
+              <option value="unc_desc">uncertainty ↓</option>
+              <option value="net_asc">net ↑（risk先頭）</option>
+              <option value="net_desc">net ↓（positive先頭）</option>
+              <option value="time_desc">time ↓</option>
             </select>
           </div>
-
-          <div>
-            <label>&nbsp;</label>
-            <div class="checkline">
-              <input id="showMissing" type="checkbox" checked />
-              <span class="muted">show missing</span>
-            </div>
+          <div class="gp-field">
+            <label class="mono">&nbsp;</label>
+            <label class="mono" style="display:flex;gap:8px;align-items:center;">
+              <input type="checkbox" id="showMissing" checked />
+              show missing
+            </label>
           </div>
         </div>
 
-        <div class="countline">
-          showing: <span class="mono" id="showCount">0</span> /
-          total: <span class="mono" id="totalCount">0</span>
+        <div class="gp-small mono" id="statLine" style="margin-top:10px;">--</div>
+
+        <div class="chartbox">
+          <div class="mono" style="font-size:14px;font-weight:700;margin-bottom:8px;">Sentiment Trend</div>
+          <canvas id="trend"></canvas>
+          <div class="gp-small mono" style="margin-top:6px;">※ risk / positive / uncertainty を同一スケールで簡易描画（timeseries が無ければ空）。</div>
+        </div>
+      </div>
+
+      <div class="gp-card">
+        <div class="mono" style="font-size:18px;font-weight:700;">How it works</div>
+        <div class="gp-small mono" style="margin-top:10px;line-height:1.55;">
+          1) GET <span class="mono">/analysis/daily_news_categorized_latest.json</span>（母集団 / category layer）<br/>
+          2) GET <span class="mono">/analysis/sentiment_latest.json</span>（items / scores）<br/>
+          3) join key 優先順：<span class="mono">norm_url → url(正規化) → title+source → title</span><br/>
+          4) overlap が低い/ゼロなら <b>base を sentiment に自動切替</b>（B）<br/>
+          5) フィルタ・ソート・missing 表示切替
         </div>
 
-        <div class="chart-wrap">
-          <div class="chart-head">
-            <div class="chart-title">Sentiment Trend</div>
-            <div class="chart-note mono" id="chartMeta">timeseries: loading…</div>
-          </div>
-          <canvas id="trendCanvas" width="1100" height="220"></canvas>
-          <div class="chart-note" id="chartHint">※ risk / positive / uncertainty を同一スケールで描画。</div>
-        </div>
-
-        <div class="err" id="errBox"></div>
-      </section>
-
-      <section class="card">
-        <h2 style="margin:0 0 10px;">How it works</h2>
-        <div class="muted" style="font-size:12px; line-height:1.6;">
-          1) GET /analysis/view_model_latest.json<br>
-          2) GET /analysis/sentiment_latest.json<br>
-          3) join key: URL 優先 → 無ければ title fallback<br>
-          4) 表に描画<br><br>
-          <span class="mono">debug:</span> <span class="mono" id="metaLine">loading…</span>
-        </div>
-      </section>
+        <pre class="mono" id="debugBox" style="margin-top:12px;white-space:pre-wrap;opacity:.85;line-height:1.45;"></pre>
+      </div>
     </div>
 
-    <section class="card" style="margin-top:14px;">
-      <h2 style="margin:0 0 8px;">Articles & Sentiment</h2>
+    <div class="gp-card gp-tablewrap">
+      <div class="mono" style="font-size:18px;font-weight:700;margin-bottom:10px;">Articles &amp; Sentiment</div>
       <div style="overflow:auto;">
         <table>
           <thead>
             <tr>
-              <th style="width:92px; min-width:92px;">thumb</th>
-              <th style="min-width:420px;">title</th>
-              <th style="min-width:110px;">status</th>
-              <th class="right" style="min-width:110px;">risk</th>
-              <th class="right" style="min-width:110px;">positive</th>
-              <th class="right" style="min-width:130px;">uncertainty</th>
-              <th class="right" style="min-width:110px;">net*</th>
+              <th class="mono">thumb</th>
+              <th class="mono">title</th>
+              <th class="mono">category</th>
+              <th class="mono">status</th>
+              <th class="mono">risk</th>
+              <th class="mono">positive</th>
+              <th class="mono">uncertainty</th>
+              <th class="mono">net*</th>
             </tr>
           </thead>
           <tbody id="tbody">
-            <tr><td colspan="7" class="muted">loading…</td></tr>
+            <tr><td colspan="8" class="mono">loading...</td></tr>
           </tbody>
         </table>
       </div>
-      <div class="muted" style="font-size:12px; margin-top:8px;">
-        * net は存在する場合のみ表示。無ければ pos-risk の推定（可能なら）／不可能なら “—”
+      <div class="gp-small mono" style="margin-top:10px;">
+        * net は存在する場合のみ表示。無ければ risk/pos/unc の推定（可視）/ missing。
       </div>
-    </section>
+    </div>
   </div>
-</main>
 
 <script>
-(function(){
-  const $ = (id)=>document.getElementById(id);
+(() => {
+  // -----------------------
+  // Utilities
+  // -----------------------
+  const $ = (id) => document.getElementById(id);
 
-  const PATH_VM = "/analysis/view_model_latest.json";
-  const PATH_SENT = "/analysis/sentiment_latest.json";
-  const PATH_SERIES = "/analysis/sentiment_timeseries.csv";
-
-  // state
-  let ALL = [];           // joined full
-  let SOURCES = [];       // unique source list
-
-  function showErr(msg){
-    const box = $("errBox");
-    box.style.display = "block";
-    box.textContent = msg;
-  }
-  function clearErr(){
-    const box = $("errBox");
-    box.style.display = "none";
-    box.textContent = "";
-  }
-  function cacheBust(url){
-    const u = new URL(url, location.origin);
-    u.searchParams.set("t", Date.now().toString());
-    return u.toString();
-  }
-  async function loadJSON(path){
-    const res = await fetch(cacheBust(path), {cache:"no-store"});
-    if (!res.ok) throw new Error(`${path} HTTP ${res.status}`);
-    return await res.json();
-  }
-  async function loadText(path){
-    const res = await fetch(cacheBust(path), {cache:"no-store"});
-    if (!res.ok) throw new Error(`${path} HTTP ${res.status}`);
-    return await res.text();
-  }
-  function qs(name){
-    const u = new URL(location.href);
-    return u.searchParams.get(name);
-  }
-  function pick(obj, keys){
-    for (const k of keys){
-      if (!obj) continue;
-      if (Object.prototype.hasOwnProperty.call(obj, k)) return obj[k];
-    }
-    return undefined;
-  }
-  function toNum(v){
-    if (v === null || v === undefined) return null;
-    if (typeof v === "number") return Number.isFinite(v) ? v : null;
-    if (typeof v === "string"){
-      const t = v.trim();
-      if (!t) return null;
-      const n = Number(t);
-      return Number.isFinite(n) ? n : null;
-    }
-    return null;
-  }
-  function fmt(x){
+  function fmt6(x){
     if (x === null || x === undefined || Number.isNaN(x)) return "—";
-    if (typeof x === "number") return x.toFixed(6);
-    return String(x);
+    return Number(x).toFixed(6);
   }
-  function escapeHtml(s){
-    return String(s)
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#39;");
+  function fmt3(x){
+    if (x === null || x === undefined || Number.isNaN(x)) return "—";
+    return Number(x).toFixed(3);
   }
-  function decodeHtmlEntities(s){
-    const t = String(s ?? "");
-    if (!t.includes("&")) return t;
-    const textarea = document.createElement("textarea");
-    textarea.innerHTML = t;
-    return textarea.value;
+  function safeStr(v){
+    if (v === null || v === undefined) return "";
+    if (typeof v === "string") return v;
+    if (typeof v === "number") return String(v);
+    if (typeof v === "object") {
+      // {name: "..."} 等は name を優先
+      if (typeof v.name === "string") return v.name;
+      if (typeof v.domain === "string") return v.domain;
+      if (typeof v.title === "string") return v.title;
+      try { return JSON.stringify(v); } catch(e) { return String(v); }
+    }
+    return String(v);
   }
 
-  function normSentDoc(doc){
-    const out = {
-      date: pick(doc, ["date","today_date","asof","as_of"]),
-      today: null,
-      items: null
-    };
-    const today = pick(doc, ["today","latest","summary","totals"]);
-    if (today && typeof today === "object") out.today = today;
-    const items = pick(doc, ["items","articles","rows","data"]);
-    if (Array.isArray(items)) out.items = items;
-    return out;
+  function decodeHtmlEntities(s){
+    if (!s) return "";
+    const txt = document.createElement("textarea");
+    txt.innerHTML = s;
+    return txt.value;
   }
 
   function normalizeUrl(u){
     if (!u) return "";
-    try{
-      const x = new URL(String(u).trim());
-      x.hash = "";
-      return x.toString();
-    }catch(_){
-      return String(u).trim();
-    }
-  }
-  function getKeyForJoin(x){
-    if (!x) return "";
-    const url = pick(x, ["url","link","href","norm_url"]);
-    const title = pick(x, ["title","headline","name"]);
-    if (url && typeof url === "string") return "u:" + normalizeUrl(url);
-    if (title && typeof title === "string") return "t:" + title.trim();
-    return "";
-  }
+    let raw = decodeHtmlEntities(String(u)).trim();
+    if (!raw) return "";
+    if (raw.startsWith("//")) raw = "https:" + raw;
 
-  function extractScoresFromAny(obj){
-    let risk = toNum(pick(obj, ["risk","riskScore","risk_score"]));
-    let pos  = toNum(pick(obj, ["positive","pos","posScore","pos_score","positive_score","positiveScore"]));
-    let unc  = toNum(pick(obj, ["uncertainty","unc","uncScore","unc_score","uncertainty_score","uncertaintyScore"]));
+    // strip query/hash
+    raw = raw.replace(/#.*$/g, "");
+    raw = raw.replace(/\?.*$/g, "");
 
-    if ((risk===null || pos===null || unc===null) && obj && typeof obj === "object"){
-      for (const base of ["scores","sentiment","sent"]){
-        const b = obj[base];
-        if (b && typeof b === "object"){
-          if (risk===null) risk = toNum(pick(b, ["risk","riskScore","risk_score"]));
-          if (pos===null)  pos  = toNum(pick(b, ["positive","pos","posScore","pos_score","positive_score","positiveScore"]));
-          if (unc===null)  unc  = toNum(pick(b, ["uncertainty","unc","uncScore","unc_score","uncertainty_score","uncertaintyScore"]));
-        }
-      }
+    // ensure scheme
+    if (!/^[a-zA-Z][a-zA-Z0-9+\-.]*:\/\//.test(raw)) {
+      raw = "https://" + raw.replace(/^\/+/, "");
     }
 
-    const net = toNum(pick(obj, ["net","score","raw_score","rawScore","sentiment_score","sentimentScore"]));
-    return {risk, pos, unc, net};
+    // lowercase scheme + host, drop www.
+    const m = raw.match(/^([a-zA-Z][a-zA-Z0-9+\-.]*:\/\/)([^\/]+)(\/.*)?$/);
+    if (!m) return raw.toLowerCase().replace(/\/$/, "");
+    let scheme = m[1].toLowerCase();
+    let host = (m[2] || "").toLowerCase();
+    let path = m[3] || "";
+    if (host.startsWith("www.")) host = host.slice(4);
+    let out = scheme + host + path;
+    out = out.replace(/\/$/, "");
+    return out;
   }
 
-  // ★ status判定を「見た目HTML」だけでなく「キー」としても返す（risk行のnet強調に使う）
-  function statusKey(risk, pos, unc){
-    const any = [risk,pos,unc].some(v => v !== null && v !== undefined);
-    if (!any) return "missing";
-    const s = (risk||0) + (pos||0) + (unc||0);
-    if (s < 1e-6) return "zero";
-    if ((risk||0) > (pos||0) * 1.2) return "risk";
-    return "ok";
-  }
-
-  function statusBadge(risk, pos, unc){
-    const k = statusKey(risk, pos, unc);
-    if (k === "missing") return `<span class="badge"><span class="b"></span>missing</span>`;
-    if (k === "zero")    return `<span class="badge warn"><span class="b"></span>zero</span>`;
-    if (k === "risk")    return `<span class="badge bad"><span class="b"></span>risk</span>`;
-    return `<span class="badge ok"><span class="b"></span>ok</span>`;
-  }
-
-  function extractVmItems(vm){
-    if (!vm || typeof vm !== "object") return [];
-    const direct = pick(vm, ["items","articles"]);
-    if (Array.isArray(direct)) return direct;
-
-    if (Array.isArray(vm.sections)){
-      const out = [];
-      for (const sec of vm.sections){
-        if (!sec || !Array.isArray(sec.cards)) continue;
-        for (const c of sec.cards){
-          if (c) out.push(c);
-        }
-      }
-      return out;
-    }
-    return [];
-  }
-
-  // A方式：ありがちな画像URLフィールドのみ（view_model → sentiment）
-  function resolveThumb(obj){
-    if (!obj || typeof obj !== "object") return "";
-    const cand1 = pick(obj, [
-      "image","image_url","imageUrl","urlToImage",
-      "thumbnail","thumbnail_url","thumbnailUrl",
-      "thumb","thumb_url","thumbUrl",
-      "og_image","ogImage","og_image_url","ogImageUrl",
-      "og:image","og:image:url",
-      "twitter:image","twitter_image","twitterImage",
-      "banner","cover","cover_image","coverImage"
-    ]);
-    if (typeof cand1 === "string" && cand1.trim()) return cand1.trim();
-
-    const d = obj.data;
-    if (d && typeof d === "object"){
-      const cand2 = pick(d, [
-        "image","image_url","imageUrl","urlToImage",
-        "thumbnail","thumbnail_url","thumbnailUrl","thumb",
-        "og_image","ogImage","og:image","twitter:image"
-      ]);
-      if (typeof cand2 === "string" && cand2.trim()) return cand2.trim();
-    }
-    return "";
-  }
-
-  function normalizeSourceText(x){
-    const s = String(x || "").trim();
-    if (!s) return "";
-    return s;
-  }
-
-  // --------------------------
-  // chart
-  // --------------------------
-  function parseCsv(text){
-    const lines = String(text || "").replace(/\r/g,"").split("\n").filter(l => l.trim().length);
-    if (lines.length < 2) return {headers:[], rows:[]};
-    const split = (line)=>line.split(",").map(s=>s.trim());
-    const headers = split(lines[0]).map(h => h.replace(/^"|"$/g,""));
-    const rows = [];
-    for (const line of lines.slice(1)){
-      const cols = split(line);
-      if (!cols.length) continue;
-      const obj = {};
-      for (let i=0;i<headers.length;i++) obj[headers[i]] = (cols[i] ?? "");
-      rows.push(obj);
-    }
-    return {headers, rows};
-  }
-  function findCol(headers, aliases){
-    const lower = headers.map(h => String(h).toLowerCase());
-    for (const a of aliases){
-      const idx = lower.indexOf(a);
-      if (idx >= 0) return headers[idx];
+  function pick(obj, keys){
+    if (!obj || typeof obj !== "object") return null;
+    for (const k of keys){
+      if (k in obj) return obj[k];
     }
     return null;
   }
-  function drawTrend(canvas, series){
-    const ctx = canvas.getContext("2d");
-    const w = canvas.width, h = canvas.height;
-    ctx.clearRect(0,0,w,h);
 
-    const padL=44, padR=12, padT=10, padB=26;
-    const iw=w-padL-padR, ih=h-padT-padB;
+  function pickUrlAny(o){
+    if (!o || typeof o !== "object") return "";
+    const direct = pick(o, ["norm_url","url","link","href","article_url","articleUrl","canonical_url","canonicalUrl","final_url","finalUrl","resolved_url","resolvedUrl"]);
+    if (typeof direct === "string" && direct.trim()) return direct.trim();
+    for (const base of ["article","meta","raw","item","news","data"]){
+      const b = o[base];
+      if (b && typeof b === "object") {
+        const v = pickUrlAny(b);
+        if (v) return v;
+      }
+    }
+    return "";
+  }
 
-    ctx.strokeStyle="rgba(255,255,255,0.12)";
-    ctx.strokeRect(padL,padT,iw,ih);
+  function pickTitleAny(o){
+    if (!o || typeof o !== "object") return "";
+    const direct = pick(o, ["title","headline","name","subject"]);
+    const s = safeStr(direct).trim();
+    if (s) return decodeHtmlEntities(s);
+    for (const base of ["article","meta","raw","item","news","data"]){
+      const b = o[base];
+      if (b && typeof b === "object") {
+        const v = pickTitleAny(b);
+        if (v) return v;
+      }
+    }
+    return "";
+  }
 
-    if (!series.length){
-      ctx.fillStyle="rgba(255,255,255,0.65)";
-      ctx.font="12px ui-monospace, Menlo, Consolas, monospace";
-      ctx.fillText("no timeseries", padL+10, padT+18);
+  function pickSourceAny(o){
+    if (!o || typeof o !== "object") return "";
+    const direct = pick(o, ["source","publisher","site","domain"]);
+    const s = safeStr(direct).trim();
+    if (s) return s;
+    for (const base of ["article","meta","raw","item","news","data"]){
+      const b = o[base];
+      if (b && typeof b === "object") {
+        const v = pickSourceAny(b);
+        if (v) return v;
+      }
+    }
+    return "";
+  }
+
+  function buildKeys({urlNorm, urlRaw, title, source}){
+    const keys = [];
+    const u1 = urlNorm ? urlNorm : normalizeUrl(urlRaw);
+    if (u1) keys.push("u:" + u1);
+    if (urlRaw) keys.push("u2:" + String(urlRaw).trim());
+    const tt = (title || "").trim().toLowerCase();
+    const ss = (source || "").trim().toLowerCase();
+    if (tt) keys.push("t:" + tt);
+    if (tt && ss) keys.push("ts:" + tt + "||" + ss);
+
+    // unique
+    const out = [];
+    const seen = new Set();
+    for (const k of keys){
+      if (k && !seen.has(k)){
+        seen.add(k);
+        out.push(k);
+      }
+    }
+    return out;
+  }
+
+  function pickScoreTriplet(s){
+    // sentiment item から risk/pos/unc/net を拾う（多形対応）
+    const net = pick(s, ["net","sent","sentiment","sentiment_score","score","raw_score"]);
+    const risk = pick(s, ["risk","risk_score","riskScore"]);
+    const pos = pick(s, ["pos","positive","pos_score","posScore"]);
+    const unc = pick(s, ["unc","uncertainty","unc_score","uncScore"]);
+
+    const n = (net === null || net === undefined) ? null : Number(net);
+    const r = (risk === null || risk === undefined) ? null : Number(risk);
+    const p = (pos === null || pos === undefined) ? null : Number(pos);
+    const u = (unc === null || unc === undefined) ? null : Number(unc);
+
+    return { net: Number.isFinite(n) ? n : null, risk: Number.isFinite(r) ? r : null, pos: Number.isFinite(p) ? p : null, unc: Number.isFinite(u) ? u : null };
+  }
+
+  // -----------------------
+  // Data load
+  // -----------------------
+  const qp = new URLSearchParams(location.search);
+  const dateParam = (qp.get("date") || "latest").trim();
+
+  const analysisBase = "/analysis";
+  const catLatestUrl = `${analysisBase}/daily_news_categorized_latest.json`;
+  const sentLatestUrl = `${analysisBase}/sentiment_latest.json`;
+  const tsUrl = `${analysisBase}/sentiment_timeseries.csv`;
+
+  // dated (optional)
+  const catDatedUrl = `${analysisBase}/daily_news_categorized_${dateParam}.json`;
+
+  $("btnOpenCategorized").onclick = () => window.open(dateParam === "latest" ? catLatestUrl : catDatedUrl, "_blank");
+  $("btnOpenSentiment").onclick = () => window.open(sentLatestUrl, "_blank");
+  $("btnOpenTimeseries").onclick = () => window.open(tsUrl, "_blank");
+  $("btnReload").onclick = () => reload();
+  $("btnReset").onclick = () => {
+    $("q").value = "";
+    $("sourceSel").value = "__all__";
+    $("sortSel").value = "risk_desc";
+    $("showMissing").checked = true;
+    state.category = "All";
+    renderAll();
+  };
+
+  const state = {
+    date: dateParam,
+    category: "All",
+    base: "categorized",   // or "sentiment"
+    note: "",
+    debug: {},
+    rows: [],              // final rows for table
+    categories: ["All"],
+    sources: ["__all__"],
+    raw: {
+      categorized: [],
+      sentiment: [],
+      sentKeyMap: new Map(),
+      sentKeyCount: 0,
+    }
+  };
+
+  async function fetchJson(url){
+    const r = await fetch(url, { cache: "no-store" });
+    if (!r.ok) throw new Error(`fetch failed: ${url} (${r.status})`);
+    return await r.json();
+  }
+
+  async function fetchText(url){
+    const r = await fetch(url, { cache: "no-store" });
+    if (!r.ok) throw new Error(`fetch failed: ${url} (${r.status})`);
+    return await r.text();
+  }
+
+  function getItems(doc){
+    if (Array.isArray(doc)) return doc;
+    const xs = pick(doc, ["items","articles","rows","data"]);
+    return Array.isArray(xs) ? xs : [];
+  }
+
+  function buildSentKeyMap(sentItems){
+    const map = new Map();
+    let totalKeys = 0;
+
+    for (const s of sentItems){
+      const urlRaw = pickUrlAny(s);
+      const urlNorm = safeStr(pick(s, ["norm_url","normUrl"])).trim();
+      const title = pickTitleAny(s);
+      const source = pickSourceAny(s);
+
+      const keys = buildKeys({ urlNorm, urlRaw, title, source });
+      for (const k of keys){
+        totalKeys += 1;
+        if (!map.has(k)) map.set(k, s);
+      }
+    }
+    return { map, totalKeys };
+  }
+
+  function joinCategorizedToSentiment(catItems, sentKeyMap){
+    const out = [];
+    let joined = 0;
+
+    for (const c of catItems){
+      const urlRaw = pickUrlAny(c);
+      const urlNorm = normalizeUrl(urlRaw);
+      const title = pickTitleAny(c);
+      const source = pickSourceAny(c);
+
+      const keys = buildKeys({ urlNorm, urlRaw, title, source });
+      let hit = null;
+      for (const k of keys){
+        if (sentKeyMap.has(k)){ hit = sentKeyMap.get(k); break; }
+      }
+
+      const score = hit ? pickScoreTriplet(hit) : {net:null,risk:null,pos:null,unc:null};
+
+      if (hit) joined += 1;
+
+      const cat = safeStr(pick(c, ["category"])).trim() || "General";
+      const img = safeStr(pick(c, ["urlToImage","image_url","imageUrl"])).trim() || safeStr(pick(hit || {}, ["image_url","urlToImage","imageUrl"])).trim();
+      const pub = safeStr(pick(c, ["publishedAt","published_at","pubDate","date"])).trim() || safeStr(pick(hit || {}, ["published_at","publishedAt","date"])).trim();
+
+      out.push({
+        base: "categorized",
+        category: cat,
+        title: title || "(no title)",
+        source: source || "(unknown)",
+        url: urlRaw || "",
+        image: img || "",
+        publishedAt: pub || "",
+        hasScore: (score.risk !== null || score.pos !== null || score.unc !== null || score.net !== null),
+        score,
+      });
+    }
+    return { rows: out, joined };
+  }
+
+  function rowsFromSentiment(sentItems){
+    const out = [];
+    for (const s of sentItems){
+      const title = pickTitleAny(s) || "(no title)";
+      const source = pickSourceAny(s) || "(unknown)";
+      const url = pickUrlAny(s) || "";
+      const img = safeStr(pick(s, ["image_url","urlToImage","imageUrl"])).trim();
+      const pub = safeStr(pick(s, ["published_at","publishedAt","date"])).trim();
+      const score = pickScoreTriplet(s);
+
+      out.push({
+        base: "sentiment",
+        category: "General",
+        title,
+        source,
+        url,
+        image: img || "",
+        publishedAt: pub || "",
+        hasScore: (score.risk !== null || score.pos !== null || score.unc !== null || score.net !== null),
+        score,
+      });
+    }
+    return out;
+  }
+
+  function buildCategories(rows){
+    const set = new Set(["All"]);
+    for (const r of rows){
+      if (r.category) set.add(r.category);
+    }
+    return Array.from(set);
+  }
+
+  function buildSources(rows){
+    const set = new Set(["__all__"]);
+    for (const r of rows){
+      const s = (r.source || "").trim();
+      if (s) set.add(s);
+    }
+    return Array.from(set).sort((a,b) => a.localeCompare(b));
+  }
+
+  function sumKpis(rows){
+    let n = 0, sr = 0, sp = 0, su = 0;
+    for (const r of rows){
+      if (!r.hasScore) continue;
+      // risk/pos/unc が null の場合は 0 として扱う（見える値を優先）
+      sr += (r.score.risk ?? 0);
+      sp += (r.score.pos ?? 0);
+      su += (r.score.unc ?? 0);
+      n += 1;
+    }
+    return { scoredRows: n, risk: sr, pos: sp, unc: su };
+  }
+
+  function renderTabs(){
+    const wrap = $("catTabs");
+    wrap.innerHTML = "";
+    for (const cat of state.categories){
+      const b = document.createElement("button");
+      b.className = "gp-tab mono" + (cat === state.category ? " active" : "");
+      b.textContent = cat;
+      b.onclick = () => { state.category = cat; renderAll(); };
+      wrap.appendChild(b);
+    }
+  }
+
+  function renderSourceSel(){
+    const sel = $("sourceSel");
+    sel.innerHTML = "";
+    const optAll = document.createElement("option");
+    optAll.value = "__all__";
+    optAll.textContent = "All";
+    sel.appendChild(optAll);
+
+    for (const s of state.sources){
+      if (s === "__all__") continue;
+      const o = document.createElement("option");
+      o.value = s;
+      o.textContent = s;
+      sel.appendChild(o);
+    }
+  }
+
+  function getFiltered(){
+    const q = $("q").value.trim().toLowerCase();
+    const src = $("sourceSel").value;
+    const showMissing = $("showMissing").checked;
+
+    let rows = state.rows.slice();
+
+    if (state.category !== "All"){
+      rows = rows.filter(r => (r.category || "General") === state.category);
+    }
+    if (src && src !== "__all__"){
+      rows = rows.filter(r => (r.source || "") === src);
+    }
+    if (q){
+      rows = rows.filter(r => {
+        const t = (r.title || "").toLowerCase();
+        const s = (r.source || "").toLowerCase();
+        return t.includes(q) || s.includes(q);
+      });
+    }
+    if (!showMissing){
+      rows = rows.filter(r => r.hasScore);
+    }
+    return rows;
+  }
+
+  function sortRows(rows){
+    const mode = $("sortSel").value;
+
+    const byTimeDesc = (a,b) => (String(b.publishedAt||"").localeCompare(String(a.publishedAt||"")));
+    const byRiskDesc = (a,b) => ((b.score.risk ?? -1e9) - (a.score.risk ?? -1e9));
+    const byPosDesc  = (a,b) => ((b.score.pos ?? -1e9) - (a.score.pos ?? -1e9));
+    const byUncDesc  = (a,b) => ((b.score.unc ?? -1e9) - (a.score.unc ?? -1e9));
+    const byNetAsc   = (a,b) => ((a.score.net ?? 1e9) - (b.score.net ?? 1e9));
+    const byNetDesc  = (a,b) => ((b.score.net ?? -1e9) - (a.score.net ?? -1e9));
+
+    const m = {
+      "time_desc": byTimeDesc,
+      "risk_desc": byRiskDesc,
+      "pos_desc": byPosDesc,
+      "unc_desc": byUncDesc,
+      "net_asc": byNetAsc,
+      "net_desc": byNetDesc,
+    }[mode] || byRiskDesc;
+
+    return rows.sort(m);
+  }
+
+  function renderTable(rows){
+    const tb = $("tbody");
+    tb.innerHTML = "";
+
+    if (!rows.length){
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 8;
+      td.className = "mono";
+      td.textContent = "no rows";
+      tr.appendChild(td);
+      tb.appendChild(tr);
       return;
     }
 
-    let ymin=Infinity, ymax=-Infinity;
-    for (const p of series){
-      for (const k of ["risk","positive","uncertainty"]){
-        const v=p[k];
-        if (typeof v==="number" && Number.isFinite(v)){
-          ymin=Math.min(ymin,v); ymax=Math.max(ymax,v);
-        }
-      }
+    for (const r of rows){
+      const tr = document.createElement("tr");
+
+      // thumb
+      const td0 = document.createElement("td");
+      const img = document.createElement("img");
+      img.className = "thumb";
+      img.loading = "lazy";
+      img.referrerPolicy = "no-referrer";
+      img.decoding = "async";
+      if (r.image) img.src = r.image;
+      td0.appendChild(img);
+      tr.appendChild(td0);
+
+      // title
+      const td1 = document.createElement("td");
+      td1.className = "t-title";
+      const a = document.createElement("a");
+      a.href = r.url || "#";
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = r.title;
+      td1.appendChild(a);
+      const sub = document.createElement("div");
+      sub.className = "gp-small mono";
+      sub.style.marginTop = "4px";
+      sub.textContent = r.source + (r.publishedAt ? ("  ·  " + r.publishedAt) : "");
+      td1.appendChild(sub);
+      tr.appendChild(td1);
+
+      // category
+      const td2 = document.createElement("td");
+      td2.className = "mono";
+      td2.textContent = r.category || "General";
+      tr.appendChild(td2);
+
+      // status
+      const td3 = document.createElement("td");
+      const badge = document.createElement("span");
+      badge.className = "badge mono";
+      const dot = document.createElement("span");
+      dot.className = "dot " + (r.hasScore ? ((r.score.net ?? 0) < 0 ? "risk" : "ok") : "");
+      badge.appendChild(dot);
+      const label = document.createElement("span");
+      label.textContent = r.hasScore ? "ok" : "missing";
+      badge.appendChild(label);
+      td3.appendChild(badge);
+      tr.appendChild(td3);
+
+      // numbers
+      const td4 = document.createElement("td"); td4.className = "mono num"; td4.textContent = r.hasScore ? fmt6(r.score.risk ?? 0) : "—";
+      const td5 = document.createElement("td"); td5.className = "mono num"; td5.textContent = r.hasScore ? fmt6(r.score.pos ?? 0) : "—";
+      const td6 = document.createElement("td"); td6.className = "mono num"; td6.textContent = r.hasScore ? fmt6(r.score.unc ?? 0) : "—";
+
+      const td7 = document.createElement("td");
+      const net = r.score.net;
+      td7.className = "mono net " + (net === null ? "" : (net >= 0 ? "pos" : "neg"));
+      td7.textContent = (net === null || net === undefined || Number.isNaN(net)) ? "—" : fmt3(net);
+
+      tr.appendChild(td4); tr.appendChild(td5); tr.appendChild(td6); tr.appendChild(td7);
+
+      tb.appendChild(tr);
     }
-    if (!Number.isFinite(ymin)||!Number.isFinite(ymax)){ ymin=0; ymax=1; }
-    if (Math.abs(ymax-ymin)<1e-9){ ymax=ymin+1; }
+  }
 
-    ctx.strokeStyle="rgba(255,255,255,0.08)";
-    ctx.fillStyle="rgba(255,255,255,0.60)";
-    ctx.font="11px ui-monospace, Menlo, Consolas, monospace";
-    const gridN=4;
-    for (let i=0;i<=gridN;i++){
-      const y=padT+(ih*i/gridN);
-      ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+iw,y); ctx.stroke();
-      const val=(ymax-(ymax-ymin)*(i/gridN));
-      ctx.fillText(val.toFixed(3), 6, y+4);
+  function renderTrendFromCsv(csvText){
+    const c = $("trend");
+    const ctx = c.getContext("2d");
+
+    // clear
+    ctx.clearRect(0,0,c.width,c.height);
+
+    // scale canvas for crispness
+    const rect = c.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    c.width = Math.floor(rect.width * dpr);
+    c.height = Math.floor(rect.height * dpr);
+    ctx.scale(dpr, dpr);
+
+    const lines = csvText.trim().split(/\r?\n/);
+    if (lines.length <= 1) return;
+
+    // expected: date,risk,positive,uncertainty (header)
+    const pts = [];
+    for (let i=1;i<lines.length;i++){
+      const cols = lines[i].split(",");
+      if (cols.length < 4) continue;
+      const date = cols[0].trim();
+      const risk = Number(cols[1]);
+      const pos  = Number(cols[2]);
+      const unc  = Number(cols[3]);
+      if (!date) continue;
+      pts.push({date, risk, pos, unc});
     }
+    if (!pts.length) return;
 
-    const first=series[0].date||"", last=series[series.length-1].date||"";
-    ctx.fillText(String(first), padL, padT+ih+18);
-    const lastW=ctx.measureText(String(last)).width;
-    ctx.fillText(String(last), padL+iw-lastW, padT+ih+18);
+    const w = rect.width;
+    const h = rect.height;
 
-    function xy(idx,val){
-      const x=padL+(iw*(idx/Math.max(1,series.length-1)));
-      const y=padT+(ih*(1-(val-ymin)/(ymax-ymin)));
-      return {x,y};
+    const padL = 36, padR = 10, padT = 10, padB = 20;
+    const X0 = padL, X1 = w - padR, Y0 = padT, Y1 = h - padB;
+
+    // find max
+    let vmax = 0;
+    for (const p of pts){
+      vmax = Math.max(vmax, p.risk||0, p.pos||0, p.unc||0);
     }
+    if (vmax <= 0) vmax = 1;
 
-    const keys=["risk","positive","uncertainty"];
-    const styles=[
-      "rgba(251,113,133,0.95)",
-      "rgba(45,212,191,0.95)",
-      "rgba(251,191,36,0.95)"
-    ];
-
-    for (let ki=0;ki<keys.length;ki++){
-      const key=keys[ki];
-      ctx.strokeStyle=styles[ki];
-      ctx.lineWidth=2;
-      let started=false;
+    // grid
+    ctx.globalAlpha = 0.6;
+    ctx.strokeStyle = "rgba(255,255,255,.15)";
+    ctx.lineWidth = 1;
+    for (let g=0; g<=3; g++){
+      const y = Y0 + (Y1-Y0)*(g/3);
       ctx.beginPath();
-      for (let i=0;i<series.length;i++){
-        const v=series[i][key];
-        if (!(typeof v==="number" && Number.isFinite(v))){
-          started=false; continue;
-        }
-        const p=xy(i,v);
-        if (!started){ ctx.moveTo(p.x,p.y); started=true; }
-        else ctx.lineTo(p.x,p.y);
+      ctx.moveTo(X0, y);
+      ctx.lineTo(X1, y);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1.0;
+
+    function xAt(i){
+      if (pts.length === 1) return (X0+X1)/2;
+      return X0 + (X1-X0)*(i/(pts.length-1));
+    }
+    function yAt(v){
+      return Y1 - (Y1-Y0)*(v/vmax);
+    }
+
+    function drawSeries(key){
+      ctx.beginPath();
+      for (let i=0;i<pts.length;i++){
+        const x = xAt(i);
+        const y = yAt(pts[i][key] || 0);
+        if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
       }
       ctx.stroke();
     }
 
-    const legend=[
-      {label:"risk", c:styles[0]},
-      {label:"positive", c:styles[1]},
-      {label:"uncertainty", c:styles[2]},
-    ];
-    let lx=padL+10, ly=padT+18;
-    ctx.font="12px ui-monospace, Menlo, Consolas, monospace";
-    for (const it of legend){
-      ctx.fillStyle=it.c; ctx.fillRect(lx,ly-9,10,10);
-      ctx.fillStyle="rgba(255,255,255,0.75)";
-      ctx.fillText(it.label, lx+14, ly);
-      lx += 120;
-    }
+    // draw (no fixed colors要求が無いので、最小の視認性のためだけに指定)
+    ctx.lineWidth = 2;
+
+    ctx.strokeStyle = "rgba(251,113,133,.9)"; // risk
+    drawSeries("risk");
+
+    ctx.strokeStyle = "rgba(45,212,191,.9)";  // positive
+    drawSeries("pos");
+
+    ctx.strokeStyle = "rgba(250,204,21,.9)";  // uncertainty
+    drawSeries("unc");
+
+    // labels
+    ctx.fillStyle = "rgba(255,255,255,.75)";
+    ctx.font = "12px ui-monospace, Menlo, Consolas, monospace";
+    ctx.fillText(pts[0].date, X0, h-6);
+    ctx.fillText(pts[pts.length-1].date, X1-90, h-6);
   }
 
-  async function loadAndDrawTimeseries(){
-    const canvas = $("trendCanvas");
-    try{
-      const text = await loadText(PATH_SERIES);
-      const {headers, rows} = parseCsv(text);
+  function renderAll(){
+    // KPIs
+    const k = sumKpis(state.rows);
+    $("kpiDate").textContent = state.date;
+    $("kpiArticles").textContent = String(state.rows.length);
+    $("kpiRisk").textContent = fmt6(k.risk);
+    $("kpiPos").textContent  = fmt6(k.pos);
+    $("kpiUnc").textContent  = fmt6(k.unc);
+    $("kpiNote").textContent = state.note;
 
-      const colDate = findCol(headers, ["date","day","asof"]);
-      const colRisk = findCol(headers, ["risk"]);
-      const colPos  = findCol(headers, ["positive","pos"]);
-      const colUnc  = findCol(headers, ["uncertainty","unc"]);
+    // tabs/sources
+    renderTabs();
+    renderSourceSel();
 
-      if (!colDate || (!colRisk && !colPos && !colUnc)){
-        $("chartMeta").textContent = `timeseries: unsupported header`;
-        drawTrend(canvas, []);
-        return;
-      }
+    // filter + sort + table
+    let rows = getFiltered();
+    rows = sortRows(rows);
+    renderTable(rows);
 
-      const series = rows.map(r => ({
-        date: (colDate ? String(r[colDate] ?? "").trim() : ""),
-        risk: (colRisk ? toNum(r[colRisk]) : null),
-        positive: (colPos ? toNum(r[colPos]) : null),
-        uncertainty: (colUnc ? toNum(r[colUnc]) : null),
-      })).filter(p => p.date);
+    // statline
+    $("statLine").textContent =
+      `showing: ${rows.length} / total: ${state.rows.length}  |  base=${state.base}  |  joined=${state.debug.joined}/${state.debug.catCount}  |  sentItems=${state.debug.sentCount}`;
 
-      const N = 90;
-      const sliced = series.length > N ? series.slice(series.length - N) : series;
-
-      $("chartMeta").textContent = `timeseries: points=${sliced.length} (last ${Math.min(N, series.length)} days)`;
-      drawTrend(canvas, sliced);
-    }catch(_e){
-      $("chartMeta").textContent = `timeseries: not found`;
-      drawTrend($("trendCanvas"), []);
-    }
+    // debug box
+    $("debugBox").textContent = [
+      `date=${state.date}`,
+      `base=${state.base}`,
+      `categorized=${state.debug.catCount}`,
+      `sentiment=${state.debug.sentCount}`,
+      `sentKeyMap=${state.debug.sentKeyMap}`,
+      `joined=${state.debug.joined}`,
+      `catUrl=${state.debug.catUrl}`,
+      `sentUrl=${state.debug.sentUrl}`,
+      `note=${state.note}`
+    ].join("\n");
   }
 
-  // --------------------------
-  // B: filter/sort render
-  // --------------------------
-  function getSortSpec(){
-    const v = $("sortSel").value || "risk:desc";
-    const [key, dir] = v.split(":");
-    return {key, dir: (dir === "asc" ? "asc" : "desc")};
-  }
+  async function reload(){
+    $("noteLine").textContent = "loading...";
+    $("tbody").innerHTML = `<tr><td colspan="8" class="mono">loading...</td></tr>`;
 
-  function cmpStr(a,b,dir){
-    const aa = String(a||"").toLowerCase();
-    const bb = String(b||"").toLowerCase();
-    if (aa < bb) return dir==="asc" ? -1 : 1;
-    if (aa > bb) return dir==="asc" ? 1 : -1;
-    return 0;
-  }
+    // health pill: date表示だけ（ここは将来 health.json に寄せてもOK）
+    $("healthText").textContent = `OK: ${dateParam === "latest" ? "--" : dateParam}`;
+    $("healthDot").className = "dot ok";
 
-  function cmpNum(a,b,dir){
-    const aa = (typeof a==="number" && Number.isFinite(a)) ? a : null;
-    const bb = (typeof b==="number" && Number.isFinite(b)) ? b : null;
+    let catDoc = null;
+    let sentDoc = null;
 
-    if (aa===null && bb===null) return 0;
-    if (aa===null) return 1;
-    if (bb===null) return -1;
-
-    if (aa < bb) return dir==="asc" ? -1 : 1;
-    if (aa > bb) return dir==="asc" ? 1 : -1;
-    return 0;
-  }
-
-  function applyFilterSort(){
-    const q = String($("q").value || "").trim().toLowerCase();
-    const src = String($("srcSel").value || "").trim().toLowerCase();
-    const showMissing = $("showMissing").checked;
-    const {key, dir} = getSortSpec();
-
-    let list = ALL.slice();
-
-    if (!showMissing){
-      list = list.filter(x => x.hasAnyScore);
+    // 1) categorized
+    let catUrl = (dateParam === "latest") ? catLatestUrl : catDatedUrl;
+    try {
+      catDoc = await fetchJson(catUrl);
+    } catch (e) {
+      // dated が無い場合は latest にフォールバック
+      catUrl = catLatestUrl;
+      try { catDoc = await fetchJson(catUrl); }
+      catch (e2) { catDoc = null; }
     }
 
-    if (src){
-      list = list.filter(x => String(x.source||"").toLowerCase() === src);
+    // 2) sentiment
+    try {
+      sentDoc = await fetchJson(sentLatestUrl);
+    } catch (e) {
+      sentDoc = null;
     }
 
-    if (q){
-      list = list.filter(x => {
-        const t = String(x.title||"").toLowerCase();
-        const s = String(x.source||"").toLowerCase();
-        return t.includes(q) || s.includes(q);
-      });
+    const catItems = catDoc ? getItems(catDoc) : [];
+    const sentItems = sentDoc ? getItems(sentDoc) : [];
+
+    state.raw.categorized = catItems;
+    state.raw.sentiment = sentItems;
+
+    // build sentiment key map
+    const { map: sentKeyMap, totalKeys } = buildSentKeyMap(sentItems);
+    state.raw.sentKeyMap = sentKeyMap;
+    state.raw.sentKeyCount = totalKeys;
+
+    // try join
+    const joinedResult = joinCategorizedToSentiment(catItems, sentKeyMap);
+
+    // Decide base (B)
+    // - overlap が 0 か、極端に低い場合は sentiment を母集団にする
+    const catCount = catItems.length;
+    const joined = joinedResult.joined;
+    const joinRate = (catCount > 0) ? (joined / catCount) : 0;
+
+    let rows;
+    if (sentItems.length > 0 && (catCount === 0 || joined === 0 || joinRate < 0.15)){
+      state.base = "sentiment";
+      rows = rowsFromSentiment(sentItems);
+      state.note = "base mismatch detected → fallback base: sentiment (scores visible)";
+      // category tabs は General だけ
+    } else {
+      state.base = "categorized";
+      rows = joinedResult.rows;
+      state.note = "base: categorized → join: norm_url → url → title+source → title";
     }
 
-    list.sort((a,b) => {
-      switch(key){
-        case "risk": return cmpNum(a.r, b.r, dir);
-        case "positive": return cmpNum(a.p, b.p, dir);
-        case "uncertainty": return cmpNum(a.u, b.u, dir);
-        case "net": return cmpNum(a.net, b.net, dir);
-        case "title": return cmpStr(a.title, b.title, dir);
-        case "source": return cmpStr(a.source, b.source, dir);
-        default: return cmpNum(a.r, b.r, "desc");
-      }
-    });
+    // categories & sources
+    state.rows = rows;
+    state.categories = buildCategories(rows);
+    state.sources = buildSources(rows);
 
-    return list;
-  }
+    // default category keep if exists else All
+    if (!state.categories.includes(state.category)) state.category = "All";
 
-  function hostLabel(url, source){
-    // prefer hostname, fallback to source text
-    try{
-      if (url){
-        const h = new URL(String(url), location.origin).hostname || "";
-        if (h) return h.replace(/^www\./,"");
-      }
-    }catch(_){}
-    const s = String(source || "").trim();
-    return s ? s : "";
-  }
+    // debug stats
+    state.debug = {
+      catCount,
+      sentCount: sentItems.length,
+      sentKeyMap: totalKeys,
+      joined,
+      catUrl,
+      sentUrl: sentLatestUrl,
+    };
 
-  function initialsFromHost(host){
-    const h = String(host || "").trim();
-    if (!h) return "—";
-    const parts = h.split(".").filter(Boolean);
-    const a = parts[0] ? parts[0][0] : "—";
-    const b = parts.length >= 2 ? parts[parts.length-2][0] : "";
-    const out = (a + (b||"")).toUpperCase();
-    return out.length ? out : "—";
-  }
+    $("noteLine").textContent = state.note;
 
-  function thumbHtml(thumb, url, source){
-    // 画像が無い場合でも「崩れない」＋「何かしら視覚情報」を出す（外部リクエスト無し）
-    if (!thumb){
-      const host = hostLabel(url, source);
-      const ini = initialsFromHost(host);
-      const sub = host ? `<small>${escapeHtml(host)}</small>` : "";
-      return `<div class="thumb"><div class="thumb-ph">${escapeHtml(ini)}${sub}</div></div>`;
-    }
-    const safe = escapeHtml(thumb);
-    return `
-      <div class="thumb">
-        <img
-          src="${safe}"
-          alt="thumb"
-          loading="lazy"
-          decoding="async"
-          referrerpolicy="no-referrer"
-          onerror="this.onerror=null; const p=this.parentElement; if(p){p.innerHTML='<div class=&quot;thumb-ph&quot;>—</div>';}"
-        />
-      </div>
-    `;
-  }
-
-  function renderTable(list){
-    const tbody = $("tbody");
-    $("totalCount").textContent = String(ALL.length);
-    $("showCount").textContent = String(list.length);
-
-    if (!list.length){
-      tbody.innerHTML = `<tr><td colspan="7" class="muted">no items (filtered)</td></tr>`;
-      return;
+    // trend (optional)
+    try {
+      const csv = await fetchText(tsUrl);
+      renderTrendFromCsv(csv);
+    } catch (e) {
+      // no trend: just clear canvas (already cleared by renderTrendFromCsv scale init on first successful render)
+      const c = $("trend");
+      const ctx = c.getContext("2d");
+      ctx.clearRect(0,0,c.width,c.height);
     }
 
-    tbody.innerHTML = list.map(x => {
-      const status = statusKey(x.r, x.p, x.u);   // ★追加：risk行だけ強調に使う
-      const badge = statusBadge(x.r, x.p, x.u);
-
-      const titleHtml = x.url
-        ? `<div class="title"><a href="${escapeHtml(x.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(x.title)}</a></div>`
-        : `<div class="title">${escapeHtml(x.title)}</div>`;
-      const srcHtml = x.source ? `<div class="src">${escapeHtml(String(x.source))}</div>` : "";
-
-      return `
-        <tr data-status="${status}">
-          <td class="thumb-cell">${thumbHtml(x.thumb, x.url, x.source)}</td>
-          <td>${titleHtml}${srcHtml}</td>
-          <td>${badge}</td>
-          <td class="right mono">${fmt(x.r)}</td>
-          <td class="right mono">${fmt(x.p)}</td>
-          <td class="right mono">${fmt(x.u)}</td>
-          <td class="right mono"><span class="net">${x.net===null ? "—" : fmt(x.net)}</span></td>
-        </tr>
-      `;
-    }).join("");
+    renderAll();
   }
 
-  function rebuildSourceDropdown(){
-    const sel = $("srcSel");
-    const current = sel.value || "";
-    sel.innerHTML = `<option value="">All</option>` + SOURCES.map(s => {
-      const esc = escapeHtml(s);
-      return `<option value="${esc}">${esc}</option>`;
-    }).join("");
-    if (current && SOURCES.includes(current)) sel.value = current;
-  }
+  // filter events
+  $("q").addEventListener("input", () => renderAll());
+  $("sourceSel").addEventListener("change", () => renderAll());
+  $("sortSel").addEventListener("change", () => renderAll());
+  $("showMissing").addEventListener("change", () => renderAll());
 
-  function wireFilterHandlers(){
-    const rerender = ()=>renderTable(applyFilterSort());
-    $("q").addEventListener("input", rerender);
-    $("srcSel").addEventListener("change", rerender);
-    $("sortSel").addEventListener("change", rerender);
-    $("showMissing").addEventListener("change", rerender);
-  }
-
-  function resetFilters(){
-    $("q").value = "";
-    $("srcSel").value = "";
-    $("sortSel").value = "risk:desc";
-    $("showMissing").checked = true;
-    renderTable(applyFilterSort());
-  }
-
-  async function main(){
-    clearErr();
-    $("pillText").textContent = "loading…";
-
-    $("btnReload").onclick = ()=>main();
-    $("btnReset").onclick = ()=>resetFilters();
-    $("btnOpenVM").onclick = ()=>window.open(PATH_VM, "_blank");
-    $("btnOpenSent").onclick = ()=>window.open(PATH_SENT, "_blank");
-    $("btnOpenSeries").onclick = ()=>window.open(PATH_SERIES, "_blank");
-
-    let vm, sent;
-    try{
-      [vm, sent] = await Promise.all([loadJSON(PATH_VM), loadJSON(PATH_SENT)]);
-    }catch(e){
-      showErr(String(e && e.stack ? e.stack : e));
-      $("pillText").textContent = "error";
-      return;
-    }
-
-    const sentDoc = normSentDoc(sent);
-    const date = qs("date") || sentDoc.date || pick(vm, ["date","asof","as_of"]) || "latest";
-
-    const vmItems = extractVmItems(vm);
-    const sentItems = sentDoc.items || [];
-
-    const articlesCount = toNum(pick(vm, ["articles","n_articles","count"])) ?? vmItems.length;
-
-    const sFromVM = extractScoresFromAny(vm);
-    const sFromSentToday = extractScoresFromAny(sentDoc.today || {});
-    const risk = sFromVM.risk ?? sFromSentToday.risk;
-    const pos  = sFromVM.pos  ?? sFromSentToday.pos;
-    const unc  = sFromVM.unc  ?? sFromSentToday.unc;
-
-    $("kDate").textContent = date;
-    $("kArticles").textContent = String(articlesCount);
-    $("kRisk").textContent = fmt(risk);
-    $("kPos").textContent = fmt(pos);
-    $("kUnc").textContent = fmt(unc);
-
-    const map = new Map();
-    if (Array.isArray(sentItems)){
-      for (const it of sentItems){
-        const key = getKeyForJoin(it);
-        if (!key) continue;
-        map.set(key, it);
-      }
-    }
-
-    const joined = vmItems.map((it)=>{
-      const key = getKeyForJoin(it);
-      let sIt = key ? map.get(key) : null;
-
-      if (!sIt){
-        const t = pick(it, ["title","headline","name"]);
-        if (t) sIt = map.get("t:" + String(t).trim()) || null;
-      }
-
-      const fromVM = extractScoresFromAny(it);
-      const fromS  = sIt ? extractScoresFromAny(sIt) : {risk:null,pos:null,unc:null,net:null};
-
-      const r = fromVM.risk ?? fromS.risk;
-      const p = fromVM.pos  ?? fromS.pos;
-      const u = fromVM.unc  ?? fromS.unc;
-
-      const net = (fromVM.net ?? fromS.net);
-      const net2 = (net!==null ? net : (p!==null || r!==null ? ((p||0)-(r||0)) : null));
-
-      const titleRaw = pick(it, ["title","headline","name"]) || "(no title)";
-      const title = decodeHtmlEntities(titleRaw);
-
-      const url = pick(it, ["url","link","href"]) || "";
-      const source = normalizeSourceText(pick(it, ["source","publisher","site","domain"])) ||
-                     normalizeSourceText(pick(sIt, ["source","publisher","site","domain"])) ||
-                     (url ? (function(){ try{ return new URL(url).hostname; }catch(_){ return ""; }})() : "");
-
-      const thumb = resolveThumb(it) || resolveThumb(sIt);
-
-      const hasAnyScore = [r,p,u].some(v => v !== null && v !== undefined);
-
-      return {title, url, source, thumb, r, p, u, net: net2, hasAnyScore};
-    });
-
-    ALL = joined;
-    SOURCES = Array.from(new Set(joined.map(x => x.source).filter(Boolean))).sort((a,b)=>a.localeCompare(b));
-
-    rebuildSourceDropdown();
-
-    $("metaLine").textContent =
-      `date=${date} / vmItems=${vmItems.length} / sentItems=${Array.isArray(sentItems)?sentItems.length:0} / joinMap=${map.size} / joined=${joined.length}`;
-
-    $("pillText").textContent = `OK: ${date}`;
-
-    wireFilterHandlers();
-
-    $("sortSel").value = "risk:desc";
-    renderTable(applyFilterSort());
-
-    await loadAndDrawTimeseries();
-  }
-
-  main();
+  // go
+  reload();
 })();
 </script>
+
 </body>
 </html>
