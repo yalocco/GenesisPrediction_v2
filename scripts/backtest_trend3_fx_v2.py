@@ -1,15 +1,22 @@
 # scripts/backtest_trend3_fx_v2.py
-# Trend3 FX backtest (research tool)
+# Trend3 FX backtest (stable v2-A)
 #
-# - Uses sentiment_YYYY-MM-DD.json as score source (summary preferred; items aggregate fallback)
-# - Compares Trend3 direction (weighted 1:2:3 over net[t-2..t]) vs next-day THB/JPY change
-# - Default threshold = 0.08 (from sweep)
-# - Writes txt/csv/json under analysis/prediction_backtests/
+# - Uses SENTIMENT daily scores (risk/positive/uncertainty/net) from:
+#     data/world_politics/analysis/sentiment_YYYY-MM-DD.json
+# - FX series is THB per JPY (THB/JPY) computed by:
+#     1) Try dashboard CSV (auto-detect columns)
+#     2) Fallback to USD cross: THB/JPY = USDTHB / USDJPY
+#
+# Added in v2-A:
+#   --max-uncertainty  (if uncertainty > max, no-call)
 #
 # Run:
-#   .\.venv\Scripts\python.exe scripts\backtest_trend3_fx_v2.py
-#   .\.venv\Scripts\python.exe scripts\backtest_trend3_fx_v2.py --threshold 0.05
-#   .\.venv\Scripts\python.exe scripts\backtest_trend3_fx_v2.py --start 2026-01-01 --end 2026-02-18
+#   python scripts/backtest_trend3_fx_v2.py
+#   python scripts/backtest_trend3_fx_v2.py --threshold 0.08
+#   python scripts/backtest_trend3_fx_v2.py --max-uncertainty 0.25
+#
+# Output:
+#   analysis/prediction_backtests/trend3_fx_v2A_YYYYMMDD_HHMMSS.{txt,csv,json}
 
 from __future__ import annotations
 
@@ -20,42 +27,34 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 
-
-# ----------------------------
-# Paths
-# ----------------------------
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = REPO_ROOT / "data"
 ANALYSIS_DIR = REPO_ROOT / "analysis"
 
 SENTIMENT_DIR = DATA_DIR / "world_politics" / "analysis"
-SENTIMENT_LATEST = SENTIMENT_DIR / "sentiment_latest.json"
 
 FX_DASHBOARD_PATH = DATA_DIR / "fx" / "jpy_thb_remittance_dashboard.csv"
-USDTHB_PATH = DATA_DIR / "fx" / "usdthb.csv"
 USDJPY_PATH = DATA_DIR / "fx" / "usdjpy.csv"
+USDTHB_PATH = DATA_DIR / "fx" / "usdthb.csv"
 
 OUT_DIR = ANALYSIS_DIR / "prediction_backtests"
-
 DATE_RE = re.compile(r"(\d{4}-\d{2}-\d{2})")
 
 
-# ----------------------------
-# Helpers
-# ----------------------------
+# =========================
+# Generic helpers
+# =========================
 
-def _parse_date(s: str) -> datetime:
-    return datetime.strptime(s, "%Y-%m-%d")
+def _now_utc_iso() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _safe_float(x: Any) -> Optional[float]:
-    if x is None:
-        return None
     try:
         v = float(x)
         if math.isnan(v) or math.isinf(v):
@@ -69,24 +68,139 @@ def _read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _ensure_outdir() -> None:
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+def _to_date_str_series(s: pd.Series) -> pd.Series:
+    """Ensure index is YYYY-MM-DD strings, sorted, unique last."""
+    idx = pd.to_datetime(s.index, errors="coerce")
+    mask = ~idx.isna()
+    s2 = pd.Series(s.values[mask], index=idx[mask])
+    s2 = s2.sort_index()
+    s2.index = s2.index.strftime("%Y-%m-%d")
+    s2 = s2[~s2.index.duplicated(keep="last")]
+    s2 = s2.dropna()
+    return s2
 
 
-def _walk_get(d: Any, path: List[str]) -> Any:
-    cur = d
-    for k in path:
-        if not isinstance(cur, dict):
-            return None
-        if k not in cur:
-            return None
-        cur = cur[k]
-    return cur
+def _detect_date_col(df: pd.DataFrame) -> Optional[str]:
+    candidates = ["date", "Date", "DATE", "time", "Time", "timestamp", "Timestamp"]
+    for c in candidates:
+        if c in df.columns:
+            return c
+    # heuristic: first column that can parse as datetime for most rows
+    for c in df.columns[:5]:
+        parsed = pd.to_datetime(df[c], errors="coerce")
+        if parsed.notna().mean() >= 0.7:
+            return c
+    return None
 
 
-# ----------------------------
-# Score source: sentiment_YYYY-MM-DD.json
-# ----------------------------
+def _pick_best_numeric_col(df: pd.DataFrame) -> Optional[str]:
+    """
+    Choose best numeric column from dashboard-like CSV.
+    Preference by common names, else pick the numeric column with most non-null.
+    """
+    preferred = [
+        "thb_per_jpy",
+        "THB_per_JPY",
+        "thb_jpy",
+        "thb_per_jpy_mid",
+        "rate",
+        "Rate",
+        "close",
+        "Close",
+        "value",
+        "Value",
+        "mid",
+        "Mid",
+        "jpy_thb",
+        "JPYTHB",
+        "thbperjpy",
+    ]
+    numeric_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
+    if not numeric_cols:
+        # try to coerce
+        tmp = df.copy()
+        for c in df.columns:
+            tmp[c] = pd.to_numeric(tmp[c], errors="coerce")
+        numeric_cols = [c for c in tmp.columns if pd.api.types.is_numeric_dtype(tmp[c]) and tmp[c].notna().any()]
+        df = tmp
+
+    if not numeric_cols:
+        return None
+
+    for c in preferred:
+        if c in numeric_cols:
+            return c
+
+    # heuristic by name contains
+    name_hits = []
+    for c in numeric_cols:
+        lc = str(c).lower()
+        score = 0
+        if "thb" in lc:
+            score += 3
+        if "jpy" in lc:
+            score += 3
+        if "per" in lc or "rate" in lc:
+            score += 2
+        if "close" in lc or "mid" in lc:
+            score += 1
+        name_hits.append((score, c))
+    name_hits.sort(reverse=True)
+    if name_hits and name_hits[0][0] > 0:
+        return name_hits[0][1]
+
+    # fallback: most populated numeric column
+    best = max(numeric_cols, key=lambda c: df[c].notna().sum())
+    return best
+
+
+def _load_timeseries_csv(path: Path) -> Tuple[pd.Series, Dict[str, Any]]:
+    """
+    Load a generic timeseries CSV:
+    - detect date column
+    - detect best numeric column
+    Return (Series, debug_dict)
+    """
+    dbg: Dict[str, Any] = {"path": str(path), "exists": path.exists()}
+    if not path.exists():
+        dbg["error"] = "missing"
+        return pd.Series(dtype=float), dbg
+
+    df = pd.read_csv(path)
+    dbg["columns"] = list(df.columns)
+
+    date_col = _detect_date_col(df)
+    dbg["date_col"] = date_col
+    if not date_col:
+        dbg["error"] = "no_date_col"
+        return pd.Series(dtype=float), dbg
+
+    df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
+    df = df.dropna(subset=[date_col]).sort_values(date_col)
+
+    # coerce numeric
+    for c in df.columns:
+        if c == date_col:
+            continue
+        df[c] = pd.to_numeric(df[c], errors="coerce")
+
+    num_col = _pick_best_numeric_col(df)
+    dbg["value_col"] = num_col
+    if not num_col:
+        dbg["error"] = "no_numeric_col"
+        return pd.Series(dtype=float), dbg
+
+    s = pd.Series(df[num_col].values, index=df[date_col].values)
+    s = _to_date_str_series(s)
+    dbg["points"] = int(len(s))
+    dbg["min_date"] = (min(s.index) if len(s) else None)
+    dbg["max_date"] = (max(s.index) if len(s) else None)
+    return s, dbg
+
+
+# =========================
+# Sentiment (scores) loader
+# =========================
 
 @dataclass(frozen=True)
 class DailyScore:
@@ -101,483 +215,325 @@ class DailyScore:
         return self.positive - self.risk
 
 
-def _extract_from_summary(j: Dict[str, Any]) -> Optional[Tuple[float, float, float]]:
-    summary = j.get("summary")
-    if not isinstance(summary, dict):
-        return None
+def _extract_scores_from_sentiment_json(j: Dict[str, Any]) -> Optional[Tuple[float, float, float]]:
+    """
+    Prefer j['summary'] if present, else attempt derive from items/net.
+    Returns (risk, positive, uncertainty).
+    """
+    if isinstance(j.get("summary"), dict):
+        s = j["summary"]
+        r = _safe_float(s.get("risk"))
+        p = _safe_float(s.get("positive") if s.get("positive") is not None else s.get("pos"))
+        u = _safe_float(s.get("uncertainty") if s.get("uncertainty") is not None else s.get("unc"))
+        n = _safe_float(s.get("net"))
+        if r is not None and p is not None:
+            return float(r), float(p), float(u or 0.0)
+        if n is not None:
+            net = float(n)
+            return max(0.0, -net), max(0.0, net), float(u or 0.0)
 
-    r = _safe_float(summary.get("risk"))
-    p = _safe_float(summary.get("positive"))
-    if p is None:
-        p = _safe_float(summary.get("pos"))
+    items = j.get("items")
+    if isinstance(items, list) and items:
+        nets: List[float] = []
+        uncs: List[float] = []
+        for it in items:
+            if not isinstance(it, dict):
+                continue
+            n = _safe_float(it.get("net"))
+            if n is None and isinstance(it.get("sentiment"), dict):
+                n = _safe_float(it["sentiment"].get("net"))
+            if n is not None:
+                nets.append(float(n))
+            u = _safe_float(it.get("uncertainty"))
+            if u is None:
+                u = _safe_float(it.get("unc"))
+            if u is not None:
+                uncs.append(float(u))
 
-    u = _safe_float(summary.get("uncertainty"))
-    if u is None:
-        u = _safe_float(summary.get("unc"))
-
-    n = _safe_float(summary.get("net"))
-
-    # direct (risk,pos)
-    if r is not None and p is not None:
-        return (float(r), float(p), float(u) if u is not None else 0.0)
-
-    # fallback from net
-    if n is not None:
-        net = float(n)
-        risk = max(0.0, -net)
-        pos = max(0.0, net)
-        return (risk, pos, float(u) if u is not None else 0.0)
+        if nets:
+            net = sum(nets) / len(nets)
+            unc = (sum(uncs) / len(uncs)) if uncs else 0.0
+            return max(0.0, -net), max(0.0, net), float(unc)
 
     return None
 
 
-def _extract_from_items_aggregate(j: Dict[str, Any]) -> Optional[Tuple[float, float, float]]:
-    items = j.get("items")
-    if not isinstance(items, list) or not items:
-        return None
-
-    nets: List[float] = []
-    uncs: List[float] = []
-
-    for it in items:
-        if not isinstance(it, dict):
-            continue
-        n = _safe_float(it.get("net"))
-        if n is None:
-            n = _safe_float(_walk_get(it, ["sentiment", "net"]))
-        if n is not None:
-            nets.append(float(n))
-
-        u = _safe_float(it.get("uncertainty"))
-        if u is None:
-            u = _safe_float(it.get("unc"))
-        if u is not None:
-            uncs.append(float(u))
-
-    if not nets:
-        return None
-
-    net = sum(nets) / len(nets)
-    risk = max(0.0, -net)
-    pos = max(0.0, net)
-    unc = (sum(uncs) / len(uncs)) if uncs else 0.0
-    return (risk, pos, float(unc))
-
-
-def _load_one_sentiment_file(p: Path) -> Optional[DailyScore]:
-    try:
-        j = _read_json(p)
-    except Exception:
-        return None
-    if not isinstance(j, dict):
-        return None
-
-    date = j.get("date")
-    if not isinstance(date, str) or not DATE_RE.fullmatch(date):
-        m = DATE_RE.search(p.name)
-        if m:
-            date = m.group(1)
-        else:
-            return None
-
-    scores = _extract_from_summary(j)
-    if scores is None:
-        scores = _extract_from_items_aggregate(j)
-    if scores is None:
-        return None
-
-    risk, pos, unc = scores
-    return DailyScore(
-        date=str(date),
-        risk=float(risk),
-        positive=float(pos),
-        uncertainty=float(unc),
-        source_path=str(p),
-    )
-
-
-def _find_sentiment_files() -> List[Path]:
-    files: List[Path] = []
-    if SENTIMENT_DIR.exists():
-        files.extend(sorted(SENTIMENT_DIR.glob("sentiment_????-??-??.json")))
-    return files
-
-
-def load_daily_scores(start: Optional[str], end: Optional[str]) -> Tuple[Dict[str, DailyScore], Dict[str, Any]]:
-    files = _find_sentiment_files()
-    start_dt = _parse_date(start) if start else None
-    end_dt = _parse_date(end) if end else None
-
-    out: Dict[str, DailyScore] = {}
-    skipped = 0
-    examples: List[Dict[str, Any]] = []
-
-    for p in files:
-        m = DATE_RE.search(p.name)
-        if not m:
-            continue
-        d = m.group(1)
-        dt = _parse_date(d)
-        if start_dt and dt < start_dt:
-            continue
-        if end_dt and dt > end_dt:
-            continue
-
-        ds = _load_one_sentiment_file(p)
-        if ds is None:
-            skipped += 1
-            if len(examples) < 5:
-                examples.append({"file": str(p), "reason": "cannot_extract_scores"})
-            continue
-        out[ds.date] = ds
-
-    # allow sentiment_latest as an extra point if it has a new date
-    latest_used = False
-    if SENTIMENT_LATEST.exists():
-        ds = _load_one_sentiment_file(SENTIMENT_LATEST)
-        if ds is not None and ds.date not in out:
-            dt = _parse_date(ds.date)
-            ok = True
-            if start_dt and dt < start_dt:
-                ok = False
-            if end_dt and dt > end_dt:
-                ok = False
-            if ok:
-                out[ds.date] = ds
-                latest_used = True
-
-    diag = {
-        "sentiment_dir": str(SENTIMENT_DIR),
-        "sentiment_files_found": len(files),
-        "sentiment_latest_used": latest_used,
-        "dates_loaded": len(out),
-        "skipped": skipped,
-        "examples_skipped": examples,
-    }
-    return out, diag
-
-
-# ----------------------------
-# FX realized THB/JPY series
-# ----------------------------
-
-def _detect_date_col(df: pd.DataFrame) -> Optional[str]:
-    for c in ["date", "Date", "DATE", "day", "Day", "DAY"]:
-        if c in df.columns:
-            return c
-    for c in df.columns:
+def load_daily_scores() -> Dict[str, DailyScore]:
+    scores: Dict[str, DailyScore] = {}
+    for p in sorted(SENTIMENT_DIR.glob("sentiment_????-??-??.json")):
         try:
-            pd.to_datetime(df[c], errors="raise")
-            return c
+            j = _read_json(p)
         except Exception:
             continue
-    return None
 
-
-def _pick_numeric_cols(df: pd.DataFrame) -> List[str]:
-    return [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
-
-
-def _load_fx_from_dashboard() -> Optional[pd.Series]:
-    if not FX_DASHBOARD_PATH.exists():
-        return None
-
-    df = pd.read_csv(FX_DASHBOARD_PATH)
-    date_col = _detect_date_col(df)
-    if not date_col:
-        return None
-
-    df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
-    df = df.dropna(subset=[date_col]).copy()
-    df["date"] = df[date_col].dt.strftime("%Y-%m-%d")
-
-    numeric_cols = _pick_numeric_cols(df)
-    preferred = [
-        "thb_per_jpy", "THB_PER_JPY",
-        "thb_jpy", "THBJPY",
-        "jpy_thb", "JPYTHB",
-        "rate", "RATE",
-        "fx", "FX",
-        "jpy_to_thb", "JPY_TO_THB",
-    ]
-    col = None
-    for name in preferred:
-        if name in df.columns and name in numeric_cols:
-            col = name
-            break
-
-    if col is None and numeric_cols:
-        # heuristic pick
-        best = None
-        best_score = -1.0
-        for c in numeric_cols:
-            s = pd.to_numeric(df[c], errors="coerce").dropna()
-            if s.empty:
+        date = j.get("date")
+        if not isinstance(date, str) or not DATE_RE.search(date):
+            m = DATE_RE.search(p.name)
+            if not m:
                 continue
-            med = float(s.median())
-            if med <= 0:
-                continue
-            score = 0.0
-            if 0.05 <= med <= 5.0:
-                score += 2.0
-            if 0.1 <= med <= 1.0:
-                score += 1.0
-            score += 0.1 * min(60, len(s))
-            if score > best_score:
-                best_score = score
-                best = c
-        col = best
+            date = m.group(1)
 
-    if col is None:
-        return None
+        s = _extract_scores_from_sentiment_json(j)
+        if not s:
+            continue
+        risk, pos, unc = s
+        scores[date] = DailyScore(
+            date=date,
+            risk=float(risk),
+            positive=float(pos),
+            uncertainty=float(unc),
+            source_path=str(p),
+        )
 
-    ser = pd.to_numeric(df[col], errors="coerce")
-    out = pd.Series(ser.values, index=df["date"].values, dtype="float64")
-    out = out[~out.index.duplicated(keep="last")]
-    out = out.dropna()
-    return out.sort_index()
+    return scores
 
 
-def _load_fx_pair_csv(path: Path) -> Optional[pd.DataFrame]:
-    if not path.exists():
-        return None
-    df = pd.read_csv(path)
-    date_col = _detect_date_col(df)
-    if not date_col:
-        return None
-    df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
-    df = df.dropna(subset=[date_col]).copy()
-    df["date"] = df[date_col].dt.strftime("%Y-%m-%d")
+# =========================
+# FX loader (dashboard -> cross fallback)
+# =========================
 
-    numeric_cols = _pick_numeric_cols(df)
-    preferred = ["close", "Close", "CLOSE", "rate", "Rate", "RATE", "value", "Value", "VALUE"]
-    col = None
-    for c in preferred:
-        if c in df.columns and c in numeric_cols:
-            col = c
-            break
-    if col is None and numeric_cols:
-        col = numeric_cols[0]
-    if col is None:
-        return None
+def load_fx_thb_per_jpy() -> Tuple[pd.Series, Dict[str, Any]]:
+    """
+    Return THB/JPY time series as Series indexed by YYYY-MM-DD.
+    Strategy:
+      1) dashboard
+      2) cross = USDTHB / USDJPY
+    """
+    dbg: Dict[str, Any] = {"strategy": None, "dashboard": None, "cross": None}
 
-    df["v"] = pd.to_numeric(df[col], errors="coerce")
-    df = df.dropna(subset=["v"])
-    return df[["date", "v"]].drop_duplicates(subset=["date"], keep="last")
+    # 1) dashboard
+    dash, dash_dbg = _load_timeseries_csv(FX_DASHBOARD_PATH)
+    dbg["dashboard"] = dash_dbg
+    if len(dash) >= 10:
+        dbg["strategy"] = "dashboard"
+        return dash, dbg
 
+    # 2) cross
+    usdjpy, jpy_dbg = _load_timeseries_csv(USDJPY_PATH)
+    usdthb, thb_dbg = _load_timeseries_csv(USDTHB_PATH)
+    dbg["cross"] = {"usdjpy": jpy_dbg, "usdthb": thb_dbg}
 
-def _load_fx_from_usd_cross() -> Optional[pd.Series]:
-    a = _load_fx_pair_csv(USDTHB_PATH)
-    b = _load_fx_pair_csv(USDJPY_PATH)
-    if a is None or b is None:
-        return None
-    m = a.merge(b, on="date", how="inner", suffixes=("_usdthb", "_usdjpy"))
-    if m.empty:
-        return None
-    m["thb_per_jpy"] = m["v_usdthb"] / m["v_usdjpy"]
-    s = pd.Series(m["thb_per_jpy"].values, index=m["date"].values, dtype="float64")
-    s = s.dropna()
+    if len(usdjpy) < 10 or len(usdthb) < 10:
+        dbg["strategy"] = "none"
+        return pd.Series(dtype=float), dbg
+
+    # Align intersection of dates
+    common = sorted(set(usdjpy.index).intersection(set(usdthb.index)))
+    if len(common) < 10:
+        dbg["strategy"] = "none"
+        dbg["cross"]["common_points"] = len(common)
+        return pd.Series(dtype=float), dbg
+
+    # THB/JPY = (THB/USD) / (JPY/USD) = USDTHB / USDJPY
+    cross_vals = []
+    cross_idx = []
+    for d in common:
+        jv = _safe_float(usdjpy[d])
+        tv = _safe_float(usdthb[d])
+        if jv is None or tv is None or jv == 0:
+            continue
+        cross_idx.append(d)
+        cross_vals.append(float(tv) / float(jv))
+
+    s = pd.Series(cross_vals, index=cross_idx)
+    s = s.sort_index()
     s = s[~s.index.duplicated(keep="last")]
-    return s.sort_index()
+    s = s.dropna()
+
+    dbg["strategy"] = "usd_cross"
+    dbg["cross"]["points"] = int(len(s))
+    dbg["cross"]["min_date"] = (min(s.index) if len(s) else None)
+    dbg["cross"]["max_date"] = (max(s.index) if len(s) else None)
+    return s, dbg
 
 
-def load_fx_thb_per_jpy() -> Tuple[pd.Series, str]:
-    s = _load_fx_from_dashboard()
-    if s is not None and len(s) >= 10:
-        return s, str(FX_DASHBOARD_PATH)
-    s2 = _load_fx_from_usd_cross()
-    if s2 is not None and len(s2) >= 10:
-        return s2, "usd_cross"
-    raise FileNotFoundError(
-        "FX series not found. Expected either dashboard or cross:\n"
-        f"  - {FX_DASHBOARD_PATH}\n"
-        f"  - {USDTHB_PATH}\n"
-        f"  - {USDJPY_PATH}\n"
-    )
+# =========================
+# Trend3 backtest
+# =========================
+
+def trend3(a: float, b: float, c: float) -> float:
+    return (a + 2.0 * b + 3.0 * c) / 6.0
 
 
-# ----------------------------
-# Trend3 logic (research)
-# ----------------------------
-
-def trend3_weighted(net_t2: float, net_t1: float, net_t0: float) -> float:
-    return (1.0 * net_t2 + 2.0 * net_t1 + 3.0 * net_t0) / 6.0
-
-
-def direction_from_trend(trend3: float, threshold: float) -> str:
-    if trend3 > threshold:
+def direction(tr3: float, threshold: float) -> str:
+    if tr3 > threshold:
         return "RISK_ON"
-    if trend3 < -threshold:
+    if tr3 < -threshold:
         return "RISK_OFF"
     return "NEUTRAL"
 
 
-def expected_fx_sign(direction: str) -> int:
-    # THB/JPY up => JPY weaker => risk-off in our heuristic
-    if direction == "RISK_OFF":
+def expected_fx_sign(direction_: str) -> int:
+    """
+    We evaluate THB/JPY next-day change:
+      - RISK_OFF expects THB/JPY up (+1)  (JPY weak vs THB or THB strong vs JPY)
+      - RISK_ON expects THB/JPY down (-1)
+    """
+    if direction_ == "RISK_OFF":
         return +1
-    if direction == "RISK_ON":
+    if direction_ == "RISK_ON":
         return -1
     return 0
 
 
-def _sorted_dates(dates: Iterable[str]) -> List[str]:
-    return sorted(dates, key=lambda x: _parse_date(x))
+def write_outputs(df: pd.DataFrame, meta: Dict[str, Any], prefix: str) -> Dict[str, str]:
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    base = OUT_DIR / f"{prefix}_{ts}"
+    p_txt = str(base.with_suffix(".txt"))
+    p_csv = str(base.with_suffix(".csv"))
+    p_json = str(base.with_suffix(".json"))
+
+    df.to_csv(p_csv, index=False)
+
+    payload = {
+        "meta": meta,
+        "rows": df.to_dict(orient="records"),
+    }
+    Path(p_json).write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    # human-readable txt
+    calls = df[df["outcome"].isin(["HIT", "MISS"])]
+    hit = int((calls["outcome"] == "HIT").sum())
+    miss = int((calls["outcome"] == "MISS").sum())
+    total = int(len(calls))
+    hit_rate = (hit / total) if total else None
+
+    lines: List[str] = []
+    lines.append("Trend3 FX backtest v2-A")
+    lines.append(f"run_utc: {meta.get('run_utc')}")
+    lines.append(f"threshold: {meta.get('threshold')}")
+    lines.append(f"max_uncertainty: {meta.get('max_uncertainty')}")
+    lines.append(f"fx_strategy: {meta.get('fx_strategy')}")
+    lines.append("")
+    lines.append(f"SUMMARY: calls={total} hit={hit} miss={miss} hit_rate={hit_rate}")
+    lines.append("")
+    lines.append("TOP 20 rows:")
+    lines.append("date,uncertainty,trend3,direction,fx0,fx1,delta_next,outcome")
+    for _, r in df.head(20).iterrows():
+        lines.append(
+            f"{r['date']},{r['uncertainty']:.6f},{r['trend3']:.6f},{r['direction']},"
+            f"{r['fx0']:.6f},{r['fx1']:.6f},{r['delta_next']:.6f},{r['outcome']}"
+        )
+
+    Path(p_txt).write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return {"txt": p_txt, "csv": p_csv, "json": p_json}
 
 
-def run_backtest(scores: Dict[str, DailyScore], fx: pd.Series, threshold: float) -> Tuple[pd.DataFrame, Dict[str, Any]]:
-    all_dates = _sorted_dates(scores.keys())
-    fx_idx = set(map(str, fx.index))
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--threshold", type=float, default=0.08)
+    ap.add_argument("--max-uncertainty", type=float, default=None)
+    ap.add_argument("--min-calls", type=int, default=1)
+    args = ap.parse_args()
 
+    scores = load_daily_scores()
+    if len(scores) < 5:
+        raise RuntimeError(f"Not enough sentiment days found (got {len(scores)}). Check sentiment_YYYY-MM-DD.json files.")
+
+    fx, fx_dbg = load_fx_thb_per_jpy()
+    if len(fx) < 10:
+        # emit debug report for quick diagnosis
+        OUT_DIR.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        dbg_path = OUT_DIR / f"fx_series_debug_{ts}.json"
+        dbg_path.write_text(json.dumps(fx_dbg, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        raise RuntimeError(
+            "FX data not available (dashboard too short and cross fallback failed).\n"
+            f"Debug written: {dbg_path}"
+        )
+
+    dates = sorted(scores.keys())
     rows: List[Dict[str, Any]] = []
-    for i in range(2, len(all_dates) - 1):
-        d_t2 = all_dates[i - 2]
-        d_t1 = all_dates[i - 1]
-        d_t0 = all_dates[i]
-        d_tn = all_dates[i + 1]
 
-        if d_t0 not in fx_idx or d_tn not in fx_idx:
+    for i in range(2, len(dates) - 1):
+        d0 = dates[i]
+        d1 = dates[i - 1]
+        d2 = dates[i - 2]
+        dn = dates[i + 1]
+
+        if d0 not in fx.index or dn not in fx.index:
             continue
 
-        s2 = scores[d_t2]
-        s1 = scores[d_t1]
-        s0 = scores[d_t0]
+        s0 = scores[d0]
+        s1 = scores[d1]
+        s2 = scores[d2]
 
-        tr3 = trend3_weighted(s2.net, s1.net, s0.net)
-        direction = direction_from_trend(tr3, threshold)
+        tr = trend3(s2.net, s1.net, s0.net)
+        dir_ = direction(tr, args.threshold)
 
-        fx0 = float(fx.loc[d_t0])
-        fx1 = float(fx.loc[d_tn])
+        # --- uncertainty filter ---
+        if args.max_uncertainty is not None and s0.uncertainty > float(args.max_uncertainty):
+            dir_ = "NEUTRAL"
+
+        fx0 = float(fx[d0])
+        fx1 = float(fx[dn])
         delta = fx1 - fx0
 
-        exp = expected_fx_sign(direction)
-
+        exp = expected_fx_sign(dir_)
         outcome = "NO_CALL"
-        hit: Optional[int] = None
+        hit = None
+
         if exp != 0:
-            if delta == 0:
-                outcome = "TIE"
-                hit = 0
-            else:
-                ok = (delta > 0 and exp > 0) or (delta < 0 and exp < 0)
-                outcome = "HIT" if ok else "MISS"
-                hit = 1 if ok else 0
+            ok = (delta > 0 and exp > 0) or (delta < 0 and exp < 0)
+            outcome = "HIT" if ok else "MISS"
+            hit = 1 if ok else 0
 
         rows.append(
             {
-                "date": d_t0,
-                "date_next": d_tn,
-                "risk": s0.risk,
-                "positive": s0.positive,
-                "uncertainty": s0.uncertainty,
-                "net": s0.net,
-                "net_t-1": s1.net,
-                "net_t-2": s2.net,
-                "trend3": tr3,
-                "direction": direction,
-                "sentiment_source": s0.source_path,
-                "fx_thb_per_jpy": fx0,
-                "fx_thb_per_jpy_next": fx1,
-                "fx_delta_next": delta,
+                "date": d0,
+                "uncertainty": float(s0.uncertainty),
+                "risk": float(s0.risk),
+                "positive": float(s0.positive),
+                "net": float(s0.net),
+                "trend3": float(tr),
+                "direction": dir_,
+                "fx0": fx0,
+                "fx1": fx1,
+                "delta_next": float(delta),
                 "outcome": outcome,
                 "hit": hit,
             }
         )
 
-    df = pd.DataFrame(rows)
+    if not rows:
+        raise RuntimeError("No aligned rows (sentiment dates and fx dates did not overlap).")
 
-    calls = df[df["outcome"].isin(["HIT", "MISS"])].copy()
-    neutral = df[df["outcome"] == "NO_CALL"].copy()
+    df = pd.DataFrame(rows).sort_values("date").reset_index(drop=True)
 
-    hit_n = int((calls["outcome"] == "HIT").sum()) if len(calls) else 0
-    miss_n = int((calls["outcome"] == "MISS").sum()) if len(calls) else 0
-    calls_n = int(len(calls))
-    hit_rate = (hit_n / calls_n) if calls_n > 0 else None
+    calls = df[df["outcome"].isin(["HIT", "MISS"])]
+    hit = int((calls["outcome"] == "HIT").sum())
+    miss = int((calls["outcome"] == "MISS").sum())
+    total = int(len(calls))
+    hit_rate = (hit / total) if total else None
 
     meta: Dict[str, Any] = {
-        "run_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "threshold": float(threshold),
-        "fx_source": None,  # filled by caller
-        "fx_series_points": int(len(fx)),
-        "score_points": int(len(scores)),
-        "metrics": {
-            "rows_total": int(len(df)),
-            "calls": calls_n,
-            "neutral_count": int(len(neutral)),
-            "hit": hit_n,
-            "miss": miss_n,
-            "hit_rate": hit_rate,
-        },
-        "notes": {
-            "direction_rule": "trend3 > +threshold => RISK_ON; trend3 < -threshold => RISK_OFF; else NEUTRAL",
-            "trend3_rule": "trend3=(net[t-2]+2*net[t-1]+3*net[t])/6",
-            "net_rule": "net=positive-risk",
-            "fx_rule": "delta_next = fx[t+1]-fx[t] (THB/JPY)",
-            "hit_rule": "RISK_OFF expects delta_next>0; RISK_ON expects delta_next<0; NEUTRAL is NO_CALL",
-        },
+        "run_utc": _now_utc_iso(),
+        "threshold": float(args.threshold),
+        "max_uncertainty": (float(args.max_uncertainty) if args.max_uncertainty is not None else None),
+        "fx_strategy": fx_dbg.get("strategy"),
+        "fx_debug": fx_dbg,
+        "sentiment_days": int(len(scores)),
+        "fx_points": int(len(fx)),
+        "rows_total": int(len(df)),
+        "calls": total,
+        "hit": hit,
+        "miss": miss,
+        "hit_rate": hit_rate,
     }
-    return df, meta
 
-
-def write_outputs(df: pd.DataFrame, meta: Dict[str, Any], diag: Dict[str, Any]) -> Tuple[Path, Path, Path]:
-    _ensure_outdir()
-    run_ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    base = OUT_DIR / f"trend3_fx_v2_{run_ts}"
-
-    csv_path = base.with_suffix(".csv")
-    json_path = base.with_suffix(".json")
-    txt_path = base.with_suffix(".txt")
-
-    df.to_csv(csv_path, index=False, encoding="utf-8")
-
-    payload = dict(meta)
-    payload["diag"] = diag
-    json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-
-    m = meta["metrics"]
-    lines: List[str] = []
-    lines.append("GenesisPrediction v2 - Backtest (Trend3 FX) v2")
-    lines.append(f"run_utc: {meta['run_utc']}")
-    lines.append(f"threshold: {meta['threshold']}")
-    lines.append(f"fx_source: {meta['fx_source']}")
-    lines.append(f"rows_total: {m['rows_total']}")
-    lines.append(f"calls: {m['calls']}")
-    lines.append(f"neutral_count: {m['neutral_count']}")
-    lines.append(f"hit: {m['hit']}")
-    lines.append(f"miss: {m['miss']}")
-    lines.append(f"hit_rate: {m['hit_rate']}")
-    lines.append("")
-    lines.append("DIAG")
-    lines.append(json.dumps(diag, ensure_ascii=False, indent=2))
-    txt_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-
-    return txt_path, csv_path, json_path
-
-
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--threshold", type=float, default=0.08, help="direction threshold for trend3")
-    ap.add_argument("--start", type=str, default=None, help="start date YYYY-MM-DD")
-    ap.add_argument("--end", type=str, default=None, help="end date YYYY-MM-DD")
-    args = ap.parse_args()
-
-    scores, diag = load_daily_scores(start=args.start, end=args.end)
-    if len(scores) < 5:
-        raise RuntimeError(f"Not enough sentiment dates loaded (got {len(scores)}). diag={diag}")
-
-    fx, fx_source = load_fx_thb_per_jpy()
-    df, meta = run_backtest(scores=scores, fx=fx, threshold=float(args.threshold))
-    meta["fx_source"] = fx_source
-
-    txt_path, csv_path, json_path = write_outputs(df, meta, diag)
+    files = write_outputs(df, meta, prefix="trend3_fx_v2A")
 
     print("[OK] backtest written:")
-    print(" -", txt_path)
-    print(" -", csv_path)
-    print(" -", json_path)
+    print(" -", files["txt"])
+    print(" -", files["csv"])
+    print(" -", files["json"])
+    print(f"[SUMMARY] calls={total} hit={hit} miss={miss} hit_rate={hit_rate}")
 
-    m = meta["metrics"]
-    print(f"[SUMMARY] calls={m['calls']} hit={m['hit']} miss={m['miss']} hit_rate={m['hit_rate']}")
+    # Optional guard: ensure at least min calls
+    if total < int(args.min_calls):
+        raise RuntimeError(f"Too few calls ({total}) < --min-calls {args.min_calls}")
+
     return 0
 
 
