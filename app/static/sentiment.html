@@ -696,6 +696,9 @@
     }
   }
 
+  // -----------------------
+  // Trend: 3-panel canvas + B1 (latest value labels)
+  // -----------------------
   function renderTrendFromCsv(csvText){
     const c = $("trend");
     const ctx = c.getContext("2d");
@@ -754,7 +757,7 @@
     const h = rect.height;
 
     // layout
-    const padL = 42, padR = 10, padT = 10, padB = 22;
+    const padL = 42, padR = 64, padT = 10, padB = 22;  // padR a bit larger for labels
     const gap = 8;
 
     const plotX0 = padL;
@@ -775,16 +778,17 @@
     }
 
     function yAt(v, y0, y1, vmax){
-      // keep some headroom
       const vv = Math.max(0, v);
       const den = (vmax > 0) ? vmax : 1;
       return y1 - (y1 - y0) * (vv / den);
     }
 
-    // common styles
-    ctx.lineWidth = 2;
+    function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
 
-    // draw each panel
+    // Common font
+    const mono = "ui-monospace, Menlo, Consolas, monospace";
+
+    // Draw each panel
     for (const p of panels){
       // vmax per panel
       let vmax = 0;
@@ -804,7 +808,7 @@
         ctx.stroke();
       }
 
-      // left axis (simple)
+      // left axis
       ctx.globalAlpha = 0.75;
       ctx.beginPath();
       ctx.moveTo(plotX0, p.y0);
@@ -814,7 +818,7 @@
       // label
       ctx.globalAlpha = 0.85;
       ctx.fillStyle = "rgba(255,255,255,.85)";
-      ctx.font = "12px ui-monospace, Menlo, Consolas, monospace";
+      ctx.font = `12px ${mono}`;
       ctx.fillText(p.label, 6, p.y0 + 12);
 
       // line
@@ -830,15 +834,64 @@
         else ctx.lineTo(x,y);
       }
       ctx.stroke();
+
+      // B1: latest value label at right
+      const last = pts[pts.length - 1];
+      const lastVal = Number(last[p.key] || 0);
+      const xLast = xAt(pts.length - 1);
+      const yLast = yAt(lastVal, p.y0, p.y1, vmax);
+
+      const labelText = lastVal.toFixed(4); // concise but informative
+      ctx.font = `12px ${mono}`;
+
+      // measure + draw small pill background
+      const m = ctx.measureText(labelText);
+      const boxW = Math.ceil(m.width) + 10;
+      const boxH = 18;
+
+      const xBox = plotX1 + 8; // in right margin area
+      const yBox = clamp(yLast - boxH/2, p.y0 + 2, p.y1 - boxH - 2);
+
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = "rgba(0,0,0,.55)";
+      ctx.strokeStyle = "rgba(255,255,255,.18)";
+      ctx.lineWidth = 1;
+      // rounded rect
+      const r = 6;
+      ctx.beginPath();
+      ctx.moveTo(xBox + r, yBox);
+      ctx.lineTo(xBox + boxW - r, yBox);
+      ctx.quadraticCurveTo(xBox + boxW, yBox, xBox + boxW, yBox + r);
+      ctx.lineTo(xBox + boxW, yBox + boxH - r);
+      ctx.quadraticCurveTo(xBox + boxW, yBox + boxH, xBox + boxW - r, yBox + boxH);
+      ctx.lineTo(xBox + r, yBox + boxH);
+      ctx.quadraticCurveTo(xBox, yBox + boxH, xBox, yBox + boxH - r);
+      ctx.lineTo(xBox, yBox + r);
+      ctx.quadraticCurveTo(xBox, yBox, xBox + r, yBox);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // value text colored by series
+      ctx.globalAlpha = 1.0;
+      ctx.fillStyle = p.stroke;
+      ctx.fillText(labelText, xBox + 5, yBox + 13);
+
+      // small marker at last point
+      ctx.globalAlpha = 1.0;
+      ctx.fillStyle = p.stroke;
+      ctx.beginPath();
+      ctx.arc(xLast, yLast, 2.8, 0, Math.PI*2);
+      ctx.fill();
     }
 
     // x labels (first/last)
     ctx.globalAlpha = 0.75;
     ctx.fillStyle = "rgba(255,255,255,.75)";
-    ctx.font = "12px ui-monospace, Menlo, Consolas, monospace";
+    ctx.font = `12px ${mono}`;
     ctx.fillText(pts[0].date, plotX0, h - 6);
-    const last = pts[pts.length - 1].date;
-    ctx.fillText(last, Math.max(plotX0, plotX1 - 92), h - 6);
+    const lastDate = pts[pts.length - 1].date;
+    ctx.fillText(lastDate, Math.max(plotX0, plotX1 - 92), h - 6);
     ctx.globalAlpha = 1.0;
   }
 
