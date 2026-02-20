@@ -5,370 +5,305 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sentiment</title>
-
   <style>
     :root{
       --bg:#0b1020;
-      --text:#e7ecff;
-      --muted:#aab6e6;
-      --line:#2a386b;
-      --grid:#25315c;
-      --accent:#86b7ff;
-      --ok:#7dffb2;
-      --warn:#ffb86b;
-      --bad:#ff7d7d;
+      --panel:#0f1833;
+      --panel2:#0f1730;
+      --line:rgba(160,200,255,.18);
+      --line2:rgba(160,200,255,.12);
+      --text:#e7f0ff;
+      --muted:rgba(231,240,255,.72);
+      --muted2:rgba(231,240,255,.55);
+      --accent:#67b1ff;
+      --ok:#5de0c2;
+      --warn:#ffd166;
+      --bad:#ff6b6b;
+      --shadow:0 18px 50px rgba(0,0,0,.35);
+      --radius:18px;
     }
     html,body{height:100%;}
     body{
       margin:0;
-      background:var(--bg);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+      background:
+        radial-gradient(1200px 800px at 20% -10%, rgba(103,177,255,.18), transparent 60%),
+        radial-gradient(900px 700px at 90% 10%, rgba(93,224,194,.12), transparent 55%),
+        radial-gradient(800px 600px at 10% 100%, rgba(255,209,102,.10), transparent 60%),
+        var(--bg);
       color:var(--text);
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", Arial, sans-serif;
-      line-height:1.35;
     }
-    .wrap{ max-width:1180px; margin:0 auto; padding:14px 16px 28px; }
-
-    /* header */
+    .wrap{
+      max-width: 1160px;
+      margin: 18px auto 40px;
+      padding: 0 14px;
+    }
     .topbar{
-      border:1px solid rgba(255,255,255,0.10);
-      border-radius:16px;
-      background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
-      box-shadow: 0 10px 22px rgba(0,0,0,0.26);
-      padding:10px 12px;
       display:flex;
       align-items:center;
       justify-content:space-between;
       gap:12px;
-      flex-wrap:wrap;
+      padding: 14px 16px;
+      border:1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(15,24,51,.72);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
     }
     .brand{
       display:flex; align-items:center; gap:10px;
-      font-weight:900;
-      letter-spacing:0.2px;
+      font-weight: 700;
+      letter-spacing:.2px;
     }
-    .brandDot{
-      width:10px; height:10px; border-radius:50%;
-      background:var(--ok);
-      box-shadow:0 0 0 4px rgba(125,255,178,0.10);
+    .dot{
+      width:10px;height:10px;border-radius:99px;
+      background: var(--ok);
+      box-shadow: 0 0 0 3px rgba(93,224,194,.15);
     }
     .nav{
-      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+      display:flex; gap:10px; align-items:center;
     }
     .nav a{
-      color:var(--text);
+      color: var(--muted);
       text-decoration:none;
-      font-weight:900;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,0.12);
-      background:rgba(0,0,0,0.16);
-      font-size:13px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border:1px solid transparent;
     }
-    .nav a:hover{ border-color: rgba(134,183,255,0.55); }
+    .nav a:hover{
+      color: var(--text);
+      border-color: var(--line);
+      background: rgba(103,177,255,.06);
+    }
     .pillOk{
-      display:flex; align-items:center; gap:8px;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,0.12);
-      background:rgba(0,0,0,0.16);
-      font-weight:900;
-      font-size:12px;
-      color:var(--muted);
-      white-space:nowrap;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border:1px solid var(--line);
+      background: rgba(15,24,51,.35);
+      color: var(--muted);
     }
-
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
     .topTitle{
-      font-size:34px;
-      font-weight:900;
-      letter-spacing:0.3px;
-      margin:14px 0 6px;
+      margin: 18px 2px 6px;
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: .2px;
     }
     .desc{
-      color:var(--muted);
-      font-size:13px;
-      margin-bottom:14px;
+      margin: 0 2px 18px;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 13px;
     }
-    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
-
     .grid2{
       display:grid;
-      grid-template-columns: 1.05fr 0.95fr;
-      gap:14px;
-      align-items:stretch;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      align-items:start;
     }
     @media (max-width: 980px){
       .grid2{ grid-template-columns: 1fr; }
     }
-
     .card{
-      border:1px solid rgba(255,255,255,0.10);
-      border-radius:18px;
-      background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
-      box-shadow: 0 10px 22px rgba(0,0,0,0.28);
-      padding:14px 14px 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(15,24,51,.60);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      padding: 14px 14px 12px;
     }
     .card h2{
-      margin:0 0 10px 0;
-      font-size:22px;
-      font-weight:900;
-      letter-spacing:0.2px;
+      margin: 0 0 10px;
+      font-size: 18px;
+      letter-spacing:.2px;
     }
     .row{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
+      display:flex; gap:10px; flex-wrap:wrap;
       align-items:center;
     }
     .btn{
-      appearance:none;
-      border:1px solid rgba(255,255,255,0.14);
-      background:rgba(0,0,0,0.18);
-      color:var(--text);
-      border-radius:999px;
-      padding:6px 10px;
-      font-weight:800;
-      font-size:12px;
+      border: 1px solid var(--line);
+      background: rgba(15,24,51,.35);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 8px 12px;
       cursor:pointer;
-      user-select:none;
+      font-size: 12px;
     }
-    .btn:hover{ border-color: rgba(134,183,255,0.55); }
-    .btn:active{ transform: translateY(1px); }
-
-    .kpiGrid{
-      margin-top:10px;
+    .btn:hover{ background: rgba(103,177,255,.08); }
+    .kv{
+      display:grid;
+      grid-template-columns: 140px 1fr;
+      gap: 8px 10px;
+      margin-top: 10px;
+      align-items:center;
+    }
+    .kv .k{ color: var(--muted2); font-size: 12px; }
+    .kv .v{ color: var(--text); font-size: 12px; }
+    .pillDir{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border:1px solid var(--line);
+      font-size: 12px;
+      background: rgba(15,24,51,.35);
+    }
+    .dirDot{
+      width:8px;height:8px;border-radius:99px;
+      background: var(--muted2);
+    }
+    .dirRiskOn .dirDot{ background: var(--ok); }
+    .dirRiskOff .dirDot{ background: var(--bad); }
+    .dirNeutral .dirDot{ background: var(--warn); }
+    .small{ font-size: 12px; color: var(--muted2); }
+    .controlsGrid{
       display:grid;
       grid-template-columns: repeat(4, 1fr);
-      gap:10px;
+      gap: 10px;
+      margin-top: 10px;
     }
     @media (max-width: 980px){
-      .kpiGrid{ grid-template-columns: repeat(2, 1fr); }
+      .controlsGrid{ grid-template-columns: repeat(2, 1fr); }
     }
-    .kpi{
-      border:1px solid rgba(255,255,255,0.10);
-      background:rgba(0,0,0,0.14);
-      border-radius:14px;
-      padding:10px 10px 9px;
-      min-height:58px;
+    .stat{
+      border:1px solid var(--line2);
+      background: rgba(15,24,51,.32);
+      border-radius: 14px;
+      padding: 10px 12px;
+      min-height: 58px;
     }
-    .kpi .lab{ font-size:12px; color:var(--muted); margin-bottom:6px; }
-    .kpi .val{ font-size:18px; font-weight:900; }
-    .kpiWide{ grid-column: 1 / -1; }
-
-    .formGrid{
-      margin-top:12px;
+    .stat .label{ color: var(--muted2); font-size: 12px; margin-bottom: 6px; }
+    .stat .value{ font-size: 18px; font-weight: 700; }
+    .stat .mono{ font-size: 12px; color: var(--muted); }
+    .split{
+      margin-top: 14px;
       display:grid;
-      grid-template-columns: 180px 220px 220px 1fr;
-      gap:10px;
-      align-items:end;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
     }
     @media (max-width: 980px){
-      .formGrid{ grid-template-columns: 1fr 1fr; }
+      .split{ grid-template-columns: 1fr; }
     }
-    label{ font-size:12px; color:var(--muted); display:block; margin:0 0 6px; }
-    input[type="text"], select{
-      width:100%;
-      border:1px solid rgba(255,255,255,0.12);
-      background:rgba(0,0,0,0.18);
-      color:var(--text);
-      border-radius:12px;
-      padding:9px 10px;
-      font-size:13px;
-      outline:none;
-    }
-    input[type="text"]:focus, select:focus{
-      border-color: rgba(134,183,255,0.55);
-    }
-    .checkRow{
-      display:flex; gap:10px; align-items:center; justify-content:flex-start;
-      border:1px solid rgba(255,255,255,0.12);
-      background:rgba(0,0,0,0.18);
-      border-radius:12px;
-      padding:9px 10px;
-      height:40px;
-    }
-    .checkRow span{ font-size:13px; color:var(--text); font-weight:800; }
-
-    .miniNote{
-      margin-top:10px;
-      color:var(--muted);
-      font-size:12px;
-      white-space:pre-wrap;
-    }
-
-    .trendBox{
-      margin-top:12px;
-      border:1px solid rgba(255,255,255,0.10);
-      background:rgba(0,0,0,0.12);
-      border-radius:16px;
-      padding:10px 10px 8px;
-    }
-    .trendHead{
-      display:flex;
-      justify-content:space-between;
-      align-items:baseline;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-bottom:8px;
-    }
-    .trendHead .t{ font-weight:900; }
-    .trendHead .m{ color:var(--muted); font-size:12px; }
-    canvas#trend{ width:100%; height:420px; display:block; border-radius:12px; }
-
-    .howGrid{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap:10px;
-    }
-    .howText{
-      color:var(--muted);
-      font-size:12px;
-      line-height:1.55;
-      white-space:pre-wrap;
-    }
-
-    .t3Box{
-      border:1px solid rgba(255,255,255,0.10);
-      background:rgba(0,0,0,0.14);
-      border-radius:14px;
-      padding:10px 10px 9px;
-    }
-    .t3Title{
-      font-weight:900;
-      letter-spacing:0.2px;
-      margin:0 0 8px;
-      font-size:13px;
-      color:var(--muted);
-      text-transform:uppercase;
-    }
-    .t3Grid{
-      display:grid;
-      grid-template-columns: 120px 1fr;
-      gap:6px 10px;
-      align-items:center;
-      font-size:13px;
-    }
-    .pill{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:4px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,0.14);
-      background:rgba(0,0,0,0.18);
-      font-weight:900;
-      width:max-content;
-    }
-    .dot{ width:9px;height:9px;border-radius:50%; background:var(--muted); box-shadow:0 0 0 3px rgba(255,255,255,0.05); }
-    .dir-riskon .dot{ background:var(--warn); }
-    .dir-riskoff .dot{ background:var(--ok); }
-    .dir-neutral .dot{ background:var(--accent); }
-    .dir-unknown .dot{ background:var(--muted); }
-    .small{ margin-top:8px; color:var(--muted); font-size:12px; }
-
-    .tableCard{
-      margin-top:14px;
-      border:1px solid rgba(255,255,255,0.10);
-      border-radius:18px;
-      background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
-      box-shadow: 0 10px 22px rgba(0,0,0,0.28);
+    .canvasWrap{
+      border:1px solid var(--line);
+      border-radius: var(--radius);
       overflow:hidden;
+      background: rgba(15,24,51,.45);
+      box-shadow: var(--shadow);
     }
-    .tableHead{
-      padding:12px 14px;
-      border-bottom:1px solid rgba(255,255,255,0.08);
+    .canvasHead{
       display:flex;
-      justify-content:space-between;
-      gap:10px;
-      flex-wrap:wrap;
-      align-items:baseline;
-      background:rgba(255,255,255,0.02);
+      justify-content: space-between;
+      align-items:center;
+      padding: 10px 12px;
+      border-bottom:1px solid var(--line2);
+      color: var(--muted);
+      font-size: 12px;
     }
-    .tableHead .h{ font-size:22px; font-weight:900; }
-    .tableHead .meta{ font-size:12px; color:var(--muted); }
-
+    canvas{ display:block; width:100%; height:auto; }
+    .sectionTitle{
+      margin: 18px 2px 10px;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing:.2px;
+    }
     table{
       width:100%;
-      border-collapse:separate;
-      border-spacing:0;
-      font-size:13px;
+      border-collapse: collapse;
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      overflow:hidden;
+      background: rgba(15,24,51,.55);
+      box-shadow: var(--shadow);
     }
     thead th{
       text-align:left;
-      font-size:12px;
-      color:var(--muted);
-      padding:10px 12px;
-      border-bottom:1px solid rgba(255,255,255,0.08);
-      background:rgba(0,0,0,0.08);
-      position:sticky;
-      top:0;
-      z-index:1;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 10px 10px;
+      border-bottom: 1px solid var(--line2);
     }
     tbody td{
-      padding:10px 12px;
-      border-bottom:1px solid rgba(255,255,255,0.06);
-      vertical-align:middle;
+      padding: 10px 10px;
+      border-bottom: 1px solid rgba(160,200,255,.08);
+      vertical-align: top;
+      font-size: 13px;
     }
-    tbody tr:hover td{ background:rgba(134,183,255,0.05); }
-
+    tbody tr:hover{ background: rgba(103,177,255,.06); }
     .thumb{
-      width:56px;height:56px;border-radius:14px;
-      border:1px solid rgba(255,255,255,0.10);
-      background:rgba(0,0,0,0.18);
+      width:56px;height:56px;border-radius: 12px;
+      border:1px solid var(--line2);
+      background: rgba(15,24,51,.35);
       overflow:hidden;
       display:flex;
       align-items:center;
       justify-content:center;
-      color:var(--muted);
-      font-size:11px;
-      user-select:none;
+      color: var(--muted2);
+      font-size: 12px;
     }
-    .thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
-
-    .titleCell{ min-width:360px; }
-    .titleA{
-      color:var(--text);
-      font-weight:900;
-      text-decoration:none;
-      display:inline-block;
-      max-width: 740px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .titleA:hover{ text-decoration:underline; }
-    .srcLine{ font-size:12px; color:var(--muted); margin-top:4px; }
-
-    .status{
+    .thumb img{ width:100%; height:100%; object-fit: cover; display:block; }
+    .title a{ color: var(--text); text-decoration:none; font-weight: 650; }
+    .title a:hover{ text-decoration: underline; }
+    .src{ color: var(--muted2); font-size: 12px; margin-top: 2px; }
+    .badge{
       display:inline-flex; align-items:center; gap:8px;
-      padding:4px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,0.12);
-      background:rgba(0,0,0,0.18);
-      font-weight:900;
-      font-size:12px;
-      width:max-content;
+      border:1px solid var(--line2);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px;
+      background: rgba(15,24,51,.35);
     }
-    .status .sdot{ width:8px;height:8px;border-radius:50%; background:var(--muted); }
-    .status.risk .sdot{ background:var(--bad); }
-    .status.ok .sdot{ background:var(--ok); }
-    .status.neu .sdot{ background:var(--accent); }
-
+    .bDot{ width:8px;height:8px;border-radius:99px; background: var(--muted2); }
+    .bRisk .bDot{ background: var(--bad); }
+    .bOk .bDot{ background: var(--ok); }
+    .bNeu .bDot{ background: var(--warn); }
+    .num{ font-variant-numeric: tabular-nums; }
     .net{
-      font-weight:900;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      border:1px solid rgba(255,255,255,.12);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px;
+      background: rgba(15,24,51,.35);
+      display:inline-flex;
+      gap: 8px;
+      align-items:center;
     }
-    .net.bad{ color:var(--bad); }
-
-    .num{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    .net.ok{ border-color: rgba(93,224,194,.35); color: rgba(93,224,194,.95); }
+    .net.risk{ border-color: rgba(255,107,107,.35); color: rgba(255,107,107,.95); }
+    .net.neu{ border-color: rgba(255,209,102,.35); color: rgba(255,209,102,.95); }
+    .right{
+      text-align:right;
+    }
+    .filterRow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-top: 10px;
+    }
+    .input, .select{
+      border:1px solid var(--line);
+      background: rgba(15,24,51,.35);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 8px 10px;
+      font-size: 12px;
+      outline:none;
+    }
+    .chk{
+      display:flex; align-items:center; gap:8px;
+      color: var(--muted);
+      font-size: 12px;
+      user-select:none;
     }
   </style>
 </head>
-
 <body>
   <div class="wrap">
     <div class="topbar">
       <div class="brand">
-        <span class="brandDot"></span>
-        <span>GenesisPrediction v2</span>
+        <div class="dot"></div>
+        <div>GenesisPrediction v2</div>
       </div>
       <div class="nav">
         <a href="/static/index.html">Home</a>
@@ -391,142 +326,119 @@
         <div class="row">
           <button class="btn" id="btnReload">Reload</button>
           <button class="btn" id="btnReset">Reset filters</button>
-          <button class="btn" id="btnOpenVM">Open view_model_latest.json</button>
+          <button class="btn" id="btnOpenVm">Open view_model_latest.json</button>
           <button class="btn" id="btnOpenSent">Open sentiment_latest.json</button>
-          <button class="btn" id="btnOpenTS">Open sentiment_timeseries.csv</button>
+          <button class="btn" id="btnOpenTs">Open sentiment_timeseries.csv</button>
         </div>
 
-        <div class="kpiGrid">
-          <div class="kpi">
-            <div class="lab">date</div>
-            <div class="val mono" id="kpi_date">-</div>
+        <div class="controlsGrid">
+          <div class="stat">
+            <div class="label">date</div>
+            <div class="value mono" id="kpiDate">-</div>
           </div>
-          <div class="kpi">
-            <div class="lab">articles</div>
-            <div class="val mono" id="kpi_articles">-</div>
+          <div class="stat">
+            <div class="label">articles</div>
+            <div class="value mono" id="kpiArticles">-</div>
           </div>
-          <div class="kpi">
-            <div class="lab">risk</div>
-            <div class="val mono" id="kpi_risk">-</div>
+          <div class="stat">
+            <div class="label">risk</div>
+            <div class="value mono" id="kpiRisk">-</div>
           </div>
-          <div class="kpi">
-            <div class="lab">positive</div>
-            <div class="val mono" id="kpi_pos">-</div>
+          <div class="stat">
+            <div class="label">positive</div>
+            <div class="value mono" id="kpiPositive">-</div>
           </div>
-          <div class="kpi kpiWide">
-            <div class="lab">uncertainty</div>
-            <div class="val mono" id="kpi_unc">-</div>
+          <div class="stat" style="grid-column: span 2;">
+            <div class="label">uncertainty</div>
+            <div class="value mono" id="kpiUnc">-</div>
           </div>
-          <div class="kpi kpiWide">
-            <div class="lab">note</div>
-            <div class="val mono" id="kpi_note" style="font-size:14px;">-</div>
-          </div>
-        </div>
-
-        <div class="formGrid">
-          <div>
-            <label>search (title/source)</label>
-            <input id="q" type="text" placeholder="e.g. nigeria" />
-          </div>
-          <div>
-            <label>source</label>
-            <select id="sourceSel"></select>
-          </div>
-          <div>
-            <label>sort</label>
-            <select id="sortSel">
-              <option value="risk_desc">risk ↓</option>
-              <option value="pos_desc">positive ↓</option>
-              <option value="unc_desc">uncertainty ↓</option>
-              <option value="net_asc">net ↑</option>
-              <option value="net_desc">net ↓</option>
-              <option value="title_asc">title A→Z</option>
-            </select>
-          </div>
-          <div>
-            <label>&nbsp;</label>
-            <div class="checkRow">
-              <input id="showMissing" type="checkbox" checked />
-              <span>show missing</span>
-            </div>
+          <div class="stat" style="grid-column: span 2;">
+            <div class="label">note</div>
+            <div class="mono" id="kpiNote">-</div>
           </div>
         </div>
 
-        <div class="miniNote mono" id="dbg">debug: -</div>
-
-        <div class="trendBox">
-          <div class="trendHead">
-            <div class="t">Sentiment Trend</div>
-            <div class="m mono" id="ts_meta">timeseries: -</div>
-          </div>
-          <canvas id="trend" width="1000" height="420"></canvas>
-          <div class="miniNote">※ risk / positive / uncertainty を3段・独立スケールで描画。</div>
+        <div class="filterRow">
+          <input class="input" id="q" placeholder="search (title/source)" style="min-width:240px;" />
+          <select class="select" id="srcSel" style="min-width:180px;"></select>
+          <select class="select" id="sortSel" style="min-width:160px;">
+            <option value="risk_desc">risk ↓</option>
+            <option value="risk_asc">risk ↑</option>
+            <option value="pos_desc">positive ↓</option>
+            <option value="pos_asc">positive ↑</option>
+            <option value="unc_desc">uncertainty ↓</option>
+            <option value="unc_asc">uncertainty ↑</option>
+            <option value="net_desc">net ↓</option>
+            <option value="net_asc">net ↑</option>
+          </select>
+          <label class="chk">
+            <input type="checkbox" id="showMissing" checked />
+            show missing
+          </label>
+          <div class="small mono" id="dbgLine"></div>
         </div>
+
+        <div class="canvasWrap" style="margin-top:12px;">
+          <div class="canvasHead">
+            <div>Sentiment Trend</div>
+            <div class="mono" id="tsInfo">timeseries: -</div>
+          </div>
+          <canvas id="trend" width="1080" height="420"></canvas>
+        </div>
+        <div class="small" style="margin-top:8px;">※ risk / positive / uncertainty を<strong>各段・独立スケール</strong>で描画。</div>
       </div>
 
       <div class="card">
         <h2>How it works</h2>
+        <div class="small mono" style="line-height:1.6;">
+          1) GET <span class="mono">/analysis/sentiment_latest.json</span>（主）<br/>
+          2) GET <span class="mono">/analysis/view_model_latest.json</span>（補助）<br/>
+          3) さらに補助メタ候補を探索（読み取りのみ）<br/>
+          4) join key: URL優先 → 無ければ title fallback<br/>
+          5) サムネ: imageがあれば採用（favicon等の“アイコンURL”は無視）
+        </div>
 
-        <div class="howGrid">
-          <div class="howText mono">
-1) GET /analysis/sentiment_latest.json  （主）
-2) GET /analysis/view_model_latest.json （補助・任意）
-3) さらに補助メタ候補を探索（読み取りのみ / JSON/JSONL）
-4) join key: URL優先 → title fallback
-5) サムネ: image(あれば) → favicon(最終)
+        <div style="margin-top:12px; border:1px solid var(--line2); border-radius:14px; padding:12px; background: rgba(15,24,51,.30);">
+          <div style="font-weight:800; font-size: 13px;">TREND3 FX (PHASE 1)</div>
+          <div class="kv">
+            <div class="k">dir(today)</div>
+            <div class="v"><span class="pillDir mono" id="t3Dir"><span class="dirDot"></span><span id="t3DirTxt">NOT_FOUND</span></span></div>
+
+            <div class="k">threshold</div>
+            <div class="v mono" id="t3Th">-</div>
+
+            <div class="k">hit_rate(latest)</div>
+            <div class="v mono" id="t3Hit">-</div>
+
+            <div class="k">as_of</div>
+            <div class="v mono" id="t3AsOf">-</div>
+
+            <div class="k">path</div>
+            <div class="v mono" id="t3Path">NOT_FOUND</div>
           </div>
 
-          <div class="t3Box">
-            <div class="t3Title">TREND3 FX (PHASE 1)</div>
-            <div class="t3Grid">
-              <div style="color:var(--muted);">dir (today)</div>
-              <div>
-                <span id="t3_pill" class="pill dir-unknown">
-                  <span class="dot"></span>
-                  <span id="t3_dir" class="mono">LOADING</span>
-                </span>
-              </div>
-
-              <div style="color:var(--muted);">threshold</div>
-              <div class="mono" id="t3_thr">-</div>
-
-              <div style="color:var(--muted);">hit_rate</div>
-              <div class="mono" id="t3_hit">-</div>
-
-              <div style="color:var(--muted);">as_of</div>
-              <div class="mono" id="t3_asof">-</div>
-            </div>
-            <div class="small mono" id="t3_path">path: -</div>
-          </div>
-
-          <div class="howText mono" id="dbg2">debug2: -</div>
+          <div class="small mono" id="dbg2" style="margin-top:10px; white-space:pre-wrap;"></div>
         </div>
       </div>
     </div>
 
-    <div class="tableCard">
-      <div class="tableHead">
-        <div class="h">Articles &amp; Sentiment</div>
-        <div class="meta mono" id="metaTop">-</div>
-      </div>
+    <div class="sectionTitle">Articles &amp; Sentiment</div>
+    <div class="small mono" id="rowsInfo" style="margin: 0 2px 10px;">-</div>
 
-      <div style="overflow:auto; max-height: 72vh;">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:74px;">thumb</th>
-              <th>title</th>
-              <th style="width:120px;">status</th>
-              <th style="width:110px;">risk</th>
-              <th style="width:110px;">positive</th>
-              <th style="width:130px;">uncertainty</th>
-              <th style="width:110px;">net</th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-        </table>
-      </div>
-    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:74px;">thumb</th>
+          <th>title</th>
+          <th style="width:92px;">status</th>
+          <th class="right" style="width:92px;">risk</th>
+          <th class="right" style="width:92px;">positive</th>
+          <th class="right" style="width:110px;">uncertainty</th>
+          <th class="right" style="width:110px;">net</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
   </div>
 
   <script>
@@ -543,81 +455,34 @@
       if (x === null || x === undefined || Number.isNaN(x)) return "-";
       const n = Number(x);
       if (!Number.isFinite(n)) return "-";
-      const v = (n <= 1.00001) ? (n * 100) : n;
+      const v = (n <= 1.0) ? (n * 100.0) : n;
       return v.toFixed(digits) + "%";
     }
-    function normStr(v){
-      if (v === null || v === undefined) return "";
-      return String(v).trim();
+    function normStr(s){
+      if (!s) return "";
+      return String(s).trim();
     }
-    function normTitle(s){
-      return normStr(s).toLowerCase().replace(/\s+/g, " ").slice(0, 240);
-    }
-    function toPlain(v){
-      if (v === null || v === undefined) return "";
-      if (typeof v === "string") return v;
-      if (typeof v === "number" || typeof v === "boolean") return String(v);
-      try{ return JSON.stringify(v); }catch{ return ""; }
-    }
-    function pickAny(o, keys){
+    function pickAny(obj, keys){
+      if (!obj || typeof obj !== "object") return null;
       for (const k of keys){
-        if (o && Object.prototype.hasOwnProperty.call(o, k) && o[k] !== null && o[k] !== undefined) return o[k];
+        if (obj[k] !== undefined && obj[k] !== null && obj[k] !== "") return obj[k];
       }
       return null;
     }
-    function pick(obj, keys){
-      for (const k of keys){
-        const parts = k.split(".");
-        let cur = obj;
-        let ok = true;
-        for (const p of parts){
-          if (cur && Object.prototype.hasOwnProperty.call(cur, p)) cur = cur[p];
-          else { ok=false; break; }
-        }
-        if (ok && cur !== null && cur !== undefined) return cur;
-      }
-      return null;
-    }
-    function toImageUrl(v){
-      if (!v) return "";
-      if (typeof v === "string") return v;
-      if (Array.isArray(v)){
-        for (const it of v){
-          const u = toImageUrl(it);
-          if (u) return u;
-        }
-        return "";
-      }
-      if (typeof v === "object"){
-        const u = pickAny(v, ["url","src","href","image","image_url","imageUrl","original","large","medium","small"]);
-        if (typeof u === "string") return u;
-      }
-      return "";
-    }
-    function normalizeSource(v){
-      if (!v) return "";
-      if (typeof v === "string") return v.trim();
-      if (typeof v === "object"){
-        const s = pickAny(v, ["name","title","domain","site","publisher","source","source_name"]);
-        if (typeof s === "string" && s.trim()) return s.trim();
-        try{
-          const j = JSON.stringify(v);
-          return j.length > 120 ? (j.slice(0,120) + "…") : j;
-        }catch{
-          return "(source)";
-        }
-      }
-      return String(v);
-    }
-    function faviconUrlFromArticleUrl(articleUrl){
+    function safeHostFromUrl(u){
       try{
-        const u = new URL(articleUrl);
-        return "https://www.google.com/s2/favicons?domain=" + encodeURIComponent(u.hostname) + "&sz=128";
-      }catch{
+        const x = new URL(u);
+        return x.host || "";
+      }catch(e){
         return "";
       }
     }
-    function classifyStatus(net){
+    function safeKey(x){
+      const u = normStr(x.url);
+      if (u) return u;
+      return ("t:" + normStr(x.title).toLowerCase());
+    }
+    function getStatusFromNet(net){
       const n = Number(net);
       if (!Number.isFinite(n)) return "neu";
       if (n < -0.02) return "risk";
@@ -651,109 +516,58 @@
     }
 
     // -----------------------
-    // Paths
+    // Image heuristics
     // -----------------------
-    const PATHS_SENT = ["/analysis/sentiment_latest.json","../analysis/sentiment_latest.json","./analysis/sentiment_latest.json"];
-    const PATHS_VM_PRIMARY = ["/analysis/view_model_latest.json","../analysis/view_model_latest.json","./analysis/view_model_latest.json"];
-
-    // ✅ “補助メタ候補” (読み取りのみ)
-    // ここは存在しなくてもOK（404でも続行）
-    const PATHS_META_EXTRA_JSON = [
-      "/analysis/daily_summary_latest.json",
-      "/analysis/daily_news_latest.json",
-      "/analysis/events_latest.json",
-      "/analysis/world_politics_latest.json",
-      "/analysis/news_latest.json",
-      "../analysis/daily_summary_latest.json",
-      "../analysis/daily_news_latest.json",
-      "../analysis/events_latest.json"
-    ];
-    const PATHS_META_EXTRA_JSONL = [
-      "/analysis/events_latest.jsonl",
-      "/analysis/world_politics/latest.jsonl",
-      "/analysis/world_politics/analysis/events_latest.jsonl",
-      "../analysis/events_latest.jsonl"
-    ];
-
-    const PATHS_TS = ["/analysis/sentiment_timeseries.csv","../analysis/sentiment_timeseries.csv","./analysis/sentiment_timeseries.csv"];
-
-    let sentPath = "-";
-    let vmPathsUsed = [];
-    let tsPath = "-";
-
-    let joinedAll = [];
-    let joinStats = { vmItems:0, sentItems:0, joined:0, missVm:0, missSent:0 };
-
-    // ✅ “記事配列” 自動発掘
-    function isArticleLikeObject(o){
-      if (!o || typeof o !== "object") return false;
-      const title = pickAny(o, ["title","headline","name"]);
-      const url = pickAny(o, ["url","link"]);
-      const src = pickAny(o, ["source","source_name","publisher","site","domain"]);
-      return (typeof title === "string" && title.trim().length > 0) ||
-             (typeof url === "string" && url.trim().length > 0) ||
-             (src !== null && src !== undefined);
+    function isLikelyIconUrl(u){
+      const s = String(u || "").trim();
+      if (!s) return false;
+      const l = s.toLowerCase();
+      // strong signals
+      if (l.includes("favicon")) return true;
+      if (l.includes("apple-touch-icon")) return true;
+      if (l.endsWith(".ico")) return true;
+      // common small icon patterns
+      if (l.includes("/icon") || l.includes("icon=")) return true;
+      if (l.includes("size=16") || l.includes("size=32") || l.includes("size=48") || l.includes("sz=16") || l.includes("sz=32")) return true;
+      // often logos (still small) – treat as icon if explicitly labeled
+      if (l.includes("logo") && (l.includes("svg") || l.includes("icon"))) return true;
+      return false;
     }
-    function isArticleArray(arr){
-      if (!Array.isArray(arr) || arr.length < 3) return false;
-      let hit = 0;
-      const n = Math.min(arr.length, 20);
-      for (let i=0;i<n;i++){
-        if (isArticleLikeObject(arr[i])) hit++;
+
+    function toImageUrl(v){
+      if (!v) return "";
+      if (typeof v === "string"){
+        const s = v.trim();
+        if (!s) return "";
+        if (isLikelyIconUrl(s)) return "";
+        return s;
       }
-      return hit >= Math.max(2, Math.floor(n * 0.3));
-    }
-    function findArticleArray(root){
-      if (Array.isArray(root)) return root;
-
-      const fast = pick(root, [
-        "articles","items","data","data.articles","data.items",
-        "result.articles","payload.articles","payload.items",
-        "view_model","view_model.articles","view_model.items",
-        "viewModel","viewModel.articles","viewModel.items",
-        "vm","vm.articles","vm.items",
-        "latest","latest.articles","latest.items"
-      ]);
-      if (isArticleArray(fast)) return fast;
-
-      const queue = [{ v: root, depth: 0 }];
-      const seen = new Set();
-      const MAX_DEPTH = 6;
-      const MAX_NODES = 2000;
-      let nodes = 0;
-
-      while (queue.length){
-        const { v, depth } = queue.shift();
-        if (!v || typeof v !== "object") continue;
-        if (seen.has(v)) continue;
-        seen.add(v);
-        nodes++;
-        if (nodes > MAX_NODES) break;
-
-        if (Array.isArray(v)){
-          if (isArticleArray(v)) return v;
-          continue;
+      if (Array.isArray(v)){
+        for (const it of v){
+          const u = toImageUrl(it);
+          if (u) return u;
         }
-
-        if (depth >= MAX_DEPTH) continue;
-
-        for (const k of Object.keys(v)){
-          const child = v[k];
-          if (!child || typeof child !== "object") continue;
-          if (Array.isArray(child)){
-            if (isArticleArray(child)) return child;
-            if (depth + 1 <= MAX_DEPTH){
-              for (let i=0;i<Math.min(child.length, 10);i++){
-                const it = child[i];
-                if (it && typeof it === "object") queue.push({ v: it, depth: depth + 1 });
-              }
-            }
-          }else{
-            queue.push({ v: child, depth: depth + 1 });
-          }
+        return "";
+      }
+      if (typeof v === "object"){
+        const u = pickAny(v, ["url","src","href","image","image_url","imageUrl","original","large","medium","small"]);
+        if (typeof u === "string"){
+          const s = u.trim();
+          if (!s) return "";
+          if (isLikelyIconUrl(s)) return "";
+          return s;
         }
       }
-      return [];
+      return "";
+    }
+    function normalizeSource(v){
+      if (!v) return "";
+      if (typeof v === "string") return v.trim();
+      if (typeof v === "object"){
+        const x = pickAny(v, ["name","title","source","publisher","domain"]);
+        if (typeof x === "string") return x.trim();
+      }
+      return "";
     }
 
     function normalizeMetaItem(x){
@@ -777,304 +591,122 @@
       const risk = pickAny(x, ["risk","risk_score"]);
       const positive = pickAny(x, ["positive","positive_score"]);
       const uncertainty = pickAny(x, ["uncertainty","uncertainty_score"]);
-      let net = pickAny(x, ["net","net_score"]);
-      if (net === null || net === undefined){
-        const pr = Number(positive);
-        const rr = Number(risk);
-        if (Number.isFinite(pr) && Number.isFinite(rr)) net = pr - rr;
-      }
-      return { title, url, source, image, risk, positive, uncertainty, net, raw:x };
+      const net = pickAny(x, ["net","net_score"]);
+
+      return {
+        title, url, source, image,
+        risk:Number(risk), positive:Number(positive), uncertainty:Number(uncertainty), net:Number(net),
+        raw:x
+      };
     }
 
-    function joinMetaSent(metaItems, sentItems){
-      const metaByUrl = new Map();
-      const metaByTitle = new Map();
-      for (const m of metaItems){
-        if (m.url) metaByUrl.set(m.url, m);
-        const nt = normTitle(m.title);
-        if (nt && !metaByTitle.has(nt)) metaByTitle.set(nt, m);
+    function flattenAnyArray(json){
+      if (!json) return [];
+      if (Array.isArray(json)) return json;
+      if (typeof json !== "object") return [];
+      for (const k of ["items","articles","data","rows","events","results"]){
+        if (Array.isArray(json[k])) return json[k];
       }
+      return [];
+    }
 
-      const usedMeta = new Set();
-      const out = [];
-      let joined = 0;
+    function buildMetaMap(metaJson){
+      const arr = flattenAnyArray(metaJson).map(normalizeMetaItem).filter(x => x.url || x.title);
+      const map = new Map();
+      for (const x of arr){
+        const k = safeKey(x);
+        if (!map.has(k)) map.set(k, x);
+      }
+      return { map, count: arr.length };
+    }
+
+    function joinItems(sentItems, metaMaps){
+      const joined = [];
+      const dbg = {
+        sentItems: sentItems.length,
+        metaItems: metaMaps.reduce((a,b)=>a+b.count,0),
+        joined: 0,
+        metaOnly: 0,
+        sentOnly: 0
+      };
+
+      const metaBestMap = new Map();
+      for (const mm of metaMaps){
+        for (const [k,v] of mm.map.entries()){
+          if (!metaBestMap.has(k)) metaBestMap.set(k, v);
+          else{
+            // prefer one with image
+            const cur = metaBestMap.get(k);
+            if ((!cur.image && v.image)) metaBestMap.set(k, v);
+          }
+        }
+      }
 
       for (const s of sentItems){
-        let m = null;
-        if (s.url && metaByUrl.has(s.url)) m = metaByUrl.get(s.url);
-        if (!m){
-          const nt = normTitle(s.title);
-          if (nt && metaByTitle.has(nt)) m = metaByTitle.get(nt);
-        }
-        if (m){
-          usedMeta.add(m);
-          joined++;
-          out.push({
-            title: m.title || s.title,
-            url: m.url || s.url,
-            source: m.source || s.source || "",
-            image: m.image || s.image || "",
-            risk: s.risk, positive: s.positive, uncertainty: s.uncertainty, net: s.net,
-            _meta: m.raw, _sent: s.raw,
-            _join: (s.url && m.url && s.url === m.url) ? "url" : "title"
-          });
-        }else{
-          // sentiment-only fallback (still renderable)
-          out.push({
-            title: s.title,
-            url: s.url,
-            source: s.source || "",
-            image: s.image || "",
-            risk: s.risk, positive: s.positive, uncertainty: s.uncertainty, net: s.net,
-            _meta: null, _sent: s.raw,
-            _join: "sent_only"
-          });
-        }
+        const k = safeKey(s);
+        const m = metaBestMap.get(k) || null;
+
+        const title = (m && m.title) ? m.title : s.title;
+        const url = (s.url || (m ? m.url : "")) || "";
+        const source = (s.source || (m ? m.source : "")) || normalizeSource(safeHostFromUrl(url));
+
+        // image priority: meta first then sentiment (both are filtered by isLikelyIconUrl)
+        let image = (m && m.image) ? m.image : (s.image || "");
+
+        const net = Number.isFinite(s.net) ? s.net : (Number(s.positive) - Number(s.risk));
+        const status = getStatusFromNet(net);
+
+        joined.push({
+          title, url, source, image,
+          risk: s.risk, positive: s.positive, uncertainty: s.uncertainty, net,
+          status,
+          _meta: m,
+          _sent: s
+        });
+
+        if (m) dbg.joined += 1;
+        else dbg.sentOnly += 1;
       }
 
-      joinStats = {
-        vmItems: metaItems.length,
-        sentItems: sentItems.length,
-        joined,
-        missVm: Math.max(0, sentItems.length - joined),
-        missSent: Math.max(0, metaItems.length - joined),
-      };
-      return out;
+      // metaOnly rows are not shown; keep debug only
+      dbg.metaOnly = metaBestMap.size - dbg.joined;
+
+      return { joined, dbg };
     }
 
-    function updateKpi(dateStr){
-      const withSent = joinedAll.filter(x => x._sent && x.risk !== null && x.risk !== undefined);
-      const n = withSent.length;
+    function sortItems(items, spec){
+      const a = items.slice();
+      const key = spec.key;
+      const dir = spec.dir;
 
-      let ar=0, ap=0, au=0;
-      for (const x of withSent){
-        const r = Number(x.risk);
-        const p = Number(x.positive);
-        const u = Number(x.uncertainty);
-        if (Number.isFinite(r)) ar += r;
-        if (Number.isFinite(p)) ap += p;
-        if (Number.isFinite(u)) au += u;
-      }
-      const avgR = (n>0) ? (ar/n) : null;
-      const avgP = (n>0) ? (ap/n) : null;
-      const avgU = (n>0) ? (au/n) : null;
-
-      document.getElementById("kpi_date").textContent = dateStr || "-";
-      document.getElementById("kpi_articles").textContent = String(n);
-      document.getElementById("kpi_risk").textContent = fmtNum(avgR, 6);
-      document.getElementById("kpi_pos").textContent = fmtNum(avgP, 6);
-      document.getElementById("kpi_unc").textContent = fmtNum(avgU, 6);
-
-      document.getElementById("kpi_note").textContent =
-        `join: URL優先 → title fallback / metaItems=${joinStats.vmItems} sentItems=${joinStats.sentItems} joined=${joinStats.joined} metaOnly=${joinStats.missSent} sentOnly=${joinStats.missVm}`;
+      a.sort((x,y)=>{
+        const vx = Number(x[key]);
+        const vy = Number(y[key]);
+        const ax = Number.isFinite(vx) ? vx : -999999;
+        const ay = Number.isFinite(vy) ? vy : -999999;
+        if (ax === ay){
+          return (x.title||"").localeCompare(y.title||"");
+        }
+        return dir * (ay - ax);
+      });
+      return a;
     }
 
-    function parseCSV(text){
-      const lines = text.split(/\r?\n/).filter(l => l.trim().length>0);
-      if (lines.length < 2) return [];
-      const header = lines[0].split(",").map(s=>s.trim());
-      const rows = [];
-      for (let i=1;i<lines.length;i++){
-        const cols = lines[i].split(",");
-        const o = {};
-        for (let c=0;c<header.length;c++){
-          o[header[c]] = (cols[c]!==undefined)? cols[c].trim() : "";
-        }
-        rows.push(o);
+    function getSortSpec(v){
+      switch(v){
+        case "risk_asc": return { key:"risk", dir:-1 };
+        case "risk_desc": return { key:"risk", dir: 1 };
+        case "pos_asc": return { key:"positive", dir:-1 };
+        case "pos_desc": return { key:"positive", dir: 1 };
+        case "unc_asc": return { key:"uncertainty", dir:-1 };
+        case "unc_desc": return { key:"uncertainty", dir: 1 };
+        case "net_asc": return { key:"net", dir:-1 };
+        case "net_desc": return { key:"net", dir: 1 };
+        default: return { key:"risk", dir: 1 };
       }
-      return rows;
-    }
-    function toNum(v){
-      if (v === null || v === undefined) return NaN;
-      const s = String(v).trim();
-      if (!s) return NaN;
-      return Number(s);
     }
 
-    function drawTrend3Panel(series){
-      const canvas = document.getElementById("trend");
-      const ctx = canvas.getContext("2d");
-
-      const cssW = canvas.clientWidth || 1000;
-      const cssH = canvas.clientHeight || 420;
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = Math.floor(cssW*dpr);
-      canvas.height = Math.floor(cssH*dpr);
-      ctx.setTransform(dpr,0,0,dpr,0,0);
-
-      ctx.clearRect(0,0,cssW,cssH);
-
-      ctx.fillStyle = "rgba(0,0,0,0.18)";
-      ctx.fillRect(0,0,cssW,cssH);
-      ctx.strokeStyle = "rgba(255,255,255,0.08)";
-      ctx.strokeRect(0.5,0.5,cssW-1,cssH-1);
-
-      const padL=52, padR=10, padT=10, padB=26;
-      const x0=padL, y0=padT, w=cssW-padL-padR, h=cssH-padT-padB;
-
-      const n = series.length;
-      if (!n){
-        ctx.fillStyle="rgba(170,182,230,0.75)";
-        ctx.font="13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
-        ctx.fillText("no data", x0, y0+18);
-        return;
-      }
-
-      const panels = [
-        { key:"risk", label:"RISK" },
-        { key:"positive", label:"POSITIVE" },
-        { key:"uncertainty", label:"UNCERTAINTY" },
-      ];
-
-      const gap = 12;
-      const ph = (h - gap*2) / 3;
-
-      const xAt = (i) => x0 + (w*i/Math.max(1,n-1));
-
-      function panelRect(pi){
-        const py = y0 + pi*(ph+gap);
-        return { x:x0, y:py, w, h:ph };
-      }
-
-      function panelStats(key){
-        const vals = [];
-        for (const d of series){
-          const v = d[key];
-          if (Number.isFinite(v)) vals.push(v);
-        }
-        if (!vals.length){
-          return { vmin:0, vmax:1, last:NaN, max:NaN };
-        }
-        let vmin = Math.min(...vals);
-        let vmax = Math.max(...vals);
-        if (vmax === vmin) vmax = vmin + 1e-6;
-        const m = (vmax - vmin) * 0.10;
-        vmin -= m; vmax += m;
-        const last = series[series.length-1][key];
-        const maxv = Math.max(...vals);
-        return { vmin, vmax, last, max:maxv };
-      }
-
-      function yAt(v, vmin, vmax, rect){
-        return rect.y + rect.h * (1 - (v - vmin)/(vmax - vmin));
-      }
-
-      ctx.font="12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
-
-      for (let pi=0; pi<3; pi++){
-        const p = panels[pi];
-        const rect = panelRect(pi);
-        const st = panelStats(p.key);
-
-        ctx.fillStyle="rgba(0,0,0,0.10)";
-        ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
-        ctx.strokeStyle="rgba(255,255,255,0.08)";
-        ctx.strokeRect(rect.x+0.5, rect.y+0.5, rect.w-1, rect.h-1);
-
-        ctx.strokeStyle="rgba(170,182,230,0.12)";
-        for (let g=0; g<=3; g++){
-          const yy = rect.y + (rect.h*g/3);
-          ctx.beginPath();
-          ctx.moveTo(rect.x, yy);
-          ctx.lineTo(rect.x+rect.w, yy);
-          ctx.stroke();
-        }
-
-        ctx.fillStyle="rgba(231,236,255,0.92)";
-        ctx.fillText(p.label, rect.x+6, rect.y+14);
-
-        ctx.fillStyle="rgba(170,182,230,0.80)";
-        const t0 = st.vmax;
-        const t1 = st.vmax - (st.vmax-st.vmin)/2;
-        const t2 = st.vmin;
-        ctx.fillText(t0.toFixed(4), 8, rect.y+14);
-        ctx.fillText(t1.toFixed(4), 8, rect.y+rect.h/2+4);
-        ctx.fillText(t2.toFixed(4), 8, rect.y+rect.h-2);
-
-        ctx.strokeStyle = "rgba(134,183,255,0.95)";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        let started=false;
-        for (let i=0;i<n;i++){
-          const v = series[i][p.key];
-          if (!Number.isFinite(v)) continue;
-          const xx = xAt(i);
-          const yy = yAt(v, st.vmin, st.vmax, rect);
-          if (!started){ ctx.moveTo(xx,yy); started=true; }
-          else ctx.lineTo(xx,yy);
-        }
-        ctx.stroke();
-
-        if (Number.isFinite(st.last)){
-          ctx.fillStyle="rgba(231,236,255,0.92)";
-          ctx.fillText("latest: " + st.last.toFixed(6), rect.x+6, rect.y+rect.h-6);
-        }
-
-        if (Number.isFinite(st.max)){
-          const txt = "max: " + st.max.toFixed(6);
-          ctx.fillStyle="rgba(170,182,230,0.85)";
-          const mw = ctx.measureText(txt).width;
-          ctx.fillText(txt, rect.x+rect.w-mw-6, rect.y+14);
-        }
-
-        const right = series[n-1].date || "";
-        ctx.fillStyle="rgba(170,182,230,0.75)";
-        const mw2 = ctx.measureText(String(right)).width;
-        ctx.fillText(String(right), rect.x+rect.w-mw2-6, rect.y+rect.h-6);
-      }
-
-      ctx.fillStyle="rgba(170,182,230,0.75)";
-      const left = series[0].date || "";
-      ctx.fillText(String(left), x0, y0+h+18);
-    }
-
-    function normalizeDir(raw){
-      if (!raw) return { dir:"UNKNOWN", cls:"dir-unknown" };
-      const s = String(raw).trim().toUpperCase();
-      if (s === "RISK_ON" || s === "RISKON" || s === "ON") return { dir:"RISK_ON", cls:"dir-riskon" };
-      if (s === "RISK_OFF" || s === "RISKOFF" || s === "OFF") return { dir:"RISK_OFF", cls:"dir-riskoff" };
-      if (s === "NEUTRAL" || s === "FLAT") return { dir:"NEUTRAL", cls:"dir-neutral" };
-      return { dir:s, cls:"dir-unknown" };
-    }
-    async function loadTrend3(){
-      const candidates = [
-        "/analysis/fx/trend3_fx_latest.json",
-        "/analysis/trend3_fx_latest.json",
-        "/analysis/prediction/trend3_fx_latest.json",
-        "/analysis/predictions/trend3_fx_latest.json",
-        "../analysis/fx/trend3_fx_latest.json",
-        "../analysis/trend3_fx_latest.json",
-        "./analysis/fx/trend3_fx_latest.json",
-        "./analysis/trend3_fx_latest.json"
-      ];
-      const res = await fetchJsonFirst(candidates);
-      const pill = document.getElementById("t3_pill");
-
-      if (!res.ok){
-        pill.className = "pill dir-unknown";
-        document.getElementById("t3_dir").textContent = "NOT_FOUND";
-        document.getElementById("t3_thr").textContent = "-";
-        document.getElementById("t3_hit").textContent = "-";
-        document.getElementById("t3_asof").textContent = "-";
-        document.getElementById("t3_path").textContent = "path: NOT_FOUND (checked " + candidates.length + ")";
-        return;
-      }
-      const j = res.json || {};
-      const dirRaw = pick(j, ["dir","direction","today_dir","today.direction","prediction.dir","prediction.direction","trend3.dir","trend3.direction"]);
-      const thr = pick(j, ["threshold","params.threshold","prediction.threshold","trend3.threshold"]);
-      const hit = pick(j, ["hit_rate","metrics.hit_rate","latest.hit_rate","prediction.hit_rate","trend3.hit_rate"]);
-      const asof = pick(j, ["as_of","date","generated_at","updated_at","meta.as_of","meta.date"]);
-
-      const { dir, cls } = normalizeDir(dirRaw);
-      pill.className = "pill " + cls;
-      document.getElementById("t3_dir").textContent = dir;
-      document.getElementById("t3_thr").textContent = (thr && typeof thr === "object") ? JSON.stringify(thr) : fmtNum(thr, 6);
-      document.getElementById("t3_hit").textContent = fmtPct(hit, 2);
-      document.getElementById("t3_asof").textContent = asof ? String(asof) : "-";
-      document.getElementById("t3_path").textContent = "path: " + res.path;
-    }
-
-    function buildSources(items){
+    function buildSourceList(items){
       const set = new Set();
       for (const x of items){
         if (x.source) set.add(x.source);
@@ -1111,304 +743,475 @@
         // ✅ thumb priority:
         // 1) joined/meta image
         // 2) sentiment image
-        // 3) favicon fallback
+        // (favicon fallback disabled — icons are not thumbnails)
         let thumbUrl = "";
         if (x.image && String(x.image).startsWith("http")) thumbUrl = x.image;
-        else if (x.url) thumbUrl = faviconUrlFromArticleUrl(x.url);
 
         setThumb(th, thumbUrl, x.title);
+
         tdThumb.appendChild(th);
+        tr.appendChild(tdThumb);
 
         const tdTitle = document.createElement("td");
-        tdTitle.className = "titleCell";
+        tdTitle.className = "title";
         const a = document.createElement("a");
-        a.className = "titleA";
-        a.textContent = x.title || "(no title)";
         a.href = x.url || "#";
         a.target = "_blank";
         a.rel = "noopener noreferrer";
+        a.textContent = x.title || "(no title)";
         tdTitle.appendChild(a);
+
         const src = document.createElement("div");
-        src.className = "srcLine";
-        src.textContent = x.source || "(no source)";
+        src.className = "src";
+        src.textContent = x.source || safeHostFromUrl(x.url) || "(no source)";
         tdTitle.appendChild(src);
 
-        const tdStatus = document.createElement("td");
-        const st = document.createElement("div");
-        const net = Number(x.net);
-        const status = classifyStatus(net);
-        st.className = "status " + status;
-        const dot = document.createElement("span");
-        dot.className = "sdot";
-        const label = document.createElement("span");
-        label.textContent = (status === "risk") ? "risk" : (status === "ok") ? "ok" : "neutral";
-        st.appendChild(dot);
-        st.appendChild(label);
-        tdStatus.appendChild(st);
-
-        const tdR = document.createElement("td");
-        tdR.className = "num";
-        tdR.textContent = fmtNum(x.risk, 6);
-
-        const tdP = document.createElement("td");
-        tdP.className = "num";
-        tdP.textContent = fmtNum(x.positive, 6);
-
-        const tdU = document.createElement("td");
-        tdU.className = "num";
-        tdU.textContent = fmtNum(x.uncertainty, 6);
-
-        const tdN = document.createElement("td");
-        tdN.className = "num";
-        const nText = fmtNum(x.net, 6);
-        const span = document.createElement("span");
-        span.className = "net" + ((Number.isFinite(net) && net < -0.02) ? " bad" : "");
-        span.textContent = nText;
-        tdN.appendChild(span);
-
-        tr.appendChild(tdThumb);
         tr.appendChild(tdTitle);
+
+        const tdStatus = document.createElement("td");
+        const b = document.createElement("span");
+        const st = x.status || "neu";
+        b.className = "badge " + (st==="risk" ? "bRisk" : (st==="ok" ? "bOk" : "bNeu"));
+        const d = document.createElement("span");
+        d.className = "bDot";
+        const t = document.createElement("span");
+        t.className = "mono";
+        t.textContent = st;
+        b.appendChild(d);
+        b.appendChild(t);
+        tdStatus.appendChild(b);
         tr.appendChild(tdStatus);
-        tr.appendChild(tdR);
-        tr.appendChild(tdP);
-        tr.appendChild(tdU);
-        tr.appendChild(tdN);
+
+        function tdNum(val){
+          const td = document.createElement("td");
+          td.className = "right mono num";
+          td.textContent = fmtNum(val, 6);
+          return td;
+        }
+
+        tr.appendChild(tdNum(x.risk));
+        tr.appendChild(tdNum(x.positive));
+        tr.appendChild(tdNum(x.uncertainty));
+
+        const tdNet = document.createElement("td");
+        tdNet.className = "right";
+        const net = document.createElement("span");
+        net.className = "net mono num " + (st==="risk" ? "risk" : (st==="ok" ? "ok" : "neu"));
+        net.textContent = fmtNum(x.net, 6);
+        tdNet.appendChild(net);
+        tr.appendChild(tdNet);
 
         tbody.appendChild(tr);
       }
-
-      document.getElementById("metaTop").textContent =
-        `sent: ${sentPath} / meta_used: ${vmPathsUsed.length ? vmPathsUsed.join(", ") : "(none)"} / joined: ${joinStats.joined} / total rows: ${items.length}`;
     }
 
-    function applyFilters(){
-      const q = normStr(document.getElementById("q").value).toLowerCase();
-      const src = document.getElementById("sourceSel").value;
-      const sort = document.getElementById("sortSel").value;
-      const showMissing = document.getElementById("showMissing").checked;
-
-      let arr = joinedAll.slice();
-
-      if (!showMissing){
-        arr = arr.filter(x => x._meta && x._sent);
+    // -----------------------
+    // Trend canvas (3 panel)
+    // -----------------------
+    function parseCsv(csv){
+      const lines = csv.trim().split(/\r?\n/);
+      if (!lines.length) return [];
+      const header = lines[0].split(",").map(s=>s.trim());
+      const out = [];
+      for (let i=1;i<lines.length;i++){
+        const row = lines[i].split(",");
+        if (row.length < 2) continue;
+        const o = {};
+        for (let j=0;j<header.length && j<row.length;j++){
+          o[header[j]] = row[j].trim();
+        }
+        out.push(o);
       }
-
-      if (src && src !== "All"){
-        arr = arr.filter(x => x.source === src);
-      }
-
-      if (q){
-        arr = arr.filter(x => {
-          const t = (x.title || "").toLowerCase();
-          const s = (x.source || "").toLowerCase();
-          return t.includes(q) || s.includes(q);
-        });
-      }
-
-      function numOrNegInf(v){
-        const n = Number(v);
-        return Number.isFinite(n) ? n : -1e9;
-      }
-      function numOrPosInf(v){
-        const n = Number(v);
-        return Number.isFinite(n) ? n : 1e9;
-      }
-
-      if (sort === "risk_desc") arr.sort((a,b)=> numOrNegInf(b.risk) - numOrNegInf(a.risk));
-      else if (sort === "pos_desc") arr.sort((a,b)=> numOrNegInf(b.positive) - numOrNegInf(a.positive));
-      else if (sort === "unc_desc") arr.sort((a,b)=> numOrNegInf(b.uncertainty) - numOrNegInf(a.uncertainty));
-      else if (sort === "net_asc") arr.sort((a,b)=> numOrPosInf(a.net) - numOrPosInf(b.net));
-      else if (sort === "net_desc") arr.sort((a,b)=> numOrNegInf(b.net) - numOrNegInf(a.net));
-      else if (sort === "title_asc") arr.sort((a,b)=> (a.title||"").localeCompare(b.title||""));
-
-      renderTable(arr);
-
-      document.getElementById("dbg").textContent =
-        `debug: q="${q}" src="${src}" sort="${sort}" showMissing=${showMissing}\n` +
-        `metaItems=${joinStats.vmItems} sentItems=${joinStats.sentItems} joined=${joinStats.joined} showing=${arr.length}`;
+      return out;
     }
 
-    function openPath(p){
-      window.open(p, "_blank", "noopener,noreferrer");
-    }
-    function hookControls(){
-      document.getElementById("btnReload").onclick = () => boot();
-      document.getElementById("btnReset").onclick = () => {
-        document.getElementById("q").value = "";
-        document.getElementById("sourceSel").value = "All";
-        document.getElementById("sortSel").value = "risk_desc";
-        document.getElementById("showMissing").checked = true;
-        applyFilters();
-      };
-      document.getElementById("btnOpenVM").onclick = () => openPath("/analysis/view_model_latest.json");
-      document.getElementById("btnOpenSent").onclick = () => openPath("/analysis/sentiment_latest.json");
-      document.getElementById("btnOpenTS").onclick = () => openPath("/analysis/sentiment_timeseries.csv");
+    function draw3Panel(canvas, series){
+      const ctx = canvas.getContext("2d");
+      const W = canvas.width;
+      const H = canvas.height;
 
-      document.getElementById("q").addEventListener("input", () => applyFilters());
-      document.getElementById("sourceSel").addEventListener("change", () => applyFilters());
-      document.getElementById("sortSel").addEventListener("change", () => applyFilters());
-      document.getElementById("showMissing").addEventListener("change", () => applyFilters());
-      window.addEventListener("resize", () => { if (window.__tsSeries) drawTrend3Panel(window.__tsSeries); }, { passive:true });
-    }
+      ctx.clearRect(0,0,W,H);
 
-    async function tryLoadJsonArray(path){
-      const r = await fetch(path, { cache:"no-store" });
-      if (!r.ok) return { ok:false, path, arr:[] };
-      const j = await r.json();
-      const arr = findArticleArray(j);
-      if (!Array.isArray(arr)) return { ok:false, path, arr:[] };
-      return { ok:true, path, arr };
-    }
+      // background
+      ctx.fillStyle = "rgba(15,24,51,.65)";
+      ctx.fillRect(0,0,W,H);
 
-    async function tryLoadJsonlArray(path){
-      const r = await fetch(path, { cache:"no-store" });
-      if (!r.ok) return { ok:false, path, arr:[] };
-      const t = await r.text();
-      const lines = t.split(/\r?\n/).filter(l => l.trim().length);
-      const objs = [];
-      for (const line of lines){
-        try{ objs.push(JSON.parse(line)); }catch{}
-      }
-      // jsonl は “配列”ではないので、objs を記事配列として扱う
-      const arr = isArticleArray(objs) ? objs : [];
-      return { ok: arr.length>0, path, arr };
-    }
+      const padL=58, padR=18, padT=14, padB=20;
+      const gap=10;
+      const panelH = (H - padT - padB - gap*2) / 3;
 
-    function isArticleArray(arr){
-      if (!Array.isArray(arr) || arr.length < 3) return false;
-      let hit = 0;
-      const n = Math.min(arr.length, 20);
-      for (let i=0;i<n;i++){
-        if (isArticleLikeObject(arr[i])) hit++;
-      }
-      return hit >= Math.max(2, Math.floor(n * 0.3));
-    }
+      const panels = [
+        { key:"risk", label:"RISK" },
+        { key:"positive", label:"POSITIVE" },
+        { key:"uncertainty", label:"UNCERTAINTY" }
+      ];
 
-    async function boot(){
-      const dbg2 = document.getElementById("dbg2");
-      vmPathsUsed = [];
+      const dates = series.map(x=>x.date).filter(Boolean);
+      const xMin=0, xMax=Math.max(0, dates.length-1);
 
-      const sentRes = await fetchJsonFirst(PATHS_SENT);
-      sentPath = sentRes.ok ? sentRes.path : "NOT_FOUND";
-      if (!sentRes.ok){
-        dbg2.textContent = "debug2: sentiment_latest.json NOT_FOUND\nsent=" + sentPath;
-        joinedAll = [];
-        renderTable([]);
-        return;
+      function getVal(x, key){
+        const v = Number(x[key]);
+        return Number.isFinite(v) ? v : NaN;
       }
 
-      // sentiment array
-      const sentArr = findArticleArray(sentRes.json);
-      const sentItems = (Array.isArray(sentArr) ? sentArr : []).map(normalizeSentItem);
-
-      // meta items (merge from multiple sources; all read-only)
-      const metaItems = [];
-
-      // 1) view_model (primary)
-      for (const p of PATHS_VM_PRIMARY){
-        try{
-          const res = await tryLoadJsonArray(p);
-          if (res.ok){
-            vmPathsUsed.push(res.path);
-            metaItems.push(...res.arr.map(normalizeMetaItem));
-            break;
-          }
-        }catch{}
+      // helpers
+      function line(x1,y1,x2,y2, stroke){
+        ctx.strokeStyle = stroke;
+        ctx.beginPath();
+        ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
+        ctx.stroke();
+      }
+      function text(s,x,y, fill, align="left"){
+        ctx.fillStyle = fill;
+        ctx.textAlign = align;
+        ctx.fillText(s,x,y);
       }
 
-      // 2) extra JSON candidates
-      for (const p of PATHS_META_EXTRA_JSON){
-        try{
-          const res = await tryLoadJsonArray(p);
-          if (res.ok){
-            vmPathsUsed.push(res.path);
-            metaItems.push(...res.arr.map(normalizeMetaItem));
-            if (metaItems.length >= 2000) break;
-          }
-        }catch{}
-      }
+      ctx.font = "12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace";
+      ctx.lineWidth = 1;
 
-      // 3) extra JSONL candidates
-      for (const p of PATHS_META_EXTRA_JSONL){
-        try{
-          const res = await tryLoadJsonlArray(p);
-          if (res.ok){
-            vmPathsUsed.push(res.path);
-            metaItems.push(...res.arr.map(normalizeMetaItem));
-            if (metaItems.length >= 2000) break;
-          }
-        }catch{}
-      }
+      const xTo = (i)=> padL + (xMax===0 ? 0 : (i-xMin) / (xMax-xMin)) * (W-padL-padR);
 
-      // join (meta may be empty, but sentiment-only still renders + uses sentiment image if present)
-      joinedAll = joinMetaSent(metaItems, sentItems);
+      panels.forEach((p, idx)=>{
+        const y0 = padT + idx*(panelH+gap);
+        const y1 = y0 + panelH;
 
-      // as_of
-      const dateStr =
-        toPlain(pick(sentRes.json, ["date","as_of","meta.date","meta.as_of"])) ||
-        toPlain(pick(sentItems[sentItems.length-1]?.raw || {}, ["date","as_of"])) ||
-        "-";
+        // frame
+        ctx.strokeStyle = "rgba(160,200,255,.16)";
+        ctx.strokeRect(padL, y0, W-padL-padR, panelH);
 
-      document.getElementById("asofPill").textContent = "as_of: " + (dateStr || "-");
-      updateKpi(dateStr);
+        // data range
+        const vals = series.map(x=>getVal(x,p.key)).filter(v=>Number.isFinite(v));
+        const vMin = Math.min(...vals, 0);
+        const vMax = Math.max(...vals, 0);
+        const span = (vMax - vMin) || 1e-9;
 
-      // build sources dropdown
-      const sources = buildSources(joinedAll);
-      const sel = document.getElementById("sourceSel");
-      sel.innerHTML = "";
-      for (const s of sources){
-        const opt = document.createElement("option");
-        opt.value = s;
-        opt.textContent = s;
-        sel.appendChild(opt);
-      }
-      sel.value = "All";
+        const yTo = (v)=> y1 - ((v - vMin) / span) * panelH;
 
-      // timeseries
-      const tsRes = await fetchTextFirst(PATHS_TS);
-      tsPath = tsRes.ok ? tsRes.path : "NOT_FOUND";
-
-      if (tsRes.ok){
-        const rows = parseCSV(tsRes.text);
-        const series = rows.map(r => ({
-          date: r.date || r.Date || r.DAY || r.day || "",
-          risk: toNum(r.risk ?? r.RISK),
-          positive: toNum(r.positive ?? r.POSITIVE),
-          uncertainty: toNum(r.uncertainty ?? r.UNCERTAINTY),
-        })).filter(d => d.date);
-
-        window.__tsSeries = series;
-
-        if (series.length){
-          const last = series[series.length-1].date;
-          const first = series[0].date;
-          document.getElementById("ts_meta").textContent = `range: ${first} .. ${last} / points: ${series.length}`;
-          if (!dateStr || dateStr === "-" || dateStr === "null"){
-            updateKpi(last);
-            document.getElementById("asofPill").textContent = "as_of: " + last;
-          }
-        }else{
-          document.getElementById("ts_meta").textContent = "timeseries: points=0";
+        // grid + ticks
+        ctx.strokeStyle = "rgba(160,200,255,.10)";
+        for (let k=0;k<=3;k++){
+          const yy = y0 + (k/3)*panelH;
+          line(padL, yy, W-padR, yy, "rgba(160,200,255,.10)");
         }
 
-        drawTrend3Panel(series);
-      }else{
-        document.getElementById("ts_meta").textContent = "timeseries: NOT_FOUND";
+        // labels
+        ctx.fillStyle = "rgba(231,240,255,.85)";
+        ctx.textAlign = "left";
+        ctx.fillText(p.label, padL+6, y0+14);
+
+        // max label
+        ctx.textAlign = "right";
+        ctx.fillStyle = "rgba(231,240,255,.60)";
+        ctx.fillText("max: " + fmtNum(vMax, 6), W-padR-6, y0+14);
+
+        // line plot
+        ctx.strokeStyle = "rgba(103,177,255,.95)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        let started=false;
+        for (let i=0;i<series.length;i++){
+          const v = getVal(series[i], p.key);
+          if (!Number.isFinite(v)) continue;
+          const xx = xTo(i);
+          const yy = yTo(v);
+          if (!started){ ctx.moveTo(xx,yy); started=true; }
+          else ctx.lineTo(xx,yy);
+        }
+        ctx.stroke();
+        ctx.lineWidth = 1;
+
+        // latest label
+        const lastIdx = series.length-1;
+        if (lastIdx >= 0){
+          const v = getVal(series[lastIdx], p.key);
+          if (Number.isFinite(v)){
+            const xx = xTo(lastIdx);
+            const yy = yTo(v);
+
+            ctx.fillStyle = "rgba(15,24,51,.85)";
+            ctx.strokeStyle = "rgba(160,200,255,.22)";
+            const boxW = 170, boxH = 32;
+            const bx = Math.max(padL+6, xx - boxW - 6);
+            const by = Math.max(y0+6, Math.min(y1-boxH-6, yy - boxH/2));
+            ctx.fillRect(bx, by, boxW, boxH);
+            ctx.strokeRect(bx, by, boxW, boxH);
+
+            ctx.fillStyle = "rgba(231,240,255,.88)";
+            ctx.textAlign = "left";
+            ctx.fillText("latest: " + fmtNum(v, 6), bx+8, by+14);
+            ctx.fillStyle = "rgba(231,240,255,.55)";
+            ctx.fillText(series[lastIdx].date || "-", bx+8, by+28);
+
+            // marker
+            ctx.fillStyle = "rgba(103,177,255,.95)";
+            ctx.beginPath(); ctx.arc(xx,yy,3.2,0,Math.PI*2); ctx.fill();
+          }
+        }
+
+        // x labels only on bottom panel
+        if (idx===2 && dates.length){
+          ctx.fillStyle = "rgba(231,240,255,.55)";
+          ctx.textAlign = "left";
+          ctx.fillText(dates[0], padL, y1+16);
+          ctx.textAlign = "right";
+          ctx.fillText(dates[dates.length-1], W-padR, y1+16);
+        }
+      });
+    }
+
+    // -----------------------
+    // Trend3 FX (Phase 1)
+    // -----------------------
+    function setDirPill(dir){
+      const el = document.getElementById("t3Dir");
+      const txt = document.getElementById("t3DirTxt");
+      const d = (dir || "NOT_FOUND").toUpperCase();
+      txt.textContent = d;
+
+      el.classList.remove("dirRiskOn","dirRiskOff","dirNeutral");
+      if (d.includes("RISK_ON")) el.classList.add("dirRiskOn");
+      else if (d.includes("RISK_OFF")) el.classList.add("dirRiskOff");
+      else if (d.includes("NEUTRAL")) el.classList.add("dirNeutral");
+    }
+
+    async function loadTrend3Fx(){
+      const candidates = [
+        "/analysis/trend3_fx_latest.json",
+        "/analysis/fx/trend3_fx_latest.json",
+        "/analysis/prediction/trend3_fx_latest.json",
+        "/analysis/predictions/trend3_fx_latest.json",
+        "/analysis/fx/trend3_fx_latest.json",
+        "/static/analysis/trend3_fx_latest.json",
+        "/static/analysis/fx/trend3_fx_latest.json",
+        "/static/analysis/prediction/trend3_fx_latest.json"
+      ];
+      const res = await fetchJsonFirst(candidates);
+
+      const pathEl = document.getElementById("t3Path");
+      const thEl = document.getElementById("t3Th");
+      const hitEl = document.getElementById("t3Hit");
+      const asEl = document.getElementById("t3AsOf");
+      const dbgEl = document.getElementById("dbg2");
+
+      if (!res.ok){
+        pathEl.textContent = "NOT_FOUND (checked " + candidates.length + ")";
+        setDirPill("NOT_FOUND");
+        thEl.textContent = "-";
+        hitEl.textContent = "-";
+        asEl.textContent = "-";
+        dbgEl.textContent = "";
+        return { ok:false, tried:candidates.length };
       }
 
-      // trend3 fx phase1
-      await loadTrend3();
+      const j = res.json || {};
+      const dir = pickAny(j, ["dir","direction","today_dir","todayDirection","signal","label"]);
+      const th = pickAny(j, ["threshold","th"]);
+      const hit = pickAny(j, ["hit_rate","hitRate","latest_hit_rate","latestHitRate"]);
+      const asof = pickAny(j, ["as_of","asof","date"]);
 
-      dbg2.textContent =
-        `debug2: ok\nsent=${sentPath}\nts=${tsPath}\n` +
-        `meta_used=${vmPathsUsed.length ? vmPathsUsed.join(", ") : "(none)"}\n` +
-        `metaItems=${joinStats.vmItems} sentItems=${joinStats.sentItems} joined=${joinStats.joined}`;
+      pathEl.textContent = res.path || "-";
+      setDirPill(dir || "NEUTRAL");
+      thEl.textContent = (th !== null && th !== undefined) ? fmtNum(th, 6) : "-";
+      hitEl.textContent = (hit !== null && hit !== undefined) ? fmtPct(hit, 2) : "-";
+      asEl.textContent = asof ? String(asof) : "-";
+
+      dbgEl.textContent = "debug2: ok\n" +
+        "path=" + (res.path || "-") + "\n" +
+        "dir=" + (dir || "-") + "\n" +
+        "threshold=" + (th ?? "-") + "\n" +
+        "hit_rate=" + (hit ?? "-") + "\n" +
+        "as_of=" + (asof || "-");
+
+      return { ok:true, path:res.path };
+    }
+
+    // -----------------------
+    // Main
+    // -----------------------
+    const PATH_SENT_CANDS = ["/analysis/sentiment_latest.json", "/static/analysis/sentiment_latest.json"];
+    const PATH_VM_CANDS = ["/analysis/view_model_latest.json", "/static/analysis/view_model_latest.json"];
+    const PATH_TS_CANDS = ["/analysis/sentiment_timeseries.csv", "/static/analysis/sentiment_timeseries.csv"];
+
+    // meta candidates used only for better title/url/image (NO external access)
+    const META_CANDS = [
+      "/analysis/view_model_latest.json",
+      "/analysis/daily_summary_latest.json",
+      "/analysis/daily_news_latest.json",
+      "/analysis/world_politics_latest.json",
+      "/analysis/world_politics/analysis/events_latest.json",
+      "/analysis/events_latest.json",
+      "/static/analysis/daily_summary_latest.json",
+      "/static/analysis/daily_news_latest.json",
+      "/static/analysis/world_politics_latest.json"
+    ];
+
+    let state = {
+      sentPath: "-",
+      vmPath: "-",
+      tsPath: "-",
+      metaUsed: [],
+      joinedAll: [],
+      filtered: []
+    };
+
+    function openPath(p){ window.open(p, "_blank", "noopener"); }
+
+    async function reloadAll(){
+      document.getElementById("dbgLine").textContent = "loading...";
+      const asPill = document.getElementById("asofPill");
+
+      // sentiment (main)
+      const sentRes = await fetchJsonFirst(PATH_SENT_CANDS);
+      state.sentPath = sentRes.path || "-";
+      const sentItems = flattenAnyArray(sentRes.json).map(normalizeSentItem);
+
+      // view_model (optional)
+      const vmRes = await fetchJsonFirst(PATH_VM_CANDS);
+      state.vmPath = vmRes.ok ? (vmRes.path || "-") : "-";
+
+      // meta candidates (optional; local only)
+      const metaUsed = [];
+      const metaMaps = [];
+      for (const p of META_CANDS){
+        const r = await fetchJsonFirst([p]);
+        if (r.ok && r.json){
+          metaUsed.push(p);
+          metaMaps.push(buildMetaMap(r.json));
+        }
+      }
+      state.metaUsed = metaUsed;
+
+      // timeseries (trend)
+      const tsRes = await fetchTextFirst(PATH_TS_CANDS);
+      state.tsPath = tsRes.path || "-";
+      const tsRows = tsRes.ok ? parseCsv(tsRes.text) : [];
+      const series = tsRows
+        .map(r=>({
+          date: r.date || r.as_of || r.day || "",
+          risk: Number(r.risk),
+          positive: Number(r.positive),
+          uncertainty: Number(r.uncertainty)
+        }))
+        .filter(x=>x.date);
+
+      // KPI (from sentiment_latest.json summary if present)
+      const asof = pickAny(sentRes.json, ["as_of","date","day"]) || (series.length ? series[series.length-1].date : "-");
+      asPill.textContent = "as_of: " + (asof || "-");
+      document.getElementById("kpiDate").textContent = String(asof || "-");
+      document.getElementById("kpiArticles").textContent = String(sentItems.length || "-");
+
+      // If sentiment_latest.json has summary fields, show; else compute rough
+      const kpiRisk = pickAny(sentRes.json, ["risk","risk_mean","avg_risk","mean_risk"]);
+      const kpiPos = pickAny(sentRes.json, ["positive","positive_mean","avg_positive","mean_positive"]);
+      const kpiUnc = pickAny(sentRes.json, ["uncertainty","uncertainty_mean","avg_uncertainty","mean_uncertainty"]);
+
+      document.getElementById("kpiRisk").textContent = (kpiRisk!==null && kpiRisk!==undefined) ? fmtNum(kpiRisk,6) : "-";
+      document.getElementById("kpiPositive").textContent = (kpiPos!==null && kpiPos!==undefined) ? fmtNum(kpiPos,6) : "-";
+      document.getElementById("kpiUnc").textContent = (kpiUnc!==null && kpiUnc!==undefined) ? fmtNum(kpiUnc,6) : "-";
+
+      document.getElementById("kpiNote").textContent =
+        "join: URL優先 → title fallback / metaItems=" + metaMaps.reduce((a,b)=>a+b.count,0) +
+        " sentItems=" + sentItems.length;
+
+      // join & render
+      const { joined, dbg } = joinItems(sentItems, metaMaps);
+      state.joinedAll = joined;
+
+      // source select
+      const srcSel = document.getElementById("srcSel");
+      const sources = buildSourceList(joined);
+      srcSel.innerHTML = "";
+      for (const s of sources){
+        const op = document.createElement("option");
+        op.value = s;
+        op.textContent = s;
+        srcSel.appendChild(op);
+      }
+
+      // trend
+      if (series.length){
+        draw3Panel(document.getElementById("trend"), series);
+        document.getElementById("tsInfo").textContent =
+          "range: " + series[0].date + " .. " + series[series.length-1].date +
+          " / points: " + series.length;
+      }else{
+        document.getElementById("tsInfo").textContent = "timeseries: NOT_FOUND";
+      }
+
+      // Trend3 FX
+      const t3 = await loadTrend3Fx();
+
+      // debug / info line
+      document.getElementById("dbgLine").textContent =
+        "src=" + (state.sentPath) +
+        " / vm=" + (state.vmPath) +
+        " / ts=" + (state.tsPath) +
+        " / meta_used=" + metaUsed.length +
+        " / joined=" + dbg.joined +
+        " / sentOnly=" + dbg.sentOnly;
 
       applyFilters();
     }
 
-    hookControls();
-    boot();
+    function applyFilters(){
+      const q = normStr(document.getElementById("q").value).toLowerCase();
+      const srcSel = document.getElementById("srcSel").value || "All";
+      const showMissing = document.getElementById("showMissing").checked;
+      const sortSpec = getSortSpec(document.getElementById("sortSel").value);
+
+      let items = state.joinedAll.slice();
+
+      if (srcSel !== "All"){
+        items = items.filter(x => (x.source || "") === srcSel);
+      }
+
+      if (q){
+        items = items.filter(x=>{
+          const t = (x.title||"").toLowerCase();
+          const s = (x.source||"").toLowerCase();
+          return t.includes(q) || s.includes(q);
+        });
+      }
+
+      if (!showMissing){
+        items = items.filter(x => (x.url && x.url.startsWith("http")));
+      }
+
+      items = sortItems(items, sortSpec);
+
+      state.filtered = items;
+
+      document.getElementById("rowsInfo").textContent =
+        "sent: " + state.sentPath +
+        " / meta_used: " + state.metaUsed.join(", ") +
+        " / joined: " + state.filtered.length + " / total: " + state.joinedAll.length;
+
+      renderTable(items);
+    }
+
+    // -----------------------
+    // events
+    // -----------------------
+    document.getElementById("btnReload").addEventListener("click", ()=>reloadAll());
+    document.getElementById("btnReset").addEventListener("click", ()=>{
+      document.getElementById("q").value = "";
+      document.getElementById("srcSel").value = "All";
+      document.getElementById("sortSel").value = "risk_desc";
+      document.getElementById("showMissing").checked = true;
+      applyFilters();
+    });
+    document.getElementById("btnOpenVm").addEventListener("click", ()=>openPath("/analysis/view_model_latest.json"));
+    document.getElementById("btnOpenSent").addEventListener("click", ()=>openPath("/analysis/sentiment_latest.json"));
+    document.getElementById("btnOpenTs").addEventListener("click", ()=>openPath("/analysis/sentiment_timeseries.csv"));
+
+    document.getElementById("q").addEventListener("input", ()=>applyFilters());
+    document.getElementById("srcSel").addEventListener("change", ()=>applyFilters());
+    document.getElementById("sortSel").addEventListener("change", ()=>applyFilters());
+    document.getElementById("showMissing").addEventListener("change", ()=>applyFilters());
+
+    // boot
+    reloadAll();
   </script>
 </body>
 </html>
