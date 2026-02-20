@@ -9,15 +9,13 @@
   <style>
     :root{
       --bg:#0b1020;
-      --panel:#111a33;
-      --panel2:#0f1730;
       --text:#e7ecff;
       --muted:#aab6e6;
-      --grid:#25315c;
       --line:#2a386b;
+      --grid:#25315c;
       --accent:#86b7ff;
-      --warn:#ffb86b;
       --ok:#7dffb2;
+      --warn:#ffb86b;
       --bad:#ff7d7d;
     }
     html,body{height:100%;}
@@ -28,346 +26,513 @@
       font-family: system-ui, -apple-system, Segoe UI, Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", Arial, sans-serif;
       line-height:1.35;
     }
-    .wrap{ max-width:1100px; margin:0 auto; padding:14px 14px 24px; }
-    header{
-      display:flex; align-items:baseline; justify-content:space-between; gap:12px;
-      padding:10px 12px; border:1px solid var(--line); border-radius:14px;
-      background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+    .wrap{ max-width:1180px; margin:0 auto; padding:14px 16px 28px; }
+
+    /* header */
+    .topbar{
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:16px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+      box-shadow: 0 10px 22px rgba(0,0,0,0.26);
+      padding:10px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
     }
-    header .title{ font-size:18px; font-weight:800; letter-spacing:0.2px; }
-    header .sub{
-      font-size:12px; color:var(--muted);
-      display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; text-align:right;
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      font-weight:900;
+      letter-spacing:0.2px;
+    }
+    .brandDot{
+      width:10px; height:10px; border-radius:50%;
+      background:var(--ok);
+      box-shadow:0 0 0 4px rgba(125,255,178,0.10);
+    }
+    .nav{
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    }
+    .nav a{
+      color:var(--text);
+      text-decoration:none;
+      font-weight:900;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(0,0,0,0.16);
+      font-size:13px;
+    }
+    .nav a:hover{ border-color: rgba(134,183,255,0.55); }
+    .pillOk{
+      display:flex; align-items:center; gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(0,0,0,0.16);
+      font-weight:900;
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+
+    .topTitle{
+      font-size:34px;
+      font-weight:900;
+      letter-spacing:0.3px;
+      margin:14px 0 6px;
+    }
+    .desc{
+      color:var(--muted);
+      font-size:13px;
+      margin-bottom:14px;
     }
     .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
 
-    .row{
-      margin-top:12px;
-      display:flex;
-      gap:12px;
-      align-items:stretch;
-      flex-wrap:wrap;
-    }
-    .card{
-      border:1px solid var(--line);
-      border-radius:14px;
-      background:var(--panel);
-      padding:10px 12px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.22);
-    }
-    .card h2{
-      margin:0 0 6px 0;
-      font-size:13px;
-      color:var(--muted);
-      font-weight:800;
-      letter-spacing:0.3px;
-      text-transform:uppercase;
-    }
-    .k{ color:var(--muted); }
-    .v{ color:var(--text); font-weight:700; }
-
     .grid2{
       display:grid;
-      grid-template-columns: 140px 1fr;
-      gap:6px 10px;
-      align-items:center;
-      font-size:13px;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap:14px;
+      align-items:stretch;
     }
-    .small{
-      font-size:12px;
-      color:var(--muted);
-      margin-top:6px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
+    @media (max-width: 980px){
+      .grid2{ grid-template-columns: 1fr; }
     }
 
-    /* KPI */
-    .kpibox{ flex: 1 1 360px; min-width: 320px; }
-    .kpiGrid{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
+    .card{
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:18px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      box-shadow: 0 10px 22px rgba(0,0,0,0.28);
+      padding:14px 14px 12px;
+    }
+    .card h2{
+      margin:0 0 10px 0;
+      font-size:22px;
+      font-weight:900;
+      letter-spacing:0.2px;
+    }
+    .row{
+      display:flex;
       gap:10px;
-      margin-top:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .btn{
+      appearance:none;
+      border:1px solid rgba(255,255,255,0.14);
+      background:rgba(0,0,0,0.18);
+      color:var(--text);
+      border-radius:999px;
+      padding:6px 10px;
+      font-weight:800;
+      font-size:12px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .btn:hover{ border-color: rgba(134,183,255,0.55); }
+    .btn:active{ transform: translateY(1px); }
+
+    .kpiGrid{
+      margin-top:10px;
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:10px;
+    }
+    @media (max-width: 980px){
+      .kpiGrid{ grid-template-columns: repeat(2, 1fr); }
     }
     .kpi{
-      border:1px solid rgba(255,255,255,0.08);
-      border-radius:12px;
-      background:rgba(0,0,0,0.10);
-      padding:8px 10px;
+      border:1px solid rgba(255,255,255,0.10);
+      background:rgba(0,0,0,0.14);
+      border-radius:14px;
+      padding:10px 10px 9px;
+      min-height:58px;
     }
-    .kpi .label{ font-size:12px; color:var(--muted); margin-bottom:4px; }
-    .kpi .value{ font-size:14px; font-weight:900; }
+    .kpi .lab{ font-size:12px; color:var(--muted); margin-bottom:6px; }
+    .kpi .val{ font-size:18px; font-weight:900; }
     .kpiWide{ grid-column: 1 / -1; }
 
-    /* Trend3 Phase1 */
-    .trend3card{ flex: 1 1 420px; min-width: 320px; }
-    .pill{
-      display:inline-flex; align-items:center; gap:8px; padding:4px 10px;
-      border-radius:999px; border:1px solid var(--line);
-      background:rgba(255,255,255,0.03); font-weight:900; letter-spacing:0.2px;
-      width:max-content;
-    }
-    .dot{ width:9px;height:9px;border-radius:50%; background:var(--muted);
-      box-shadow: 0 0 0 3px rgba(255,255,255,0.04); }
-    .dir-riskon .dot{ background:var(--warn); }
-    .dir-riskoff .dot{ background:var(--ok); }
-    .dir-neutral .dot{ background:var(--accent); }
-    .dir-unknown .dot{ background:var(--muted); }
-
-    /* Trend graph */
-    .trendwrap{
+    .formGrid{
       margin-top:12px;
-      padding:10px 12px;
-      border:1px solid var(--line);
-      border-radius:14px;
-      background:var(--panel2);
-    }
-    .trendhead{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-end;
-      gap:12px;
-      flex-wrap:wrap;
-      margin-bottom:8px;
-    }
-    .trendhead .h{ font-size:14px; font-weight:900; }
-    .trendhead .meta{
-      font-size:12px;
-      color:var(--muted);
-      display:flex;
+      display:grid;
+      grid-template-columns: 180px 220px 220px 1fr;
       gap:10px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-      text-align:right;
+      align-items:end;
     }
-    canvas#trend{
+    @media (max-width: 980px){
+      .formGrid{ grid-template-columns: 1fr 1fr; }
+    }
+    label{ font-size:12px; color:var(--muted); display:block; margin:0 0 6px; }
+    input[type="text"], select{
       width:100%;
-      height:460px;
-      display:block;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(0,0,0,0.18);
+      color:var(--text);
       border-radius:12px;
-      background:rgba(0,0,0,0.10);
-      border:1px solid rgba(255,255,255,0.06);
+      padding:9px 10px;
+      font-size:13px;
+      outline:none;
+    }
+    input[type="text"]:focus, select:focus{
+      border-color: rgba(134,183,255,0.55);
+    }
+    .checkRow{
+      display:flex; gap:10px; align-items:center; justify-content:flex-start;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(0,0,0,0.18);
+      border-radius:12px;
+      padding:9px 10px;
+      height:40px;
+    }
+    .checkRow span{ font-size:13px; color:var(--text); font-weight:800; }
+
+    .miniNote{
+      margin-top:10px;
+      color:var(--muted);
+      font-size:12px;
+      white-space:pre-wrap;
     }
 
-    /* Articles */
-    .articles{
+    .trendBox{
       margin-top:12px;
-      border:1px solid var(--line);
-      border-radius:14px;
-      background:var(--panel);
-      overflow:hidden;
+      border:1px solid rgba(255,255,255,0.10);
+      background:rgba(0,0,0,0.12);
+      border-radius:16px;
+      padding:10px 10px 8px;
     }
-    .articlesHead{
+    .trendHead{
       display:flex;
       justify-content:space-between;
       align-items:baseline;
       gap:10px;
       flex-wrap:wrap;
-      padding:10px 12px;
-      border-bottom:1px solid rgba(255,255,255,0.06);
-      background:rgba(255,255,255,0.02);
+      margin-bottom:8px;
     }
-    .articlesHead .h{ font-size:14px; font-weight:900; }
-    .articlesHead .meta{
-      font-size:12px;
+    .trendHead .t{ font-weight:900; }
+    .trendHead .m{ color:var(--muted); font-size:12px; }
+    canvas#trend{ width:100%; height:420px; display:block; border-radius:12px; }
+
+    .howGrid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+    }
+    .howText{
       color:var(--muted);
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-      text-align:right;
+      font-size:12px;
+      line-height:1.55;
+      white-space:pre-wrap;
     }
-    .list{
-      padding:10px 12px 12px;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
+
+    .t3Box{
+      border:1px solid rgba(255,255,255,0.10);
+      background:rgba(0,0,0,0.14);
+      border-radius:14px;
+      padding:10px 10px 9px;
     }
-    .item{
+    .t3Title{
+      font-weight:900;
+      letter-spacing:0.2px;
+      margin:0 0 8px;
+      font-size:13px;
+      color:var(--muted);
+      text-transform:uppercase;
+    }
+    .t3Grid{
       display:grid;
       grid-template-columns: 120px 1fr;
-      gap:10px 12px;
-      padding:10px;
-      border:1px solid rgba(255,255,255,0.06);
-      border-radius:14px;
-      background:rgba(0,0,0,0.10);
+      gap:6px 10px;
+      align-items:center;
+      font-size:13px;
     }
-    .thumb{
-      width:120px;
-      height:78px;
-      border-radius:12px;
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,0.14);
+      background:rgba(0,0,0,0.18);
+      font-weight:900;
+      width:max-content;
+    }
+    .dot{ width:9px;height:9px;border-radius:50%; background:var(--muted); box-shadow:0 0 0 3px rgba(255,255,255,0.05); }
+    .dir-riskon .dot{ background:var(--warn); }
+    .dir-riskoff .dot{ background:var(--ok); }
+    .dir-neutral .dot{ background:var(--accent); }
+    .dir-unknown .dot{ background:var(--muted); }
+    .small{ margin-top:8px; color:var(--muted); font-size:12px; }
+
+    .tableCard{
+      margin-top:14px;
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:18px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      box-shadow: 0 10px 22px rgba(0,0,0,0.28);
       overflow:hidden;
-      border:1px solid rgba(255,255,255,0.08);
-      background:rgba(255,255,255,0.03);
+    }
+    .tableHead{
+      padding:12px 14px;
+      border-bottom:1px solid rgba(255,255,255,0.08);
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:baseline;
+      background:rgba(255,255,255,0.02);
+    }
+    .tableHead .h{ font-size:22px; font-weight:900; }
+    .tableHead .meta{ font-size:12px; color:var(--muted); }
+
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      font-size:13px;
+    }
+    thead th{
+      text-align:left;
+      font-size:12px;
+      color:var(--muted);
+      padding:10px 12px;
+      border-bottom:1px solid rgba(255,255,255,0.08);
+      background:rgba(0,0,0,0.08);
+      position:sticky;
+      top:0;
+      z-index:1;
+    }
+    tbody td{
+      padding:10px 12px;
+      border-bottom:1px solid rgba(255,255,255,0.06);
+      vertical-align:middle;
+    }
+    tbody tr:hover td{ background:rgba(134,183,255,0.05); }
+
+    .thumb{
+      width:56px;height:56px;border-radius:14px;
+      border:1px solid rgba(255,255,255,0.10);
+      background:rgba(0,0,0,0.18);
+      overflow:hidden;
       display:flex;
       align-items:center;
       justify-content:center;
       color:var(--muted);
-      font-size:12px;
+      font-size:11px;
       user-select:none;
-      position:relative;
     }
-    .thumb img{
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      display:block;
-    }
-    .thumb .fallbackIcon{
-      width:40px; height:40px; border-radius:10px;
-      border:1px solid rgba(255,255,255,0.10);
-      background:rgba(0,0,0,0.20);
-      display:flex; align-items:center; justify-content:center;
-      overflow:hidden;
-    }
-    .thumb .fallbackIcon img{
-      width:24px; height:24px; object-fit:contain; opacity:0.9;
-    }
-    .content{ display:flex; flex-direction:column; gap:8px; min-width:0; }
-    .titleLine{ display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; min-width:0; }
-    .titleLine a{
+    .thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+    .titleCell{ min-width:360px; }
+    .titleA{
       color:var(--text);
       font-weight:900;
       text-decoration:none;
+      display:inline-block;
+      max-width: 740px;
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
-      max-width:100%;
     }
-    .titleLine a:hover{ text-decoration:underline; }
-    .metaLine{
-      color:var(--muted);
-      font-size:12px;
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-    .metrics{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      font-size:12px;
-      align-items:center;
-    }
-    .m{
-      border:1px solid rgba(255,255,255,0.08);
-      background:rgba(255,255,255,0.03);
+    .titleA:hover{ text-decoration:underline; }
+    .srcLine{ font-size:12px; color:var(--muted); margin-top:4px; }
+
+    .status{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:4px 10px;
       border-radius:999px;
-      padding:3px 8px;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(0,0,0,0.18);
+      font-weight:900;
+      font-size:12px;
+      width:max-content;
+    }
+    .status .sdot{ width:8px;height:8px;border-radius:50%; background:var(--muted); }
+    .status.risk .sdot{ background:var(--bad); }
+    .status.ok .sdot{ background:var(--ok); }
+    .status.neu .sdot{ background:var(--accent); }
+
+    .net{
+      font-weight:900;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
     }
-    .badge{
-      display:inline-block;
-      padding:2px 8px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      font-size:12px;
-      font-weight:900;
-      background:rgba(255,255,255,0.03);
-      color:var(--text);
-    }
-    .badge.ok{ border-color:rgba(125,255,178,0.35); }
-    .badge.warn{ border-color:rgba(255,184,107,0.35); }
-    .badge.bad{ border-color:rgba(255,125,125,0.35); }
-    .net{ font-weight:900; }
     .net.bad{ color:var(--bad); }
+
+    .num{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
   </style>
 </head>
 
 <body>
   <div class="wrap">
-    <header>
-      <div class="title">Sentiment</div>
-      <div class="sub">
-        <span id="asof" class="mono">as_of: -</span>
-        <span id="src" class="mono">src: /analysis/sentiment_timeseries.csv</span>
+    <div class="topbar">
+      <div class="brand">
+        <span class="brandDot"></span>
+        <span>GenesisPrediction v2</span>
       </div>
-    </header>
+      <div class="nav">
+        <a href="/static/index.html">Home</a>
+        <a href="/static/overlay.html">Overlay</a>
+        <a href="/static/sentiment.html">Sentiment</a>
+      </div>
+      <div class="pillOk mono" id="asofPill">as_of: -</div>
+    </div>
 
-    <div class="row">
-      <div class="card kpibox">
-        <h2>KPI</h2>
-        <div class="grid2">
-          <div class="k">path</div>
-          <div class="v mono" id="kpi_path">/analysis/view_model_latest.json</div>
+    <div class="topTitle">Sentiment（記事別）</div>
+    <div class="desc">
+      <span class="mono">/analysis/sentiment_latest.json</span> を主データとして表示します。<br/>
+      可能なら <span class="mono">/analysis/view_model_latest.json</span>（+補助メタ）から URL/title を突合してサムネ品質を上げます（読み取りのみ）。
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h2>Controls</h2>
+
+        <div class="row">
+          <button class="btn" id="btnReload">Reload</button>
+          <button class="btn" id="btnReset">Reset filters</button>
+          <button class="btn" id="btnOpenVM">Open view_model_latest.json</button>
+          <button class="btn" id="btnOpenSent">Open sentiment_latest.json</button>
+          <button class="btn" id="btnOpenTS">Open sentiment_timeseries.csv</button>
         </div>
+
         <div class="kpiGrid">
           <div class="kpi">
-            <div class="label">date</div>
-            <div class="value mono" id="kpi_date">-</div>
+            <div class="lab">date</div>
+            <div class="val mono" id="kpi_date">-</div>
           </div>
           <div class="kpi">
-            <div class="label">articles</div>
-            <div class="value mono" id="kpi_articles">-</div>
+            <div class="lab">articles</div>
+            <div class="val mono" id="kpi_articles">-</div>
           </div>
           <div class="kpi">
-            <div class="label">risk</div>
-            <div class="value mono" id="kpi_risk">-</div>
+            <div class="lab">risk</div>
+            <div class="val mono" id="kpi_risk">-</div>
           </div>
           <div class="kpi">
-            <div class="label">positive</div>
-            <div class="value mono" id="kpi_pos">-</div>
+            <div class="lab">positive</div>
+            <div class="val mono" id="kpi_pos">-</div>
           </div>
           <div class="kpi kpiWide">
-            <div class="label">uncertainty</div>
-            <div class="value mono" id="kpi_unc">-</div>
+            <div class="lab">uncertainty</div>
+            <div class="val mono" id="kpi_unc">-</div>
+          </div>
+          <div class="kpi kpiWide">
+            <div class="lab">note</div>
+            <div class="val mono" id="kpi_note" style="font-size:14px;">-</div>
           </div>
         </div>
-        <div class="small mono" id="kpi_note">note: view_model_latest.json (display only)</div>
+
+        <div class="formGrid">
+          <div>
+            <label>search (title/source)</label>
+            <input id="q" type="text" placeholder="e.g. nigeria" />
+          </div>
+          <div>
+            <label>source</label>
+            <select id="sourceSel"></select>
+          </div>
+          <div>
+            <label>sort</label>
+            <select id="sortSel">
+              <option value="risk_desc">risk ↓</option>
+              <option value="pos_desc">positive ↓</option>
+              <option value="unc_desc">uncertainty ↓</option>
+              <option value="net_asc">net ↑</option>
+              <option value="net_desc">net ↓</option>
+              <option value="title_asc">title A→Z</option>
+            </select>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <div class="checkRow">
+              <input id="showMissing" type="checkbox" checked />
+              <span>show missing</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="miniNote mono" id="dbg">debug: -</div>
+
+        <div class="trendBox">
+          <div class="trendHead">
+            <div class="t">Sentiment Trend</div>
+            <div class="m mono" id="ts_meta">timeseries: -</div>
+          </div>
+          <canvas id="trend" width="1000" height="420"></canvas>
+          <div class="miniNote">※ risk / positive / uncertainty を3段・独立スケールで描画。</div>
+        </div>
       </div>
 
-      <div class="card trend3card">
-        <h2>Trend3 FX (Phase 1)</h2>
-        <div class="grid2">
-          <div class="k">dir (today)</div>
-          <div class="v">
-            <span id="t3_dir_pill" class="pill dir-unknown">
-              <span class="dot"></span>
-              <span id="t3_dir" class="mono">LOADING</span>
-            </span>
+      <div class="card">
+        <h2>How it works</h2>
+
+        <div class="howGrid">
+          <div class="howText mono">
+1) GET /analysis/sentiment_latest.json  （主）
+2) GET /analysis/view_model_latest.json （補助・任意）
+3) さらに補助メタ候補を探索（読み取りのみ / JSON/JSONL）
+4) join key: URL優先 → title fallback
+5) サムネ: image(あれば) → favicon(最終)
           </div>
 
-          <div class="k">threshold</div>
-          <div class="v mono" id="t3_threshold">-</div>
+          <div class="t3Box">
+            <div class="t3Title">TREND3 FX (PHASE 1)</div>
+            <div class="t3Grid">
+              <div style="color:var(--muted);">dir (today)</div>
+              <div>
+                <span id="t3_pill" class="pill dir-unknown">
+                  <span class="dot"></span>
+                  <span id="t3_dir" class="mono">LOADING</span>
+                </span>
+              </div>
 
-          <div class="k">hit_rate (latest)</div>
-          <div class="v mono" id="t3_hit">-</div>
+              <div style="color:var(--muted);">threshold</div>
+              <div class="mono" id="t3_thr">-</div>
 
-          <div class="k">as_of</div>
-          <div class="v mono" id="t3_asof">-</div>
+              <div style="color:var(--muted);">hit_rate</div>
+              <div class="mono" id="t3_hit">-</div>
+
+              <div style="color:var(--muted);">as_of</div>
+              <div class="mono" id="t3_asof">-</div>
+            </div>
+            <div class="small mono" id="t3_path">path: -</div>
+          </div>
+
+          <div class="howText mono" id="dbg2">debug2: -</div>
         </div>
-        <div class="small mono" id="t3_path">path: (searching...)</div>
       </div>
     </div>
 
-    <div class="trendwrap">
-      <div class="trendhead">
-        <div class="h">Sentiment Trend</div>
-        <div class="meta">
-          <span class="mono" id="range">range: -</span>
-          <span class="mono" id="points">points: -</span>
-        </div>
+    <div class="tableCard">
+      <div class="tableHead">
+        <div class="h">Articles &amp; Sentiment</div>
+        <div class="meta mono" id="metaTop">-</div>
       </div>
-      <canvas id="trend" width="1100" height="460"></canvas>
-    </div>
 
-    <div class="articles" id="articles" style="display:none;">
-      <div class="articlesHead">
-        <div class="h">Articles</div>
-        <div class="meta">
-          <span class="mono" id="a_src">src: -</span>
-          <span class="mono" id="a_count">count: -</span>
-        </div>
+      <div style="overflow:auto; max-height: 72vh;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:74px;">thumb</th>
+              <th>title</th>
+              <th style="width:120px;">status</th>
+              <th style="width:110px;">risk</th>
+              <th style="width:110px;">positive</th>
+              <th style="width:130px;">uncertainty</th>
+              <th style="width:110px;">net</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
       </div>
-      <div class="list" id="alist"></div>
     </div>
   </div>
 
   <script>
-    // =========================
-    // Utilities
-    // =========================
+    // -----------------------
+    // Helpers
+    // -----------------------
     function fmtNum(x, digits=6){
       if (x === null || x === undefined || Number.isNaN(x)) return "-";
       const n = Number(x);
@@ -381,54 +546,18 @@
       const v = (n <= 1.00001) ? (n * 100) : n;
       return v.toFixed(digits) + "%";
     }
-    function safeText(id, text){
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.textContent = String(text);
+    function normStr(v){
+      if (v === null || v === undefined) return "";
+      return String(v).trim();
     }
-    async function fetchTextFirst(paths){
-      let lastErr = null;
-      for (const p of paths){
-        try{
-          const r = await fetch(p, { cache: "no-store" });
-          if (!r.ok) { lastErr = new Error("HTTP " + r.status + " " + p); continue; }
-          const t = await r.text();
-          return { ok:true, path:p, text:t };
-        }catch(e){ lastErr = e; }
-      }
-      return { ok:false, path: paths[0] || "-", text:"", err:lastErr };
+    function normTitle(s){
+      return normStr(s).toLowerCase().replace(/\s+/g, " ").slice(0, 240);
     }
-    async function fetchJsonFirst(paths){
-      let lastErr = null;
-      for (const p of paths){
-        try{
-          const r = await fetch(p, { cache: "no-store" });
-          if (!r.ok) { lastErr = new Error("HTTP " + r.status + " " + p); continue; }
-          const j = await r.json();
-          return { ok:true, path:p, json:j };
-        }catch(e){ lastErr = e; }
-      }
-      return { ok:false, path: paths[0] || "-", json:null, err:lastErr };
-    }
-    function toNum(v){
-      if (v === null || v === undefined) return NaN;
-      const s = String(v).trim();
-      if (s === "") return NaN;
-      return Number(s);
-    }
-    function pick(obj, keys){
-      for (const k of keys){
-        if (!k) continue;
-        const parts = k.split(".");
-        let cur = obj;
-        let ok = true;
-        for (const part of parts){
-          if (cur && Object.prototype.hasOwnProperty.call(cur, part)) cur = cur[part];
-          else { ok = false; break; }
-        }
-        if (ok && cur !== undefined && cur !== null) return cur;
-      }
-      return null;
+    function toPlain(v){
+      if (v === null || v === undefined) return "";
+      if (typeof v === "string") return v;
+      if (typeof v === "number" || typeof v === "boolean") return String(v);
+      try{ return JSON.stringify(v); }catch{ return ""; }
     }
     function pickAny(o, keys){
       for (const k of keys){
@@ -436,19 +565,18 @@
       }
       return null;
     }
-    function toPlainText(v){
-      if (v === null || v === undefined) return "";
-      if (typeof v === "string") return v;
-      if (typeof v === "number" || typeof v === "boolean") return String(v);
-      if (v && typeof v === "object"){
-        const s =
-          pickAny(v, ["name","title","source","publisher","value","text"]) ||
-          pickAny(v, ["date","datetime","time","published_at","publishedAt"]) ||
-          "";
-        if (typeof s === "string") return s;
-        try{ return JSON.stringify(v); }catch{ return ""; }
+    function pick(obj, keys){
+      for (const k of keys){
+        const parts = k.split(".");
+        let cur = obj;
+        let ok = true;
+        for (const p of parts){
+          if (cur && Object.prototype.hasOwnProperty.call(cur, p)) cur = cur[p];
+          else { ok=false; break; }
+        }
+        if (ok && cur !== null && cur !== undefined) return cur;
       }
-      return "";
+      return null;
     }
     function toImageUrl(v){
       if (!v) return "";
@@ -461,271 +589,26 @@
         return "";
       }
       if (typeof v === "object"){
-        const u =
-          pickAny(v, ["url","src","href","image","image_url","imageUrl","original","large","medium","small"]) ||
-          "";
+        const u = pickAny(v, ["url","src","href","image","image_url","imageUrl","original","large","medium","small"]);
         if (typeof u === "string") return u;
-        for (const k of ["image","thumbnail","thumb","media","og","meta"]){
-          const nested = v[k];
-          const nu = toImageUrl(nested);
-          if (nu) return nu;
-        }
       }
       return "";
     }
-
-    // =========================
-    // KPI (view_model_latest.json)
-    // =========================
-    async function loadKpi(){
-      const candidates = [
-        "/analysis/view_model_latest.json",
-        "../analysis/view_model_latest.json",
-        "./analysis/view_model_latest.json"
-      ];
-      const res = await fetchJsonFirst(candidates);
-      if (!res.ok){
-        safeText("kpi_path", "NOT_FOUND (checked " + candidates.length + ")");
-        safeText("kpi_date", "-");
-        safeText("kpi_articles", "-");
-        safeText("kpi_risk", "-");
-        safeText("kpi_pos", "-");
-        safeText("kpi_unc", "-");
-        return;
-      }
-      safeText("kpi_path", res.path);
-
-      const j = res.json || {};
-      const date = pick(j, ["date","as_of","meta.date","meta.as_of"]) || "-";
-      const articles = pick(j, ["articles","kpi.articles","summary.articles","counts.articles"]) ?? "-";
-      const risk = pick(j, ["risk","kpi.risk","summary.risk","sentiment.risk"]) ?? null;
-      const pos  = pick(j, ["positive","kpi.positive","summary.positive","sentiment.positive"]) ?? null;
-      const unc  = pick(j, ["uncertainty","kpi.uncertainty","summary.uncertainty","sentiment.uncertainty"]) ?? null;
-
-      safeText("kpi_date", String(date));
-      safeText("kpi_articles", String(articles));
-      safeText("kpi_risk", fmtNum(risk, 6));
-      safeText("kpi_pos", fmtNum(pos, 6));
-      safeText("kpi_unc", fmtNum(unc, 6));
-    }
-
-    // =========================
-    // Trend3 FX (Phase 1)
-    // =========================
-    function normalizeDir(raw){
-      if (!raw) return { dir:"UNKNOWN", cls:"dir-unknown" };
-      const s = String(raw).trim().toUpperCase();
-      if (s === "RISK_ON" || s === "RISKON" || s === "ON") return { dir:"RISK_ON", cls:"dir-riskon" };
-      if (s === "RISK_OFF" || s === "RISKOFF" || s === "OFF") return { dir:"RISK_OFF", cls:"dir-riskoff" };
-      if (s === "NEUTRAL" || s === "FLAT") return { dir:"NEUTRAL", cls:"dir-neutral" };
-      return { dir:s, cls:"dir-unknown" };
-    }
-    function renderTrend3(json, path){
-      const dirRaw = pick(json, ["dir","direction","today_dir","today.direction","prediction.dir","prediction.direction","trend3.dir","trend3.direction"]);
-      const threshold = pick(json, ["threshold","params.threshold","prediction.threshold","trend3.threshold"]);
-      const hitRate = pick(json, ["hit_rate","metrics.hit_rate","latest.hit_rate","prediction.hit_rate","trend3.hit_rate"]);
-      const asOf = pick(json, ["as_of","date","generated_at","updated_at","meta.as_of","meta.date"]);
-
-      const { dir, cls } = normalizeDir(dirRaw);
-      const pill = document.getElementById("t3_dir_pill");
-      if (pill) pill.className = "pill " + cls;
-
-      safeText("t3_dir", dir);
-      if (threshold && typeof threshold === "object") safeText("t3_threshold", JSON.stringify(threshold));
-      else safeText("t3_threshold", fmtNum(threshold, 6));
-      safeText("t3_hit", fmtPct(hitRate, 2));
-      safeText("t3_asof", asOf ? String(asOf) : "-");
-      safeText("t3_path", "path: " + (path || "-"));
-    }
-    async function loadTrend3Phase1(){
-      const candidates = [
-        "/analysis/fx/trend3_fx_latest.json",
-        "/analysis/trend3_fx_latest.json",
-        "../analysis/fx/trend3_fx_latest.json",
-        "../analysis/trend3_fx_latest.json",
-        "./analysis/fx/trend3_fx_latest.json",
-        "./analysis/fx/trend3_fx_latest.json"
-      ];
-      const res = await fetchJsonFirst(candidates);
-      if (!res.ok){
-        const pill = document.getElementById("t3_dir_pill");
-        if (pill) pill.className = "pill dir-unknown";
-        safeText("t3_dir", "NOT_FOUND");
-        safeText("t3_threshold", "-");
-        safeText("t3_hit", "-");
-        safeText("t3_asof", "-");
-        safeText("t3_path", "path: NOT_FOUND (checked " + candidates.length + " candidates)");
-        return;
-      }
-      renderTrend3(res.json || {}, res.path);
-    }
-
-    // =========================
-    // Sentiment timeseries (3 panels) - Canvas draw
-    // =========================
-    function parseCSV(text){
-      const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
-      if (lines.length < 2) return [];
-      const header = lines[0].split(",").map(s => s.trim());
-      const rows = [];
-      for (let i=1; i<lines.length; i++){
-        const cols = lines[i].split(",");
-        const obj = {};
-        for (let c=0; c<header.length; c++){
-          obj[header[c]] = (cols[c] !== undefined) ? cols[c].trim() : "";
+    function normalizeSource(v){
+      if (!v) return "";
+      if (typeof v === "string") return v.trim();
+      if (typeof v === "object"){
+        const s = pickAny(v, ["name","title","domain","site","publisher","source","source_name"]);
+        if (typeof s === "string" && s.trim()) return s.trim();
+        try{
+          const j = JSON.stringify(v);
+          return j.length > 120 ? (j.slice(0,120) + "…") : j;
+        }catch{
+          return "(source)";
         }
-        rows.push(obj);
       }
-      return rows;
+      return String(v);
     }
-    function drawTrend3Panel(ctx, rect, series, label, valueKey){
-      const padL = 56, padR = 12, padT = 22, padB = 26;
-      const x0 = rect.x + padL;
-      const y0 = rect.y + padT;
-      const w = rect.w - padL - padR;
-      const h = rect.h - padT - padB;
-
-      ctx.save();
-      ctx.fillStyle = "rgba(255,255,255,0.02)";
-      ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
-      ctx.strokeStyle = "rgba(255,255,255,0.06)";
-      ctx.strokeRect(rect.x + 0.5, rect.y + 0.5, rect.w - 1, rect.h - 1);
-
-      ctx.fillStyle = "rgba(231,236,255,0.92)";
-      ctx.font = "900 12px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial";
-      ctx.fillText(label, rect.x + 10, rect.y + 15);
-
-      const vals = series.map(d => d[valueKey]).filter(v => Number.isFinite(v));
-      let vmin = 0, vmax = 1;
-      if (vals.length > 0){
-        vmin = Math.min(...vals);
-        vmax = Math.max(...vals);
-        if (vmax === vmin) vmax = vmin + 1e-6;
-        const m = (vmax - vmin) * 0.08;
-        vmin -= m; vmax += m;
-      }
-
-      ctx.strokeStyle = "rgba(170,182,230,0.14)";
-      ctx.lineWidth = 1;
-      ctx.font = "12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
-      ctx.fillStyle = "rgba(170,182,230,0.85)";
-
-      for (let g=0; g<=3; g++){
-        const yy = y0 + (h * g / 3);
-        ctx.beginPath();
-        ctx.moveTo(x0, yy);
-        ctx.lineTo(x0 + w, yy);
-        ctx.stroke();
-
-        const val = vmax - ( (vmax - vmin) * g / 3 );
-        ctx.fillText(val.toFixed(4), rect.x + 10, yy + 4);
-      }
-
-      const n = series.length;
-      if (n >= 2){
-        ctx.fillStyle = "rgba(170,182,230,0.75)";
-        const leftDate = series[0].date || "";
-        const rightDate = series[n-1].date || "";
-        ctx.fillText(String(leftDate), x0, rect.y + rect.h - 10);
-        const mW = ctx.measureText(String(rightDate)).width;
-        ctx.fillText(String(rightDate), x0 + w - mW, rect.y + rect.h - 10);
-      }
-
-      ctx.strokeStyle = "rgba(134,183,255,0.95)";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      for (let i=0; i<n; i++){
-        const vx = x0 + (w * i / Math.max(1,(n-1)));
-        const v = series[i][valueKey];
-        if (!Number.isFinite(v)) continue;
-        const vy = y0 + (h * (1 - (v - vmin) / (vmax - vmin)));
-        if (i === 0) ctx.moveTo(vx, vy);
-        else ctx.lineTo(vx, vy);
-      }
-      ctx.stroke();
-
-      const latest = series[n-1] || null;
-      if (latest && Number.isFinite(latest[valueKey])){
-        ctx.fillStyle = "rgba(231,236,255,0.92)";
-        ctx.font = "900 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
-        ctx.fillText("latest: " + latest[valueKey].toFixed(6), rect.x + 10, rect.y + rect.h - 8 - 14);
-
-        const maxText = "max: " + (Math.max(...vals)).toFixed(6);
-        const mw = ctx.measureText(maxText).width;
-        ctx.fillStyle = "rgba(170,182,230,0.92)";
-        ctx.fillText(maxText, rect.x + rect.w - 10 - mw, rect.y + 15);
-      }
-
-      ctx.restore();
-    }
-    function drawTrendCanvas(data){
-      const canvas = document.getElementById("trend");
-      const ctx = canvas.getContext("2d");
-
-      const cssW = canvas.clientWidth || 1100;
-      const cssH = canvas.clientHeight || 460;
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = Math.floor(cssW * dpr);
-      canvas.height = Math.floor(cssH * dpr);
-      ctx.setTransform(dpr,0,0,dpr,0,0);
-
-      ctx.clearRect(0,0,cssW,cssH);
-
-      const gap = 10;
-      const panelH = Math.floor((cssH - gap*2) / 3);
-      const panels = [
-        { x:0, y:0, w:cssW, h:panelH, label:"RISK", key:"risk" },
-        { x:0, y:panelH + gap, w:cssW, h:panelH, label:"POSITIVE", key:"positive" },
-        { x:0, y:(panelH + gap)*2, w:cssW, h:panelH, label:"UNCERTAINTY", key:"uncertainty" }
-      ];
-      for (const p of panels){
-        drawTrend3Panel(ctx, p, data, p.label, p.key);
-      }
-    }
-    async function loadSentimentTrend(){
-      const candidates = [
-        "/analysis/sentiment_timeseries.csv",
-        "../analysis/sentiment_timeseries.csv",
-        "./analysis/sentiment_timeseries.csv"
-      ];
-      const res = await fetchTextFirst(candidates);
-      if (!res.ok){
-        safeText("asof", "as_of: NOT_FOUND");
-        safeText("range", "range: -");
-        safeText("points", "points: 0");
-        return [];
-      }
-      safeText("src", "src: " + res.path);
-
-      const rows = parseCSV(res.text);
-      const series = rows.map(r => ({
-        date: r.date || r.Date || r.DAY || r.day || "",
-        risk: toNum(r.risk ?? r.RISK),
-        positive: toNum(r.positive ?? r.POSITIVE),
-        uncertainty: toNum(r.uncertainty ?? r.UNCERTAINTY),
-      })).filter(d => d.date);
-
-      if (series.length > 0){
-        safeText("asof", "as_of: " + String(series[series.length-1].date));
-        safeText("range", "range: " + String(series[0].date) + " .. " + String(series[series.length-1].date));
-        safeText("points", "points: " + String(series.length));
-      }else{
-        safeText("asof", "as_of: -");
-        safeText("range", "range: -");
-        safeText("points", "points: 0");
-      }
-
-      drawTrendCanvas(series);
-      return series;
-    }
-    function onResizeRedraw(cache){
-      if (!cache || cache.length === 0) return;
-      drawTrendCanvas(cache);
-    }
-
-    // =========================
-    // Articles thumbnails: OG image via r.jina.ai -> fallback screenshot -> favicon
-    // =========================
     function faviconUrlFromArticleUrl(articleUrl){
       try{
         const u = new URL(articleUrl);
@@ -734,300 +617,798 @@
         return "";
       }
     }
-    function screenshotThumbCandidates(articleUrl){
-      const u = encodeURIComponent(articleUrl);
-      return [
-        "https://image.thum.io/get/width/240/crop/160/noanimate/" + articleUrl,
-        "https://s0.wp.com/mshots/v1/" + u + "?w=240"
-      ];
-    }
-    function classifyNet(net){
+    function classifyStatus(net){
       const n = Number(net);
-      if (!Number.isFinite(n)) return "warn";
+      if (!Number.isFinite(n)) return "neu";
+      if (n < -0.02) return "risk";
       if (n > 0.02) return "ok";
-      if (n < -0.02) return "bad";
-      return "warn";
+      return "neu";
     }
-    function normalizeArticle(a){
-      const title = toPlainText(pickAny(a, ["title","headline","name"])) || "(no title)";
-      const url = toPlainText(pickAny(a, ["url","link"])) || "";
 
-      const imageRaw = pickAny(a, ["image","image_url","imageUrl","thumbnail","thumbnail_url","thumb","thumb_url","media","og_image","ogImage"]);
+    async function fetchJsonFirst(paths){
+      let lastErr = null;
+      for (const p of paths){
+        try{
+          const r = await fetch(p, { cache:"no-store" });
+          if (!r.ok){ lastErr = new Error("HTTP " + r.status + " " + p); continue; }
+          const j = await r.json();
+          return { ok:true, path:p, json:j };
+        }catch(e){ lastErr = e; }
+      }
+      return { ok:false, path: paths[0] || "-", json:null, err:lastErr };
+    }
+    async function fetchTextFirst(paths){
+      let lastErr = null;
+      for (const p of paths){
+        try{
+          const r = await fetch(p, { cache:"no-store" });
+          if (!r.ok){ lastErr = new Error("HTTP " + r.status + " " + p); continue; }
+          const t = await r.text();
+          return { ok:true, path:p, text:t };
+        }catch(e){ lastErr = e; }
+      }
+      return { ok:false, path: paths[0] || "-", text:"", err:lastErr };
+    }
+
+    // -----------------------
+    // Paths
+    // -----------------------
+    const PATHS_SENT = ["/analysis/sentiment_latest.json","../analysis/sentiment_latest.json","./analysis/sentiment_latest.json"];
+    const PATHS_VM_PRIMARY = ["/analysis/view_model_latest.json","../analysis/view_model_latest.json","./analysis/view_model_latest.json"];
+
+    // ✅ “補助メタ候補” (読み取りのみ)
+    // ここは存在しなくてもOK（404でも続行）
+    const PATHS_META_EXTRA_JSON = [
+      "/analysis/daily_summary_latest.json",
+      "/analysis/daily_news_latest.json",
+      "/analysis/events_latest.json",
+      "/analysis/world_politics_latest.json",
+      "/analysis/news_latest.json",
+      "../analysis/daily_summary_latest.json",
+      "../analysis/daily_news_latest.json",
+      "../analysis/events_latest.json"
+    ];
+    const PATHS_META_EXTRA_JSONL = [
+      "/analysis/events_latest.jsonl",
+      "/analysis/world_politics/latest.jsonl",
+      "/analysis/world_politics/analysis/events_latest.jsonl",
+      "../analysis/events_latest.jsonl"
+    ];
+
+    const PATHS_TS = ["/analysis/sentiment_timeseries.csv","../analysis/sentiment_timeseries.csv","./analysis/sentiment_timeseries.csv"];
+
+    let sentPath = "-";
+    let vmPathsUsed = [];
+    let tsPath = "-";
+
+    let joinedAll = [];
+    let joinStats = { vmItems:0, sentItems:0, joined:0, missVm:0, missSent:0 };
+
+    // ✅ “記事配列” 自動発掘
+    function isArticleLikeObject(o){
+      if (!o || typeof o !== "object") return false;
+      const title = pickAny(o, ["title","headline","name"]);
+      const url = pickAny(o, ["url","link"]);
+      const src = pickAny(o, ["source","source_name","publisher","site","domain"]);
+      return (typeof title === "string" && title.trim().length > 0) ||
+             (typeof url === "string" && url.trim().length > 0) ||
+             (src !== null && src !== undefined);
+    }
+    function isArticleArray(arr){
+      if (!Array.isArray(arr) || arr.length < 3) return false;
+      let hit = 0;
+      const n = Math.min(arr.length, 20);
+      for (let i=0;i<n;i++){
+        if (isArticleLikeObject(arr[i])) hit++;
+      }
+      return hit >= Math.max(2, Math.floor(n * 0.3));
+    }
+    function findArticleArray(root){
+      if (Array.isArray(root)) return root;
+
+      const fast = pick(root, [
+        "articles","items","data","data.articles","data.items",
+        "result.articles","payload.articles","payload.items",
+        "view_model","view_model.articles","view_model.items",
+        "viewModel","viewModel.articles","viewModel.items",
+        "vm","vm.articles","vm.items",
+        "latest","latest.articles","latest.items"
+      ]);
+      if (isArticleArray(fast)) return fast;
+
+      const queue = [{ v: root, depth: 0 }];
+      const seen = new Set();
+      const MAX_DEPTH = 6;
+      const MAX_NODES = 2000;
+      let nodes = 0;
+
+      while (queue.length){
+        const { v, depth } = queue.shift();
+        if (!v || typeof v !== "object") continue;
+        if (seen.has(v)) continue;
+        seen.add(v);
+        nodes++;
+        if (nodes > MAX_NODES) break;
+
+        if (Array.isArray(v)){
+          if (isArticleArray(v)) return v;
+          continue;
+        }
+
+        if (depth >= MAX_DEPTH) continue;
+
+        for (const k of Object.keys(v)){
+          const child = v[k];
+          if (!child || typeof child !== "object") continue;
+          if (Array.isArray(child)){
+            if (isArticleArray(child)) return child;
+            if (depth + 1 <= MAX_DEPTH){
+              for (let i=0;i<Math.min(child.length, 10);i++){
+                const it = child[i];
+                if (it && typeof it === "object") queue.push({ v: it, depth: depth + 1 });
+              }
+            }
+          }else{
+            queue.push({ v: child, depth: depth + 1 });
+          }
+        }
+      }
+      return [];
+    }
+
+    function normalizeMetaItem(x){
+      const title = normStr(pickAny(x, ["title","headline","name"])) || "(no title)";
+      const url = normStr(pickAny(x, ["url","link"])) || "";
+      const sourceRaw = pickAny(x, ["source","source_name","publisher","site","domain"]);
+      const source = normalizeSource(sourceRaw);
+      const imageRaw = pickAny(x, ["image","image_url","imageUrl","thumbnail","thumbnail_url","thumb","thumb_url","media","og_image","ogImage"]);
+      const image = toImageUrl(imageRaw);
+      return { title, url, source, image, raw:x };
+    }
+
+    function normalizeSentItem(x){
+      const title = normStr(pickAny(x, ["title","headline","name"])) || "(no title)";
+      const url = normStr(pickAny(x, ["url","link"])) || "";
+      const sourceRaw = pickAny(x, ["source","source_name","publisher","site","domain"]);
+      const source = normalizeSource(sourceRaw);
+      const imageRaw = pickAny(x, ["image","image_url","imageUrl","thumbnail","thumbnail_url","thumb","thumb_url","media","og_image","ogImage"]);
       const image = toImageUrl(imageRaw);
 
-      const dateRaw = pickAny(a, ["date","published_at","publishedAt","time","timestamp"]);
-      const sourceRaw = pickAny(a, ["source","source_name","publisher","site","domain"]);
-      const date = toPlainText(dateRaw);
-      const source = toPlainText(sourceRaw);
-
-      const risk = pickAny(a, ["risk","risk_score"]);
-      const positive = pickAny(a, ["positive","positive_score"]);
-      const uncertainty = pickAny(a, ["uncertainty","uncertainty_score"]);
-
-      let net = pickAny(a, ["net","net_score"]);
+      const risk = pickAny(x, ["risk","risk_score"]);
+      const positive = pickAny(x, ["positive","positive_score"]);
+      const uncertainty = pickAny(x, ["uncertainty","uncertainty_score"]);
+      let net = pickAny(x, ["net","net_score"]);
       if (net === null || net === undefined){
         const pr = Number(positive);
         const rr = Number(risk);
         if (Number.isFinite(pr) && Number.isFinite(rr)) net = pr - rr;
       }
-
-      const favicon = url ? faviconUrlFromArticleUrl(url) : "";
-      const shots = url ? screenshotThumbCandidates(url) : [];
-      return { title, url, image, favicon, shots, date, source, risk, positive, uncertainty, net };
+      return { title, url, source, image, risk, positive, uncertainty, net, raw:x };
     }
 
-    function setNoImage(thumbEl){
-      thumbEl.textContent = "no image";
-    }
-    function setFavicon(thumbEl, favicon){
-      if (!favicon){ setNoImage(thumbEl); return; }
-      thumbEl.innerHTML = "";
-      const box = document.createElement("div");
-      box.className = "fallbackIcon";
-      const img = document.createElement("img");
-      img.alt = "favicon";
-      img.loading = "lazy";
-      img.referrerPolicy = "no-referrer";
-      img.src = favicon;
-      img.onerror = () => { box.innerHTML = "no image"; };
-      box.appendChild(img);
-      thumbEl.appendChild(box);
-    }
-    function setImage(thumbEl, src, onError){
-      thumbEl.innerHTML = "";
-      const img = document.createElement("img");
-      img.alt = "thumb";
-      img.loading = "lazy";
-      img.referrerPolicy = "no-referrer";
-      img.src = src;
-      img.onerror = () => { if (onError) onError(); };
-      thumbEl.appendChild(img);
-    }
-
-    // --- OG image extraction via r.jina.ai (CORS回避用)
-    // returns "" if not found
-    function extractOgImageFromHtml(html){
-      if (!html) return "";
-      // meta property="og:image" or name="twitter:image"
-      const candidates = [
-        /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["'][^>]*>/i,
-        /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["'][^>]*>/i,
-        /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["'][^>]*>/i,
-        /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["'][^>]*>/i
-      ];
-      for (const re of candidates){
-        const m = html.match(re);
-        if (m && m[1]) return m[1].trim();
+    function joinMetaSent(metaItems, sentItems){
+      const metaByUrl = new Map();
+      const metaByTitle = new Map();
+      for (const m of metaItems){
+        if (m.url) metaByUrl.set(m.url, m);
+        const nt = normTitle(m.title);
+        if (nt && !metaByTitle.has(nt)) metaByTitle.set(nt, m);
       }
-      return "";
+
+      const usedMeta = new Set();
+      const out = [];
+      let joined = 0;
+
+      for (const s of sentItems){
+        let m = null;
+        if (s.url && metaByUrl.has(s.url)) m = metaByUrl.get(s.url);
+        if (!m){
+          const nt = normTitle(s.title);
+          if (nt && metaByTitle.has(nt)) m = metaByTitle.get(nt);
+        }
+        if (m){
+          usedMeta.add(m);
+          joined++;
+          out.push({
+            title: m.title || s.title,
+            url: m.url || s.url,
+            source: m.source || s.source || "",
+            image: m.image || s.image || "",
+            risk: s.risk, positive: s.positive, uncertainty: s.uncertainty, net: s.net,
+            _meta: m.raw, _sent: s.raw,
+            _join: (s.url && m.url && s.url === m.url) ? "url" : "title"
+          });
+        }else{
+          // sentiment-only fallback (still renderable)
+          out.push({
+            title: s.title,
+            url: s.url,
+            source: s.source || "",
+            image: s.image || "",
+            risk: s.risk, positive: s.positive, uncertainty: s.uncertainty, net: s.net,
+            _meta: null, _sent: s.raw,
+            _join: "sent_only"
+          });
+        }
+      }
+
+      joinStats = {
+        vmItems: metaItems.length,
+        sentItems: sentItems.length,
+        joined,
+        missVm: Math.max(0, sentItems.length - joined),
+        missSent: Math.max(0, metaItems.length - joined),
+      };
+      return out;
     }
 
-    // simple concurrency limiter
-    function createLimiter(max){
-      let active = 0;
-      const q = [];
-      const next = () => {
-        if (active >= max) return;
-        const job = q.shift();
-        if (!job) return;
-        active++;
-        Promise.resolve()
-          .then(job.fn)
-          .then(job.resolve, job.reject)
-          .finally(() => { active--; next(); });
-      };
-      return function run(fn){
-        return new Promise((resolve, reject) => {
-          q.push({ fn, resolve, reject });
-          next();
-        });
-      };
-    }
-    const limit4 = createLimiter(4);
+    function updateKpi(dateStr){
+      const withSent = joinedAll.filter(x => x._sent && x.risk !== null && x.risk !== undefined);
+      const n = withSent.length;
 
-    async function fetchOgImage(url){
-      // try both https/http via jina
-      const u = encodeURIComponent(url);
-      const candidates = [
-        "https://r.jina.ai/http/" + url.replace(/^https?:\/\//i, ""),
-        "https://r.jina.ai/https/" + url.replace(/^https?:\/\//i, "")
+      let ar=0, ap=0, au=0;
+      for (const x of withSent){
+        const r = Number(x.risk);
+        const p = Number(x.positive);
+        const u = Number(x.uncertainty);
+        if (Number.isFinite(r)) ar += r;
+        if (Number.isFinite(p)) ap += p;
+        if (Number.isFinite(u)) au += u;
+      }
+      const avgR = (n>0) ? (ar/n) : null;
+      const avgP = (n>0) ? (ap/n) : null;
+      const avgU = (n>0) ? (au/n) : null;
+
+      document.getElementById("kpi_date").textContent = dateStr || "-";
+      document.getElementById("kpi_articles").textContent = String(n);
+      document.getElementById("kpi_risk").textContent = fmtNum(avgR, 6);
+      document.getElementById("kpi_pos").textContent = fmtNum(avgP, 6);
+      document.getElementById("kpi_unc").textContent = fmtNum(avgU, 6);
+
+      document.getElementById("kpi_note").textContent =
+        `join: URL優先 → title fallback / metaItems=${joinStats.vmItems} sentItems=${joinStats.sentItems} joined=${joinStats.joined} metaOnly=${joinStats.missSent} sentOnly=${joinStats.missVm}`;
+    }
+
+    function parseCSV(text){
+      const lines = text.split(/\r?\n/).filter(l => l.trim().length>0);
+      if (lines.length < 2) return [];
+      const header = lines[0].split(",").map(s=>s.trim());
+      const rows = [];
+      for (let i=1;i<lines.length;i++){
+        const cols = lines[i].split(",");
+        const o = {};
+        for (let c=0;c<header.length;c++){
+          o[header[c]] = (cols[c]!==undefined)? cols[c].trim() : "";
+        }
+        rows.push(o);
+      }
+      return rows;
+    }
+    function toNum(v){
+      if (v === null || v === undefined) return NaN;
+      const s = String(v).trim();
+      if (!s) return NaN;
+      return Number(s);
+    }
+
+    function drawTrend3Panel(series){
+      const canvas = document.getElementById("trend");
+      const ctx = canvas.getContext("2d");
+
+      const cssW = canvas.clientWidth || 1000;
+      const cssH = canvas.clientHeight || 420;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.floor(cssW*dpr);
+      canvas.height = Math.floor(cssH*dpr);
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+
+      ctx.clearRect(0,0,cssW,cssH);
+
+      ctx.fillStyle = "rgba(0,0,0,0.18)";
+      ctx.fillRect(0,0,cssW,cssH);
+      ctx.strokeStyle = "rgba(255,255,255,0.08)";
+      ctx.strokeRect(0.5,0.5,cssW-1,cssH-1);
+
+      const padL=52, padR=10, padT=10, padB=26;
+      const x0=padL, y0=padT, w=cssW-padL-padR, h=cssH-padT-padB;
+
+      const n = series.length;
+      if (!n){
+        ctx.fillStyle="rgba(170,182,230,0.75)";
+        ctx.font="13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+        ctx.fillText("no data", x0, y0+18);
+        return;
+      }
+
+      const panels = [
+        { key:"risk", label:"RISK" },
+        { key:"positive", label:"POSITIVE" },
+        { key:"uncertainty", label:"UNCERTAINTY" },
       ];
-      for (const p of candidates){
+
+      const gap = 12;
+      const ph = (h - gap*2) / 3;
+
+      const xAt = (i) => x0 + (w*i/Math.max(1,n-1));
+
+      function panelRect(pi){
+        const py = y0 + pi*(ph+gap);
+        return { x:x0, y:py, w, h:ph };
+      }
+
+      function panelStats(key){
+        const vals = [];
+        for (const d of series){
+          const v = d[key];
+          if (Number.isFinite(v)) vals.push(v);
+        }
+        if (!vals.length){
+          return { vmin:0, vmax:1, last:NaN, max:NaN };
+        }
+        let vmin = Math.min(...vals);
+        let vmax = Math.max(...vals);
+        if (vmax === vmin) vmax = vmin + 1e-6;
+        const m = (vmax - vmin) * 0.10;
+        vmin -= m; vmax += m;
+        const last = series[series.length-1][key];
+        const maxv = Math.max(...vals);
+        return { vmin, vmax, last, max:maxv };
+      }
+
+      function yAt(v, vmin, vmax, rect){
+        return rect.y + rect.h * (1 - (v - vmin)/(vmax - vmin));
+      }
+
+      ctx.font="12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+
+      for (let pi=0; pi<3; pi++){
+        const p = panels[pi];
+        const rect = panelRect(pi);
+        const st = panelStats(p.key);
+
+        ctx.fillStyle="rgba(0,0,0,0.10)";
+        ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+        ctx.strokeStyle="rgba(255,255,255,0.08)";
+        ctx.strokeRect(rect.x+0.5, rect.y+0.5, rect.w-1, rect.h-1);
+
+        ctx.strokeStyle="rgba(170,182,230,0.12)";
+        for (let g=0; g<=3; g++){
+          const yy = rect.y + (rect.h*g/3);
+          ctx.beginPath();
+          ctx.moveTo(rect.x, yy);
+          ctx.lineTo(rect.x+rect.w, yy);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle="rgba(231,236,255,0.92)";
+        ctx.fillText(p.label, rect.x+6, rect.y+14);
+
+        ctx.fillStyle="rgba(170,182,230,0.80)";
+        const t0 = st.vmax;
+        const t1 = st.vmax - (st.vmax-st.vmin)/2;
+        const t2 = st.vmin;
+        ctx.fillText(t0.toFixed(4), 8, rect.y+14);
+        ctx.fillText(t1.toFixed(4), 8, rect.y+rect.h/2+4);
+        ctx.fillText(t2.toFixed(4), 8, rect.y+rect.h-2);
+
+        ctx.strokeStyle = "rgba(134,183,255,0.95)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        let started=false;
+        for (let i=0;i<n;i++){
+          const v = series[i][p.key];
+          if (!Number.isFinite(v)) continue;
+          const xx = xAt(i);
+          const yy = yAt(v, st.vmin, st.vmax, rect);
+          if (!started){ ctx.moveTo(xx,yy); started=true; }
+          else ctx.lineTo(xx,yy);
+        }
+        ctx.stroke();
+
+        if (Number.isFinite(st.last)){
+          ctx.fillStyle="rgba(231,236,255,0.92)";
+          ctx.fillText("latest: " + st.last.toFixed(6), rect.x+6, rect.y+rect.h-6);
+        }
+
+        if (Number.isFinite(st.max)){
+          const txt = "max: " + st.max.toFixed(6);
+          ctx.fillStyle="rgba(170,182,230,0.85)";
+          const mw = ctx.measureText(txt).width;
+          ctx.fillText(txt, rect.x+rect.w-mw-6, rect.y+14);
+        }
+
+        const right = series[n-1].date || "";
+        ctx.fillStyle="rgba(170,182,230,0.75)";
+        const mw2 = ctx.measureText(String(right)).width;
+        ctx.fillText(String(right), rect.x+rect.w-mw2-6, rect.y+rect.h-6);
+      }
+
+      ctx.fillStyle="rgba(170,182,230,0.75)";
+      const left = series[0].date || "";
+      ctx.fillText(String(left), x0, y0+h+18);
+    }
+
+    function normalizeDir(raw){
+      if (!raw) return { dir:"UNKNOWN", cls:"dir-unknown" };
+      const s = String(raw).trim().toUpperCase();
+      if (s === "RISK_ON" || s === "RISKON" || s === "ON") return { dir:"RISK_ON", cls:"dir-riskon" };
+      if (s === "RISK_OFF" || s === "RISKOFF" || s === "OFF") return { dir:"RISK_OFF", cls:"dir-riskoff" };
+      if (s === "NEUTRAL" || s === "FLAT") return { dir:"NEUTRAL", cls:"dir-neutral" };
+      return { dir:s, cls:"dir-unknown" };
+    }
+    async function loadTrend3(){
+      const candidates = [
+        "/analysis/fx/trend3_fx_latest.json",
+        "/analysis/trend3_fx_latest.json",
+        "/analysis/prediction/trend3_fx_latest.json",
+        "/analysis/predictions/trend3_fx_latest.json",
+        "../analysis/fx/trend3_fx_latest.json",
+        "../analysis/trend3_fx_latest.json",
+        "./analysis/fx/trend3_fx_latest.json",
+        "./analysis/trend3_fx_latest.json"
+      ];
+      const res = await fetchJsonFirst(candidates);
+      const pill = document.getElementById("t3_pill");
+
+      if (!res.ok){
+        pill.className = "pill dir-unknown";
+        document.getElementById("t3_dir").textContent = "NOT_FOUND";
+        document.getElementById("t3_thr").textContent = "-";
+        document.getElementById("t3_hit").textContent = "-";
+        document.getElementById("t3_asof").textContent = "-";
+        document.getElementById("t3_path").textContent = "path: NOT_FOUND (checked " + candidates.length + ")";
+        return;
+      }
+      const j = res.json || {};
+      const dirRaw = pick(j, ["dir","direction","today_dir","today.direction","prediction.dir","prediction.direction","trend3.dir","trend3.direction"]);
+      const thr = pick(j, ["threshold","params.threshold","prediction.threshold","trend3.threshold"]);
+      const hit = pick(j, ["hit_rate","metrics.hit_rate","latest.hit_rate","prediction.hit_rate","trend3.hit_rate"]);
+      const asof = pick(j, ["as_of","date","generated_at","updated_at","meta.as_of","meta.date"]);
+
+      const { dir, cls } = normalizeDir(dirRaw);
+      pill.className = "pill " + cls;
+      document.getElementById("t3_dir").textContent = dir;
+      document.getElementById("t3_thr").textContent = (thr && typeof thr === "object") ? JSON.stringify(thr) : fmtNum(thr, 6);
+      document.getElementById("t3_hit").textContent = fmtPct(hit, 2);
+      document.getElementById("t3_asof").textContent = asof ? String(asof) : "-";
+      document.getElementById("t3_path").textContent = "path: " + res.path;
+    }
+
+    function buildSources(items){
+      const set = new Set();
+      for (const x of items){
+        if (x.source) set.add(x.source);
+      }
+      return ["All", ...Array.from(set).sort((a,b)=>a.localeCompare(b))];
+    }
+
+    function setThumb(el, url, title){
+      el.innerHTML = "";
+      if (!url){
+        el.textContent = "—";
+        return;
+      }
+      const img = document.createElement("img");
+      img.loading = "lazy";
+      img.referrerPolicy = "no-referrer";
+      img.alt = title || "thumb";
+      img.src = url;
+      img.onerror = () => { el.textContent = "—"; };
+      el.appendChild(img);
+    }
+
+    function renderTable(items){
+      const tbody = document.getElementById("tbody");
+      tbody.innerHTML = "";
+
+      for (const x of items){
+        const tr = document.createElement("tr");
+
+        const tdThumb = document.createElement("td");
+        const th = document.createElement("div");
+        th.className = "thumb";
+
+        // ✅ thumb priority:
+        // 1) joined/meta image
+        // 2) sentiment image
+        // 3) favicon fallback
+        let thumbUrl = "";
+        if (x.image && String(x.image).startsWith("http")) thumbUrl = x.image;
+        else if (x.url) thumbUrl = faviconUrlFromArticleUrl(x.url);
+
+        setThumb(th, thumbUrl, x.title);
+        tdThumb.appendChild(th);
+
+        const tdTitle = document.createElement("td");
+        tdTitle.className = "titleCell";
+        const a = document.createElement("a");
+        a.className = "titleA";
+        a.textContent = x.title || "(no title)";
+        a.href = x.url || "#";
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        tdTitle.appendChild(a);
+        const src = document.createElement("div");
+        src.className = "srcLine";
+        src.textContent = x.source || "(no source)";
+        tdTitle.appendChild(src);
+
+        const tdStatus = document.createElement("td");
+        const st = document.createElement("div");
+        const net = Number(x.net);
+        const status = classifyStatus(net);
+        st.className = "status " + status;
+        const dot = document.createElement("span");
+        dot.className = "sdot";
+        const label = document.createElement("span");
+        label.textContent = (status === "risk") ? "risk" : (status === "ok") ? "ok" : "neutral";
+        st.appendChild(dot);
+        st.appendChild(label);
+        tdStatus.appendChild(st);
+
+        const tdR = document.createElement("td");
+        tdR.className = "num";
+        tdR.textContent = fmtNum(x.risk, 6);
+
+        const tdP = document.createElement("td");
+        tdP.className = "num";
+        tdP.textContent = fmtNum(x.positive, 6);
+
+        const tdU = document.createElement("td");
+        tdU.className = "num";
+        tdU.textContent = fmtNum(x.uncertainty, 6);
+
+        const tdN = document.createElement("td");
+        tdN.className = "num";
+        const nText = fmtNum(x.net, 6);
+        const span = document.createElement("span");
+        span.className = "net" + ((Number.isFinite(net) && net < -0.02) ? " bad" : "");
+        span.textContent = nText;
+        tdN.appendChild(span);
+
+        tr.appendChild(tdThumb);
+        tr.appendChild(tdTitle);
+        tr.appendChild(tdStatus);
+        tr.appendChild(tdR);
+        tr.appendChild(tdP);
+        tr.appendChild(tdU);
+        tr.appendChild(tdN);
+
+        tbody.appendChild(tr);
+      }
+
+      document.getElementById("metaTop").textContent =
+        `sent: ${sentPath} / meta_used: ${vmPathsUsed.length ? vmPathsUsed.join(", ") : "(none)"} / joined: ${joinStats.joined} / total rows: ${items.length}`;
+    }
+
+    function applyFilters(){
+      const q = normStr(document.getElementById("q").value).toLowerCase();
+      const src = document.getElementById("sourceSel").value;
+      const sort = document.getElementById("sortSel").value;
+      const showMissing = document.getElementById("showMissing").checked;
+
+      let arr = joinedAll.slice();
+
+      if (!showMissing){
+        arr = arr.filter(x => x._meta && x._sent);
+      }
+
+      if (src && src !== "All"){
+        arr = arr.filter(x => x.source === src);
+      }
+
+      if (q){
+        arr = arr.filter(x => {
+          const t = (x.title || "").toLowerCase();
+          const s = (x.source || "").toLowerCase();
+          return t.includes(q) || s.includes(q);
+        });
+      }
+
+      function numOrNegInf(v){
+        const n = Number(v);
+        return Number.isFinite(n) ? n : -1e9;
+      }
+      function numOrPosInf(v){
+        const n = Number(v);
+        return Number.isFinite(n) ? n : 1e9;
+      }
+
+      if (sort === "risk_desc") arr.sort((a,b)=> numOrNegInf(b.risk) - numOrNegInf(a.risk));
+      else if (sort === "pos_desc") arr.sort((a,b)=> numOrNegInf(b.positive) - numOrNegInf(a.positive));
+      else if (sort === "unc_desc") arr.sort((a,b)=> numOrNegInf(b.uncertainty) - numOrNegInf(a.uncertainty));
+      else if (sort === "net_asc") arr.sort((a,b)=> numOrPosInf(a.net) - numOrPosInf(b.net));
+      else if (sort === "net_desc") arr.sort((a,b)=> numOrNegInf(b.net) - numOrNegInf(a.net));
+      else if (sort === "title_asc") arr.sort((a,b)=> (a.title||"").localeCompare(b.title||""));
+
+      renderTable(arr);
+
+      document.getElementById("dbg").textContent =
+        `debug: q="${q}" src="${src}" sort="${sort}" showMissing=${showMissing}\n` +
+        `metaItems=${joinStats.vmItems} sentItems=${joinStats.sentItems} joined=${joinStats.joined} showing=${arr.length}`;
+    }
+
+    function openPath(p){
+      window.open(p, "_blank", "noopener,noreferrer");
+    }
+    function hookControls(){
+      document.getElementById("btnReload").onclick = () => boot();
+      document.getElementById("btnReset").onclick = () => {
+        document.getElementById("q").value = "";
+        document.getElementById("sourceSel").value = "All";
+        document.getElementById("sortSel").value = "risk_desc";
+        document.getElementById("showMissing").checked = true;
+        applyFilters();
+      };
+      document.getElementById("btnOpenVM").onclick = () => openPath("/analysis/view_model_latest.json");
+      document.getElementById("btnOpenSent").onclick = () => openPath("/analysis/sentiment_latest.json");
+      document.getElementById("btnOpenTS").onclick = () => openPath("/analysis/sentiment_timeseries.csv");
+
+      document.getElementById("q").addEventListener("input", () => applyFilters());
+      document.getElementById("sourceSel").addEventListener("change", () => applyFilters());
+      document.getElementById("sortSel").addEventListener("change", () => applyFilters());
+      document.getElementById("showMissing").addEventListener("change", () => applyFilters());
+      window.addEventListener("resize", () => { if (window.__tsSeries) drawTrend3Panel(window.__tsSeries); }, { passive:true });
+    }
+
+    async function tryLoadJsonArray(path){
+      const r = await fetch(path, { cache:"no-store" });
+      if (!r.ok) return { ok:false, path, arr:[] };
+      const j = await r.json();
+      const arr = findArticleArray(j);
+      if (!Array.isArray(arr)) return { ok:false, path, arr:[] };
+      return { ok:true, path, arr };
+    }
+
+    async function tryLoadJsonlArray(path){
+      const r = await fetch(path, { cache:"no-store" });
+      if (!r.ok) return { ok:false, path, arr:[] };
+      const t = await r.text();
+      const lines = t.split(/\r?\n/).filter(l => l.trim().length);
+      const objs = [];
+      for (const line of lines){
+        try{ objs.push(JSON.parse(line)); }catch{}
+      }
+      // jsonl は “配列”ではないので、objs を記事配列として扱う
+      const arr = isArticleArray(objs) ? objs : [];
+      return { ok: arr.length>0, path, arr };
+    }
+
+    function isArticleArray(arr){
+      if (!Array.isArray(arr) || arr.length < 3) return false;
+      let hit = 0;
+      const n = Math.min(arr.length, 20);
+      for (let i=0;i<n;i++){
+        if (isArticleLikeObject(arr[i])) hit++;
+      }
+      return hit >= Math.max(2, Math.floor(n * 0.3));
+    }
+
+    async function boot(){
+      const dbg2 = document.getElementById("dbg2");
+      vmPathsUsed = [];
+
+      const sentRes = await fetchJsonFirst(PATHS_SENT);
+      sentPath = sentRes.ok ? sentRes.path : "NOT_FOUND";
+      if (!sentRes.ok){
+        dbg2.textContent = "debug2: sentiment_latest.json NOT_FOUND\nsent=" + sentPath;
+        joinedAll = [];
+        renderTable([]);
+        return;
+      }
+
+      // sentiment array
+      const sentArr = findArticleArray(sentRes.json);
+      const sentItems = (Array.isArray(sentArr) ? sentArr : []).map(normalizeSentItem);
+
+      // meta items (merge from multiple sources; all read-only)
+      const metaItems = [];
+
+      // 1) view_model (primary)
+      for (const p of PATHS_VM_PRIMARY){
         try{
-          const r = await fetch(p, { cache:"no-store" });
-          if (!r.ok) continue;
-          const t = await r.text();
-          const og = extractOgImageFromHtml(t);
-          if (og) return og;
+          const res = await tryLoadJsonArray(p);
+          if (res.ok){
+            vmPathsUsed.push(res.path);
+            metaItems.push(...res.arr.map(normalizeMetaItem));
+            break;
+          }
         }catch{}
       }
-      return "";
-    }
 
-    function renderThumb(thumbEl, a){
-      // Priority:
-      // 1) JSON image URL
-      // 2) OG image via r.jina.ai (async)
-      // 3) screenshot services
-      // 4) favicon
-      // 5) no image
-
-      const jsonImg = (a.image && typeof a.image === "string" && a.image.startsWith("http")) ? a.image : "";
-      if (jsonImg){
-        setImage(thumbEl, jsonImg, () => {
-          // fallback chain
-          tryOgOrFallback();
-        });
-        return;
-      }
-
-      tryOgOrFallback();
-
-      function tryScreens(idx){
-        if (!a.shots || idx >= a.shots.length){
-          setFavicon(thumbEl, a.favicon || "");
-          return;
-        }
-        setImage(thumbEl, a.shots[idx], () => tryScreens(idx + 1));
-      }
-
-      function tryOgOrFallback(){
-        // show favicon immediately as a placeholder (fast)
-        setFavicon(thumbEl, a.favicon || "");
-
-        if (!a.url){
-          return;
-        }
-
-        // async: fetch OG image, then replace thumb if found
-        limit4(async () => {
-          const og = await fetchOgImage(a.url);
-          if (og && og.startsWith("http")){
-            setImage(thumbEl, og, () => tryScreens(0));
-          }else{
-            // no og -> screenshots
-            tryScreens(0);
+      // 2) extra JSON candidates
+      for (const p of PATHS_META_EXTRA_JSON){
+        try{
+          const res = await tryLoadJsonArray(p);
+          if (res.ok){
+            vmPathsUsed.push(res.path);
+            metaItems.push(...res.arr.map(normalizeMetaItem));
+            if (metaItems.length >= 2000) break;
           }
-        });
+        }catch{}
       }
-    }
 
-    function renderArticles(json, path){
-      let arr = null;
-      if (Array.isArray(json)) arr = json;
-      else arr = pick(json, ["articles","items","data.articles","data.items"]);
+      // 3) extra JSONL candidates
+      for (const p of PATHS_META_EXTRA_JSONL){
+        try{
+          const res = await tryLoadJsonlArray(p);
+          if (res.ok){
+            vmPathsUsed.push(res.path);
+            metaItems.push(...res.arr.map(normalizeMetaItem));
+            if (metaItems.length >= 2000) break;
+          }
+        }catch{}
+      }
 
-      if (!Array.isArray(arr) || arr.length === 0) return;
+      // join (meta may be empty, but sentiment-only still renders + uses sentiment image if present)
+      joinedAll = joinMetaSent(metaItems, sentItems);
 
-      const list = document.getElementById("alist");
-      const box = document.getElementById("articles");
-      if (!list || !box) return;
+      // as_of
+      const dateStr =
+        toPlain(pick(sentRes.json, ["date","as_of","meta.date","meta.as_of"])) ||
+        toPlain(pick(sentItems[sentItems.length-1]?.raw || {}, ["date","as_of"])) ||
+        "-";
 
-      list.innerHTML = "";
+      document.getElementById("asofPill").textContent = "as_of: " + (dateStr || "-");
+      updateKpi(dateStr);
 
-      const normalized = arr.map(normalizeArticle);
+      // build sources dropdown
+      const sources = buildSources(joinedAll);
+      const sel = document.getElementById("sourceSel");
+      sel.innerHTML = "";
+      for (const s of sources){
+        const opt = document.createElement("option");
+        opt.value = s;
+        opt.textContent = s;
+        sel.appendChild(opt);
+      }
+      sel.value = "All";
 
-      for (const a of normalized){
-        const badgeClass = classifyNet(a.net);
+      // timeseries
+      const tsRes = await fetchTextFirst(PATHS_TS);
+      tsPath = tsRes.ok ? tsRes.path : "NOT_FOUND";
 
-        const risk = fmtNum(a.risk, 6);
-        const pos = fmtNum(a.positive, 6);
-        const unc = fmtNum(a.uncertainty, 6);
-        const net = (a.net === null || a.net === undefined) ? "-" : fmtNum(a.net, 6);
+      if (tsRes.ok){
+        const rows = parseCSV(tsRes.text);
+        const series = rows.map(r => ({
+          date: r.date || r.Date || r.DAY || r.day || "",
+          risk: toNum(r.risk ?? r.RISK),
+          positive: toNum(r.positive ?? r.POSITIVE),
+          uncertainty: toNum(r.uncertainty ?? r.UNCERTAINTY),
+        })).filter(d => d.date);
 
-        const item = document.createElement("div");
-        item.className = "item";
+        window.__tsSeries = series;
 
-        const thumb = document.createElement("div");
-        thumb.className = "thumb";
-        renderThumb(thumb, a);
-
-        const content = document.createElement("div");
-        content.className = "content";
-
-        const titleLine = document.createElement("div");
-        titleLine.className = "titleLine";
-        if (a.url){
-          const link = document.createElement("a");
-          link.href = a.url;
-          link.target = "_blank";
-          link.rel = "noopener noreferrer";
-          link.textContent = a.title;
-          titleLine.appendChild(link);
+        if (series.length){
+          const last = series[series.length-1].date;
+          const first = series[0].date;
+          document.getElementById("ts_meta").textContent = `range: ${first} .. ${last} / points: ${series.length}`;
+          if (!dateStr || dateStr === "-" || dateStr === "null"){
+            updateKpi(last);
+            document.getElementById("asofPill").textContent = "as_of: " + last;
+          }
         }else{
-          const span = document.createElement("span");
-          span.textContent = a.title;
-          span.style.fontWeight = "900";
-          titleLine.appendChild(span);
+          document.getElementById("ts_meta").textContent = "timeseries: points=0";
         }
 
-        const metaLine = document.createElement("div");
-        metaLine.className = "metaLine";
-        const bits = [];
-        if (a.date) bits.push(`<span class="mono">${a.date}</span>`);
-        if (a.source) bits.push(`<span>${a.source}</span>`);
-        metaLine.innerHTML = bits.join("");
-
-        const metrics = document.createElement("div");
-        metrics.className = "metrics";
-        metrics.innerHTML = `
-          <span class="m">risk ${risk}</span>
-          <span class="m">pos ${pos}</span>
-          <span class="m">unc ${unc}</span>
-          <span class="badge ${badgeClass}">net <span class="net ${badgeClass==="bad" ? "bad":""}">${net}</span></span>
-        `;
-
-        content.appendChild(titleLine);
-        if (bits.length > 0) content.appendChild(metaLine);
-        content.appendChild(metrics);
-
-        item.appendChild(thumb);
-        item.appendChild(content);
-
-        list.appendChild(item);
+        drawTrend3Panel(series);
+      }else{
+        document.getElementById("ts_meta").textContent = "timeseries: NOT_FOUND";
       }
 
-      box.style.display = "";
-      safeText("a_src", "src: " + (path || "-"));
-      safeText("a_count", "count: " + String(arr.length));
+      // trend3 fx phase1
+      await loadTrend3();
+
+      dbg2.textContent =
+        `debug2: ok\nsent=${sentPath}\nts=${tsPath}\n` +
+        `meta_used=${vmPathsUsed.length ? vmPathsUsed.join(", ") : "(none)"}\n` +
+        `metaItems=${joinStats.vmItems} sentItems=${joinStats.sentItems} joined=${joinStats.joined}`;
+
+      applyFilters();
     }
 
-    async function loadArticles(){
-      const latestCandidates = [
-        "/analysis/sentiment_latest.json",
-        "../analysis/sentiment_latest.json",
-        "./analysis/sentiment_latest.json"
-      ];
-      let res = await fetchJsonFirst(latestCandidates);
-      if (res.ok){
-        renderArticles(res.json || {}, res.path);
-        return;
-      }
-
-      const asofText = document.getElementById("asof")?.textContent || "";
-      const m = asofText.match(/(\d{4}-\d{2}-\d{2})/);
-      const d = m ? m[1] : null;
-      if (!d) return;
-
-      const dailyCandidates = [
-        `/analysis/sentiment_${d}.json`,
-        `../analysis/sentiment_${d}.json`,
-        `./analysis/sentiment_${d}.json`
-      ];
-      res = await fetchJsonFirst(dailyCandidates);
-      if (res.ok) renderArticles(res.json || {}, res.path);
-    }
-
-    // =========================
-    // Boot
-    // =========================
-    (async function main(){
-      await loadKpi();
-      await loadTrend3Phase1();
-      const series = await loadSentimentTrend();
-      window.addEventListener("resize", () => onResizeRedraw(series), { passive:true });
-      await loadArticles();
-    })();
+    hookControls();
+    boot();
   </script>
 </body>
 </html>
