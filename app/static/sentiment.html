@@ -5,11 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GenesisPrediction v2 - Sentiment</title>
 
-  <!-- SST: app.css を使う（GUIの見た目はここに寄せる） -->
   <link rel="stylesheet" href="./app.css" />
 
   <style>
-    /* app.css が想定外でも最低限「崩壊」しないための保険（最小） */
     .gp-container{max-width:1100px;margin:0 auto;padding:24px 16px 48px;}
     .gp-topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:10px 0 18px;}
     .gp-brand{display:flex;align-items:center;gap:10px;min-width:200px;}
@@ -214,9 +212,6 @@
 
 <script>
 (() => {
-  // -----------------------
-  // Utilities
-  // -----------------------
   const $ = (id) => document.getElementById(id);
 
   function fmt6(x){
@@ -232,7 +227,6 @@
     if (typeof v === "string") return v;
     if (typeof v === "number") return String(v);
     if (typeof v === "object") {
-      // {name: "..."} 等は name を優先
       if (typeof v.name === "string") return v.name;
       if (typeof v.domain === "string") return v.domain;
       if (typeof v.title === "string") return v.title;
@@ -253,17 +247,11 @@
     let raw = decodeHtmlEntities(String(u)).trim();
     if (!raw) return "";
     if (raw.startsWith("//")) raw = "https:" + raw;
-
-    // strip query/hash
     raw = raw.replace(/#.*$/g, "");
     raw = raw.replace(/\?.*$/g, "");
-
-    // ensure scheme
     if (!/^[a-zA-Z][a-zA-Z0-9+\-.]*:\/\//.test(raw)) {
       raw = "https://" + raw.replace(/^\/+/, "");
     }
-
-    // lowercase scheme + host, drop www.
     const m = raw.match(/^([a-zA-Z][a-zA-Z0-9+\-.]*:\/\/)([^\/]+)(\/.*)?$/);
     if (!m) return raw.toLowerCase().replace(/\/$/, "");
     let scheme = m[1].toLowerCase();
@@ -336,8 +324,6 @@
     const ss = (source || "").trim().toLowerCase();
     if (tt) keys.push("t:" + tt);
     if (tt && ss) keys.push("ts:" + tt + "||" + ss);
-
-    // unique
     const out = [];
     const seen = new Set();
     for (const k of keys){
@@ -350,7 +336,6 @@
   }
 
   function pickScoreTriplet(s){
-    // sentiment item から risk/pos/unc/net を拾う（多形対応）
     const net = pick(s, ["net","sent","sentiment","sentiment_score","score","raw_score"]);
     const risk = pick(s, ["risk","risk_score","riskScore"]);
     const pos = pick(s, ["pos","positive","pos_score","posScore"]);
@@ -364,9 +349,6 @@
     return { net: Number.isFinite(n) ? n : null, risk: Number.isFinite(r) ? r : null, pos: Number.isFinite(p) ? p : null, unc: Number.isFinite(u) ? u : null };
   }
 
-  // -----------------------
-  // Data load
-  // -----------------------
   const qp = new URLSearchParams(location.search);
   const dateParam = (qp.get("date") || "latest").trim();
 
@@ -374,8 +356,6 @@
   const catLatestUrl = `${analysisBase}/daily_news_categorized_latest.json`;
   const sentLatestUrl = `${analysisBase}/sentiment_latest.json`;
   const tsUrl = `${analysisBase}/sentiment_timeseries.csv`;
-
-  // dated (optional)
   const catDatedUrl = `${analysisBase}/daily_news_categorized_${dateParam}.json`;
 
   $("btnOpenCategorized").onclick = () => window.open(dateParam === "latest" ? catLatestUrl : catDatedUrl, "_blank");
@@ -394,10 +374,10 @@
   const state = {
     date: dateParam,
     category: "All",
-    base: "categorized",   // or "sentiment"
+    base: "categorized",
     note: "",
     debug: {},
-    rows: [],              // final rows for table
+    rows: [],
     categories: ["All"],
     sources: ["__all__"],
     raw: {
@@ -429,13 +409,11 @@
   function buildSentKeyMap(sentItems){
     const map = new Map();
     let totalKeys = 0;
-
     for (const s of sentItems){
       const urlRaw = pickUrlAny(s);
       const urlNorm = safeStr(pick(s, ["norm_url","normUrl"])).trim();
       const title = pickTitleAny(s);
       const source = pickSourceAny(s);
-
       const keys = buildKeys({ urlNorm, urlRaw, title, source });
       for (const k of keys){
         totalKeys += 1;
@@ -462,7 +440,6 @@
       }
 
       const score = hit ? pickScoreTriplet(hit) : {net:null,risk:null,pos:null,unc:null};
-
       if (hit) joined += 1;
 
       const cat = safeStr(pick(c, ["category"])).trim() || "General";
@@ -530,7 +507,6 @@
     let n = 0, sr = 0, sp = 0, su = 0;
     for (const r of rows){
       if (!r.hasScore) continue;
-      // risk/pos/unc が null の場合は 0 として扱う（見える値を優先）
       sr += (r.score.risk ?? 0);
       sp += (r.score.pos ?? 0);
       su += (r.score.unc ?? 0);
@@ -634,7 +610,6 @@
     for (const r of rows){
       const tr = document.createElement("tr");
 
-      // thumb
       const td0 = document.createElement("td");
       const img = document.createElement("img");
       img.className = "thumb";
@@ -645,7 +620,6 @@
       td0.appendChild(img);
       tr.appendChild(td0);
 
-      // title
       const td1 = document.createElement("td");
       td1.className = "t-title";
       const a = document.createElement("a");
@@ -661,13 +635,11 @@
       td1.appendChild(sub);
       tr.appendChild(td1);
 
-      // category
       const td2 = document.createElement("td");
       td2.className = "mono";
       td2.textContent = r.category || "General";
       tr.appendChild(td2);
 
-      // status
       const td3 = document.createElement("td");
       const badge = document.createElement("span");
       badge.className = "badge mono";
@@ -680,7 +652,6 @@
       td3.appendChild(badge);
       tr.appendChild(td3);
 
-      // numbers
       const td4 = document.createElement("td"); td4.className = "mono num"; td4.textContent = r.hasScore ? fmt6(r.score.risk ?? 0) : "—";
       const td5 = document.createElement("td"); td5.className = "mono num"; td5.textContent = r.hasScore ? fmt6(r.score.pos ?? 0) : "—";
       const td6 = document.createElement("td"); td6.className = "mono num"; td6.textContent = r.hasScore ? fmt6(r.score.unc ?? 0) : "—";
@@ -691,23 +662,17 @@
       td7.textContent = (net === null || net === undefined || Number.isNaN(net)) ? "—" : fmt3(net);
 
       tr.appendChild(td4); tr.appendChild(td5); tr.appendChild(td6); tr.appendChild(td7);
-
       tb.appendChild(tr);
     }
   }
 
-  // -----------------------
-  // Trend: 3-panel canvas + B1 (latest value labels)
-  // -----------------------
   function renderTrendFromCsv(csvText){
     const c = $("trend");
     const ctx = c.getContext("2d");
 
-    // reset transform + clear (avoid cumulative scale)
     ctx.setTransform(1,0,0,1,0,0);
     ctx.clearRect(0,0,c.width,c.height);
 
-    // scale canvas for crispness
     const rect = c.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     c.width = Math.max(1, Math.floor(rect.width * dpr));
@@ -720,14 +685,12 @@
     const lines = text.split(/\r?\n/).filter(x => x.trim().length > 0);
     if (lines.length <= 1) return;
 
-    // header detect
     const header = lines[0].split(",").map(s => s.trim().toLowerCase());
     const idxDate = header.indexOf("date") >= 0 ? header.indexOf("date") : 0;
     const idxRisk = header.indexOf("risk");
     const idxPos  = header.indexOf("positive");
     const idxUnc  = header.indexOf("uncertainty");
 
-    // fallback (legacy: date,risk,positive,uncertainty)
     const rIdx = (idxRisk >= 0) ? idxRisk : 1;
     const pIdx = (idxPos  >= 0) ? idxPos  : 2;
     const uIdx = (idxUnc  >= 0) ? idxUnc  : 3;
@@ -736,7 +699,6 @@
     for (let i=1;i<lines.length;i++){
       const cols = lines[i].split(",");
       if (cols.length <= Math.max(idxDate, rIdx, pIdx, uIdx)) continue;
-
       const date = (cols[idxDate] || "").trim();
       if (!date) continue;
 
@@ -756,8 +718,7 @@
     const w = rect.width;
     const h = rect.height;
 
-    // layout
-    const padL = 42, padR = 64, padT = 10, padB = 22;  // padR a bit larger for labels
+    const padL = 42, padR = 64, padT = 10, padB = 22;
     const gap = 8;
 
     const plotX0 = padL;
@@ -785,21 +746,16 @@
 
     function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
 
-    // Common font
     const mono = "ui-monospace, Menlo, Consolas, monospace";
 
-    // Draw each panel
     for (const p of panels){
-      // vmax per panel
       let vmax = 0;
       for (const pt of pts) vmax = Math.max(vmax, pt[p.key] || 0);
       if (vmax <= 0) vmax = 1;
 
-      // grid
       ctx.globalAlpha = 0.6;
       ctx.strokeStyle = "rgba(255,255,255,.14)";
       ctx.lineWidth = 1;
-
       for (let g=0; g<=2; g++){
         const y = p.y0 + (p.y1 - p.y0) * (g / 2);
         ctx.beginPath();
@@ -808,24 +764,28 @@
         ctx.stroke();
       }
 
-      // left axis
       ctx.globalAlpha = 0.75;
       ctx.beginPath();
       ctx.moveTo(plotX0, p.y0);
       ctx.lineTo(plotX0, p.y1);
       ctx.stroke();
 
-      // label
       ctx.globalAlpha = 0.85;
       ctx.fillStyle = "rgba(255,255,255,.85)";
       ctx.font = `12px ${mono}`;
       ctx.fillText(p.label, 6, p.y0 + 12);
 
-      // line
+      // B2.1: max label moved to right-top (avoid overlap with series)
+      const maxText = `max=${vmax.toFixed(4)}`;
+      ctx.globalAlpha = 0.55;
+      ctx.fillStyle = "rgba(255,255,255,.75)";
+      ctx.font = `11px ${mono}`;
+      const mw = ctx.measureText(maxText).width;
+      ctx.fillText(maxText, plotX1 - mw - 6, p.y0 + 12);
+
       ctx.globalAlpha = 1.0;
       ctx.strokeStyle = p.stroke;
       ctx.lineWidth = 2;
-
       ctx.beginPath();
       for (let i=0;i<pts.length;i++){
         const x = xAt(i);
@@ -835,28 +795,25 @@
       }
       ctx.stroke();
 
-      // B1: latest value label at right
       const last = pts[pts.length - 1];
       const lastVal = Number(last[p.key] || 0);
       const xLast = xAt(pts.length - 1);
       const yLast = yAt(lastVal, p.y0, p.y1, vmax);
 
-      const labelText = lastVal.toFixed(4); // concise but informative
+      const labelText = lastVal.toFixed(4);
       ctx.font = `12px ${mono}`;
-
-      // measure + draw small pill background
       const m = ctx.measureText(labelText);
       const boxW = Math.ceil(m.width) + 10;
       const boxH = 18;
 
-      const xBox = plotX1 + 8; // in right margin area
+      const xBox = plotX1 + 8;
       const yBox = clamp(yLast - boxH/2, p.y0 + 2, p.y1 - boxH - 2);
 
       ctx.globalAlpha = 0.85;
       ctx.fillStyle = "rgba(0,0,0,.55)";
       ctx.strokeStyle = "rgba(255,255,255,.18)";
       ctx.lineWidth = 1;
-      // rounded rect
+
       const r = 6;
       ctx.beginPath();
       ctx.moveTo(xBox + r, yBox);
@@ -872,12 +829,10 @@
       ctx.fill();
       ctx.stroke();
 
-      // value text colored by series
       ctx.globalAlpha = 1.0;
       ctx.fillStyle = p.stroke;
       ctx.fillText(labelText, xBox + 5, yBox + 13);
 
-      // small marker at last point
       ctx.globalAlpha = 1.0;
       ctx.fillStyle = p.stroke;
       ctx.beginPath();
@@ -885,7 +840,6 @@
       ctx.fill();
     }
 
-    // x labels (first/last)
     ctx.globalAlpha = 0.75;
     ctx.fillStyle = "rgba(255,255,255,.75)";
     ctx.font = `12px ${mono}`;
@@ -896,7 +850,6 @@
   }
 
   function renderAll(){
-    // KPIs
     const k = sumKpis(state.rows);
     $("kpiDate").textContent = state.date;
     $("kpiArticles").textContent = String(state.rows.length);
@@ -905,20 +858,16 @@
     $("kpiUnc").textContent  = fmt6(k.unc);
     $("kpiNote").textContent = state.note;
 
-    // tabs/sources
     renderTabs();
     renderSourceSel();
 
-    // filter + sort + table
     let rows = getFiltered();
     rows = sortRows(rows);
     renderTable(rows);
 
-    // statline
     $("statLine").textContent =
       `showing: ${rows.length} / total: ${state.rows.length}  |  base=${state.base}  |  joined=${state.debug.joined}/${state.debug.catCount}  |  sentItems=${state.debug.sentCount}`;
 
-    // debug box
     $("debugBox").textContent = [
       `date=${state.date}`,
       `base=${state.base}`,
@@ -936,25 +885,21 @@
     $("noteLine").textContent = "loading...";
     $("tbody").innerHTML = `<tr><td colspan="8" class="mono">loading...</td></tr>`;
 
-    // health pill: date表示だけ（ここは将来 health.json に寄せてもOK）
     $("healthText").textContent = `OK: ${dateParam === "latest" ? "--" : dateParam}`;
     $("healthDot").className = "dot ok";
 
     let catDoc = null;
     let sentDoc = null;
 
-    // 1) categorized
     let catUrl = (dateParam === "latest") ? catLatestUrl : catDatedUrl;
     try {
       catDoc = await fetchJson(catUrl);
     } catch (e) {
-      // dated が無い場合は latest にフォールバック
       catUrl = catLatestUrl;
       try { catDoc = await fetchJson(catUrl); }
       catch (e2) { catDoc = null; }
     }
 
-    // 2) sentiment
     try {
       sentDoc = await fetchJson(sentLatestUrl);
     } catch (e) {
@@ -967,16 +912,11 @@
     state.raw.categorized = catItems;
     state.raw.sentiment = sentItems;
 
-    // build sentiment key map
     const { map: sentKeyMap, totalKeys } = buildSentKeyMap(sentItems);
     state.raw.sentKeyMap = sentKeyMap;
-    state.raw.sentKeyCount = totalKeys;
 
-    // try join
     const joinedResult = joinCategorizedToSentiment(catItems, sentKeyMap);
 
-    // Decide base (B)
-    // - overlap が 0 か、極端に低い場合は sentiment を母集団にする
     const catCount = catItems.length;
     const joined = joinedResult.joined;
     const joinRate = (catCount > 0) ? (joined / catCount) : 0;
@@ -986,22 +926,18 @@
       state.base = "sentiment";
       rows = rowsFromSentiment(sentItems);
       state.note = "base mismatch detected → fallback base: sentiment (scores visible)";
-      // category tabs は General だけ
     } else {
       state.base = "categorized";
       rows = joinedResult.rows;
       state.note = "base: categorized → join: norm_url → url → title+source → title";
     }
 
-    // categories & sources
     state.rows = rows;
     state.categories = buildCategories(rows);
     state.sources = buildSources(rows);
 
-    // default category keep if exists else All
     if (!state.categories.includes(state.category)) state.category = "All";
 
-    // debug stats
     state.debug = {
       catCount,
       sentCount: sentItems.length,
@@ -1013,12 +949,10 @@
 
     $("noteLine").textContent = state.note;
 
-    // trend (optional)
     try {
       const csv = await fetchText(tsUrl);
       renderTrendFromCsv(csv);
     } catch (e) {
-      // no trend: just clear canvas (already cleared by renderTrendFromCsv scale init on first successful render)
       const c = $("trend");
       const ctx = c.getContext("2d");
       ctx.setTransform(1,0,0,1,0,0);
@@ -1028,13 +962,11 @@
     renderAll();
   }
 
-  // filter events
   $("q").addEventListener("input", () => renderAll());
   $("sourceSel").addEventListener("change", () => renderAll());
   $("sortSel").addEventListener("change", () => renderAll());
   $("showMissing").addEventListener("change", () => renderAll());
 
-  // go
   reload();
 })();
 </script>
