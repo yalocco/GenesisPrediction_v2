@@ -1,114 +1,97 @@
-# scripts/save_prediction_log.py
-# Trend3 FX 永続化ログ保存（正式版）
-#
-# 目的:
-# - trend3_fx_latest.json を読み込む
-# - メタ情報を付加して prediction_log_YYYY-MM-DD.json として保存
-# - 将来の再計算不要な研究資産として凍結
-#
-# Run:
-#   .venv\Scripts\python.exe scripts\save_prediction_log.py \
-#       --date 2026-02-19 \
-#       --prediction-json analysis/prediction_backtests/trend3_fx_latest.json \
-#       --out analysis/prediction_logs/prediction_log_2026-02-19.json
-#
-# 設計思想:
-# - 元JSONは改変しない
-# - meta.persisted を追加
-# - source_file / repo info を明示
-# - 壊れたJSONは保存しない（exit 2）
-
 from __future__ import annotations
 
 import argparse
 import json
-import sys
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
 
 
-# -----------------------------
-# Utilities
-# -----------------------------
 def utc_now_iso() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
-def load_json(path: Path) -> Dict[str, Any]:
-    with path.open("r", encoding="utf-8") as f:
-        return json.load(f)
+def load_json(path: Path) -> Any:
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
-def write_json(path: Path, data: Dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    with tmp.open("w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    tmp.replace(path)
+def ensure_prediction_shape(pred: Any) -> Dict[str, Any]:
+    """
+    Normalize prediction JSON into the structure expected by prediction_log writer.
 
+    Expected structure:
+      {
+        "summary": {...},
+        "details": {... or [...]},
+        ... (optional)
+      }
 
-def build_persist_meta(
-    source_path: Path,
-    run_date: str,
-) -> Dict[str, Any]:
+    If incoming JSON already has summary/details, keep it.
+    Otherwise wrap it:
+      summary: minimal auto-generated summary
+      details: the original JSON (full-fidelity)
+    """
+    if isinstance(pred, dict) and ("summary" in pred and "details" in pred):
+        # Already in expected structure
+        return pred
+
+    # Auto-summary heuristics (best-effort, schema-agnostic)
+    summary: Dict[str, Any] = {
+        "generated": True,
+        "generated_at_utc": utc_now_iso(),
+        "note": "Auto-wrapped prediction JSON (original schema preserved under details).",
+        "keys_top_level": sorted(list(pred.keys())) if isinstance(pred, dict) else None,
+    }
+
+    # Common backtest fields (if present)
+    if isinstance(pred, dict):
+        for k in ["calls", "hit", "miss", "hit_rate", "win_rate", "accuracy"]:
+            if k in pred:
+                summary[k] = pred.get(k)
+
+        # Sometimes nested summary-ish payloads exist
+        for k in ["result", "metrics", "stats", "summary"]:
+            if k in pred and isinstance(pred.get(k), (dict, list)):
+                summary["hint_has_" + k] = True
+
     return {
-        "persisted_at_utc": utc_now_iso(),
-        "run_date_utc": run_date,
-        "source_file": str(source_path),
-        "schema_version": 1,
-        "note": "Frozen prediction log (do not modify retrospectively).",
+        "summary": summary,
+        "details": pred,
     }
 
 
-# -----------------------------
-# Main
-# -----------------------------
+def build_log_record(date_utc: str, prediction: Dict[str, Any], source_path: str) -> Dict[str, Any]:
+    return {
+        "date_utc": date_utc,
+        "created_at_utc": utc_now_iso(),
+        "source_prediction_json": source_path,
+        "prediction": prediction,
+    }
+
+
 def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--date", required=True, help="UTC date YYYY-MM-DD")
-    ap.add_argument("--prediction-json", required=True, help="Path to latest prediction JSON")
-    ap.add_argument("--out", required=True, help="Output frozen log path")
-    args = ap.parse_args()
+    parser = argparse.ArgumentParser(description="Save daily prediction log (schema-tolerant).")
+    parser.add_argument("--date", required=True, help="UTC date YYYY-MM-DD")
+    parser.add_argument("--prediction-json", required=True, help="Path to prediction JSON (latest)")
+    parser.add_argument("--out", required=True, help="Output path for daily prediction log JSON")
+    args = parser.parse_args()
 
-    source_path = Path(args.prediction_json).resolve()
-    out_path = Path(args.out).resolve()
-    run_date = args.date
-
-    if not source_path.exists():
-        print(f"[ERROR] prediction JSON not found: {source_path}")
+    pred_path = Path(args.prediction_json)
+    if not pred_path.exists():
+        print(f"[ERROR] prediction json not found: {pred_path}")
         return 2
 
-    try:
-        data = load_json(source_path)
-    except Exception as e:
-        print(f"[ERROR] Failed to parse JSON: {e}")
-        return 2
+    out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # --- Validation ---
-    if "summary" not in data or "details" not in data:
-        print("[ERROR] Invalid prediction JSON structure (missing summary/details)")
-        return 2
+    raw_pred = load_json(pred_path)
+    normalized = ensure_prediction_shape(raw_pred)
 
-    # --- Add persist meta ---
-    persist_meta = build_persist_meta(source_path, run_date)
+    record = build_log_record(args.date, normalized, str(pred_path))
 
-    # Preserve original meta
-    if "meta" not in data:
-        data["meta"] = {}
-
-    data["meta"]["persist"] = persist_meta
-
-    # --- Write ---
-    try:
-        write_json(out_path, data)
-    except Exception as e:
-        print(f"[ERROR] Failed to write output: {e}")
-        return 2
-
-    print("[OK] persisted prediction log:")
-    print(f"  source: {source_path}")
-    print(f"  out   : {out_path}")
+    out_path.write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"[OK] wrote prediction log: {out_path}")
     return 0
 
 
