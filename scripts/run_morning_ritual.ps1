@@ -1,8 +1,7 @@
 # scripts/run_morning_ritual.ps1
 # Morning Ritual (single entrypoint)
-# Goal: run ONLY this script every morning.
 #
-# What it does (one-shot, fully automated):
+# What it does:
 # 1) run_daily_with_publish
 # 2) FX rates
 # 3) FX inputs
@@ -12,14 +11,13 @@
 # 7) Normalize sentiment latest
 # 8) sentiment_timeseries.csv
 # 9) daily_summary update
-# 10) observation build (robust)
+# 10) observation build
 # 11) build_data_health
 # 12) Save prediction log (freeze latest → dated persistence)
+# 13) Build DAILY prediction report
+# 14) Build MONTHLY prediction report
 #
-# Usage:
-# powershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual.ps1
-# powershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual.ps1 -Date 2026-02-16
-# powershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual.ps1 -Guard
+# This is the ONLY script you run every morning.
 
 [CmdletBinding()]
 param(
@@ -78,7 +76,7 @@ Write-Host ("DATE : {0}{1}" -f $Date, $dateNote)
 Write-Host ("GUARD: {0}" -f ($(if ($Guard) { "ON" } else { "OFF" })))
 
 # 1) Core pipeline
-Run-Step -Title "1) run_daily_with_publish" -Action {
+Run-Step "1) run_daily_with_publish" {
   $p = Join-Path $ROOT "scripts\run_daily_with_publish.ps1"
   if ($Guard) {
     powershell -ExecutionPolicy Bypass -File $p -Date $Date -Guard
@@ -88,58 +86,68 @@ Run-Step -Title "1) run_daily_with_publish" -Action {
 }
 
 # 2) FX rates
-Run-Step -Title "2) FX rates" -Action {
+Run-Step "2) FX rates" {
   powershell -ExecutionPolicy Bypass -File (Join-Path $ROOT "scripts\run_daily_fx_rates.ps1")
 }
 
 # 3) FX inputs
-Run-Step -Title "3) FX inputs" -Action {
+Run-Step "3) FX inputs" {
   powershell -ExecutionPolicy Bypass -File (Join-Path $ROOT "scripts\run_daily_fx_inputs.ps1")
 }
 
 # 4) FX overlay
-Run-Step -Title "4) FX overlay (refresh)" -Action {
+Run-Step "4) FX overlay (refresh)" {
   powershell -ExecutionPolicy Bypass -File (Join-Path $ROOT "scripts\run_daily_fx_overlay.ps1")
 }
 
 # 5) Categories
-Run-Step -Title "5) Categories" -Action {
+Run-Step "5) Categories" {
   & $PY (Join-Path $ROOT "scripts\categorize_daily_news.py") --date $Date --latest
 }
 
 # 6) Sentiment build
-Run-Step -Title "6) Sentiment build" -Action {
+Run-Step "6) Sentiment build" {
   & $PY (Join-Path $ROOT "scripts\build_daily_sentiment.py") --date $Date
 }
 
 # 7) Normalize sentiment
-Run-Step -Title "7) Normalize sentiment latest" -Action {
+Run-Step "7) Normalize sentiment latest" {
   & $PY (Join-Path $ROOT "scripts\normalize_sentiment_latest.py")
 }
 
 # 8) Sentiment timeseries
-Run-Step -Title "8) Build sentiment_timeseries.csv" -Action {
+Run-Step "8) Build sentiment_timeseries.csv" {
   & $PY (Join-Path $ROOT "scripts\build_sentiment_timeseries_csv.py") --date $Date
 }
 
 # 9) daily_summary
-Run-Step -Title "9) Update daily_summary" -Action {
+Run-Step "9) Update daily_summary" {
   & $PY (Join-Path $ROOT "scripts\update_daily_summary.py") --date $Date
 }
 
 # 10) observation
-Run-Step -Title "10) Build observation" -Action {
+Run-Step "10) Build observation" {
   & $PY (Join-Path $ROOT "scripts\build_daily_observation_log.py") --date $Date
 }
 
 # 11) Data Health
-Run-Step -Title "11) build_data_health" -Action {
+Run-Step "11) build_data_health" {
   & $PY (Join-Path $ROOT "scripts\build_data_health.py") --date $Date
 }
 
 # 12) Prediction Log Persistence（非致命）
-Run-Step-NonCritical -Title "12) Save Prediction Log (freeze latest)" -Action {
+Run-Step-NonCritical "12) Save Prediction Log (freeze latest)" {
   powershell -ExecutionPolicy Bypass -File (Join-Path $ROOT "scripts\run_save_prediction_log.ps1")
+}
+
+# 13) DAILY prediction report
+Run-Step-NonCritical "13) Build DAILY prediction report" {
+  & $PY (Join-Path $ROOT "scripts\report_daily_from_prediction_logs.py")
+}
+
+# 14) MONTHLY prediction report
+Run-Step-NonCritical "14) Build MONTHLY prediction report" {
+  & $PY (Join-Path $ROOT "scripts\report_monthly_from_prediction_logs.py")
 }
 
 Write-Host ""
