@@ -10,6 +10,7 @@
 # - Date is treated as UTC day key (yyyy-MM-dd).
 # - Switch params (e.g., -RunGuard) are passed ONLY when enabled (never "OFF" strings).
 # - External script invocations use argument arrays (never one big string).
+# - analysis/ is SST (generated artifacts). We do not "edit" it manually, but generation is OK.
 
 [CmdletBinding()]
 param(
@@ -118,6 +119,26 @@ function Step-Optional {
   }
 }
 
+function Ensure-LatestAlias {
+  param(
+    [Parameter(Mandatory=$true)][string]$SourcePath,
+    [Parameter(Mandatory=$true)][string]$DestPath,
+    [Parameter()][string]$Label = ""
+  )
+
+  if (Test-Path $SourcePath) {
+    $destDir = Split-Path -Parent $DestPath
+    if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Force -Path $destDir | Out-Null }
+
+    Copy-Item -Force -Path $SourcePath -Destination $DestPath
+    if ([string]::IsNullOrWhiteSpace($Label)) { $Label = (Split-Path -Leaf $DestPath) }
+    Write-Host ("[OK] latest alias updated: {0} <- {1}" -f $Label, (Split-Path -Leaf $SourcePath))
+  } else {
+    if ([string]::IsNullOrWhiteSpace($Label)) { $Label = (Split-Path -Leaf $DestPath) }
+    Write-Host ("[WARN] latest alias skipped (source missing): {0} src={1}" -f $Label, $SourcePath)
+  }
+}
+
 # ----------------------------
 # Paths (repo-relative)
 # ----------------------------
@@ -146,6 +167,9 @@ $PY_BUILD_HEALTH           = Join-Path $ROOT "scripts\build_data_health.py"
 
 $PY_REPORT_DAILY           = Join-Path $ROOT "scripts\report_daily_from_prediction_logs.py"
 $PY_REPORT_MONTHLY         = Join-Path $ROOT "scripts\report_monthly_from_prediction_logs.py"
+
+# analysis dir
+$ANALYSIS_DIR = Join-Path $ROOT "data\world_politics\analysis"
 
 # ----------------------------
 # 1) run_daily_with_publish
@@ -237,7 +261,7 @@ Step-Optional "9) Update daily_summary" {
 }
 
 # ----------------------------
-# 10) Build observation (natural-heal)
+# 10) Build observation (natural-heal) + create observation_latest.*
 # ----------------------------
 Step-Optional "10) Build observation" {
   if (Test-File $PY_BUILD_OBSERVATION_LOG) {
@@ -253,7 +277,17 @@ Step-Optional "10) Build observation" {
     }
   } else {
     Write-Host "[SKIP] observation builder not found (build_daily_observation_log.py / update_observation_md.py)"
+    return
   }
+
+  # After generating dated observation_YYYY-MM-DD.*, refresh observation_latest.*
+  $srcMd  = Join-Path $ANALYSIS_DIR ("observation_{0}.md" -f $Date)
+  $srcJson= Join-Path $ANALYSIS_DIR ("observation_{0}.json" -f $Date)
+  $dstMd  = Join-Path $ANALYSIS_DIR "observation_latest.md"
+  $dstJson= Join-Path $ANALYSIS_DIR "observation_latest.json"
+
+  Ensure-LatestAlias -SourcePath $srcMd   -DestPath $dstMd   -Label "observation_latest.md"
+  Ensure-LatestAlias -SourcePath $srcJson -DestPath $dstJson -Label "observation_latest.json"
 }
 
 # ----------------------------
@@ -268,7 +302,7 @@ Step-Optional "11) build_data_health" {
 }
 
 # ----------------------------
-# 12) Save Prediction Log (freeze latest)  ※既存ps1に委譲
+# 12) Save Prediction Log (freeze latest)
 # ----------------------------
 Step-Optional "12) Save Prediction Log (freeze latest)" {
   if (Test-File $PS_SAVE_PRED_LOG) {
