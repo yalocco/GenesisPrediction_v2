@@ -1,7 +1,9 @@
 # scripts/run_daily_fx_overlay.ps1
 # FX overlay pipeline (safe)
-# - Dashboard update (non-fatal)  ※週末は「前営業日」を使う
-# - Sanitize dashboard CSV (self-healing)  ※壊れた行があっても復旧
+# - Dashboard update (non-fatal)
+#   * weekend aware
+#   * ALSO aligns fx_date to the latest available dates in local rate CSVs (prevents "stale" on early weekdays)
+# - Sanitize dashboard CSV (self-healing)
 # - Remittance overlay (required)
 # - Multi overlay (optional: skip if missing / continue if failed)
 # - Publish to analysis + app/static (required)
@@ -49,6 +51,48 @@ function Get-LastBusinessDayString {
   return $d.ToString("yyyy-MM-dd")
 }
 
+function Get-MaxDateFromRateCsv {
+  param([Parameter(Mandatory=$true)][string]$CsvPath)
+
+  if (-not (Test-Path $CsvPath)) {
+    return $null
+  }
+
+  try {
+    $rows = Import-Csv -Path $CsvPath
+    if ($null -eq $rows -or $rows.Count -eq 0) { return $null }
+
+    # Expect columns: date, rate
+    $last = $rows[-1].date
+    if ([string]::IsNullOrWhiteSpace($last)) { return $null }
+
+    # Validate format
+    [void][datetime]::ParseExact($last, "yyyy-MM-dd", $null)
+    return $last
+  } catch {
+    return $null
+  }
+}
+
+function Min-Ymd {
+  param(
+    [Parameter(Mandatory=$true)][string]$A,
+    [Parameter(Mandatory=$true)][string]$B
+  )
+  $da = [datetime]::ParseExact($A, "yyyy-MM-dd", $null)
+  $db = [datetime]::ParseExact($B, "yyyy-MM-dd", $null)
+  if ($da -le $db) { return $A } else { return $B }
+}
+
+function Nz {
+  param(
+    [Parameter(Mandatory=$false)]$Value,
+    [Parameter(Mandatory=$true)][string]$Fallback
+  )
+  if ($null -eq $Value -or [string]::IsNullOrWhiteSpace([string]$Value)) { return $Fallback }
+  return [string]$Value
+}
+
 function Sanitize-DashboardCsv {
   param(
     [Parameter(Mandatory=$true)][string]$PythonExe,
@@ -84,7 +128,6 @@ def main():
         # older pandas
         df = pd.read_csv(p, engine="python", error_bad_lines=False, warn_bad_lines=True)
 
-    # Normalize: write back with consistent quoting
     tmp = p.with_suffix(p.suffix + ".tmp")
     df.to_csv(tmp, index=False)
     tmp.replace(p)
@@ -115,17 +158,30 @@ if (-not (Test-Path $PY)) { $PY = "python" }
 # Ritual date (used for publishing dated artifacts)
 $DATE = (Get-Date -Format "yyyy-MM-dd")
 
-# FX effective date (used for rate-dependent checks on weekends)
+# FX baseline date (weekend shift)
 $FX_DATE = Get-LastBusinessDayString -Ymd $DATE
+
+# Also align FX_DATE to the latest local availability (prevents stale at early hours)
+$usdthbCsv = Join-Path $REPO "data\fx\usdthb.csv"
+$usdjpyCsv = Join-Path $REPO "data\fx\usdjpy.csv"
+
+$usdthbMax = Get-MaxDateFromRateCsv -CsvPath $usdthbCsv
+$usdjpyMax = Get-MaxDateFromRateCsv -CsvPath $usdjpyCsv
+
+if ($usdthbMax -and $usdjpyMax) {
+  $commonMax = Min-Ymd -A $usdthbMax -B $usdjpyMax
+  # Choose the earlier of (weekend-shifted FX_DATE) and (commonMax) to avoid demanding future dates
+  $FX_DATE = Min-Ymd -A $FX_DATE -B $commonMax
+}
+
 if ($FX_DATE -ne $DATE) {
-  Write-Host ("[INFO] FX date adjusted (weekend): {0} -> {1}" -f $DATE, $FX_DATE)
+  Write-Host ("[INFO] FX date effective: {0} -> {1} (usdthb_max={2} usdjpy_max={3})" -f $DATE, $FX_DATE, (Nz $usdthbMax "n/a"), (Nz $usdjpyMax "n/a"))
 }
 
 $ts = Get-Date -Format "HH:mm:ss"
 Write-Host "[$ts] START FX overlay date=$DATE (fx_date=$FX_DATE)"
 
 # 1) Dashboard update（stale 等で落ちることがある → 非fatal）
-#    IMPORTANT: use $FX_DATE so weekends don't demand non-existent rates.
 $dash = Join-Path $REPO "scripts\fx_remittance_dashboard_update.py"
 Require-File $dash
 $codeDash = Invoke-External -Exe $PY -Arguments @($dash, "--date", $FX_DATE)
@@ -134,7 +190,6 @@ if ($codeDash -ne 0) {
 }
 
 # 1.5) Sanitize dashboard CSV (self-healing)
-#      Fixes sporadic CSV corruption: "Expected N fields ... saw M"
 $dashboardCsv = Join-Path $REPO "data\fx\jpy_thb_remittance_dashboard.csv"
 Sanitize-DashboardCsv -PythonExe $PY -CsvPath $dashboardCsv
 
@@ -157,8 +212,6 @@ if (-not (Test-Path $multi)) {
 }
 
 # 4) Publish（analysis + app/static）【必須】
-#    IMPORTANT: publish uses the ritual $DATE (e.g., news date),
-#    even if underlying rates are from $FX_DATE on weekends.
 $pub = Join-Path $REPO "scripts\publish_fx_overlay_to_analysis.py"
 Require-File $pub
 Invoke-ExternalOrThrow -Exe $PY -Arguments @($pub, "--date", $DATE, "--pair", "both")
