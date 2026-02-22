@@ -130,10 +130,18 @@ $PS_SAVE_PRED_LOG         = Join-Path $ROOT "scripts\run_save_prediction_log.ps1
 
 $PY_BUILD_DAILY_SENTIMENT  = Join-Path $ROOT "scripts\build_daily_sentiment.py"
 $PY_NORMALIZE_SENTIMENT    = Join-Path $ROOT "scripts\normalize_sentiment_latest.py"
-$PY_SENTIMENT_TIMESERIES   = Join-Path $ROOT "scripts\build_sentiment_timeseries.py"
+
+# sentiment timeseries candidates (natural-heal)
+$PY_SENTIMENT_TS_FULL      = Join-Path $ROOT "scripts\rebuild_sentiment_timeseries_full.py"
+$PY_SENTIMENT_TS_REBUILD   = Join-Path $ROOT "scripts\rebuild_sentiment_timeseries_csv.py"
+$PY_SENTIMENT_TS_BUILD     = Join-Path $ROOT "scripts\build_sentiment_timeseries_csv.py"
+
 $PY_DAILY_SUMMARY_INDEX    = Join-Path $ROOT "scripts\build_daily_summary_index.py"
-$PY_BUILD_OBSERVATION_A    = Join-Path $ROOT "scripts\build_observation.py"
-$PY_BUILD_OBSERVATION_B    = Join-Path $ROOT "scripts\build_observation_from_analysis.py"
+
+# observation candidates (natural-heal)
+$PY_BUILD_OBSERVATION_LOG  = Join-Path $ROOT "scripts\build_daily_observation_log.py"
+$PY_UPDATE_OBSERVATION_MD  = Join-Path $ROOT "scripts\update_observation_md.py"
+
 $PY_BUILD_HEALTH           = Join-Path $ROOT "scripts\build_data_health.py"
 
 $PY_REPORT_DAILY           = Join-Path $ROOT "scripts\report_daily_from_prediction_logs.py"
@@ -203,13 +211,17 @@ Step-Optional "7) Normalize sentiment latest" {
 }
 
 # ----------------------------
-# 8) Build sentiment_timeseries.csv
+# 8) Build sentiment_timeseries.csv (natural-heal)
 # ----------------------------
 Step-Optional "8) Build sentiment_timeseries.csv" {
-  if (Test-File $PY_SENTIMENT_TIMESERIES) {
-    Exec-Python -ScriptPath $PY_SENTIMENT_TIMESERIES -Args @()
+  if (Test-File $PY_SENTIMENT_TS_FULL) {
+    Exec-Python -ScriptPath $PY_SENTIMENT_TS_FULL -Args @()
+  } elseif (Test-File $PY_SENTIMENT_TS_REBUILD) {
+    Exec-Python -ScriptPath $PY_SENTIMENT_TS_REBUILD -Args @()
+  } elseif (Test-File $PY_SENTIMENT_TS_BUILD) {
+    Exec-Python -ScriptPath $PY_SENTIMENT_TS_BUILD -Args @()
   } else {
-    Write-Host "[SKIP] scripts/build_sentiment_timeseries.py not found"
+    Write-Host "[SKIP] sentiment_timeseries builder not found (rebuild_* / build_*_csv)"
   }
 }
 
@@ -225,15 +237,22 @@ Step-Optional "9) Update daily_summary" {
 }
 
 # ----------------------------
-# 10) Build observation (robust)
+# 10) Build observation (natural-heal)
 # ----------------------------
 Step-Optional "10) Build observation" {
-  if (Test-File $PY_BUILD_OBSERVATION_A) {
-    Exec-Python -ScriptPath $PY_BUILD_OBSERVATION_A -Args @("--date", $Date)
-  } elseif (Test-File $PY_BUILD_OBSERVATION_B) {
-    Exec-Python -ScriptPath $PY_BUILD_OBSERVATION_B -Args @("--date", $Date)
+  if (Test-File $PY_BUILD_OBSERVATION_LOG) {
+    # Most likely expects --date
+    Exec-Python -ScriptPath $PY_BUILD_OBSERVATION_LOG -Args @("--date", $Date)
+  } elseif (Test-File $PY_UPDATE_OBSERVATION_MD) {
+    # Some versions may or may not require --date. Try with --date, then fallback to no-args.
+    try {
+      Exec-Python -ScriptPath $PY_UPDATE_OBSERVATION_MD -Args @("--date", $Date)
+    } catch {
+      Write-Host "[WARN] update_observation_md.py failed with --date; retrying without args..."
+      Exec-Python -ScriptPath $PY_UPDATE_OBSERVATION_MD -Args @()
+    }
   } else {
-    Write-Host "[SKIP] build_observation script not found (build_observation.py / build_observation_from_analysis.py)"
+    Write-Host "[SKIP] observation builder not found (build_daily_observation_log.py / update_observation_md.py)"
   }
 }
 
