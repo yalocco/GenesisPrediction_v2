@@ -1,20 +1,19 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Daily report generator from analysis/prediction_logs/prediction_log_YYYY-MM-DD.json
+Report DAILY performance from persisted prediction logs.
 
-Outputs (fixed names):
-- analysis/prediction_reports/daily_trend3_fx_latest.json
-- analysis/prediction_reports/daily_trend3_fx_latest.csv
+- Input:  analysis/prediction_logs/prediction_log_YYYY-MM-DD.json
+- Output: analysis/prediction_reports/daily_trend3_fx_latest.json/csv
 
-Design notes:
-- Uses prediction_log schema_version=1 style:
-  { meta, summary, details:[{date,next_date,trend,dir,exp,fx0,fx1,delta,ok}, ...] }
-- A "trade" is a detail row where exp != 0 and ok is True/False (ok is not null).
-- Trade return is computed as: trade_return = exp * delta
-  (So RISK_OFF (-1) turns negative delta into positive return, etc.)
-- day_return is sum of trade_return for that day.
-- Cumulative metrics are computed in chronological order of log file dates.
+Schema-safe:
+- supports legacy: {meta, summary, details}
+- supports v1:     {schema_version, prediction:{meta, summary, details}}
+
+Return model:
+- per row return = exp * delta
+  - exp=0 -> no trade -> return=0 (equity flat)
+  - exp=1/-1 -> trade -> signed return
 """
 
 from __future__ import annotations
@@ -22,322 +21,354 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-LOG_DIR = REPO_ROOT / "analysis" / "prediction_logs"
-OUT_DIR = REPO_ROOT / "analysis" / "prediction_reports"
+# ----------------------------
+# Helpers
+# ----------------------------
 
-OUT_JSON = OUT_DIR / "daily_trend3_fx_latest.json"
-OUT_CSV = OUT_DIR / "daily_trend3_fx_latest.csv"
-
-LOG_RE = re.compile(r"^prediction_log_(\d{4}-\d{2}-\d{2})\.json$")
-
-
-@dataclass(frozen=True)
-class DailyRow:
-    date: str
-    days_total: int
-
-    trades: int
-    wins: int
-    losses: int
-    hit_rate: Optional[float]
-
-    day_return: float
-    cumulative_return: float
-
-    cumulative_trades: int
-    cumulative_wins: int
-    cumulative_losses: int
-    cumulative_hit_rate: Optional[float]
-
-    max_drawdown_so_far: float  # absolute drawdown on cumulative_return axis
-
-
-def _utc_now_iso() -> str:
+def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def _read_json(path: Path) -> Dict[str, Any]:
-    with path.open("r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-def _safe_bool_ok(v: Any) -> Optional[bool]:
-    # ok can be true/false/null
-    if v is True:
-        return True
-    if v is False:
-        return False
-    return None
-
-
-def _to_int_exp(v: Any) -> int:
-    # exp should be -1/0/1, but be forgiving
+def safe_float(x: Any, default: float = 0.0) -> float:
     try:
-        return int(v)
-    except Exception:
-        return 0
-
-
-def _to_float(v: Any, default: float = 0.0) -> float:
-    try:
-        return float(v)
+        if x is None:
+            return default
+        return float(x)
     except Exception:
         return default
 
 
-def _list_log_files(log_dir: Path) -> List[Tuple[str, Path]]:
-    items: List[Tuple[str, Path]] = []
-    if not log_dir.exists():
-        return items
-    for p in log_dir.iterdir():
-        if not p.is_file():
-            continue
-        m = LOG_RE.match(p.name)
-        if not m:
-            continue
-        date = m.group(1)
-        items.append((date, p))
-    items.sort(key=lambda x: x[0])
-    return items
+def safe_int(x: Any, default: int = 0) -> int:
+    try:
+        if x is None:
+            return default
+        return int(x)
+    except Exception:
+        return default
 
 
-def _summarize_one_log(date: str, path: Path) -> Tuple[int, int, int, float]:
-    """
-    Returns: (trades, wins, losses, day_return)
-
-    trade criteria:
-      exp != 0 AND ok is not null
-    day_return:
-      sum(exp * delta) over trades
-    wins/losses:
-      ok True/False counts
-    """
-    j = _read_json(path)
-
-    details = j.get("details", [])
-    trades = 0
-    wins = 0
-    losses = 0
-    day_return = 0.0
-
-    if isinstance(details, list):
-        for row in details:
-            if not isinstance(row, dict):
-                continue
-            exp = _to_int_exp(row.get("exp", 0))
-            ok = _safe_bool_ok(row.get("ok", None))
-            if exp == 0 or ok is None:
-                continue
-
-            delta = _to_float(row.get("delta", 0.0), 0.0)
-            trade_ret = float(exp) * delta
-
-            trades += 1
-            day_return += trade_ret
-            if ok:
-                wins += 1
-            else:
-                losses += 1
-
-    return trades, wins, losses, day_return
-
-
-def _hit_rate(wins: int, trades: int) -> Optional[float]:
-    if trades <= 0:
+def parse_date_from_filename(p: Path) -> Optional[str]:
+    # prediction_log_YYYY-MM-DD.json
+    name = p.name
+    if not name.startswith("prediction_log_") or not name.endswith(".json"):
         return None
-    return wins / float(trades)
+    core = name[len("prediction_log_"):-len(".json")]
+    # quick validate YYYY-MM-DD
+    if len(core) != 10 or core[4] != "-" or core[7] != "-":
+        return None
+    return core
 
 
-def _write_json(path: Path, payload: Dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8", newline="\n") as f:
-        json.dump(payload, f, ensure_ascii=False, indent=2)
-        f.write("\n")
+def unwrap_prediction_root(doc: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Return a dict that contains meta/summary/details.
+    - legacy: doc already has them
+    - v1: doc["prediction"] has them
+    """
+    pred = doc.get("prediction")
+    if isinstance(pred, dict):
+        return pred
+    return doc
 
 
-def _write_csv(path: Path, rows: List[DailyRow]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fieldnames = [
-        "date",
-        "trades",
-        "wins",
-        "losses",
-        "hit_rate",
-        "day_return",
-        "cumulative_return",
-        "cumulative_trades",
-        "cumulative_wins",
-        "cumulative_losses",
-        "cumulative_hit_rate",
-        "max_drawdown_so_far",
-    ]
-    with path.open("w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=fieldnames)
-        w.writeheader()
-        for r in rows:
-            w.writerow(
-                {
-                    "date": r.date,
-                    "trades": r.trades,
-                    "wins": r.wins,
-                    "losses": r.losses,
-                    "hit_rate": "" if r.hit_rate is None else f"{r.hit_rate:.6f}",
-                    "day_return": f"{r.day_return:.12f}",
-                    "cumulative_return": f"{r.cumulative_return:.12f}",
-                    "cumulative_trades": r.cumulative_trades,
-                    "cumulative_wins": r.cumulative_wins,
-                    "cumulative_losses": r.cumulative_losses,
-                    "cumulative_hit_rate": ""
-                    if r.cumulative_hit_rate is None
-                    else f"{r.cumulative_hit_rate:.6f}",
-                    "max_drawdown_so_far": f"{r.max_drawdown_so_far:.12f}",
-                }
-            )
-
-
-def build_daily_report(log_dir: Path) -> Dict[str, Any]:
-    log_files = _list_log_files(log_dir)
-
-    days: List[DailyRow] = []
-    cum_return = 0.0
-    cum_trades = 0
-    cum_wins = 0
-    cum_losses = 0
-
-    peak = 0.0  # peak of cumulative_return
+def compute_max_drawdown(equity: List[float]) -> float:
+    if not equity:
+        return 0.0
+    peak = equity[0]
     max_dd = 0.0
-
-    for i, (date, path) in enumerate(log_files, start=1):
-        trades, wins, losses, day_ret = _summarize_one_log(date, path)
-
-        cum_return += day_ret
-        cum_trades += trades
-        cum_wins += wins
-        cum_losses += losses
-
-        # drawdown on cumulative_return axis
-        if cum_return > peak:
-            peak = cum_return
-        dd = peak - cum_return
+    for v in equity:
+        if v > peak:
+            peak = v
+        dd = peak - v
         if dd > max_dd:
             max_dd = dd
+    return float(max_dd)
 
-        days.append(
-            DailyRow(
-                date=date,
-                days_total=i,
-                trades=trades,
-                wins=wins,
-                losses=losses,
-                hit_rate=_hit_rate(wins, trades),
-                day_return=day_ret,
-                cumulative_return=cum_return,
-                cumulative_trades=cum_trades,
-                cumulative_wins=cum_wins,
-                cumulative_losses=cum_losses,
-                cumulative_hit_rate=_hit_rate(cum_wins, cum_trades),
-                max_drawdown_so_far=max_dd,
-            )
-        )
 
-    payload: Dict[str, Any] = {
-        "report_schema_version": 1,
-        "generated_at_utc": _utc_now_iso(),
-        "log_dir": str(log_dir).replace("\\", "/"),
-        "days": [
-            {
-                "date": r.date,
-                "trades": r.trades,
-                "wins": r.wins,
-                "losses": r.losses,
-                "hit_rate": r.hit_rate,
-                "day_return": r.day_return,
-                "cumulative_return": r.cumulative_return,
-                "cumulative_trades": r.cumulative_trades,
-                "cumulative_wins": r.cumulative_wins,
-                "cumulative_losses": r.cumulative_losses,
-                "cumulative_hit_rate": r.cumulative_hit_rate,
-                "max_drawdown_so_far": r.max_drawdown_so_far,
-            }
-            for r in days
-        ],
-        "summary": {
-            "days": len(days),
-            "total_trades": cum_trades,
-            "total_wins": cum_wins,
-            "total_losses": cum_losses,
-            "overall_hit_rate": _hit_rate(cum_wins, cum_trades),
-            "total_return": cum_return,
-            "max_drawdown": max_dd,
-        },
-    }
-    return payload
+def sharpe_like(returns: List[float]) -> Optional[float]:
+    # simple: mean/std * sqrt(n)
+    n = len(returns)
+    if n < 2:
+        return None
+    mean = sum(returns) / n
+    var = sum((r - mean) ** 2 for r in returns) / (n - 1)
+    if var <= 0:
+        return None
+    import math
+    return float(mean / math.sqrt(var) * math.sqrt(n))
+
+
+@dataclass
+class DayReport:
+    day: str
+    threshold: Optional[float]
+    fx_strategy: Optional[str]
+    notes: Optional[str]
+    rows: int
+    calls: int
+    hit: int
+    miss: int
+    no_call: int
+    call_rate: Optional[float]
+    hit_rate: Optional[float]
+    total_return: float
+    avg_return_per_row: Optional[float]
+    equity_curve: List[Dict[str, Any]]
+    max_drawdown: float
+    daily_sharpe_like: Optional[float]
+
+
+def build_day_report(day: str, doc: Dict[str, Any]) -> DayReport:
+    pred = unwrap_prediction_root(doc)
+
+    meta = pred.get("meta", {}) if isinstance(pred.get("meta"), dict) else {}
+    details = pred.get("details", [])
+    if details is None:
+        details = []
+    if not isinstance(details, list):
+        # if corrupted, treat as empty
+        details = []
+
+    rows = len(details)
+
+    # calls/hit/miss/no_call from ok & exp
+    calls = 0
+    hit = 0
+    miss = 0
+    no_call = 0
+
+    # returns
+    trade_returns: List[float] = []
+    equity_curve: List[Dict[str, Any]] = []
+    eq = 0.0
+    eq_series: List[float] = []
+
+    for item in details:
+        if not isinstance(item, dict):
+            continue
+        exp = safe_int(item.get("exp"), 0)
+        ok = item.get("ok", None)
+
+        # count
+        if exp == 0 or ok is None:
+            no_call += 1
+        else:
+            calls += 1
+            if ok is True:
+                hit += 1
+            else:
+                miss += 1
+
+        delta = safe_float(item.get("delta"), 0.0)
+        r = float(exp) * float(delta)
+        # record per-row return (including 0 if exp==0)
+        trade_returns.append(r)
+
+        eq += r
+        eq_series.append(eq)
+        equity_curve.append({"date": item.get("date", None), "equity": eq})
+
+    call_rate = (calls / rows) if rows > 0 else None
+    hit_rate = (hit / calls) if calls > 0 else None
+    total_return = float(sum(trade_returns)) if trade_returns else 0.0
+    avg_return_per_row = (total_return / rows) if rows > 0 else None
+    max_dd = compute_max_drawdown(eq_series)
+
+    # sharpe-like only on actual trades (exp!=0)
+    realized = []
+    for item in details:
+        if not isinstance(item, dict):
+            continue
+        exp = safe_int(item.get("exp"), 0)
+        if exp == 0:
+            continue
+        realized.append(float(exp) * safe_float(item.get("delta"), 0.0))
+    d_sharpe = sharpe_like(realized)
+
+    threshold = meta.get("threshold", None)
+    fx_strategy = meta.get("fx_strategy", None)
+    notes = meta.get("notes", None)
+
+    threshold_f = None
+    if threshold is not None:
+        try:
+            threshold_f = float(threshold)
+        except Exception:
+            threshold_f = None
+
+    return DayReport(
+        day=day,
+        threshold=threshold_f,
+        fx_strategy=str(fx_strategy) if fx_strategy is not None else None,
+        notes=str(notes) if notes is not None else None,
+        rows=rows,
+        calls=calls,
+        hit=hit,
+        miss=miss,
+        no_call=no_call,
+        call_rate=float(call_rate) if call_rate is not None else None,
+        hit_rate=float(hit_rate) if hit_rate is not None else None,
+        total_return=total_return,
+        avg_return_per_row=float(avg_return_per_row) if avg_return_per_row is not None else None,
+        equity_curve=equity_curve,
+        max_drawdown=float(max_dd),
+        daily_sharpe_like=d_sharpe,
+    )
+
+
+def load_one_json(p: Path) -> Dict[str, Any]:
+    with p.open("r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def write_json(p: Path, obj: Dict[str, Any]) -> None:
+    p.parent.mkdir(parents=True, exist_ok=True)
+    with p.open("w", encoding="utf-8", newline="\n") as f:
+        json.dump(obj, f, ensure_ascii=False, indent=2)
+
+
+def write_csv(p: Path, days: List[DayReport]) -> None:
+    p.parent.mkdir(parents=True, exist_ok=True)
+    fields = [
+        "day",
+        "threshold",
+        "fx_strategy",
+        "rows",
+        "calls",
+        "hit",
+        "miss",
+        "no_call",
+        "call_rate",
+        "hit_rate",
+        "total_return",
+        "avg_return_per_row",
+        "max_drawdown",
+        "daily_sharpe_like",
+        "equity_curve_len",
+        "notes",
+    ]
+    with p.open("w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=fields)
+        w.writeheader()
+        for d in days:
+            w.writerow({
+                "day": d.day,
+                "threshold": d.threshold,
+                "fx_strategy": d.fx_strategy,
+                "rows": d.rows,
+                "calls": d.calls,
+                "hit": d.hit,
+                "miss": d.miss,
+                "no_call": d.no_call,
+                "call_rate": d.call_rate,
+                "hit_rate": d.hit_rate,
+                "total_return": d.total_return,
+                "avg_return_per_row": d.avg_return_per_row,
+                "max_drawdown": d.max_drawdown,
+                "daily_sharpe_like": d.daily_sharpe_like,
+                "equity_curve_len": len(d.equity_curve),
+                "notes": d.notes,
+            })
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument(
-        "--log-dir",
-        type=str,
-        default=str(LOG_DIR),
-        help="Directory containing prediction_log_YYYY-MM-DD.json files",
-    )
-    ap.add_argument(
-        "--out-dir",
-        type=str,
-        default=str(OUT_DIR),
-        help="Output directory (default: analysis/prediction_reports)",
-    )
+    ap.add_argument("--log-dir", default="analysis/prediction_logs", help="prediction_logs directory")
+    ap.add_argument("--out-dir", default="analysis/prediction_reports", help="prediction_reports directory")
+    ap.add_argument("--date", default=None, help="YYYY-MM-DD (if set, only that day)")
+    ap.add_argument("--limit", type=int, default=90, help="max days to include (newest first)")
     args = ap.parse_args()
 
     log_dir = Path(args.log_dir)
     out_dir = Path(args.out_dir)
+    out_json = out_dir / "daily_trend3_fx_latest.json"
+    out_csv = out_dir / "daily_trend3_fx_latest.csv"
 
-    payload = build_daily_report(log_dir)
+    if not log_dir.exists():
+        # generate empty but valid artifact
+        payload = {
+            "report_schema_version": 2,
+            "generated_at_utc": utc_now_iso(),
+            "days": [],
+        }
+        write_json(out_json, payload)
+        write_csv(out_csv, [])
+        print("[OK] daily report generated (log-dir missing)")
+        print(" days=0")
+        print(f" out_json={out_json.resolve()}")
+        print(f" out_csv ={out_csv.resolve()}")
+        return 0
 
-    # write
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_json = out_dir / OUT_JSON.name
-    out_csv = out_dir / OUT_CSV.name
+    files = sorted(log_dir.glob("prediction_log_*.json"))
+    # keep only valid date files
+    dated: List[Tuple[str, Path]] = []
+    for p in files:
+        d = parse_date_from_filename(p)
+        if d:
+            dated.append((d, p))
 
-    _write_json(out_json, payload)
+    # filter date if requested
+    if args.date:
+        dated = [(d, p) for (d, p) in dated if d == args.date]
 
-    # convert payload days -> rows for CSV
-    rows: List[DailyRow] = []
-    for idx, d in enumerate(payload.get("days", []), start=1):
-        if not isinstance(d, dict):
+    # newest first then limit, but reports should be chronological in output
+    dated.sort(key=lambda x: x[0], reverse=True)
+    dated = dated[: max(0, int(args.limit))]
+    dated.sort(key=lambda x: x[0])
+
+    reports: List[DayReport] = []
+    for day, p in dated:
+        try:
+            doc = load_one_json(p)
+        except Exception:
+            # skip unreadable
             continue
-        rows.append(
-            DailyRow(
-                date=str(d.get("date", "")),
-                days_total=idx,
-                trades=int(d.get("trades", 0) or 0),
-                wins=int(d.get("wins", 0) or 0),
-                losses=int(d.get("losses", 0) or 0),
-                hit_rate=d.get("hit_rate", None),
-                day_return=float(d.get("day_return", 0.0) or 0.0),
-                cumulative_return=float(d.get("cumulative_return", 0.0) or 0.0),
-                cumulative_trades=int(d.get("cumulative_trades", 0) or 0),
-                cumulative_wins=int(d.get("cumulative_wins", 0) or 0),
-                cumulative_losses=int(d.get("cumulative_losses", 0) or 0),
-                cumulative_hit_rate=d.get("cumulative_hit_rate", None),
-                max_drawdown_so_far=float(d.get("max_drawdown_so_far", 0.0) or 0.0),
-            )
-        )
-    _write_csv(out_csv, rows)
+        reports.append(build_day_report(day, doc))
+
+    payload = {
+        "report_schema_version": 2,
+        "generated_at_utc": utc_now_iso(),
+        "days": [
+            {
+                "day": r.day,
+                "meta": {
+                    "threshold": r.threshold,
+                    "fx_strategy": r.fx_strategy,
+                    "notes": r.notes,
+                },
+                "summary": {
+                    "rows": r.rows,
+                    "calls": r.calls,
+                    "hit": r.hit,
+                    "miss": r.miss,
+                    "no_call": r.no_call,
+                    "call_rate": r.call_rate,
+                    "hit_rate": r.hit_rate,
+                    "total_return": r.total_return,
+                    "avg_return_per_row": r.avg_return_per_row,
+                    "equity_curve_len": len(r.equity_curve),
+                    "max_drawdown": r.max_drawdown,
+                    "daily_sharpe_like": r.daily_sharpe_like,
+                },
+                "equity_curve": r.equity_curve,
+            }
+            for r in reports
+        ],
+    }
+
+    write_json(out_json, payload)
+    write_csv(out_csv, reports)
 
     print("[OK] daily report generated")
-    print(f" days={len(rows)}")
-    print(f" out_json={out_json}")
-    print(f" out_csv ={out_csv}")
+    print(f" days={len(reports)}")
+    print(f" out_json={out_json.resolve()}")
+    print(f" out_csv ={out_csv.resolve()}")
     return 0
 
 
