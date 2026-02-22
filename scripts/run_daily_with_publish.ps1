@@ -3,10 +3,12 @@
 # - Runs analyzer
 # - Publishes daily_news_latest (for sentiment pipeline) WITHOUT interactive prompts
 # - Ensures dated daily_news_YYYY-MM-DD.html exists (self-healing)
-# - Runs FX overlay generation (self-healing)
-# - Ensures Health alias fx_overlay_YYYY-MM-DD.png exists (self-healing)
 # - Normalizes "latest" artifacts (self-healing)
 # - Optional: run guard after publish
+#
+# IMPORTANT (Quota-friendly design):
+# - FX / API-consuming routines are NOT executed here.
+# - FX pipeline must be executed by run_morning_ritual.ps1 (single entrypoint) or dedicated FX runners.
 #
 # Usage:
 #   powershell -ExecutionPolicy Bypass -File scripts/run_daily_with_publish.ps1
@@ -107,40 +109,11 @@ Run-Step `
   -CommandLine "cd `"$ROOT`"; `"$PY`" `"$ensureDatedPy`" --date $Date"
 
 # ----------------------------
-# 4) FX Overlay (self-healing)
-#    - Runs the existing FX overlay daily routine.
-# ----------------------------
-$fxOverlayPs1 = Join-Path $ROOT "scripts\run_daily_fx_overlay.ps1"
-if (-not (Test-Path $fxOverlayPs1)) {
-  throw ("[ERROR] missing file: {0}" -f $fxOverlayPs1)
-}
-
-Run-Step `
-  -Title "4) FX Overlay (run_daily_fx_overlay.ps1)" `
-  -CommandLine "cd `"$ROOT`"; powershell -ExecutionPolicy Bypass -File `"$fxOverlayPs1`""
-
-# ----------------------------
-# 4.5) Health alias: fx_overlay_YYYY-MM-DD.png (self-healing)
-#    Health expects fx_overlay_YYYY-MM-DD.png, but FX pipeline produces
-#    fx_jpy_thb_overlay_YYYY-MM-DD.png. Create an alias copy to satisfy Health.
-# ----------------------------
-$analysisDir = Join-Path $ROOT "data\world_politics\analysis"
-$srcAlias = Join-Path $analysisDir ("fx_jpy_thb_overlay_{0}.png" -f $Date)
-$dstAlias = Join-Path $analysisDir ("fx_overlay_{0}.png" -f $Date)
-
-if (Test-Path $srcAlias) {
-  Copy-Item -Path $srcAlias -Destination $dstAlias -Force
-  Write-Host ("[OK] health alias created: {0}" -f (Split-Path $dstAlias -Leaf))
-} else {
-  Write-Host ("[WARN] health alias source missing: {0}" -f (Split-Path $srcAlias -Leaf))
-}
-
-# ----------------------------
-# 5) Normalize "latest" artifacts (self-healing; no manual ops)
+# 4) Normalize "latest" artifacts (self-healing; no manual ops)
 #    - daily_summary_latest.json must always track the newest dated summary
 # ----------------------------
 Write-Host ""
-Write-Host ("[{0}] === 5) Normalize latest artifacts ===" -f (NowStamp))
+Write-Host ("[{0}] === 4) Normalize latest artifacts ===" -f (NowStamp))
 
 $summaryDirs = @(
   (Join-Path $PSScriptRoot "..\data\world_politics\analysis"),
@@ -166,7 +139,7 @@ if ($latestSummary) {
 }
 
 # ----------------------------
-# 6) Optional Guard
+# 5) Optional Guard
 # ----------------------------
 if ($Guard) {
   $guardPs1 = Join-Path $ROOT "scripts\run_daily_guard.ps1"
@@ -175,7 +148,7 @@ if ($Guard) {
   }
 
   Run-Step `
-    -Title "6) Guard (materialize dated + refresh latest where possible)" `
+    -Title "5) Guard (materialize dated + refresh latest where possible)" `
     -CommandLine "cd `"$ROOT`"; powershell -ExecutionPolicy Bypass -File `"$guardPs1`""
 }
 

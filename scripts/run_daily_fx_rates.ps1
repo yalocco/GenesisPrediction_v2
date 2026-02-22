@@ -1,39 +1,46 @@
-param(
-    [switch]$strict
-)
+# scripts/run_daily_fx_rates.ps1
+# FX Rates Runner (API guarded)
+#
+# Purpose:
+# - Call fx_materialize_rates.py with explicit pairs
+# - Designed to be called ONLY from run_morning_ritual.ps1
+#
+# Usage:
+#   powershell -ExecutionPolicy Bypass -File scripts/run_daily_fx_rates.ps1
 
+[CmdletBinding()]
+param()
+
+Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$ROOT = Resolve-Path "$PSScriptRoot\.."
-$date = (Get-Date -Format "yyyy-MM-dd")
-$LOG = "$ROOT\logs\fx_rates_$date.log"
+function NowStamp { (Get-Date).ToString("HH:mm:ss") }
 
-function Log($msg) {
-    $line = "[{0}] {1}" -f (Get-Date -Format "HH:mm:ss"), $msg
-    Add-Content -Path $LOG -Value $line
-    Write-Host $line
-}
+$ROOT = (Resolve-Path ".").Path
+$PY = Join-Path $ROOT ".venv\Scripts\python.exe"
+if (-not (Test-Path $PY)) { $PY = "python" }
 
-function RunPy([string]$script, [string[]]$args) {
-    Log ("PY  {0} {1}" -f $script, ($args -join " "))
-    & python "$ROOT\scripts\$script" @args
-    if ($LASTEXITCODE -ne 0) { throw "Python failed ($script) exit=$LASTEXITCODE" }
-}
+$scriptPath = Join-Path $ROOT "scripts\fx_materialize_rates.py"
 
-Log "START FX rates strict=$strict"
+Write-Host ("[{0}] START FX rates strict=False" -f (NowStamp))
 
-try {
-    $args = @("--pair", "both")
-    if ($strict) {
-        # strict=True: オンライン取得が失敗したら既存CSV継続ではなく「停止」する
-        $args += "--strict"
+# --- Define pairs here (single source of truth) ---
+$pairs = @(
+  "usdthb",
+  "usdjpy"
+)
+
+foreach ($pair in $pairs) {
+    Write-Host ("[{0}] PY  fx_materialize_rates.py --pair {1}" -f (NowStamp), $pair)
+
+    & $PY $scriptPath --pair $pair
+    $code = $LASTEXITCODE
+
+    if ($code -ne 0) {
+        Write-Host ("[{0}] ERROR Python failed (fx_materialize_rates.py --pair {1}) exit={2}" -f (NowStamp), $pair, $code)
+        exit 1
     }
-
-    RunPy "fx_materialize_rates.py" $args
-
-    Log "DONE FX rates"
 }
-catch {
-    Log ("ERROR {0}" -f $_)
-    exit 1
-}
+
+Write-Host ("[{0}] DONE FX rates" -f (NowStamp))
+exit 0
