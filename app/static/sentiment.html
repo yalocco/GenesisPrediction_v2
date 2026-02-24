@@ -35,92 +35,32 @@
       overflow-y:auto;
     }
     a{color:inherit}
-    .wrap{
-      max-width:1200px;
-      margin:0 auto;
-      padding:22px 18px 44px;
-    }
+    .wrap{max-width:1200px;margin:0 auto;padding:22px 18px 44px;}
     header.top{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:14px;
-      padding:10px 16px;
-      border:1px solid var(--stroke);
-      border-radius:999px;
+      display:flex;align-items:center;justify-content:space-between;gap:14px;
+      padding:10px 16px;border:1px solid var(--stroke);border-radius:999px;
       background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
       box-shadow: 0 6px 20px rgba(0,0,0,.25);
-      position:sticky;
-      top:10px;
-      backdrop-filter: blur(10px);
-      z-index: 20;
+      position:sticky;top:10px;backdrop-filter: blur(10px);z-index:20;
     }
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      min-width:220px;
-    }
-    .dot{
-      width:10px;height:10px;border-radius:50%;
-      background:var(--accent);
-      box-shadow: 0 0 0 4px rgba(105,169,255,.18);
-    }
-    .brand .name{
-      font-weight:700;
-      font-size:14px;
-      opacity:.95;
-    }
-    nav{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
+    .brand{display:flex;align-items:center;gap:10px;min-width:220px;}
+    .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(105,169,255,.18);}
+    .brand .name{font-weight:700;font-size:14px;opacity:.95;}
+    nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
     nav a{
-      text-decoration:none;
-      padding:7px 12px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.12);
-      font-size:12px;
-      opacity:.92;
+      text-decoration:none;padding:7px 12px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.12);
+      font-size:12px;opacity:.92;
     }
     nav a:hover{border-color:rgba(105,169,255,.5)}
     .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:7px 12px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.10);
-      font-size:12px;
-      opacity:.9;
+      display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.10);font-size:12px;opacity:.9;
     }
-    .pill .led{
-      width:8px;height:8px;border-radius:50%;
-      background:#3ddc84;
-      box-shadow:0 0 0 3px rgba(61,220,132,.15);
-    }
-    h1{
-      margin:26px 0 6px;
-      font-size:34px;
-      letter-spacing:.6px;
-    }
-    .sub{
-      margin:0 0 14px;
-      color:var(--muted);
-      font-size:12px;
-      line-height:1.4;
-    }
-    .grid{
-      display:grid;
-      grid-template-columns: 1.2fr .8fr;
-      gap:16px;
-      margin-top:12px;
-    }
+    .pill .led{width:8px;height:8px;border-radius:50%;background:#3ddc84;box-shadow:0 0 0 3px rgba(61,220,132,.15);}
+    h1{margin:26px 0 6px;font-size:34px;letter-spacing:.6px;}
+    .sub{margin:0 0 14px;color:var(--muted);font-size:12px;line-height:1.4;}
+    .grid{display:grid;grid-template-columns: 1.2fr .8fr;gap:16px;margin-top:12px;}
     @media (max-width: 980px){
       .grid{grid-template-columns:1fr}
       header.top{position:static}
@@ -133,121 +73,45 @@
       box-shadow: var(--shadow);
       overflow:hidden;
     }
-    .card .inner{
-      padding:14px 14px 12px;
-    }
-    .card h2{
-      margin:0 0 8px;
-      font-size:14px;
-      letter-spacing:.35px;
-      opacity:.95;
-    }
-    .row{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      align-items:center;
-      justify-content:space-between;
-    }
-    .btns{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      align-items:center;
-    }
+    .card .inner{padding:14px 14px 12px;}
+    .card h2{margin:0 0 8px;font-size:14px;letter-spacing:.35px;opacity:.95;}
+    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;}
+    .btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
     button.btn{
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(0,0,0,.16);
-      color:var(--text);
-      border-radius:999px;
-      padding:7px 10px;
-      font-size:12px;
-      cursor:pointer;
+      border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.16);
+      color:var(--text);border-radius:999px;padding:7px 10px;font-size:12px;cursor:pointer;
     }
     button.btn:hover{border-color:rgba(105,169,255,.55)}
-    .kpis{
-      display:grid;
-      grid-template-columns: repeat(4, minmax(0,1fr));
-      gap:10px;
-      margin-top:10px;
-    }
-    @media (max-width: 980px){
-      .kpis{grid-template-columns: repeat(2, minmax(0,1fr))}
-    }
+    .kpis{display:grid;grid-template-columns: repeat(4, minmax(0,1fr));gap:10px;margin-top:10px;}
+    @media (max-width: 980px){.kpis{grid-template-columns: repeat(2, minmax(0,1fr))}}
     .kpi{
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.12);
-      border-radius:14px;
-      padding:10px 10px 9px;
-      min-height:56px;
+      border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.12);
+      border-radius:14px;padding:10px 10px 9px;min-height:56px;
     }
     .kpi .lab{font-size:11px;color:var(--muted)}
     .kpi .val{font-size:15px;font-weight:700;margin-top:4px}
     .kpi .tiny{font-size:10px;color:var(--muted);margin-top:2px}
-    .controls{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top:10px;
-      align-items:center;
-    }
+    .controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;align-items:center;}
     input.search{
-      flex:1 1 240px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(0,0,0,.14);
-      color:var(--text);
-      border-radius:999px;
-      padding:9px 12px;
-      outline:none;
-      font-size:12px;
+      flex:1 1 240px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.14);
+      color:var(--text);border-radius:999px;padding:9px 12px;outline:none;font-size:12px;
     }
     select.sel{
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(0,0,0,.14);
-      color:var(--text);
-      border-radius:999px;
-      padding:9px 10px;
-      outline:none;
-      font-size:12px;
+      border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.14);
+      color:var(--text);border-radius:999px;padding:9px 10px;outline:none;font-size:12px;
     }
-    label.chk{
-      display:flex;align-items:center;gap:8px;
-      font-size:12px;color:var(--muted);
-      user-select:none;
-    }
+    label.chk{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);user-select:none;}
     .note{
-      margin-top:10px;
-      font-size:11px;
-      color:var(--muted);
-      line-height:1.4;
-      white-space:pre-wrap;
+      margin-top:10px;font-size:11px;color:var(--muted);line-height:1.4;white-space:pre-wrap;
     }
-    .mini{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top:10px;
-    }
+    .mini{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;}
     .mini .tag{
-      font-size:11px;
-      color:var(--muted);
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.12);
-      padding:6px 10px;
-      border-radius:999px;
+      font-size:11px;color:var(--muted);border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.12);padding:6px 10px;border-radius:999px;
     }
     .mini .tag strong{color:var(--text);font-weight:700}
-    .how{
-      font-size:12px;color:var(--muted);line-height:1.5;
-      white-space:pre-wrap;
-    }
-    .sectionTitle{
-      margin:22px 0 10px;
-      font-size:16px;
-      letter-spacing:.35px;
-      opacity:.95;
-    }
+    .how{font-size:12px;color:var(--muted);line-height:1.5;white-space:pre-wrap;}
+    .sectionTitle{margin:22px 0 10px;font-size:16px;letter-spacing:.35px;opacity:.95;}
     .tableWrap{
       border:1px solid rgba(255,255,255,.10);
       background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.08));
@@ -255,61 +119,24 @@
       overflow:hidden;
       box-shadow: var(--shadow);
     }
-    table{
-      width:100%;
-      border-collapse:separate;
-      border-spacing:0;
-      font-size:12px;
-    }
+    table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;}
     thead th{
-      text-align:left;
-      padding:12px 12px;
-      font-size:11px;
-      color:var(--muted);
-      background:rgba(0,0,0,.22);
-      border-bottom:1px solid rgba(255,255,255,.10);
-      position:sticky;
-      top:0;
-      z-index:5;
+      text-align:left;padding:12px 12px;font-size:11px;color:var(--muted);
+      background:rgba(0,0,0,.22);border-bottom:1px solid rgba(255,255,255,.10);
+      position:sticky;top:0;z-index:5;
     }
-    tbody td{
-      padding:10px 12px;
-      border-bottom:1px solid rgba(255,255,255,.06);
-      vertical-align:middle;
-    }
+    tbody td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:middle;}
     tbody tr:hover td{background:rgba(105,169,255,.06)}
     .thumb{
-      width:34px;height:34px;border-radius:10px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.20);
-      overflow:hidden;
-      display:flex;
-      align-items:center;
-      justify-content:center;
+      width:34px;height:34px;border-radius:10px;border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.20);overflow:hidden;display:flex;align-items:center;justify-content:center;
     }
     .thumb img{width:100%;height:100%;object-fit:cover;display:block}
-    .title{
-      font-weight:700;
-      color:var(--text);
-      line-height:1.25;
-      margin-bottom:2px;
-    }
-    .src{
-      font-size:11px;
-      color:var(--muted);
-      line-height:1.2;
-    }
+    .title{font-weight:700;color:var(--text);line-height:1.25;margin-bottom:2px;}
+    .src{font-size:11px;color:var(--muted);line-height:1.2;}
     .badge{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      font-size:11px;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.14);
-      color:var(--muted);
-      white-space:nowrap;
+      display:inline-flex;align-items:center;gap:8px;font-size:11px;padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.14);color:var(--muted);white-space:nowrap;
     }
     .badge .b{width:8px;height:8px;border-radius:50%;}
     .badge.risk .b{background:var(--bad); box-shadow:0 0 0 3px rgba(255,107,107,.12)}
@@ -320,13 +147,8 @@
     .num.pos{color:var(--good);font-weight:700}
     .muted{color:var(--muted)}
     .small{font-size:11px}
-    .right{ text-align:right }
-    .footerNote{
-      margin:10px 0 0;
-      font-size:11px;
-      color:var(--muted);
-      line-height:1.5;
-    }
+    .right{text-align:right}
+    .footerNote{margin:10px 0 0;font-size:11px;color:var(--muted);line-height:1.5;}
   </style>
 </head>
 <body>
@@ -347,7 +169,7 @@
     <h1>Sentiment（記事別）</h1>
     <p class="sub">
       /analysis/sentiment_latest.json を主データとして表示します。<br/>
-      可能なら /analysis/daily_news_categorized_latest.json や /analysis/events_YYYY-MM-DD.jsonl などから URL/title を突合してサムネ等を補完します（読み取りのみ）。
+      meta は root / world_politics / static から「取れるもの全部」を合成して join します（再発防止）。
     </p>
 
     <div class="grid">
@@ -442,22 +264,12 @@
 How it works
 
 1) GET /analysis/sentiment_latest.json（主）
-2) メタ候補を複数パスから探索（daily_news_categorized / events JSONL / daily_news など）
+2) meta は root/world_politics/static から「取れるもの全部」を集めて合成
 3) join は 2段階:
-   - URL 正規化して一致（utm 等除去）→ 一致
+   - URL 正規化して一致 → 一致
    - ダメなら title 一致（救済）
-4) サムネ: og/image/urlToImage 等があれば → favicon（最終）
-
-TREND3 FX (PHASE 1)
-dir (today)
-NOT_FOUND
-threshold
--
-hit_rate
--
-as_of
--
-path: NOT_FOUND (checked 8)
+4) サムネ: meta(og/image/urlToImage) → sentiment本体 → favicon（最終）
+5) 画像が 403/404 等で読めない場合は onerror で favicon に自動フォールバック
           </div>
         </div>
       </div>
@@ -502,29 +314,85 @@ path: NOT_FOUND (checked 8)
     return String(s ?? "").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
   }
 
-  function stripUtm(url){
+  function normalizeUrlVariants(url){
+    const out = [];
+    const add = (s) => {
+      s = String(s || "").trim();
+      if (!s) return;
+      s = s.replace(/#.*$/, "");
+      s = s.replace(/\s+/g, "");
+      s = s.replace(/\/$/, "");
+      if (!out.includes(s)) out.push(s);
+    };
+
+    if (!url) return out;
+    add(url);
+
     try{
+      try{ add(decodeURIComponent(url)); }catch(_){}
+
       const u = new URL(url);
-      const params = new URLSearchParams(u.search);
+
+      const uNoQ = new URL(u.toString());
+      uNoQ.search = "";
+      uNoQ.hash = "";
+      add(uNoQ.toString());
+
+      const uSoft = new URL(u.toString());
+      const params = new URLSearchParams(uSoft.search);
       for (const k of Array.from(params.keys())){
         if (k.toLowerCase().startsWith("utm_")) params.delete(k);
       }
-      u.search = params.toString();
-      u.hash = "";
-      let s = u.toString();
-      s = s.replace(/\/$/, "");
-      return s;
+      uSoft.search = params.toString();
+      uSoft.hash = "";
+      add(uSoft.toString());
+
+      const uW = new URL(uNoQ.toString());
+      uW.hostname = uW.hostname.replace(/^www\./i, "");
+      add(uW.toString());
+
+      const uHttps = new URL(uW.toString());
+      uHttps.protocol = "https:";
+      add(uHttps.toString());
+
+      add((uW.hostname.replace(/^www\./i,"") + uW.pathname).toLowerCase());
+
+      const ampPath = uW.pathname.replace(/\/amp\/?$/i, "").replace(/\/amp$/i, "");
+      if (ampPath !== uW.pathname){
+        add((uW.hostname.replace(/^www\./i,"") + ampPath).toLowerCase());
+      }
+
+      const uW2 = new URL(uSoft.toString());
+      uW2.hostname = uW2.hostname.replace(/^www\./i, "");
+      add((uW2.hostname + uW2.pathname).toLowerCase());
     }catch(e){
-      return String(url||"").trim().replace(/\/$/, "");
+      const s = String(url).trim();
+      add(s.replace(/\?.*$/, ""));
+      add(s.replace(/\?.*$/, "").toLowerCase());
     }
+
+    for (const s of out.slice()){
+      add(s.toLowerCase());
+    }
+    return out;
   }
-  function safeKeyUrl(u){
-    const s = stripUtm(u || "");
-    return s ? s.toLowerCase() : "";
+
+  function normalizeTitle(title){
+    let s = String(title || "").trim();
+    if (!s) return "";
+    s = s.replace(/\s+[-–—|｜]\s+[^-–—|｜]{2,}$/u, "");
+    s = s.replace(/\s+\|\s+.+$/u, "");
+    s = s.replace(/\s+—\s+.+$/u, "");
+    s = s.replace(/\s+–\s+.+$/u, "");
+    s = s.replace(/\s+-\s+.+$/u, "");
+    s = s.toLowerCase();
+    s = s.replace(/[“”„‟＂"]/g, '"');
+    s = s.replace(/[’‘‛＇']/g, "'");
+    s = s.replace(/[^\p{L}\p{N}]+/gu, " ");
+    s = s.replace(/\s+/g, " ").trim();
+    return s;
   }
-  function safeKeyTitle(t){
-    return String(t||"").trim().toLowerCase().replace(/\s+/g," ");
-  }
+
   function pickAny(obj, keys){
     for (const k of keys){
       if (obj && typeof obj === "object" && obj[k]) return obj[k];
@@ -532,40 +400,47 @@ path: NOT_FOUND (checked 8)
     return null;
   }
   function faviconFromUrl(url){
+    try{ const u = new URL(url); return u.origin + "/favicon.ico"; }catch(e){ return ""; }
+  }
+
+  async function fetchText(path){
+    const r = await fetch(path, { cache:"no-store" });
+    if (!r.ok) throw new Error("HTTP " + r.status + " " + path);
+    return await r.text();
+  }
+  async function fetchJson(path){
+    const t = await fetchText(path);
+    return JSON.parse(t);
+  }
+  async function fetchJsonOptional(path){
     try{
-      const u = new URL(url);
-      return u.origin + "/favicon.ico";
+      const j = await fetchJson(path);
+      return { ok:true, path, json:j };
     }catch(e){
-      return "";
+      return { ok:false, path, err:e };
+    }
+  }
+  async function fetchJsonlOptional(path){
+    try{
+      const t = await fetchText(path);
+      const items = [];
+      for (const line of t.split(/\r?\n/)){
+        const s = (line||"").trim();
+        if (!s) continue;
+        try{ items.push(JSON.parse(s)); }catch(_){}
+      }
+      if (items.length === 0) throw new Error("jsonl empty " + path);
+      return { ok:true, path, items };
+    }catch(e){
+      return { ok:false, path, err:e };
     }
   }
 
-  async function fetchTextFirst(paths){
-    let lastErr = null;
-    for (const p of paths){
-      try{
-        const r = await fetch(p, { cache:"no-store" });
-        if (!r.ok){ lastErr = new Error("HTTP " + r.status + " " + p); continue; }
-        const t = await r.text();
-        return { ok:true, path:p, text:t };
-      }catch(e){ lastErr = e; }
-    }
-    return { ok:false, path: paths[0] || "-", text:null, err:lastErr };
-  }
-  async function fetchJsonFirst(paths){
-    const r = await fetchTextFirst(paths);
-    if (!r.ok) return { ok:false, path:r.path, json:null, err:r.err };
-    try{
-      return { ok:true, path:r.path, json: JSON.parse(r.text) };
-    }catch(e){
-      return { ok:false, path:r.path, json:null, err:e };
-    }
-  }
   function asArrayFromJson(d){
     if (!d) return [];
     if (Array.isArray(d)) return d;
     if (typeof d !== "object") return [];
-    for (const k of ["items","articles","data","rows","results","events"]){
+    for (const k of ["articles","items","data","rows","results","events"]){
       const v = d[k];
       if (Array.isArray(v)) return v;
     }
@@ -574,18 +449,35 @@ path: NOT_FOUND (checked 8)
 
   function normalizeMetaItem(x){
     if (!x || typeof x !== "object") return null;
-    const url = x.url || x.link || x.href || x.id || "";
-    const title = x.title || x.headline || x.name || "";
+
+    const inner =
+      (x.article && typeof x.article === "object" ? x.article : null) ||
+      (x.raw && typeof x.raw === "object" ? x.raw : null) ||
+      (x.data && typeof x.data === "object" ? x.data : null) ||
+      (x.item && typeof x.item === "object" ? x.item : null) ||
+      x;
+
+    const url =
+      inner.url || inner.link || inner.href || inner.id ||
+      x.url || x.link || x.href || x.id || "";
+
+    const title =
+      inner.title || inner.headline || inner.name ||
+      x.title || x.headline || x.name || "";
+
     const source =
+      (inner.source && (inner.source.name || inner.source.id)) ||
+      inner.source || inner.publisher || inner.site ||
       (x.source && (x.source.name || x.source.id)) ||
-      x.source ||
-      x.publisher ||
-      x.site ||
-      "";
+      x.source || x.publisher || x.site || "";
+
     const image =
-      pickAny(x, ["urlToImage","image","image_url","imageUrl","thumbnail","thumbnail_url","thumb","thumb_url","media","og_image","ogImage"]) ||
-      (x.meta && pickAny(x.meta, ["image","thumbnail","og_image"])) ||
+      pickAny(inner, ["urlToImage","image","image_url","imageUrl","thumbnail","thumbnail_url","thumb","thumb_url","media","og_image","ogImage"]) ||
+      (inner.meta && pickAny(inner.meta, ["image","thumbnail","og_image","ogImage","urlToImage"])) ||
+      (x.meta && pickAny(x.meta, ["image","thumbnail","og_image","ogImage","urlToImage"])) ||
+      (inner.images && Array.isArray(inner.images) && inner.images[0] ? (inner.images[0].url || inner.images[0]) : "") ||
       "";
+
     return { url, title, source, image };
   }
 
@@ -593,13 +485,17 @@ path: NOT_FOUND (checked 8)
     const byUrl = new Map();
     const byTitle = new Map();
     let count = 0;
+
     for (const raw of items){
       const it = normalizeMetaItem(raw);
       if (!it) continue;
       count++;
-      const ku = safeKeyUrl(it.url);
-      const kt = safeKeyTitle(it.title);
-      if (ku && !byUrl.has(ku)) byUrl.set(ku, it);
+
+      for (const k of normalizeUrlVariants(it.url)){
+        if (k && !byUrl.has(k)) byUrl.set(k, it);
+      }
+
+      const kt = normalizeTitle(it.title);
       if (kt && !byTitle.has(kt)) byTitle.set(kt, it);
     }
     return { byUrl, byTitle, count };
@@ -612,16 +508,25 @@ path: NOT_FOUND (checked 8)
 
     for (const s of sentArr){
       const it = Object.assign({}, s);
-      const ku = safeKeyUrl(s.url);
-      const kt = safeKeyTitle(s.title);
+
       let meta = null;
 
-      if (ku && map.byUrl.has(ku)){
-        meta = map.byUrl.get(ku);
-        joined_url++;
-      }else if (kt && map.byTitle.has(kt)){
-        meta = map.byTitle.get(kt);
-        joined_title++;
+      const sUrl = s.url || s.link || s.href || (s.article && s.article.url) || "";
+      const sUrlKeys = normalizeUrlVariants(sUrl);
+      for (const k of sUrlKeys){
+        if (map.byUrl.has(k)){
+          meta = map.byUrl.get(k);
+          joined_url++;
+          break;
+        }
+      }
+
+      if (!meta){
+        const st = normalizeTitle(s.title || s.headline || s.name || (s.article && s.article.title) || "");
+        if (st && map.byTitle.has(st)){
+          meta = map.byTitle.get(st);
+          joined_title++;
+        }
       }
 
       it._meta = meta || {};
@@ -743,18 +648,12 @@ path: NOT_FOUND (checked 8)
   };
 
   let sentItems = [];
-  let metaItems = [];
   let joinedItems = [];
-  let meta_used = "-";
-  let meta_failed_first = [];
   let as_of = "-";
+  let meta_used = "-";
 
-  function setDebug(text){
-    el.debug.textContent = text;
-  }
-  function fillAsOfPill(a){
-    el.asofText.textContent = "as_of: " + (a || "-");
-  }
+  function setDebug(text){ el.debug.textContent = text; }
+  function fillAsOfPill(a){ el.asofText.textContent = "as_of: " + (a || "-"); }
 
   function renderSources(items){
     const set = new Map();
@@ -789,9 +688,26 @@ path: NOT_FOUND (checked 8)
   function countJoined(items){
     let c=0;
     for (const it of items){
-      if (it._meta && (it._meta.url || it._meta.title)) c++;
+      if (it._meta && (it._meta.url || it._meta.title || it._meta.image)) c++;
     }
     return c;
+  }
+
+  function pickThumbUrl(it, meta){
+    const sentImg = pickAny(it, ["urlToImage","image","image_url","imageUrl","thumbnail","thumb","og_image","ogImage"]);
+    const metaImg = meta && (meta.image || meta.urlToImage || meta.thumbnail || meta.og_image || "");
+    return String(metaImg || sentImg || "").trim();
+  }
+
+  function thumbHtml(url, imgUrl){
+    const fav = url ? faviconFromUrl(url) : "";
+    const img = String(imgUrl || "").trim();
+    if (img){
+      const fallback = esc(fav);
+      return `<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer"
+        onerror="this.onerror=null;${fallback ? `this.src='${fallback}';` : `this.remove();`}">`;
+    }
+    return fav ? `<img src="${esc(fav)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : "";
   }
 
   function renderTable(){
@@ -803,7 +719,7 @@ path: NOT_FOUND (checked 8)
     let items = joinedItems.slice();
 
     if (!showMissing){
-      items = items.filter(it => it._meta && (it._meta.url || it._meta.title));
+      items = items.filter(it => it._meta && (it._meta.url || it._meta.title || it._meta.image));
     }
     if (q){
       items = items.filter(it => {
@@ -841,8 +757,10 @@ path: NOT_FOUND (checked 8)
       const title = it.title || meta.title || "(no title)";
       const rawSrc = it.source ?? meta.source ?? "";
       const source = (typeof rawSrc === "object" && rawSrc) ? (rawSrc.name || rawSrc.id || "") : String(rawSrc || "");
-      const img = meta.image || "";
-      const thumb = img ? `<img src="${esc(img)}" alt="">` : (url ? `<img src="${esc(faviconFromUrl(url))}" alt="">` : "");
+
+      const img = pickThumbUrl(it, meta);
+      const thumb = thumbHtml(url, img);
+
       const risk = Number(it.risk||0);
       const pos  = Number(it.positive||it.pos||0);
       const unc  = Number(it.uncertainty||it.unc||0);
@@ -868,63 +786,61 @@ path: NOT_FOUND (checked 8)
     el.totalN.textContent = String(items.length);
   }
 
-  async function tryLoadJsonArray(paths){
-    const r = await fetchJsonFirst(paths);
-    if (!r.ok) return { ok:false, path:r.path, items:[], err:r.err };
-    const arr = asArrayFromJson(r.json);
-    if (!arr || arr.length === 0){
-      return { ok:false, path:r.path, items:[], err:new Error("empty array") };
-    }
-    return { ok:true, path:r.path, items:arr, err:null };
-  }
-
-  async function tryLoadJsonlArray(paths){
-    const r = await fetchTextFirst(paths);
-    if (!r.ok) return { ok:false, path:r.path, items:[], err:r.err };
-    const items = [];
-    for (const line of (r.text || "").split(/\r?\n/)){
-      const s = (line || "").trim();
-      if (!s) continue;
-      try{ items.push(JSON.parse(s)); }catch(e){ /* ignore */ }
-    }
-    if (items.length === 0) return { ok:false, path:r.path, items:[], err:new Error("jsonl empty") };
-    return { ok:true, path:r.path, items, err:null };
-  }
-
   async function boot(){
-    // 重要：落ちても記事を消さない（最低限 sentiment 単体表示）
     try{
       el.ledDbg.style.background = "#3ddc84";
       el.dbg2.textContent = "debug2: loading...";
       setDebug("debug: loading...");
 
-      const PATHS_SENT = [
+      const SENT_CAND = [
         "/analysis/sentiment_latest.json",
         "/analysis/world_politics/analysis/sentiment_latest.json",
         "/static/analysis/sentiment_latest.json",
         "/static/analysis/world_politics/analysis/sentiment_latest.json",
       ];
 
-      const sRes = await tryLoadJsonArray(PATHS_SENT);
-      if (!sRes.ok){
+      let sentPath = null;
+      let sentJson = null;
+      const sentErrs = [];
+      for (const p of SENT_CAND){
+        const r = await fetchJsonOptional(p);
+        if (r.ok){
+          sentPath = r.path;
+          sentJson = r.json;
+          break;
+        }else{
+          sentErrs.push(r.path);
+        }
+      }
+      if (!sentJson){
         el.dbg2.textContent = "debug2: FAIL(sent)";
         el.ledDbg.style.background = "#ff6b6b";
-        setDebug("sentiment load failed:\n" + (sRes.err ? sRes.err.message : "unknown"));
+        setDebug("sentiment load failed:\n" + sentErrs.join("\n"));
         joinedItems = [];
         renderSources([]);
         renderTable();
         return;
       }
 
-      sentItems = sRes.items.map(x=>{
+      sentItems = asArrayFromJson(sentJson);
+      if (!Array.isArray(sentItems) || sentItems.length === 0){
+        el.dbg2.textContent = "debug2: FAIL(sent array)";
+        el.ledDbg.style.background = "#ff6b6b";
+        setDebug("sentiment parsed but array empty (unexpected shape)");
+        joinedItems = [];
+        renderSources([]);
+        renderTable();
+        return;
+      }
+
+      sentItems = sentItems.map(x=>{
         const o = Object.assign({}, x);
         if (o.positive == null && o.pos != null) o.positive = o.pos;
         if (o.uncertainty == null && o.unc != null) o.uncertainty = o.unc;
-        if (!o._meta) o._meta = {}; // まず空で確保
+        if (!o._meta) o._meta = {};
         return o;
       });
 
-      // まず sentiment 単体で表示可能な状態へ（ここが「記事が消えない」保険）
       joinedItems = sentItems.map(s => Object.assign({}, s, { _meta: s._meta || {} }));
 
       as_of = (sentItems[0] && (sentItems[0].as_of || sentItems[0].date)) || "-";
@@ -936,83 +852,112 @@ path: NOT_FOUND (checked 8)
         return c? s/c : 0;
       };
 
-      document.getElementById("kAsOf").textContent = as_of;
-      document.getElementById("kN").textContent = String(sentItems.length);
-      document.getElementById("sentItemsN").textContent = String(sentItems.length);
-      document.getElementById("kRisk").textContent = fmt(avg(sentItems,"risk"),6);
-      document.getElementById("kPos").textContent  = fmt(avg(sentItems,"positive"),6);
-      document.getElementById("kUnc").textContent  = fmt(avg(sentItems,"uncertainty"),6);
-      document.getElementById("kNote").textContent = "join: url → title (2段階) / thumb: og/urlToImage → favicon";
-      document.getElementById("kNote2").textContent = "";
+      el.kAsOf.textContent = as_of;
+      el.kN.textContent = String(sentItems.length);
+      el.sentItemsN.textContent = String(sentItems.length);
+      el.kRisk.textContent = fmt(avg(sentItems,"risk"),6);
+      el.kPos.textContent  = fmt(avg(sentItems,"positive"),6);
+      el.kUnc.textContent  = fmt(avg(sentItems,"uncertainty"),6);
+      el.kNote.textContent = "join: url variants → title normalize / meta: merge all candidates (anti-regression)";
+      el.kNote2.textContent = "";
 
-      // timeseries（失敗してもOK）
       (async ()=>{
         try{
-          const tsPaths = [
+          const TS_CAND = [
             "/analysis/sentiment_timeseries.csv",
             "/analysis/world_politics/analysis/sentiment_timeseries.csv",
             "/static/analysis/sentiment_timeseries.csv",
             "/static/analysis/world_politics/analysis/sentiment_timeseries.csv",
           ];
-          const tsRes = await fetchTextFirst(tsPaths);
-          if (tsRes.ok){
-            const rows = parseCsvTimeseries(tsRes.text);
-            drawTrend(el.trend, rows);
-          }else{
-            drawTrend(el.trend, []);
+          let text = null;
+          for (const p of TS_CAND){
+            try{ text = await fetchText(p); break; }catch(_){}
           }
+          const rows = text ? parseCsvTimeseries(text) : [];
+          drawTrend(el.trend, rows);
         }catch(e){
           drawTrend(el.trend, []);
         }
       })();
 
-      // Meta candidates
-      const PATHS_META_JSON = [
+      const META_JSON_CAND = [
         "/analysis/daily_news_categorized_latest.json",
-        "/analysis/daily_news_categorized_{as_of}.json",
         "/analysis/daily_news_latest.json",
 
         "/analysis/world_politics/analysis/daily_news_categorized_latest.json",
-        "/analysis/world_politics/analysis/daily_news_categorized_{as_of}.json",
         "/analysis/world_politics/analysis/daily_news_latest.json",
 
         "/static/analysis/daily_news_categorized_latest.json",
-        "/static/analysis/daily_news_categorized_{as_of}.json",
         "/static/analysis/daily_news_latest.json",
-      ].map(p=>p.replace("{as_of}", as_of));
 
-      const PATHS_META_JSONL = [
-        "/analysis/events_{as_of}.jsonl",
-        "/analysis/world_politics/analysis/events_{as_of}.jsonl",
-        "/static/analysis/events_{as_of}.jsonl",
-        "/static/analysis/world_politics/analysis/events_{as_of}.jsonl",
-      ].map(p=>p.replace("{as_of}", as_of));
+        "/static/analysis/world_politics/analysis/daily_news_categorized_latest.json",
+        "/static/analysis/world_politics/analysis/daily_news_latest.json",
+      ];
 
-      let metaRes = await tryLoadJsonArray(PATHS_META_JSON);
-      if (!metaRes.ok) meta_failed_first.push(metaRes.path);
+      const META_JSONL_CAND = [
+        `/analysis/events_${as_of}.jsonl`,
+        `/analysis/world_politics/analysis/events_${as_of}.jsonl`,
+        `/static/analysis/events_${as_of}.jsonl`,
+        `/static/analysis/world_politics/analysis/events_${as_of}.jsonl`,
+      ];
 
-      let metaRes2 = await tryLoadJsonlArray(PATHS_META_JSONL);
-      if (!metaRes2.ok) meta_failed_first.push(metaRes2.path);
+      const metaItemsAll = [];
+      const metaOkPaths = [];
+      const metaNgPaths = [];
 
-      metaItems = [];
-      if (metaRes.ok) metaItems = metaItems.concat(metaRes.items);
-      if (metaRes2.ok) metaItems = metaItems.concat(metaRes2.items);
+      for (const p of META_JSON_CAND){
+        const r = await fetchJsonOptional(p);
+        if (r.ok){
+          const arr = asArrayFromJson(r.json);
+          if (arr && arr.length){
+            metaItemsAll.push(...arr);
+            metaOkPaths.push(`${p}(${arr.length})`);
+          }else{
+            metaNgPaths.push(`${p}(empty)`);
+          }
+        }else{
+          metaNgPaths.push(`${p}(fail)`);
+        }
+      }
 
-      meta_used = (metaRes.ok ? metaRes.path : "-") + (metaRes2.ok ? (" + " + metaRes2.path) : "");
-      document.getElementById("metaItemsN").textContent = String(metaItems.length);
+      for (const p of META_JSONL_CAND){
+        const r = await fetchJsonlOptional(p);
+        if (r.ok){
+          metaItemsAll.push(...r.items);
+          metaOkPaths.push(`${p}(${r.items.length})`);
+        }else{
+          metaNgPaths.push(`${p}(fail)`);
+        }
+      }
 
-      // join（meta が無ければ sentiment 単体のまま）
-      if (metaItems.length > 0){
-        const j = joinSentWithMeta(sentItems, metaItems);
+      const seen = new Set();
+      const metaDedup = [];
+      for (const raw of metaItemsAll){
+        const it = normalizeMetaItem(raw);
+        if (!it) continue;
+        const keys = normalizeUrlVariants(it.url);
+        const k = keys[0] || (normalizeTitle(it.title) ? "T:" + normalizeTitle(it.title) : "");
+        if (!k) continue;
+        if (seen.has(k)) continue;
+        seen.add(k);
+        metaDedup.push(raw);
+      }
+
+      meta_used = metaOkPaths.length ? metaOkPaths.join(" + ") : "-";
+      el.metaItemsN.textContent = String(metaDedup.length);
+
+      if (metaDedup.length > 0){
+        const j = joinSentWithMeta(sentItems, metaDedup);
         joinedItems = j.joined;
 
         setDebug(
           [
             "debug2: ok",
-            `sent=${sRes.path}`,
+            `sent=${sentPath}`,
             `meta_used=${meta_used}`,
-            `meta_failed_first=${meta_failed_first.join(" | ")}`,
-            `metaItems=${metaItems.length} sentItems=${sentItems.length} joined=${j.joined_url + j.joined_title} (url=${j.joined_url}, title=${j.joined_title})`,
+            `meta_ng=${metaNgPaths.length}`,
+            `metaItems(merged)=${metaItemsAll.length} metaItems(dedup)=${metaDedup.length}`,
+            `sentItems=${sentItems.length} joined=${j.joined_url + j.joined_title} (url=${j.joined_url}, title=${j.joined_title})`,
           ].join("\n")
         );
         el.dbg2.textContent = "debug2: ok";
@@ -1021,9 +966,9 @@ path: NOT_FOUND (checked 8)
         setDebug(
           [
             "debug2: ok (meta missing → sentiment only)",
-            `sent=${sRes.path}`,
+            `sent=${sentPath}`,
             `meta_used=${meta_used}`,
-            `meta_failed_first=${meta_failed_first.join(" | ")}`,
+            `meta_ng=${metaNgPaths.length}`,
             `metaItems=0 sentItems=${sentItems.length} joined=0`,
           ].join("\n")
         );
@@ -1033,24 +978,14 @@ path: NOT_FOUND (checked 8)
 
       renderSources(joinedItems);
       renderTable();
-    }catch(e){
-      // ここに来ても「記事が消えない」ように、joinedItems を sentiment に戻して描画する
-      try{
-        el.dbg2.textContent = "debug2: BOOT ERROR";
-        el.ledDbg.style.background = "#ff6b6b";
-        setDebug("BOOT ERROR:\n" + (e && e.stack ? e.stack : String(e)));
 
-        if (sentItems && sentItems.length > 0){
-          joinedItems = sentItems.map(s => Object.assign({}, s, { _meta: s._meta || {} }));
-        }else{
-          joinedItems = [];
-        }
-        renderSources(joinedItems);
-        renderTable();
-      }catch(_){
-        // 最終保険：何もしない
-        console.error("fatal boot error", e);
-      }
+    }catch(e){
+      el.dbg2.textContent = "debug2: BOOT ERROR";
+      el.ledDbg.style.background = "#ff6b6b";
+      setDebug("BOOT ERROR:\n" + (e && e.stack ? e.stack : String(e)));
+      joinedItems = (sentItems && sentItems.length) ? sentItems.map(s=>Object.assign({}, s, { _meta: s._meta || {} })) : [];
+      renderSources(joinedItems);
+      renderTable();
     }
   }
 
@@ -1068,15 +1003,9 @@ path: NOT_FOUND (checked 8)
   el.sortSel.addEventListener("change", ()=>renderTable());
   el.showMissing.addEventListener("change", ()=>renderTable());
 
-  el.btnOpenVM.addEventListener("click", ()=>{
-    window.open("/analysis/view_model_latest.json", "_blank", "noopener");
-  });
-  el.btnOpenSent.addEventListener("click", ()=>{
-    window.open("/analysis/sentiment_latest.json", "_blank", "noopener");
-  });
-  el.btnOpenTS.addEventListener("click", ()=>{
-    window.open("/analysis/sentiment_timeseries.csv", "_blank", "noopener");
-  });
+  el.btnOpenVM.addEventListener("click", ()=>window.open("/analysis/view_model_latest.json", "_blank", "noopener"));
+  el.btnOpenSent.addEventListener("click", ()=>window.open("/analysis/sentiment_latest.json", "_blank", "noopener"));
+  el.btnOpenTS.addEventListener("click", ()=>window.open("/analysis/sentiment_timeseries.csv", "_blank", "noopener"));
 
   boot();
 })();
