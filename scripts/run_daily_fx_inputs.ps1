@@ -7,6 +7,9 @@ $ErrorActionPreference = "Stop"
 $ROOT = Resolve-Path "$PSScriptRoot\.."
 $LOG = "$ROOT\logs\fx_inputs_$date.log"
 
+# 明示的に .venv の Python を使用
+$PY = Join-Path $ROOT ".venv\Scripts\python.exe"
+
 function Log($msg) {
     $line = "[{0}] {1}" -f (Get-Date -Format "HH:mm:ss"), $msg
     Add-Content -Path $LOG -Value $line
@@ -15,7 +18,7 @@ function Log($msg) {
 
 function RunPy([string]$script, [string[]]$args) {
     Log ("PY  {0} {1}" -f $script, ($args -join " "))
-    & python "$ROOT\scripts\$script" @args
+    & $PY "$ROOT\scripts\$script" @args
     if ($LASTEXITCODE -ne 0) { throw "Python failed ($script) exit=$LASTEXITCODE" }
 }
 
