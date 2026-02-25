@@ -1,6 +1,6 @@
 <# 
 Morning Ritual (single entrypoint)
-Auto-healing version: ensures Health naturally converges to OK.
+UTC-aligned version: prevents JST/UTC date drift.
 #>
 
 param(
@@ -26,17 +26,17 @@ function Fail([string]$msg) {
 
 # --- SAFE repo root resolution ---
 function Resolve-RepoRoot {
-  # $PSScriptRoot is reliable when running via -File
   if ($PSScriptRoot) {
     return (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
   }
-  # fallback (should rarely happen)
   return (Resolve-Path "..").Path
 }
 
+# --- UTC Date normalization ---
 function Ensure-Date([string]$d) {
   if ([string]::IsNullOrWhiteSpace($d)) {
-    return (Get-Date -Format "yyyy-MM-dd")
+    # Always use UTC date to align with analyzer/docker
+    return (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd")
   }
   $null = [DateTime]::ParseExact($d, "yyyy-MM-dd", $null)
   return $d
@@ -76,17 +76,18 @@ $Date = Ensure-Date $Date
 
 Write-Host ""
 Write-Host "Morning Ritual (single entrypoint)"
-Write-Host ("ROOT : {0}" -f $ROOT)
-Write-Host ("DATE : {0}" -f $Date)
+Write-Host ("ROOT      : {0}" -f $ROOT)
+Write-Host ("DATE (UTC): {0}" -f $Date)
 Write-Host ""
 
 $py = Join-Path $ROOT ".venv\Scripts\python.exe"
 
 try {
+
   # 1) Core daily pipeline
   Run-Pwsh "1) run_daily_with_publish" (Join-Path $ROOT "scripts\run_daily_with_publish.ps1") @("-Date", $Date)
 
-  # 1-1) Ensure summary artifacts
+  # 1-1) Summary
   Run-Py "1-1) Publish daily_summary_latest" $py (Join-Path $ROOT "scripts\publish_daily_summary_latest.py") @("--date", $Date)
 
   # 1-2) Sentiment
@@ -98,14 +99,10 @@ try {
   Run-Pwsh "2-2) FX Inputs" (Join-Path $ROOT "scripts\run_daily_fx_inputs.ps1") @()
   Run-Pwsh "2-3) FX Overlay" (Join-Path $ROOT "scripts\run_daily_fx_overlay.ps1") @()
 
-  # 2-4) Legacy FX overlay filename
+  # 2-4) Legacy FX overlay
   Run-Py "2-4) Publish FX overlay legacy" $py (Join-Path $ROOT "scripts\publish_fx_overlay_legacy.py") @("--date", $Date)
 
-  # 2-5) FX overlay variants (LABOS UI switching)
-  # Ensures:
-  #   analysis/fx/fx_overlay_latest_jpythb.png
-  #   analysis/fx/fx_overlay_latest_usdjpy.png
-  #   analysis/fx/fx_overlay_latest_usdthb.png
+  # 2-5) FX overlay variants
   Run-Pwsh "2-5) FX Overlay variants" (Join-Path $ROOT "scripts\run_daily_fx_overlay_variants.ps1") @("-Date", $Date)
 
   # 2-6) Observation artifacts
@@ -114,7 +111,7 @@ try {
   # 3) Health
   Run-Py "3) Build Data Health" $py (Join-Path $ROOT "scripts\build_data_health.py") @("--date", $Date)
 
-  Log "DONE Morning Ritual"
+  Log "DONE Morning Ritual (UTC aligned)"
 }
 catch {
   Fail $_.Exception.Message
