@@ -5,8 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>FX Overlay</title>
 
+  <script>
+    // cache-bust for HTML itself (direct access regression guard)
+    (function(){
+      var V = "36249dd";
+      try{
+        var u = new URL(window.location.href);
+        if (!u.searchParams.get("v")){
+          u.searchParams.set("v", V);
+          window.location.replace(u.toString());
+        }
+      }catch(_){}
+      window.APP_VERSION = V;
+    })();
+  </script>
+
   <!-- 既存の商用UIスタイルを尊重（触らない） -->
-  <link rel="stylesheet" href="/static/app.css" />
+  <link rel="stylesheet" href="/static/app.css?v=36249dd" />
 </head>
 
 <body>
@@ -18,9 +33,9 @@
       </div>
 
       <nav class="topbar-nav" aria-label="Primary">
-        <a href="/static/index.html">Index</a>
-        <a href="/static/overlay.html" aria-current="page">Overlay</a>
-        <a href="/static/sentiment.html">Sentiment</a>
+        <a href="/static/index.html?v=36249dd">Index</a>
+        <a href="/static/overlay.html?v=36249dd" aria-current="page">Overlay</a>
+        <a href="/static/sentiment.html?v=36249dd">Sentiment</a>
       </nav>
     </div>
   </header>
@@ -31,7 +46,7 @@
       <p class="muted">JPY to THB Overlay</p>
       <img
         class="overlay-img"
-        src="/analysis/fx_jpy_thb_overlay.png"
+        src="/analysis/fx_jpy_thb_overlay.png?v=36249dd"
         alt="JPY to THB Overlay"
       />
     </section>
@@ -41,7 +56,7 @@
       <p class="muted">JPY to USD Overlay</p>
       <img
         class="overlay-img"
-        src="/analysis/fx_jpy_usd_overlay.png"
+        src="/analysis/fx_jpy_usd_overlay.png?v=36249dd"
         alt="JPY to USD Overlay"
       />
     </section>
