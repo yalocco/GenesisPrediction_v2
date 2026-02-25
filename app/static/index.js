@@ -13,6 +13,21 @@
   "use strict";
 
   // ----------------------------
+  // Version / cache busting
+  // ----------------------------
+  const APP_VERSION = (window.APP_VERSION || "").trim();
+
+  function addVersionParam(u) {
+    try {
+      if (!APP_VERSION) return u;
+      u.searchParams.set("v", APP_VERSION);
+      return u;
+    } catch (_) {
+      return u;
+    }
+  }
+
+  // ----------------------------
   // DOM helpers
   // ----------------------------
   const $ = (sel) => document.querySelector(sel);
@@ -74,6 +89,9 @@
   // ----------------------------
   function openSentimentWithCat(cat) {
     const u = new URL("/static/sentiment.html", window.location.origin);
+
+    // cache bust for HTML
+    addVersionParam(u);
 
     // keep the same date context
     if (dateParam) u.searchParams.set("date", dateParam);
@@ -257,6 +275,7 @@
       ok = ok ?? _ok;
       warn = warn ?? _warn;
       ng = ng ?? _ng;
+      total = total ?? items.length;
       total = total ?? items.length;
     }
 

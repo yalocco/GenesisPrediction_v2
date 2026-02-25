@@ -4,6 +4,22 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Sentiment - GenesisPrediction v2</title>
+
+  <script>
+    // cache-bust for HTML itself (direct access regression guard)
+    (function(){
+      var V = "36249dd";
+      try{
+        var u = new URL(window.location.href);
+        if (!u.searchParams.get("v")){
+          u.searchParams.set("v", V);
+          window.location.replace(u.toString());
+        }
+      }catch(_){}
+      window.APP_VERSION = V;
+    })();
+  </script>
+
   <style>
     :root{
       --bg:#0b1020;
@@ -101,9 +117,7 @@
       color:var(--text);border-radius:999px;padding:9px 10px;outline:none;font-size:12px;
     }
     label.chk{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);user-select:none;}
-    .note{
-      margin-top:10px;font-size:11px;color:var(--muted);line-height:1.4;white-space:pre-wrap;
-    }
+    .note{margin-top:10px;font-size:11px;color:var(--muted);line-height:1.4;white-space:pre-wrap;}
     .mini{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;}
     .mini .tag{
       font-size:11px;color:var(--muted);border:1px solid rgba(255,255,255,.10);
@@ -159,9 +173,9 @@
         <div class="name">GenesisPrediction v2</div>
       </div>
       <nav>
-        <a href="./index.html">Home</a>
-        <a href="./overlay.html">Overlay</a>
-        <a href="./sentiment.html">Sentiment</a>
+        <a href="./index.html?v=36249dd">Home</a>
+        <a href="./overlay.html?v=36249dd">Overlay</a>
+        <a href="./sentiment.html?v=36249dd">Sentiment</a>
         <span class="pill" id="asofPill"><span class="led"></span><span id="asofText">as_of: -</span></span>
       </nav>
     </header>
