@@ -101,8 +101,15 @@ try {
   # 2-4) Legacy FX overlay filename
   Run-Py "2-4) Publish FX overlay legacy" $py (Join-Path $ROOT "scripts\publish_fx_overlay_legacy.py") @("--date", $Date)
 
-  # 2-5) Observation artifacts
-  Run-Py "2-5) Build observation artifacts" $py (Join-Path $ROOT "scripts\build_observation_artifacts.py") @("--date", $Date)
+  # 2-5) FX overlay variants (LABOS UI switching)
+  # Ensures:
+  #   analysis/fx/fx_overlay_latest_jpythb.png
+  #   analysis/fx/fx_overlay_latest_usdjpy.png
+  #   analysis/fx/fx_overlay_latest_usdthb.png
+  Run-Pwsh "2-5) FX Overlay variants" (Join-Path $ROOT "scripts\run_daily_fx_overlay_variants.ps1") @("-Date", $Date)
+
+  # 2-6) Observation artifacts
+  Run-Py "2-6) Build observation artifacts" $py (Join-Path $ROOT "scripts\build_observation_artifacts.py") @("--date", $Date)
 
   # 3) Health
   Run-Py "3) Build Data Health" $py (Join-Path $ROOT "scripts\build_data_health.py") @("--date", $Date)

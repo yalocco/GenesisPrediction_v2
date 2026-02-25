@@ -1,78 +1,545 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>FX Overlay</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LABOS / Overlay</title>
 
-  <script>
-    // cache-bust for HTML itself (direct access regression guard)
-    (function(){
-      var V = "36249dd";
-      try{
-        var u = new URL(window.location.href);
-        if (!u.searchParams.get("v")){
-          u.searchParams.set("v", V);
-          window.location.replace(u.toString());
-        }
-      }catch(_){}
-      window.APP_VERSION = V;
-    })();
-  </script>
+  <style>
+    :root{
+      --bg0:#070b18;
+      --bg1:#081027;
+      --card:#0b1533cc;
+      --card2:#0a1430cc;
+      --line:#1b2a55;
+      --line2:#13224a;
+      --text:#d8e2ff;
+      --muted:#9bb0e6;
+      --muted2:#7f95d3;
+      --pill:#0b1a3f;
+      --pill2:#0e2150;
+      --accent:#7c5cff;
+      --accent2:#5d8cff;
+      --shadow: 0 12px 40px rgba(0,0,0,.35);
+      --radius: 18px;
+      --radius2: 14px;
+    }
 
-  <!-- 既存の商用UIスタイルを尊重（触らない） -->
-  <link rel="stylesheet" href="/static/app.css?v=36249dd" />
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji";
+      color:var(--text);
+      background:
+        radial-gradient(1100px 700px at 15% 10%, #13235a 0%, rgba(19,35,90,0) 55%),
+        radial-gradient(900px 600px at 80% 15%, #1a1448 0%, rgba(26,20,72,0) 55%),
+        linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 55%, #050816 100%);
+      overflow-x:hidden;
+    }
+
+    a{ color:inherit; text-decoration:none; }
+    .wrap{ max-width: 1180px; margin: 0 auto; padding: 18px 18px 48px; }
+
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:14px;
+      padding: 10px 12px;
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(8,16,39,.7) 0%, rgba(8,16,39,.35) 100%);
+      border: 1px solid rgba(255,255,255,.06);
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 10px;
+      z-index: 50;
+      backdrop-filter: blur(10px);
+    }
+
+    .brand{
+      display:flex; align-items:center; gap:12px; min-width: 260px;
+    }
+    .logo{
+      width:34px; height:34px; border-radius: 10px;
+      background: radial-gradient(circle at 20% 20%, #55d0ff 0%, #7c5cff 45%, #ff4bd8 100%);
+      box-shadow: 0 10px 24px rgba(124,92,255,.25);
+      flex:0 0 auto;
+    }
+    .brandText{ line-height:1.1; }
+    .brandText .t1{ font-weight:800; letter-spacing:.5px; font-size:18px; }
+    .brandText .t2{ color:var(--muted); font-weight:600; font-size:13px; }
+
+    .nav{
+      display:flex; gap:8px; align-items:center;
+      padding: 6px;
+      background: rgba(6,10,24,.55);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 999px;
+    }
+    .nav a{
+      padding: 9px 14px;
+      border-radius: 999px;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing:.2px;
+      border: 1px solid transparent;
+      background: transparent;
+      transition: .15s ease;
+    }
+    .nav a:hover{
+      color: var(--text);
+      background: rgba(255,255,255,.04);
+      border-color: rgba(255,255,255,.06);
+    }
+    .nav a.active{
+      color: #fff;
+      background: linear-gradient(180deg, rgba(124,92,255,.35) 0%, rgba(124,92,255,.18) 100%);
+      border-color: rgba(124,92,255,.35);
+      box-shadow: 0 10px 22px rgba(124,92,255,.18);
+    }
+
+    .asofPill{
+      display:flex; align-items:center; gap:10px;
+      padding: 9px 14px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(11,26,63,.85) 0%, rgba(11,26,63,.55) 100%);
+      border: 1px solid rgba(255,255,255,.08);
+      color: var(--text);
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing:.2px;
+      min-width: 240px;
+      justify-content:flex-end;
+    }
+    .asofDot{
+      width:10px; height:10px; border-radius: 999px;
+      background: rgba(124,92,255,.9);
+      box-shadow: 0 0 0 4px rgba(124,92,255,.12);
+      flex:0 0 auto;
+    }
+    .asofKey{ color: var(--muted); font-weight:800; }
+    .asofVal{ font-variant-numeric: tabular-nums; }
+
+    .pageHead{
+      padding: 28px 6px 14px;
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:16px;
+    }
+    h1{
+      margin: 0;
+      font-size: 42px;
+      letter-spacing:.3px;
+    }
+    .sub{
+      margin-top: 8px;
+      color: var(--muted);
+      font-weight: 600;
+      line-height: 1.5;
+      max-width: 820px;
+      font-size: 14px;
+    }
+    .source{
+      color: var(--muted2);
+      font-weight: 700;
+      font-size: 13px;
+      white-space: nowrap;
+      padding-bottom: 6px;
+    }
+
+    .card{
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(10,20,48,.78) 0%, rgba(7,12,28,.62) 100%);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .cardHead{
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 16px 18px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      background: linear-gradient(180deg, rgba(9,18,42,.85) 0%, rgba(9,18,42,.35) 100%);
+      gap: 12px;
+    }
+    .cardTitle{
+      font-weight: 900;
+      letter-spacing:.2px;
+    }
+    .seg{
+      display:flex; gap:8px; align-items:center;
+      background: rgba(3,6,16,.35);
+      border: 1px solid rgba(255,255,255,.06);
+      padding: 6px;
+      border-radius: 999px;
+    }
+    .seg button{
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      padding: 9px 14px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 12px;
+      letter-spacing:.3px;
+      cursor:pointer;
+      transition:.15s ease;
+    }
+    .seg button:hover{
+      color: var(--text);
+      background: rgba(255,255,255,.04);
+      border-color: rgba(255,255,255,.06);
+    }
+    .seg button.active{
+      color:#fff;
+      background: linear-gradient(180deg, rgba(124,92,255,.35) 0%, rgba(124,92,255,.18) 100%);
+      border-color: rgba(124,92,255,.35);
+      box-shadow: 0 10px 18px rgba(124,92,255,.16);
+    }
+
+    .cardMeta{
+      color: var(--muted2);
+      font-weight: 800;
+      font-size: 13px;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .cardBody{
+      padding: 14px 14px 18px;
+    }
+
+    .imgCard{
+      border-radius: var(--radius2);
+      border: 1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(8,14,34,.75) 0%, rgba(8,14,34,.35) 100%);
+      overflow:hidden;
+      margin-bottom: 12px;
+    }
+    .imgHead{
+      display:flex; justify-content:space-between; align-items:center;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      gap: 10px;
+    }
+    .imgLabel{
+      font-weight: 900;
+      color: #eaf0ff;
+      letter-spacing:.2px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .imgPath{
+      font-weight: 800;
+      color: var(--muted2);
+      font-size: 12px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .imgWrap{
+      padding: 10px;
+      background: rgba(255,255,255,.02);
+    }
+    img.overlay{
+      width:100%;
+      height:auto;
+      display:block;
+      border-radius: 12px;
+      background: rgba(255,255,255,.04);
+    }
+
+    .msg{
+      padding: 14px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(8,14,34,.35);
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 13px;
+      margin: 10px 0 0;
+    }
+
+    .err{
+      border-color: rgba(255,85,85,.35);
+      background: rgba(85,15,25,.28);
+      color: #ffd1d1;
+    }
+
+    @media (max-width: 980px){
+      .brand{ min-width:auto; }
+      h1{ font-size: 34px; }
+      .asofPill{ min-width:auto; }
+      .pageHead{ flex-direction:column; align-items:flex-start; }
+      .source{ padding-bottom:0; }
+    }
+  </style>
 </head>
 
 <body>
-  <!-- 既存CSSのクラスが不明でも最低限見える構造 -->
-  <header class="topbar">
-    <div class="topbar-inner">
-      <div class="topbar-left">
-        <div class="topbar-title">Overlay</div>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"></div>
+        <div class="brandText">
+          <div class="t1">LABOS</div>
+          <div class="t2">World Politics / Overlay</div>
+        </div>
       </div>
 
-      <nav class="topbar-nav" aria-label="Primary">
-        <a href="/static/index.html?v=36249dd">Index</a>
-        <a href="/static/overlay.html?v=36249dd" aria-current="page">Overlay</a>
-        <a href="/static/sentiment.html?v=36249dd">Sentiment</a>
-      </nav>
+      <div class="nav" aria-label="Primary">
+        <a href="/static/index.html">Index</a>
+        <a class="active" href="/static/overlay.html">Overlay</a>
+        <a href="/static/sentiment.html">Sentiment</a>
+        <a href="/static/digest.html">Digest</a>
+      </div>
+
+      <div class="asofPill" title="as_of">
+        <span class="asofDot"></span>
+        <span class="asofKey">as_of</span>
+        <span class="asofVal" id="asofTop">--</span>
+      </div>
     </div>
-  </header>
 
-  <main class="container">
-    <section class="card">
-      <h2>JPY → THB</h2>
-      <p class="muted">JPY to THB Overlay</p>
-      <img
-        class="overlay-img"
-        src="/analysis/fx_jpy_thb_overlay.png?v=36249dd"
-        alt="JPY to THB Overlay"
-      />
-    </section>
+    <div class="pageHead">
+      <div>
+        <h1>FX Overlay</h1>
+        <div class="sub" id="subText">
+          /analysis/view_model_latest.json から as_of を確定し、/analysis/fx の variants を表示。
+          ※ ALL は combined（multi）を先頭に表示し、重複を避けるため JPY↔THB 単体は省略。
+        </div>
+      </div>
+      <div class="source" id="sourceText">source: /analysis/view_model_latest.json</div>
+    </div>
 
-    <section class="card">
-      <h2>JPY → USD</h2>
-      <p class="muted">JPY to USD Overlay</p>
-      <img
-        class="overlay-img"
-        src="/analysis/fx_jpy_usd_overlay.png?v=36249dd"
-        alt="JPY to USD Overlay"
-      />
-    </section>
-  </main>
+    <div class="card">
+      <div class="cardHead">
+        <div class="cardTitle">Overlay Images</div>
 
-  <!-- app.cssに依存しない最低限の保険（既存デザインを大きく壊さない範囲） -->
-  <style>
-    /* app.css に同名があればそちらが勝つ想定。なければこれが効く */
-    .topbar { padding: 12px 16px; }
-    .topbar-inner { display:flex; align-items:center; gap:16px; justify-content:space-between; flex-wrap:wrap; }
-    .topbar-title { font-size: 28px; font-weight: 700; }
-    .topbar-nav a { margin-right: 10px; text-decoration: none; }
-    .container { padding: 16px; }
-    .card { margin: 16px 0; padding: 16px; border-radius: 14px; }
-    .muted { opacity: 0.75; margin-top: 6px; }
-    .overlay-img { display:block; width: 100%; height: auto; border-radius: 12px; margin-top: 10px; }
-  </style>
+        <div class="seg" role="tablist" aria-label="Overlay View">
+          <button id="btnJPYTHB" type="button">JPY↔THB</button>
+          <button id="btnUSDJPY" type="button">USD↔JPY</button>
+          <button id="btnUSDTHB" type="button">USD↔THB</button>
+          <button id="btnALL" type="button">ALL</button>
+        </div>
+
+        <div class="cardMeta" id="metaText">as_of=-- / view=--</div>
+      </div>
+
+      <div class="cardBody">
+        <div id="overlayContainer"></div>
+        <div id="statusBox" class="msg" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const VIEW_KEYS = {
+      JPYTHB: "JPYTHB",
+      USDJPY: "USDJPY",
+      USDTHB: "USDTHB",
+      ALL: "ALL"
+    };
+
+    const PATHS = {
+      combined: "/analysis/fx/fx_overlay_multi_latest.png",
+      jpythb: "/analysis/fx/fx_overlay_latest_jpythb.png",
+      usdjpy: "/analysis/fx/fx_overlay_latest_usdjpy.png",
+      usdthb: "/analysis/fx/fx_overlay_latest_usdthb.png"
+    };
+
+    const VIEW_LABELS = {
+      combined: "ALL (combined)",
+      jpythb: "JPY↔THB",
+      usdjpy: "USD↔JPY",
+      usdthb: "USD↔THB"
+    };
+
+    const SOURCE_URLS = ["/analysis/view_model_latest.json"];
+
+    function qs(k){ return new URLSearchParams(location.search).get(k) || ""; }
+
+    function setActiveButton(view){
+      const map = {
+        [VIEW_KEYS.JPYTHB]: "btnJPYTHB",
+        [VIEW_KEYS.USDJPY]: "btnUSDJPY",
+        [VIEW_KEYS.USDTHB]: "btnUSDTHB",
+        [VIEW_KEYS.ALL]: "btnALL"
+      };
+      for(const id of Object.values(map)){
+        const el = document.getElementById(id);
+        if(!el) continue;
+        el.classList.remove("active");
+      }
+      const activeId = map[view] || "btnJPYTHB";
+      const btn = document.getElementById(activeId);
+      if(btn) btn.classList.add("active");
+    }
+
+    function setStatus(msg, isError=false){
+      const box = document.getElementById("statusBox");
+      if(!msg){
+        box.style.display = "none";
+        box.textContent = "";
+        box.classList.remove("err");
+        return;
+      }
+      box.style.display = "block";
+      box.textContent = msg;
+      box.classList.toggle("err", !!isError);
+    }
+
+    function normalizeAsOf(v){
+      if(!v) return "";
+      if(typeof v === "string") return v;
+      if(typeof v === "number"){
+        const ms = v < 10_000_000_000 ? v * 1000 : v;
+        try{ return new Date(ms).toISOString(); }catch{ return String(v); }
+      }
+      return String(v);
+    }
+
+    function extractAsOf(obj){
+      if(!obj || typeof obj !== "object") return "";
+      const paths = [
+        ["as_of"], ["asOf"], ["generated_at"], ["generatedAt"], ["timestamp"],
+        ["meta","as_of"], ["meta","generated_at"], ["meta","timestamp"]
+      ];
+      for(const p of paths){
+        let cur = obj;
+        let ok = true;
+        for(const k of p){
+          if(cur && typeof cur === "object" && k in cur) cur = cur[k];
+          else { ok = false; break; }
+        }
+        if(ok){
+          const s = normalizeAsOf(cur);
+          if(s) return s;
+        }
+      }
+      return "";
+    }
+
+    async function fetchFirstJson(urls){
+      let lastErr = null;
+      for(const u of urls){
+        try{
+          const r = await fetch(u, {cache:"no-store"});
+          if(!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+          const j = await r.json();
+          return {json:j, url:u};
+        }catch(e){
+          lastErr = e;
+        }
+      }
+      throw lastErr || new Error("fetch failed");
+    }
+
+    function createImgCard(label, url){
+      const card = document.createElement("div");
+      card.className = "imgCard";
+      card.innerHTML = `
+        <div class="imgHead">
+          <div class="imgLabel">${label}</div>
+          <div class="imgPath">${url}</div>
+        </div>
+        <div class="imgWrap">
+          <img class="overlay" src="${url}" alt="${label}" />
+        </div>
+      `;
+      const img = card.querySelector("img");
+      img.addEventListener("error", () => {
+        const wrap = card.querySelector(".imgWrap");
+        wrap.innerHTML = `<div class="msg err">overlay image not found: ${url}</div>`;
+      });
+      return card;
+    }
+
+    function renderSingle(label, url){
+      const container = document.getElementById("overlayContainer");
+      container.innerHTML = "";
+      container.appendChild(createImgCard(label, url));
+    }
+
+    function renderAll(items){
+      const container = document.getElementById("overlayContainer");
+      container.innerHTML = "";
+      for(const it of items){
+        if(!it || !it.url) continue;
+        container.appendChild(createImgCard(it.label, it.url));
+      }
+    }
+
+    function buildAllList(){
+      // ✅「内容重複」対策：
+      // combined (multi) は JPY↔THB を内包する想定なので、
+      // ALL では JPY↔THB 単体カードを出さない。
+      return [
+        {label: VIEW_LABELS.combined, url: PATHS.combined},
+        {label: VIEW_LABELS.usdjpy,   url: PATHS.usdjpy},
+        {label: VIEW_LABELS.usdthb,   url: PATHS.usdthb}
+      ];
+    }
+
+    function updateMeta(asOf, view){
+      document.getElementById("asofTop").textContent = asOf || "--";
+      document.getElementById("metaText").textContent = `as_of=${asOf || "--"} / view=${view || "--"}`;
+    }
+
+    function setUrl(view){
+      const p = new URLSearchParams(location.search);
+      p.set("view", view);
+      history.replaceState(null, "", `${location.pathname}?${p.toString()}`);
+    }
+
+    async function main(){
+      setStatus("");
+
+      let view = (qs("view") || VIEW_KEYS.JPYTHB).toUpperCase();
+      if(!Object.values(VIEW_KEYS).includes(view)) view = VIEW_KEYS.JPYTHB;
+
+      document.getElementById("btnJPYTHB").onclick = () => { view = VIEW_KEYS.JPYTHB; setUrl(view); setActiveButton(view); render(); };
+      document.getElementById("btnUSDJPY").onclick = () => { view = VIEW_KEYS.USDJPY; setUrl(view); setActiveButton(view); render(); };
+      document.getElementById("btnUSDTHB").onclick = () => { view = VIEW_KEYS.USDTHB; setUrl(view); setActiveButton(view); render(); };
+      document.getElementById("btnALL").onclick    = () => { view = VIEW_KEYS.ALL;    setUrl(view); setActiveButton(view); render(); };
+
+      setActiveButton(view);
+
+      let asOf = "";
+      try{
+        const got = await fetchFirstJson(SOURCE_URLS);
+        asOf = extractAsOf(got.json) || "";
+        document.getElementById("sourceText").textContent = `source: ${got.url}`;
+      }catch(e){
+        document.getElementById("sourceText").textContent = "source: load error";
+        setStatus(`view model load failed. last tried: ${SOURCE_URLS[SOURCE_URLS.length-1]} / Error: ${String(e)}`, true);
+      }
+
+      updateMeta(asOf, view);
+
+      function render(){
+        updateMeta(asOf, view);
+
+        if(view === VIEW_KEYS.JPYTHB){
+          renderSingle(VIEW_LABELS.jpythb, PATHS.jpythb);
+          return;
+        }
+        if(view === VIEW_KEYS.USDJPY){
+          renderSingle(VIEW_LABELS.usdjpy, PATHS.usdjpy);
+          return;
+        }
+        if(view === VIEW_KEYS.USDTHB){
+          renderSingle(VIEW_LABELS.usdthb, PATHS.usdthb);
+          return;
+        }
+        renderAll(buildAllList());
+      }
+
+      render();
+    }
+
+    main();
+  </script>
 </body>
 </html>
