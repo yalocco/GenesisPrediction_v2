@@ -2,121 +2,669 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>GenesisPrediction v2 - Home</title>
-  <link rel="stylesheet" href="/static/app.css?v=36249dd" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>LABOS / Index</title>
+
+  <!-- project global css (if exists) -->
+  <link rel="stylesheet" href="./app.css" />
+
+  <style>
+    :root{
+      --bg0:#050a16;
+      --bg1:#07102a;
+      --card: rgba(255,255,255,.06);
+      --card2: rgba(255,255,255,.08);
+      --bd: rgba(255,255,255,.10);
+      --txt: rgba(255,255,255,.92);
+      --mut: rgba(255,255,255,.65);
+      --mut2: rgba(255,255,255,.50);
+      --accent:#8b5cf6;
+      --ok:#22c55e;
+      --warn:#fbbf24;
+      --ng:#ef4444;
+      --shadow: 0 18px 45px rgba(0,0,0,.45);
+      --r:16px;
+      --r2:22px;
+      --w: 1080px;
+    }
+
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 25% 12%, rgba(139,92,246,.22), transparent 60%),
+                  radial-gradient(900px 700px at 70% 25%, rgba(59,130,246,.18), transparent 58%),
+                  linear-gradient(180deg, var(--bg1), var(--bg0) 52%, #040812);
+      color: var(--txt);
+    }
+
+    a{ color: inherit; text-decoration: none; }
+    .wrap{ max-width: var(--w); margin: 0 auto; padding: 18px 18px 46px; }
+
+    /* top bar */
+    .top{
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.14);
+      backdrop-filter: blur(10px);
+      border-radius: 999px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    .brand{ display:flex; align-items:center; gap:10px; padding: 4px 8px; }
+    .logo{
+      width: 22px; height: 22px; border-radius: 8px;
+      background: radial-gradient(circle at 30% 25%, #67e8f9, #8b5cf6 55%, #0ea5e9 100%);
+      box-shadow: 0 10px 25px rgba(139,92,246,.25);
+    }
+    .btxt{ line-height:1.05; }
+    .btxt .t{ font-weight: 800; letter-spacing: .3px; font-size: 13px; }
+    .btxt .s{ font-size: 11px; color: var(--mut); font-weight: 600; }
+
+    .nav{
+      display:flex; gap:8px; align-items:center;
+      padding: 4px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 999px;
+    }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      color: rgba(255,255,255,.80);
+      border: 1px solid transparent;
+    }
+    .pill:hover{
+      border-color: rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+    }
+    .pill.on{
+      color: #fff;
+      background: rgba(139,92,246,.22);
+      border-color: rgba(139,92,246,.32);
+      box-shadow: 0 12px 24px rgba(139,92,246,.14);
+    }
+
+    .asof{
+      display:flex; align-items:center; gap:8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.12);
+      color: rgba(255,255,255,.76);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .dot{
+      width: 9px; height: 9px; border-radius: 999px;
+      background: rgba(255,255,255,.20);
+      box-shadow: 0 0 0 3px rgba(255,255,255,.06);
+    }
+    .dot.ok{ background: var(--ok); box-shadow: 0 0 0 3px rgba(34,197,94,.15); }
+    .dot.warn{ background: var(--warn); box-shadow: 0 0 0 3px rgba(251,191,36,.15); }
+    .dot.ng{ background: var(--ng); box-shadow: 0 0 0 3px rgba(239,68,68,.15); }
+
+    /* title area */
+    .hero{ padding: 26px 8px 14px; }
+    .h1{ font-size: 22px; font-weight: 900; letter-spacing: .2px; }
+    .sub{ margin-top: 6px; color: var(--mut); font-size: 12px; font-weight: 650; display:flex; gap:10px; flex-wrap:wrap; }
+    .sub code{
+      padding: 2px 6px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 11px;
+      color: rgba(255,255,255,.78);
+    }
+
+    /* grid */
+    .grid{
+      display:grid;
+      grid-template-columns: 1.3fr .9fr;
+      gap: 14px;
+      align-items: start;
+    }
+    @media (max-width: 960px){
+      .grid{ grid-template-columns: 1fr; }
+      .asof{ display:none; }
+    }
+
+    .card{
+      border-radius: var(--r2);
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
+      border: 1px solid rgba(255,255,255,.08);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .hd{
+      padding: 14px 16px 12px;
+      display:flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.10);
+    }
+    .ttl{ font-weight: 900; letter-spacing:.2px; }
+    .mini{ color: var(--mut2); font-weight: 700; font-size: 12px; }
+    .bd{ padding: 14px 16px 16px; }
+
+    /* snapshot */
+    .tiles{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 520px){
+      .tiles{ grid-template-columns: 1fr; }
+    }
+    .btn{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.04);
+      transition: transform .04s ease, background .12s ease, border-color .12s ease;
+      cursor: pointer;
+      user-select: none;
+    }
+    .btn:hover{
+      background: rgba(255,255,255,.06);
+      border-color: rgba(255,255,255,.12);
+      transform: translateY(-1px);
+    }
+    .btn .t{ font-weight: 900; font-size: 13px; }
+    .btn .d{ color: var(--mut); font-size: 11px; font-weight: 650; margin-top: 2px; }
+    .btn .chev{ color: rgba(255,255,255,.55); font-weight: 900; }
+
+    .summary{
+      margin-top: 12px;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.10);
+      color: rgba(255,255,255,.86);
+      font-size: 12px;
+      line-height: 1.6;
+      min-height: 44px;
+      white-space: pre-wrap;
+    }
+    .bullets{
+      margin: 10px 0 0;
+      padding: 0 0 0 18px;
+      color: rgba(255,255,255,.78);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .bullets li{ margin: 6px 0; }
+    .muted{ color: var(--mut); }
+
+    /* health */
+    .health-grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+    .pillbox{
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.04);
+    }
+    .pillbox .k{
+      display:flex; justify-content: space-between; align-items:center;
+      font-size: 12px; font-weight: 900;
+    }
+    .pillbox .k span:last-child{ font-weight: 750; color: var(--mut2); }
+    .pillbox .v{
+      margin-top: 8px;
+      font-size: 22px;
+      font-weight: 950;
+      letter-spacing: .3px;
+    }
+    .pillbox.ok .v{ color: var(--ok); }
+    .pillbox.warn .v{ color: var(--warn); }
+    .pillbox.ng .v{ color: var(--ng); }
+
+    .footnote{
+      margin-top: 12px;
+      color: var(--mut);
+      font-size: 11px;
+      font-weight: 650;
+      line-height: 1.5;
+    }
+
+    .err{
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(239,68,68,.30);
+      background: rgba(239,68,68,.10);
+      color: rgba(255,255,255,.88);
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+  </style>
 </head>
 
 <body>
-  <header class="app-header">
-    <div class="header-inner">
-      <div class="brand">GenesisPrediction v2</div>
+  <div class="wrap">
+    <header class="top">
+      <a class="brand" href="./index.html" id="brandLink">
+        <div class="logo"></div>
+        <div class="btxt">
+          <div class="t">LABOS</div>
+          <div class="s">World Politics / Index</div>
+        </div>
+      </a>
 
-      <nav class="nav">
-        <a class="nav-link is-active" href="/static/index.html">Index</a>
-        <a class="nav-link" href="/static/overlay.html">Overlay</a>
-        <a class="nav-link" href="/static/sentiment.html?v=36249dd">Sentiment</a>
+      <nav class="nav" aria-label="primary">
+        <a class="pill on" href="./index.html" id="navIndex">Index</a>
+        <a class="pill" href="./overlay.html" id="navOverlay">Overlay</a>
+        <a class="pill" href="./sentiment.html" id="navSentiment">Sentiment</a>
+        <a class="pill" href="./digest.html" id="navDigest">Digest</a>
       </nav>
 
-      <div class="badge" title="Single Source of Truth: files under /analysis/">
-        <span class="dot"></span>
-        <span>GUI is read-only (SST)</span>
+      <div class="asof" title="as_of from view model">
+        <span class="dot" id="asDot"></span>
+        <span id="asOfText">as_of: --</span>
       </div>
+    </header>
+
+    <section class="hero">
+      <div class="h1">LABOS Index</div>
+      <div class="sub">
+        <span>ヘッダ統一（sentiment基準）＋主要導線＋今日の要約＋Healthを集約。</span>
+        <code id="srcInfo">source: --</code>
+      </div>
+    </section>
+
+    <div class="grid">
+      <section class="card">
+        <div class="hd">
+          <div class="ttl">Today Snapshot</div>
+          <div class="mini" id="snapInfo">--</div>
+        </div>
+        <div class="bd">
+          <div class="tiles">
+            <a class="btn" href="./overlay.html" id="goOverlay">
+              <div>
+                <div class="t">Overlay</div>
+                <div class="d">FX / overlay panels</div>
+              </div>
+              <div class="chev">›</div>
+            </a>
+
+            <a class="btn" href="./sentiment.html" id="goSentiment">
+              <div>
+                <div class="t">Sentiment</div>
+                <div class="d">risk / positive / uncertainty</div>
+              </div>
+              <div class="chev">›</div>
+            </a>
+
+            <a class="btn" href="./digest.html" id="goDigest">
+              <div>
+                <div class="t">Digest</div>
+                <div class="d">daily digest view</div>
+              </div>
+              <div class="chev">›</div>
+            </a>
+
+            <a class="btn" href="./index.html" id="goRefresh">
+              <div>
+                <div class="t">Refresh</div>
+                <div class="d">reload this page</div>
+              </div>
+              <div class="chev">↻</div>
+            </a>
+          </div>
+
+          <div class="summary" id="summaryBox">loading...</div>
+          <ul class="bullets" id="bullets"><li class="muted">loading...</li></ul>
+
+          <div class="err" id="errBox" style="display:none"></div>
+        </div>
+      </section>
+
+      <aside class="card">
+        <div class="hd">
+          <div class="ttl">Data Health</div>
+          <div class="mini" id="healthInfo">source: --</div>
+        </div>
+        <div class="bd">
+          <div class="health-grid">
+            <div class="pillbox ok">
+              <div class="k"><span>OK</span><span>count</span></div>
+              <div class="v" id="okVal">--</div>
+            </div>
+            <div class="pillbox warn">
+              <div class="k"><span>WARN</span><span>count</span></div>
+              <div class="v" id="warnVal">--</div>
+            </div>
+            <div class="pillbox ng">
+              <div class="k"><span>NG</span><span>count</span></div>
+              <div class="v" id="ngVal">--</div>
+            </div>
+          </div>
+
+          <div class="footnote">
+            ※ Index は「導線と状況把握」を最優先。詳細は各ページへ。<br>
+            ※ GUI は read-only（SST）。PNG/CSV/JSON を読むだけで再計算しません。
+          </div>
+        </div>
+      </aside>
     </div>
-  </header>
-
-  <main class="app-main">
-    <div class="container">
-
-      <!-- Hero -->
-      <section class="card">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title">Today / Latest</h2>
-            <div class="card-sub">正本（PNG/CSV/HTML）を読むだけ。GUIは再計算しません。</div>
-          </div>
-
-          <div class="date-controls">
-            <div class="pill" id="datePill">date: -</div>
-            <button class="btn" id="btnPrev" type="button">◀</button>
-            <button class="btn" id="btnNext" type="button">▶</button>
-            <button class="btn" id="btnToday" type="button">Today</button>
-          </div>
-        </div>
-
-        <div class="card-body">
-          <div class="kpi-grid" id="kpiGrid">
-            <div class="kpi">
-              <div class="kpi-label">articles</div>
-              <div class="kpi-value" id="kpi_articles">—</div>
-            </div>
-            <div class="kpi">
-              <div class="kpi-label">risk</div>
-              <div class="kpi-value" id="kpi_risk">—</div>
-            </div>
-            <div class="kpi">
-              <div class="kpi-label">positive</div>
-              <div class="kpi-value" id="kpi_positive">—</div>
-            </div>
-            <div class="kpi">
-              <div class="kpi-label">uncertainty</div>
-              <div class="kpi-value" id="kpi_uncertainty">—</div>
-            </div>
-          </div>
-
-          <div class="muted" id="kpiHint" style="margin-top:10px;">KPI source: loading…</div>
-        </div>
-      </section>
-
-      <!-- Data Health -->
-      <section class="card">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title">Data Health</h2>
-            <div class="card-sub">各生成物（latest/dated）の存在・更新状況</div>
-          </div>
-        </div>
-
-        <div class="card-body">
-          <div class="health-grid" id="healthGrid"></div>
-          <div class="muted" id="healthHint" style="margin-top:10px;">Health source: loading…</div>
-        </div>
-      </section>
-
-      <!-- Sentiment preview -->
-      <section class="card">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title">Sentiment preview</h2>
-            <div class="card-sub">カテゴリ別ページへジャンプ（Index→Sentiment）。リンク行に [object Object] が出ないように正規化表示</div>
-          </div>
-        </div>
-
-        <div class="card-body">
-          <!-- Category jump buttons -->
-          <div class="muted" style="margin-bottom:10px;">Open Sentiment by category:</div>
-          <div class="row" id="sentCatBar" style="gap:8px; flex-wrap:wrap;">
-            <button class="btn is-active" type="button" data-cat="all">All</button>
-            <button class="btn" type="button" data-cat="security">Security</button>
-            <button class="btn" type="button" data-cat="economy">Economy</button>
-            <button class="btn" type="button" data-cat="ai_it">AI/IT</button>
-            <button class="btn" type="button" data-cat="tech">Tech</button>
-            <button class="btn" type="button" data-cat="climate">Climate</button>
-            <button class="btn" type="button" data-cat="general">General</button>
-          </div>
-
-          <ul class="sentiment-list" id="sentimentList" style="margin-top:12px;"></ul>
-          <div class="muted" id="sentHint" style="margin-top:10px;">Sentiment source: loading…</div>
-        </div>
-      </section>
-
-    </div>
-  </main>
+  </div>
 
   <script>
-    // cache-bust key (deploy build id / commit id)
-    window.APP_VERSION = "36249dd";
+    (function(){
+      "use strict";
+
+      function esc(s){
+        return String(s ?? "")
+          .replaceAll("&","&amp;")
+          .replaceAll("<","&lt;")
+          .replaceAll(">","&gt;")
+          .replaceAll('"',"&quot;")
+          .replaceAll("'","&#039;");
+      }
+      function uniq(arr){
+        const out = [];
+        const seen = new Set();
+        for (const x of arr){
+          const s = String(x || "").trim();
+          if (!s) continue;
+          if (seen.has(s)) continue;
+          seen.add(s);
+          out.push(s);
+        }
+        return out;
+      }
+      function qs(){ return new URLSearchParams(location.search); }
+
+      // cache-busting: if no v=, self-redirect once
+      (function ensureV(){
+        const p = qs();
+        if (!p.get("v")){
+          p.set("v", Math.random().toString(16).slice(2,8));
+          const url = location.pathname + "?" + p.toString();
+          location.replace(url);
+        }
+      })();
+
+      const v = qs().get("v") || "";
+
+      function withV(path){
+        try{
+          const u = new URL(path, location.href);
+          u.searchParams.set("v", v);
+          return u.pathname + "?" + u.searchParams.toString();
+        }catch(_){
+          const join = path.includes("?") ? "&" : "?";
+          return path + join + "v=" + encodeURIComponent(v);
+        }
+      }
+
+      // apply v= to nav links (avoid stale css/js/img)
+      const navIds = ["brandLink","navIndex","navOverlay","navSentiment","navDigest","goOverlay","goSentiment","goDigest","goRefresh"];
+      for (const id of navIds){
+        const a = document.getElementById(id);
+        if (!a) continue;
+        const href = a.getAttribute("href") || "";
+        if (!href) continue;
+        a.setAttribute("href", withV(href));
+      }
+
+      function setText(id, text){
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+      }
+
+      function showErr(msg){
+        const box = document.getElementById("errBox");
+        box.style.display = "block";
+        box.textContent = msg;
+      }
+
+      function guessAsOf(obj){
+        return obj?.as_of
+          || obj?.asOf
+          || obj?.generated_at
+          || obj?.generatedAt
+          || obj?.meta?.as_of
+          || obj?.meta?.generated_at
+          || obj?.date
+          || "--";
+      }
+
+      function isNonEmptyString(x){
+        return (typeof x === "string") && x.trim().length > 0;
+      }
+
+      // ---- ViewModel extractors (match current schema: date/meta/sections/today/...)
+      function extractSummary(vm){
+        // 1) obvious fields (future-proof)
+        const direct =
+          vm?.daily_summary || vm?.summary || vm?.latest_summary ||
+          vm?.today?.daily_summary || vm?.today?.summary || vm?.today?.latest_summary ||
+          vm?.today?.digest || vm?.today?.today_summary ||
+          vm?.meta?.summary || "";
+        if (isNonEmptyString(direct)) return String(direct).trim();
+
+        // 2) sections/cards scan (current schema: sections: [{id,title,cards,...}])
+        const sections = Array.isArray(vm?.sections) ? vm.sections : [];
+        const candKeys = ["summary","daily_summary","text","body","content","message","markdown","md","note","notes"];
+        for (const sec of sections){
+          const cards = Array.isArray(sec?.cards) ? sec.cards : [];
+          for (const card of cards){
+            for (const k of candKeys){
+              const v = card?.[k];
+              if (isNonEmptyString(v) && String(v).trim().length >= 20){
+                return String(v).trim();
+              }
+            }
+            // sometimes nested
+            for (const k of ["data","payload","value"]){
+              const inner = card?.[k];
+              if (inner && typeof inner === "object"){
+                for (const kk of candKeys){
+                  const v2 = inner?.[kk];
+                  if (isNonEmptyString(v2) && String(v2).trim().length >= 20){
+                    return String(v2).trim();
+                  }
+                }
+              }
+            }
+          }
+          // fallback: section notes
+          for (const k of ["notes","note"]){
+            const vv = sec?.[k];
+            if (isNonEmptyString(vv) && String(vv).trim().length >= 20){
+              return String(vv).trim();
+            }
+          }
+        }
+
+        return "";
+      }
+
+      function extractBullets(vm){
+        // 1) obvious fields (future-proof)
+        const direct =
+          vm?.bullets || vm?.highlights || vm?.key_points ||
+          vm?.today?.bullets || vm?.today?.highlights || vm?.today?.key_points ||
+          vm?.meta?.bullets || vm?.meta?.highlights || [];
+        if (Array.isArray(direct) && direct.length) return direct;
+
+        // 2) sections/cards scan
+        const sections = Array.isArray(vm?.sections) ? vm.sections : [];
+        const candKeys = ["bullets","highlights","points","key_points","items","lines","list"];
+        for (const sec of sections){
+          const cards = Array.isArray(sec?.cards) ? sec.cards : [];
+          for (const card of cards){
+            for (const k of candKeys){
+              const v = card?.[k];
+              if (Array.isArray(v) && v.length) return v;
+            }
+            // sometimes single string with lines
+            for (const k of ["bullets_text","highlights_text","text","body","content"]){
+              const v2 = card?.[k];
+              if (isNonEmptyString(v2) && String(v2).includes("\n")){
+                const lines = String(v2).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+                if (lines.length >= 2) return lines;
+              }
+            }
+            // nested
+            for (const k of ["data","payload","value"]){
+              const inner = card?.[k];
+              if (inner && typeof inner === "object"){
+                for (const kk of candKeys){
+                  const v3 = inner?.[kk];
+                  if (Array.isArray(v3) && v3.length) return v3;
+                }
+              }
+            }
+          }
+        }
+        return [];
+      }
+
+      function pickHealthCounts(h){
+        const c = h?.counts || h?.count || h?.summary || h || {};
+        const ok = c.OK ?? c.ok ?? c.Ok ?? c.ok_count ?? null;
+        const warn = c.WARN ?? c.warn ?? c.Warn ?? c.warn_count ?? null;
+        const ng = c.NG ?? c.ng ?? c.Ng ?? c.ng_count ?? null;
+        return { ok, warn, ng };
+      }
+
+      async function fetchFirstJson(urls){
+        let last = null;
+        for (const url of urls){
+          try{
+            const res = await fetch(withV(url), { cache: "no-store" });
+            if (!res.ok) throw new Error(res.status + " " + res.statusText);
+            const json = await res.json();
+            return { url, json };
+          }catch(e){
+            last = { url, error: e };
+          }
+        }
+        throw last || new Error("no candidate urls");
+      }
+
+      // candidates (sentimentで実績が出た入口を最優先)
+      function buildViewModelUrls(){
+        const roots = ["", "/analysis", "/data", "/static", "/static/analysis", "/static/data"];
+        const preferred = ["/analysis/view_model_latest.json"];
+        const paths = [
+          "view_model_latest.json",
+          "world_politics/analysis/view_model_latest.json",
+          "world_politics/view_model_latest.json",
+          "digest/view_model_latest.json",
+          "digest/view/view_model_latest.json",
+        ];
+        const out = [];
+        out.push(...preferred);
+        for (const r of roots){
+          for (const p of paths){
+            out.push((r || "") + "/" + p);
+          }
+        }
+        return uniq(out.map(s => s.replaceAll("//","/")));
+      }
+
+      const VIEWMODEL_URLS = buildViewModelUrls();
+
+      const HEALTH_URLS = uniq([
+        "/analysis/health_latest.json",
+        "/data/health_latest.json",
+        "/health_latest.json",
+        "/analysis/data_health_latest.json",
+        "/data/data_health_latest.json",
+        "/static/health_latest.json",
+        "/static/analysis/health_latest.json",
+        "/static/data/health_latest.json",
+      ]);
+
+      (async function main(){
+        // 1) ViewModel -> snapshot
+        try{
+          const { url, json } = await fetchFirstJson(VIEWMODEL_URLS);
+          const asOf = guessAsOf(json);
+
+          setText("asOfText", "as_of: " + asOf);
+          setText("srcInfo", "source: " + url);
+          setText("snapInfo", "as_of: " + asOf + " / v=" + v);
+
+          const summary = extractSummary(json);
+          const bullets = extractBullets(json);
+
+          const summaryBox = document.getElementById("summaryBox");
+          summaryBox.innerHTML = summary
+            ? esc(String(summary)).replaceAll("\n","<br>")
+            : '<span class="muted">summary not found</span>';
+
+          const ul = document.getElementById("bullets");
+          if (Array.isArray(bullets) && bullets.length){
+            ul.innerHTML = bullets.slice(0, 8).map(x => "<li>" + esc(String(x)) + "</li>").join("");
+          }else{
+            ul.innerHTML = '<li class="muted">highlights not found</li>';
+          }
+        }catch(e){
+          setText("asOfText", "as_of: --");
+          setText("srcInfo", "source: load error");
+          setText("snapInfo", "load error / v=" + v);
+
+          const summaryBox = document.getElementById("summaryBox");
+          summaryBox.innerHTML = '<span class="muted">view model load failed</span>';
+
+          const ul = document.getElementById("bullets");
+          ul.innerHTML = '<li class="muted">—</li>';
+
+          const msg = "view model load failed.\nlast tried: " + (e?.url || "?") + "\n" + String(e?.error || e);
+          showErr(msg);
+        }
+
+        // 2) Health
+        try{
+          const { url, json } = await fetchFirstJson(HEALTH_URLS);
+          setText("healthInfo", "source: " + url);
+
+          const { ok, warn, ng } = pickHealthCounts(json);
+          setText("okVal", ok ?? "--");
+          setText("warnVal", warn ?? "--");
+          setText("ngVal", ng ?? "--");
+
+          const dot = document.getElementById("asDot");
+          dot.classList.remove("ok","warn","ng");
+          if ((ng ?? 0) > 0) dot.classList.add("ng");
+          else if ((warn ?? 0) > 0) dot.classList.add("warn");
+          else dot.classList.add("ok");
+        }catch(e){
+          setText("healthInfo", "source: load error");
+          setText("okVal", "--");
+          setText("warnVal", "--");
+          setText("ngVal", "--");
+
+          const msg = "health load failed.\nlast tried: " + (e?.url || "?") + "\n" + String(e?.error || e);
+          const box = document.getElementById("errBox");
+          if (box.style.display === "none") showErr(msg);
+        }
+      })();
+    })();
   </script>
-  <script src="/static/index.js?v=36249dd"></script>
 </body>
 </html>
