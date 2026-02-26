@@ -2,566 +2,1013 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LABOS / Index</title>
-
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sentiment - GenesisPrediction v2</title>
   <style>
     :root{
       --bg:#0b1020;
-      --panel:#0f1730;
-      --panel2:#0c142b;
-      --line:#1c2a55;
-      --text:#e8eeff;
-      --muted:#a9b6da;
-
-      --risk:#ff4d4f;
-      --positive:#2dd36f;
-      --uncertainty:#ffd166;
-
-      --shadow: 0 10px 30px rgba(0,0,0,.35);
-      --radius: 14px;
-      --radius2: 18px;
+      --panel:#0f1a33cc;
+      --panel2:#0f1a33aa;
+      --stroke:#1f2a48;
+      --text:#e8eefc;
+      --muted:#a9b6d8;
+      --accent:#69a9ff;
+      --good:#2dd4bf;
+      --bad:#ff6b6b;
+      --warn:#fbbf24;
+      --shadow:0 12px 34px rgba(0,0,0,.40);
+      --radius:16px;
+      --radius2:22px;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
     }
-
-    *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      background: radial-gradient(1200px 800px at 20% 10%, #14224a 0%, var(--bg) 55%),
-                  radial-gradient(1200px 800px at 80% 0%, #1a2a5a 0%, rgba(11,16,32,0) 55%),
-                  var(--bg);
+      background:
+        radial-gradient(1200px 600px at 75% 35%, rgba(66, 223, 204, 0.10), transparent 60%),
+        radial-gradient(900px 520px at 18% 28%, rgba(105, 169, 255, 0.18), transparent 55%),
+        radial-gradient(900px 520px at 42% 86%, rgba(105, 169, 255, 0.08), transparent 55%),
+        linear-gradient(180deg, #070a14, #0b1020 45%, #0a1124 100%);
       color:var(--text);
-    }
-
-    a{color:inherit; text-decoration:none}
-    a:hover{opacity:.92}
-
-    .wrap{max-width:1120px; margin:0 auto; padding:18px 16px 28px}
-
-    /* -------------------------
-       Header (sentiment型に統一)
-    ------------------------- */
-    .topbar{
-      position:sticky; top:0; z-index:20;
-      backdrop-filter: blur(10px);
-      background: rgba(11,16,32,.65);
-      border-bottom:1px solid rgba(28,42,85,.6);
-    }
-    .topbar-inner{
-      max-width:1120px; margin:0 auto;
-      padding:10px 16px;
-      display:flex; align-items:center; gap:14px;
-    }
-    .brand{
-      display:flex; align-items:center; gap:10px;
-      min-width: 180px;
-    }
-    .logo{
-      width:30px; height:30px; border-radius:10px;
-      background: linear-gradient(135deg, #4ad4ff 0%, #7c5cff 45%, #ff4d4f 100%);
-      box-shadow: 0 8px 18px rgba(0,0,0,.35);
-    }
-    .brand .name{
-      font-weight:800;
-      letter-spacing:.4px;
-      line-height:1.05;
-    }
-    .brand .sub{
-      display:block;
-      font-weight:600;
-      font-size:12px;
-      color:var(--muted);
+      font-family:var(--font);
       letter-spacing:.2px;
-      margin-top:2px;
+      overflow-y:auto;
     }
-
-    .nav{
-      display:flex; align-items:center; gap:8px;
-      flex:1;
-      overflow:auto;
-      padding:2px 0;
+    a{color:inherit}
+    .wrap{max-width:1200px;margin:0 auto;padding:22px 18px 44px;}
+    header.top{
+      display:flex;align-items:center;justify-content:space-between;gap:14px;
+      padding:10px 16px;border:1px solid var(--stroke);border-radius:999px;
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      box-shadow: 0 6px 20px rgba(0,0,0,.25);
+      position:sticky;top:10px;backdrop-filter: blur(10px);z-index:20;
     }
-    .nav a{
-      display:inline-flex; align-items:center; justify-content:center;
-      padding:8px 12px;
-      border-radius:999px;
-      border:1px solid rgba(28,42,85,.7);
-      background: rgba(15,23,48,.6);
-      color:var(--muted);
-      font-weight:700;
-      font-size:13px;
-      white-space:nowrap;
+    .brand{display:flex;align-items:center;gap:10px;min-width:220px;}
+    .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(105,169,255,.18);}
+    .brand .name{font-weight:700;font-size:14px;opacity:.95;}
+    nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+    nav a{
+      text-decoration:none;padding:7px 12px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.12);
+      font-size:12px;opacity:.92;
     }
-    .nav a.active{
-      color:var(--text);
-      border-color: rgba(124,92,255,.85);
-      background: rgba(124,92,255,.18);
-    }
-
-    .asof{
-      display:flex; align-items:center; gap:10px;
-      min-width: 220px;
-      justify-content:flex-end;
-    }
+    nav a:hover{border-color:rgba(105,169,255,.5)}
     .pill{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:8px 12px;
-      border-radius:999px;
-      border:1px solid rgba(28,42,85,.7);
-      background: rgba(15,23,48,.65);
-      box-shadow: 0 10px 24px rgba(0,0,0,.25);
-      font-weight:800;
-      font-size:12px;
-      color:var(--muted);
-      white-space:nowrap;
+      display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.10);font-size:12px;opacity:.9;
     }
-    .pill .dot{
-      width:8px; height:8px; border-radius:99px;
-      background: #6aa6ff;
-      box-shadow: 0 0 0 4px rgba(106,166,255,.18);
-    }
-    .pill strong{color:var(--text); font-weight:900}
-
-    /* -------------------------
-       Page Head / Layout
-    ------------------------- */
-    .page-head{
-      display:flex; align-items:flex-end; justify-content:space-between;
-      gap:14px;
-      padding-top:14px;
-      margin-bottom:12px;
-    }
-    .h1{
-      font-size:22px;
-      font-weight:900;
-      letter-spacing:.2px;
-      margin:0;
-    }
-    .hint{
-      margin:6px 0 0;
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.4;
-    }
-
-    .grid{
-      display:grid;
-      grid-template-columns: 1.05fr .95fr;
-      gap:14px;
-      align-items:start;
-    }
+    .pill .led{width:8px;height:8px;border-radius:50%;background:#3ddc84;box-shadow:0 0 0 3px rgba(61,220,132,.15);}
+    h1{margin:26px 0 6px;font-size:34px;letter-spacing:.6px;}
+    .sub{margin:0 0 14px;color:var(--muted);font-size:12px;line-height:1.4;}
+    .grid{display:grid;grid-template-columns: 1.2fr .8fr;gap:16px;margin-top:12px;}
     @media (max-width: 980px){
       .grid{grid-template-columns:1fr}
-      .brand{min-width:auto}
-      .asof{min-width:auto}
+      header.top{position:static}
+      .brand{min-width:unset}
     }
-
     .card{
-      background: linear-gradient(180deg, rgba(15,23,48,.86) 0%, rgba(12,20,43,.86) 100%);
-      border:1px solid rgba(28,42,85,.7);
+      border:1px solid rgba(255,255,255,.10);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
       border-radius: var(--radius2);
       box-shadow: var(--shadow);
       overflow:hidden;
     }
-    .card .hd{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:10px;
-      padding:12px 14px;
-      border-bottom:1px solid rgba(28,42,85,.65);
-      background: rgba(15,23,48,.6);
+    .card .inner{padding:14px 14px 12px;}
+    .card h2{margin:0 0 8px;font-size:14px;letter-spacing:.35px;opacity:.95;}
+    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;}
+    .btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+    button.btn{
+      border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.16);
+      color:var(--text);border-radius:999px;padding:7px 10px;font-size:12px;cursor:pointer;
     }
-    .card .hd .ttl{
-      font-weight:900;
-      letter-spacing:.2px;
-      font-size:14px;
+    button.btn:hover{border-color:rgba(105,169,255,.55)}
+    .kpis{display:grid;grid-template-columns: repeat(4, minmax(0,1fr));gap:10px;margin-top:10px;}
+    @media (max-width: 980px){.kpis{grid-template-columns: repeat(2, minmax(0,1fr))}}
+    .kpi{
+      border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.12);
+      border-radius:14px;padding:10px 10px 9px;min-height:56px;
     }
-    .card .bd{padding:12px 14px}
-
-    /* Quick links */
-    .links{
-      display:grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap:10px;
+    .kpi .lab{font-size:11px;color:var(--muted)}
+    .kpi .val{font-size:15px;font-weight:700;margin-top:4px}
+    .kpi .tiny{font-size:10px;color:var(--muted);margin-top:2px}
+    .controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;align-items:center;}
+    input.search{
+      flex:1 1 240px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.14);
+      color:var(--text);border-radius:999px;padding:9px 12px;outline:none;font-size:12px;
     }
-    @media (max-width: 520px){
-      .links{grid-template-columns:1fr}
+    select.sel{
+      border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.14);
+      color:var(--text);border-radius:999px;padding:9px 10px;outline:none;font-size:12px;
     }
-    .btn{
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-      padding:12px 12px;
+    label.chk{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);user-select:none;}
+    .note{
+      margin-top:10px;font-size:11px;color:var(--muted);line-height:1.4;white-space:pre-wrap;
+    }
+    .mini{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;}
+    .mini .tag{
+      font-size:11px;color:var(--muted);border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.12);padding:6px 10px;border-radius:999px;
+    }
+    .mini .tag strong{color:var(--text);font-weight:700}
+    .how{font-size:12px;color:var(--muted);line-height:1.5;white-space:pre-wrap;}
+    .sectionTitle{margin:22px 0 10px;font-size:16px;letter-spacing:.35px;opacity:.95;}
+    .tableWrap{
+      border:1px solid rgba(255,255,255,.10);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.08));
       border-radius: var(--radius2);
-      border:1px solid rgba(28,42,85,.7);
-      background: rgba(11,16,32,.35);
+      overflow:hidden;
+      box-shadow: var(--shadow);
     }
-    .btn .t{
-      font-weight:950;
-      letter-spacing:.2px;
+    table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;}
+    thead th{
+      text-align:left;padding:12px 12px;font-size:11px;color:var(--muted);
+      background:rgba(0,0,0,.22);border-bottom:1px solid rgba(255,255,255,.10);
+      position:sticky;top:0;z-index:5;
     }
-    .btn .d{
-      color:var(--muted);
-      font-size:12px;
-      margin-top:4px;
-      font-weight:800;
+    tbody td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:middle;}
+    tbody tr:hover td{background:rgba(105,169,255,.06)}
+    .thumb{
+      width:34px;height:34px;border-radius:10px;border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.20);overflow:hidden;display:flex;align-items:center;justify-content:center;
     }
-    .btn:hover{background: rgba(124,92,255,.12); border-color: rgba(124,92,255,.5)}
-    .chev{color:var(--muted); font-weight:950}
-
-    /* Summary / bullets */
-    .bullets{margin:0; padding-left:18px; color:var(--muted); line-height:1.55}
-    .bullets li{margin:6px 0}
-    .summary{
-      border:1px solid rgba(28,42,85,.7);
-      border-radius: var(--radius2);
-      background: rgba(11,16,32,.25);
-      padding:12px 12px;
-      line-height:1.6;
-      color: var(--text);
-      font-weight:650;
+    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+    .title{font-weight:700;color:var(--text);line-height:1.25;margin-bottom:2px;}
+    .src{font-size:11px;color:var(--muted);line-height:1.2;}
+    .badge{
+      display:inline-flex;align-items:center;gap:8px;font-size:11px;padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.14);color:var(--muted);white-space:nowrap;
     }
-
-    /* Health */
-    .health-grid{
-      display:grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap:10px;
-    }
-    .pillbox{
-      border:1px solid rgba(28,42,85,.7);
-      border-radius: var(--radius2);
-      background: rgba(11,16,32,.35);
-      padding:10px 10px 9px;
-    }
-    .pillbox .k{
-      display:flex; align-items:center; justify-content:space-between;
-      color:var(--muted);
-      font-size:12px;
-      font-weight:850;
-    }
-    .pillbox .v{
-      margin-top:6px;
-      font-size:22px;
-      font-weight:950;
-      letter-spacing:.2px;
-      line-height:1.05;
-    }
-    .pillbox.ok .v{color:var(--positive)}
-    .pillbox.warn .v{color:var(--uncertainty)}
-    .pillbox.ng .v{color:var(--risk)}
-
-    .small{font-size:12px}
+    .badge .b{width:8px;height:8px;border-radius:50%;}
+    .badge.risk .b{background:var(--bad); box-shadow:0 0 0 3px rgba(255,107,107,.12)}
+    .badge.pos .b{background:var(--good); box-shadow:0 0 0 3px rgba(45,212,191,.12)}
+    .badge.neu .b{background:#94a3b8; box-shadow:0 0 0 3px rgba(148,163,184,.12)}
+    .num{font-variant-numeric: tabular-nums;}
+    .num.neg{color:var(--bad);font-weight:700}
+    .num.pos{color:var(--good);font-weight:700}
     .muted{color:var(--muted)}
-    .err{
-      border:1px solid rgba(255,77,79,.35);
-      background: rgba(255,77,79,.08);
-      border-radius: var(--radius2);
-      padding:12px 14px;
-      color: #ffd6d6;
-      font-weight:800;
-      line-height:1.45;
-    }
+    .small{font-size:11px}
+    .right{text-align:right}
+    .footerNote{margin:10px 0 0;font-size:11px;color:var(--muted);line-height:1.5;}
   </style>
 </head>
-
 <body>
-  <header class="topbar">
-    <div class="topbar-inner">
-      <a class="brand" href="./index.html" title="LABOS Home">
-        <span class="logo" aria-hidden="true"></span>
-        <span class="name">LABOS<span class="sub">World Politics / Index</span></span>
-      </a>
-
-      <nav class="nav" aria-label="Primary">
-        <a class="active" href="./index.html" aria-current="page">Index</a>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <span class="dot"></span>
+        <div class="name">GenesisPrediction v2</div>
+      </div>
+      <nav>
+        <a href="./index.html">Home</a>
         <a href="./overlay.html">Overlay</a>
         <a href="./sentiment.html">Sentiment</a>
-        <a href="./digest.html">Digest</a>
+        <span class="pill" id="asofPill"><span class="led"></span><span id="asofText">as_of: -</span></span>
       </nav>
+    </header>
 
-      <div class="asof">
-        <span class="pill" id="asOfPill" title="data as-of">
-          <span class="dot" aria-hidden="true"></span>
-          <span>as_of</span>
-          <strong id="asOfText">--</strong>
-        </span>
-      </div>
-    </div>
-  </header>
-
-  <main class="wrap">
-    <div class="page-head">
-      <div>
-        <h1 class="h1">LABOS Index</h1>
-        <p class="hint">ヘッダ統一（sentiment基準）＋主要導線と今日の要約・Healthを集約。</p>
-      </div>
-      <div class="muted small" id="srcInfo">source: --</div>
-    </div>
+    <h1>Sentiment（記事別）</h1>
+    <p class="sub">
+      /analysis/sentiment_latest.json を主データとして表示します。<br/>
+      meta は root / world_politics / static から「取れるもの全部」を合成して join します（再発防止）。
+    </p>
 
     <div class="grid">
-      <section class="card">
-        <div class="hd">
-          <div class="ttl">Today Snapshot</div>
-          <div class="muted small" id="snapInfo">--</div>
-        </div>
-        <div class="bd">
-          <div class="links" aria-label="Quick links">
-            <a class="btn" href="./overlay.html">
-              <div>
-                <div class="t">Overlay</div>
-                <div class="d">FX / overlay panels</div>
-              </div>
-              <div class="chev">›</div>
-            </a>
-            <a class="btn" href="./sentiment.html">
-              <div>
-                <div class="t">Sentiment</div>
-                <div class="d">risk / positive / uncertainty</div>
-              </div>
-              <div class="chev">›</div>
-            </a>
-            <a class="btn" href="./digest.html">
-              <div>
-                <div class="t">Digest</div>
-                <div class="d">daily digest view</div>
-              </div>
-              <div class="chev">›</div>
-            </a>
-            <a class="btn" href="./index.html">
-              <div>
-                <div class="t">Refresh</div>
-                <div class="d">reload this page</div>
-              </div>
-              <div class="chev">↻</div>
-            </a>
-          </div>
-
-          <div style="height:12px"></div>
-
-          <div class="summary" id="summaryBox">
-            loading...
-          </div>
-
-          <div style="height:10px"></div>
-
-          <ul class="bullets" id="bullets">
-            <li>loading...</li>
-          </ul>
-        </div>
-      </section>
-
-      <aside class="card">
-        <div class="hd">
-          <div class="ttl">Data Health</div>
-          <div class="muted small" id="healthInfo">--</div>
-        </div>
-        <div class="bd">
-          <div class="health-grid">
-            <div class="pillbox ok">
-              <div class="k"><span>OK</span><span class="muted small">count</span></div>
-              <div class="v" id="okVal">--</div>
-            </div>
-            <div class="pillbox warn">
-              <div class="k"><span>WARN</span><span class="muted small">count</span></div>
-              <div class="v" id="warnVal">--</div>
-            </div>
-            <div class="pillbox ng">
-              <div class="k"><span>NG</span><span class="muted small">count</span></div>
-              <div class="v" id="ngVal">--</div>
+      <div class="card">
+        <div class="inner">
+          <div class="row">
+            <h2>Controls</h2>
+            <div class="mini">
+              <span class="tag"><strong>metaItems</strong>=<span class="num" id="metaItemsN">-</span></span>
+              <span class="tag"><strong>sentItems</strong>=<span class="num" id="sentItemsN">-</span></span>
             </div>
           </div>
 
-          <div style="height:12px"></div>
-          <div id="errBox"></div>
+          <div class="btns" style="margin-top:10px">
+            <button class="btn" id="btnReload">Reload</button>
+            <button class="btn" id="btnReset">Reset filters</button>
+            <button class="btn" id="btnOpenVM">Open view_model_latest.json</button>
+            <button class="btn" id="btnOpenSent">Open sentiment_latest.json</button>
+            <button class="btn" id="btnOpenTS">Open sentiment_timeseries.csv</button>
+          </div>
 
-          <div style="height:12px"></div>
-          <div class="muted small">
-            ※ Indexは「導線と状況把握」を最優先。詳細は各ページへ。
+          <div class="kpis">
+            <div class="kpi">
+              <div class="lab">date</div>
+              <div class="val num" id="kAsOf">-</div>
+              <div class="tiny">as_of</div>
+            </div>
+            <div class="kpi">
+              <div class="lab">articles</div>
+              <div class="val num" id="kN">-</div>
+              <div class="tiny">items</div>
+            </div>
+            <div class="kpi">
+              <div class="lab">risk</div>
+              <div class="val num" id="kRisk">-</div>
+              <div class="tiny">avg</div>
+            </div>
+            <div class="kpi">
+              <div class="lab">positive</div>
+              <div class="val num" id="kPos">-</div>
+              <div class="tiny">avg</div>
+            </div>
+            <div class="kpi">
+              <div class="lab">uncertainty</div>
+              <div class="val num" id="kUnc">-</div>
+              <div class="tiny">avg</div>
+            </div>
+            <div class="kpi" style="grid-column: span 3;">
+              <div class="lab">note</div>
+              <div class="val small" id="kNote">-</div>
+              <div class="tiny" id="kNote2">-</div>
+            </div>
+          </div>
+
+          <div class="controls">
+            <input class="search" id="q" placeholder="search (title/source)" />
+            <select class="sel" id="srcSel">
+              <option value="__ALL__">All</option>
+            </select>
+            <select class="sel" id="sortSel">
+              <option value="risk_desc">risk ↓</option>
+              <option value="pos_desc">positive ↓</option>
+              <option value="unc_desc">uncertainty ↓</option>
+              <option value="net_asc">net ↑ (more negative)</option>
+              <option value="net_desc">net ↓ (more positive)</option>
+            </select>
+            <label class="chk">
+              <input type="checkbox" id="showMissing" checked />
+              show missing
+            </label>
+          </div>
+
+          <div class="note" id="debug">debug: -</div>
+
+          <div class="card" style="margin-top:12px">
+            <div class="inner">
+              <h2>Sentiment Trend</h2>
+              <canvas id="trend" height="200"></canvas>
+              <div class="footerNote">※ risk / positive / uncertainty を各段で独立スケール描画。</div>
+            </div>
           </div>
         </div>
-      </aside>
+      </div>
+
+      <div class="card">
+        <div class="inner">
+          <div class="row">
+            <h2>How it works</h2>
+            <span class="pill"><span class="led" id="ledDbg"></span><span id="dbg2">debug2: -</span></span>
+          </div>
+          <div class="how" id="how">
+How it works
+
+1) GET /analysis/sentiment_latest.json（主）
+2) meta は root/world_politics/static から「取れるもの全部」を集めて合成
+3) join は 2段階:
+   - URL 正規化して一致 → 一致
+   - ダメなら title 一致（救済）
+4) サムネ: meta(og/image/urlToImage) → sentiment本体 → favicon（最終）
+5) 画像が 403/404 等で読めない場合は onerror で favicon に自動フォールバック
+          </div>
+        </div>
+      </div>
     </div>
-  </main>
 
-  <script>
-    function uniq(arr){
-      const out = [];
-      const seen = new Set();
-      for (const x of arr){
-        if (!x) continue;
-        if (seen.has(x)) continue;
-        seen.add(x);
-        out.push(x);
+    <div class="sectionTitle">Articles &amp; Sentiment</div>
+    <div class="tableWrap">
+      <div class="inner" style="padding:12px 14px 10px">
+        <div class="row" style="gap:12px">
+          <div class="muted small" id="metaLine">sent: - / meta_used: - / joined: -</div>
+          <div class="mini">
+            <span class="tag"><strong>joined</strong>: <span class="num" id="joinedN">0</span> / <span class="num" id="totalN">0</span></span>
+          </div>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:44px">thumb</th>
+            <th>title</th>
+            <th style="width:110px">status</th>
+            <th class="right" style="width:90px">risk</th>
+            <th class="right" style="width:90px">positive</th>
+            <th class="right" style="width:100px">uncertainty</th>
+            <th class="right" style="width:90px">net</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+(function(){
+  "use strict";
+
+  function fmt(x, d=6){
+    if (x == null || !isFinite(x)) return "-";
+    return Number(x).toFixed(d);
+  }
+  function esc(s){
+    return String(s ?? "").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
+  }
+
+  function normalizeUrlVariants(url){
+    const out = [];
+    const add = (s) => {
+      s = String(s || "").trim();
+      if (!s) return;
+      s = s.replace(/#.*$/, "");
+      s = s.replace(/\s+/g, "");
+      s = s.replace(/\/$/, "");
+      if (!out.includes(s)) out.push(s);
+    };
+
+    if (!url) return out;
+    add(url);
+
+    try{
+      try{ add(decodeURIComponent(url)); }catch(_){}
+
+      const u = new URL(url);
+
+      const uNoQ = new URL(u.toString());
+      uNoQ.search = "";
+      uNoQ.hash = "";
+      add(uNoQ.toString());
+
+      const uSoft = new URL(u.toString());
+      const params = new URLSearchParams(uSoft.search);
+      for (const k of Array.from(params.keys())){
+        if (k.toLowerCase().startsWith("utm_")) params.delete(k);
       }
-      return out;
+      uSoft.search = params.toString();
+      uSoft.hash = "";
+      add(uSoft.toString());
+
+      const uW = new URL(uNoQ.toString());
+      uW.hostname = uW.hostname.replace(/^www\./i, "");
+      add(uW.toString());
+
+      const uHttps = new URL(uW.toString());
+      uHttps.protocol = "https:";
+      add(uHttps.toString());
+
+      add((uW.hostname.replace(/^www\./i,"") + uW.pathname).toLowerCase());
+
+      const ampPath = uW.pathname.replace(/\/amp\/?$/i, "").replace(/\/amp$/i, "");
+      if (ampPath !== uW.pathname){
+        add((uW.hostname.replace(/^www\./i,"") + ampPath).toLowerCase());
+      }
+
+      const uW2 = new URL(uSoft.toString());
+      uW2.hostname = uW2.hostname.replace(/^www\./i, "");
+      add((uW2.hostname + uW2.pathname).toLowerCase());
+    }catch(e){
+      const s = String(url).trim();
+      add(s.replace(/\?.*$/, ""));
+      add(s.replace(/\?.*$/, "").toLowerCase());
     }
 
-    // ★ sentimentで実績が出た入口を最優先に固定
-    // そのうえで環境差（/static配下など）も吸収
-    function buildViewModelUrls(){
-      const roots = ["", "/analysis", "/data", "/static", "/static/analysis", "/static/data"];
+    for (const s of out.slice()){
+      add(s.toLowerCase());
+    }
+    return out;
+  }
 
-      // 最優先：今回当たった
-      const preferred = ["/analysis/view_model_latest.json"];
+  function normalizeTitle(title){
+    let s = String(title || "").trim();
+    if (!s) return "";
+    s = s.replace(/\s+[-–—|｜]\s+[^-–—|｜]{2,}$/u, "");
+    s = s.replace(/\s+\|\s+.+$/u, "");
+    s = s.replace(/\s+—\s+.+$/u, "");
+    s = s.replace(/\s+–\s+.+$/u, "");
+    s = s.replace(/\s+-\s+.+$/u, "");
+    s = s.toLowerCase();
+    s = s.replace(/[“”„‟＂"]/g, '"');
+    s = s.replace(/[’‘‛＇']/g, "'");
+    s = s.replace(/[^\p{L}\p{N}]+/gu, " ");
+    s = s.replace(/\s+/g, " ").trim();
+    return s;
+  }
 
-      const vmPaths = [
-        "view_model_latest.json",
-        "world_politics/analysis/view_model_latest.json",
-        "world_politics/view_model_latest.json",
-        "digest/view_model_latest.json",
-        "digest/view/view_model_latest.json",
+  function pickAny(obj, keys){
+    for (const k of keys){
+      if (obj && typeof obj === "object" && obj[k]) return obj[k];
+    }
+    return null;
+  }
+  function faviconFromUrl(url){
+    try{ const u = new URL(url); return u.origin + "/favicon.ico"; }catch(e){ return ""; }
+  }
+
+  async function fetchText(path){
+    const r = await fetch(path, { cache:"no-store" });
+    if (!r.ok) throw new Error("HTTP " + r.status + " " + path);
+    return await r.text();
+  }
+  async function fetchJson(path){
+    const t = await fetchText(path);
+    return JSON.parse(t);
+  }
+  async function fetchJsonOptional(path){
+    try{
+      const j = await fetchJson(path);
+      return { ok:true, path, json:j };
+    }catch(e){
+      return { ok:false, path, err:e };
+    }
+  }
+  async function fetchJsonlOptional(path){
+    try{
+      const t = await fetchText(path);
+      const items = [];
+      for (const line of t.split(/\r?\n/)){
+        const s = (line||"").trim();
+        if (!s) continue;
+        try{ items.push(JSON.parse(s)); }catch(_){}
+      }
+      if (items.length === 0) throw new Error("jsonl empty " + path);
+      return { ok:true, path, items };
+    }catch(e){
+      return { ok:false, path, err:e };
+    }
+  }
+
+  function asArrayFromJson(d){
+    if (!d) return [];
+    if (Array.isArray(d)) return d;
+    if (typeof d !== "object") return [];
+    for (const k of ["articles","items","data","rows","results","events"]){
+      const v = d[k];
+      if (Array.isArray(v)) return v;
+    }
+    return [];
+  }
+
+  function normalizeMetaItem(x){
+    if (!x || typeof x !== "object") return null;
+
+    const inner =
+      (x.article && typeof x.article === "object" ? x.article : null) ||
+      (x.raw && typeof x.raw === "object" ? x.raw : null) ||
+      (x.data && typeof x.data === "object" ? x.data : null) ||
+      (x.item && typeof x.item === "object" ? x.item : null) ||
+      x;
+
+    const url =
+      inner.url || inner.link || inner.href || inner.id ||
+      x.url || x.link || x.href || x.id || "";
+
+    const title =
+      inner.title || inner.headline || inner.name ||
+      x.title || x.headline || x.name || "";
+
+    const source =
+      (inner.source && (inner.source.name || inner.source.id)) ||
+      inner.source || inner.publisher || inner.site ||
+      (x.source && (x.source.name || x.source.id)) ||
+      x.source || x.publisher || x.site || "";
+
+    const image =
+      pickAny(inner, ["urlToImage","image","image_url","imageUrl","thumbnail","thumbnail_url","thumb","thumb_url","media","og_image","ogImage"]) ||
+      (inner.meta && pickAny(inner.meta, ["image","thumbnail","og_image","ogImage","urlToImage"])) ||
+      (x.meta && pickAny(x.meta, ["image","thumbnail","og_image","ogImage","urlToImage"])) ||
+      (inner.images && Array.isArray(inner.images) && inner.images[0] ? (inner.images[0].url || inner.images[0]) : "") ||
+      "";
+
+    return { url, title, source, image };
+  }
+
+  function buildMetaMap(items){
+    const byUrl = new Map();
+    const byTitle = new Map();
+    let count = 0;
+
+    for (const raw of items){
+      const it = normalizeMetaItem(raw);
+      if (!it) continue;
+      count++;
+
+      for (const k of normalizeUrlVariants(it.url)){
+        if (k && !byUrl.has(k)) byUrl.set(k, it);
+      }
+
+      const kt = normalizeTitle(it.title);
+      if (kt && !byTitle.has(kt)) byTitle.set(kt, it);
+    }
+    return { byUrl, byTitle, count };
+  }
+
+  function joinSentWithMeta(sentArr, metaArr){
+    const map = buildMetaMap(metaArr);
+    const joined = [];
+    let joined_url=0, joined_title=0;
+
+    for (const s of sentArr){
+      const it = Object.assign({}, s);
+
+      let meta = null;
+
+      const sUrl = s.url || s.link || s.href || (s.article && s.article.url) || "";
+      const sUrlKeys = normalizeUrlVariants(sUrl);
+      for (const k of sUrlKeys){
+        if (map.byUrl.has(k)){
+          meta = map.byUrl.get(k);
+          joined_url++;
+          break;
+        }
+      }
+
+      if (!meta){
+        const st = normalizeTitle(s.title || s.headline || s.name || (s.article && s.article.title) || "");
+        if (st && map.byTitle.has(st)){
+          meta = map.byTitle.get(st);
+          joined_title++;
+        }
+      }
+
+      it._meta = meta || {};
+      joined.push(it);
+    }
+    return { joined, joined_url, joined_title, meta_count: map.count };
+  }
+
+  function parseCsvTimeseries(csvText){
+    const lines = (csvText || "").split(/\r?\n/).filter(x=>x.trim().length>0);
+    if (lines.length < 2) return [];
+    const header = lines[0].split(",").map(s=>s.trim());
+    const idxDate = header.indexOf("date");
+    const idxRisk = header.indexOf("risk");
+    const idxPos  = header.indexOf("positive");
+    const idxUnc  = header.indexOf("uncertainty");
+    const out = [];
+    for (let i=1;i<lines.length;i++){
+      const cols = lines[i].split(",");
+      const date = (cols[idxDate]||"").trim();
+      if (!date) continue;
+      out.push({
+        date,
+        risk: Number(cols[idxRisk]||0),
+        pos:  Number(cols[idxPos]||0),
+        unc:  Number(cols[idxUnc]||0),
+      });
+    }
+    return out;
+  }
+
+  function drawTrend(canvas, rows){
+    const ctx = canvas.getContext("2d");
+    const cw = canvas.clientWidth || 600;
+    const ch = canvas.clientHeight || 200;
+    const w = canvas.width = Math.max(1, cw) * devicePixelRatio;
+    const h = canvas.height = Math.max(1, ch) * devicePixelRatio;
+    ctx.clearRect(0,0,w,h);
+
+    ctx.lineWidth = 1.2*devicePixelRatio;
+    ctx.font = `${11*devicePixelRatio}px ${getComputedStyle(document.body).fontFamily}`;
+
+    if (!rows || rows.length === 0){
+      ctx.globalAlpha = .6;
+      ctx.fillText("timeseries not found", 18*devicePixelRatio, 28*devicePixelRatio);
+      ctx.globalAlpha = 1;
+      return;
+    }
+
+    const pad = 18*devicePixelRatio;
+    const gap = 10*devicePixelRatio;
+    const bandH = (h - pad*2 - gap*2) / 3;
+
+    const maxX = rows.length - 1;
+
+    function drawBand(y0, arr, label){
+      const maxV = Math.max(1e-9, ...arr);
+      const minV = Math.min(0, ...arr);
+      const yy = v => y0 + bandH - (v - minV) / (maxV - minV || 1) * bandH;
+
+      ctx.globalAlpha = .35;
+      ctx.strokeRect(pad, y0, w-pad*2, bandH);
+
+      ctx.globalAlpha = .7;
+      ctx.fillText(label, pad, y0 + 12*devicePixelRatio);
+
+      ctx.globalAlpha = 1;
+      ctx.beginPath();
+      for (let i=0;i<arr.length;i++){
+        const x = pad + (w-pad*2) * (i / (maxX||1));
+        const y = yy(arr[i]);
+        if (i===0) ctx.moveTo(x,y);
+        else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+
+      ctx.globalAlpha = .8;
+      ctx.fillText("max: " + maxV.toFixed(6), w - pad - 110*devicePixelRatio, y0 + 12*devicePixelRatio);
+      ctx.fillText(rows[0].date, pad, y0 + bandH - 6*devicePixelRatio);
+      ctx.fillText(rows[rows.length-1].date, w - pad - 70*devicePixelRatio, y0 + bandH - 6*devicePixelRatio);
+      ctx.globalAlpha = 1;
+    }
+
+    drawBand(pad, rows.map(r=>r.risk), "risk");
+    drawBand(pad + bandH + gap, rows.map(r=>r.pos), "positive");
+    drawBand(pad + (bandH+gap)*2, rows.map(r=>r.unc), "uncertainty");
+  }
+
+  const el = {
+    asofText: document.getElementById("asofText"),
+    btnReload: document.getElementById("btnReload"),
+    btnReset: document.getElementById("btnReset"),
+    btnOpenVM: document.getElementById("btnOpenVM"),
+    btnOpenSent: document.getElementById("btnOpenSent"),
+    btnOpenTS: document.getElementById("btnOpenTS"),
+    q: document.getElementById("q"),
+    srcSel: document.getElementById("srcSel"),
+    sortSel: document.getElementById("sortSel"),
+    showMissing: document.getElementById("showMissing"),
+    debug: document.getElementById("debug"),
+    dbg2: document.getElementById("dbg2"),
+    ledDbg: document.getElementById("ledDbg"),
+
+    kAsOf: document.getElementById("kAsOf"),
+    kN: document.getElementById("kN"),
+    kRisk: document.getElementById("kRisk"),
+    kPos: document.getElementById("kPos"),
+    kUnc: document.getElementById("kUnc"),
+    kNote: document.getElementById("kNote"),
+    kNote2: document.getElementById("kNote2"),
+
+    metaItemsN: document.getElementById("metaItemsN"),
+    sentItemsN: document.getElementById("sentItemsN"),
+    metaLine: document.getElementById("metaLine"),
+    joinedN: document.getElementById("joinedN"),
+    totalN: document.getElementById("totalN"),
+    tbody: document.getElementById("tbody"),
+    trend: document.getElementById("trend"),
+  };
+
+  let sentItems = [];
+  let joinedItems = [];
+  let as_of = "-";
+  let meta_used = "-";
+
+  function setDebug(text){ el.debug.textContent = text; }
+  function fillAsOfPill(a){ el.asofText.textContent = "as_of: " + (a || "-"); }
+
+  function renderSources(items){
+    const set = new Map();
+    for (const it of items){
+      const raw = it.source ?? (it._meta && it._meta.source) ?? "";
+      const src = (typeof raw === "object" && raw) ? (raw.name || raw.id || "") : String(raw || "");
+      const s = src.trim();
+      if (!s) continue;
+      set.set(s, (set.get(s) || 0) + 1);
+    }
+    const arr = Array.from(set.entries()).sort((a,b)=>b[1]-a[1]);
+    el.srcSel.innerHTML = `<option value="__ALL__">All</option>` + arr.map(([s,n])=>`<option value="${esc(s)}">${esc(s)} (${n})</option>`).join("");
+  }
+
+  function statusBadge(it){
+    const risk = Number(it.risk||0);
+    const pos  = Number(it.positive||it.pos||0);
+    const net  = Number(it.net||0);
+    let cls="neu", label="neutral";
+    if (risk > pos && net < 0) { cls="risk"; label="risk"; }
+    else if (pos > risk && net > 0) { cls="pos"; label="pos"; }
+    return `<span class="badge ${cls}"><span class="b"></span>${label}</span>`;
+  }
+
+  function numClass(x){
+    if (!isFinite(x)) return "";
+    if (x < 0) return "neg";
+    if (x > 0) return "pos";
+    return "";
+  }
+
+  function countJoined(items){
+    let c=0;
+    for (const it of items){
+      if (it._meta && (it._meta.url || it._meta.title || it._meta.image)) c++;
+    }
+    return c;
+  }
+
+  function pickThumbUrl(it, meta){
+    const sentImg = pickAny(it, ["urlToImage","image","image_url","imageUrl","thumbnail","thumb","og_image","ogImage"]);
+    const metaImg = meta && (meta.image || meta.urlToImage || meta.thumbnail || meta.og_image || "");
+    return String(metaImg || sentImg || "").trim();
+  }
+
+  function thumbHtml(url, imgUrl){
+    const fav = url ? faviconFromUrl(url) : "";
+    const img = String(imgUrl || "").trim();
+    if (img){
+      const fallback = esc(fav);
+      return `<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer"
+        onerror="this.onerror=null;${fallback ? `this.src='${fallback}';` : `this.remove();`}">`;
+    }
+    return fav ? `<img src="${esc(fav)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : "";
+  }
+
+  function renderTable(){
+    const q = el.q.value.trim().toLowerCase();
+    const srcSel = el.srcSel.value;
+    const sort = el.sortSel.value;
+    const showMissing = el.showMissing.checked;
+
+    let items = joinedItems.slice();
+
+    if (!showMissing){
+      items = items.filter(it => it._meta && (it._meta.url || it._meta.title || it._meta.image));
+    }
+    if (q){
+      items = items.filter(it => {
+        const t = (it.title||"").toLowerCase();
+        const raw = it.source ?? (it._meta && it._meta.source) ?? "";
+        const s = (typeof raw === "object" && raw) ? (raw.name || raw.id || "") : String(raw || "");
+        return t.includes(q) || s.toLowerCase().includes(q);
+      });
+    }
+    if (srcSel !== "__ALL__"){
+      items = items.filter(it => {
+        const raw = it.source ?? (it._meta && it._meta.source) ?? "";
+        const s = (typeof raw === "object" && raw) ? (raw.name || raw.id || "") : String(raw || "");
+        return s === srcSel;
+      });
+    }
+
+    function getSortVal(it){
+      const r = Number(it.risk||0);
+      const p = Number(it.positive||it.pos||0);
+      const u = Number(it.uncertainty||it.unc||0);
+      const n = Number(it.net||0);
+      if (sort === "risk_desc") return -r;
+      if (sort === "pos_desc") return -p;
+      if (sort === "unc_desc") return -u;
+      if (sort === "net_asc") return n;
+      if (sort === "net_desc") return -n;
+      return 0;
+    }
+    items.sort((a,b)=>getSortVal(a)-getSortVal(b));
+
+    el.tbody.innerHTML = items.map(it=>{
+      const meta = it._meta || {};
+      const url = it.url || meta.url || "";
+      const title = it.title || meta.title || "(no title)";
+      const rawSrc = it.source ?? meta.source ?? "";
+      const source = (typeof rawSrc === "object" && rawSrc) ? (rawSrc.name || rawSrc.id || "") : String(rawSrc || "");
+
+      const img = pickThumbUrl(it, meta);
+      const thumb = thumbHtml(url, img);
+
+      const risk = Number(it.risk||0);
+      const pos  = Number(it.positive||it.pos||0);
+      const unc  = Number(it.uncertainty||it.unc||0);
+      const net  = Number(it.net||0);
+
+      return `<tr>
+        <td><div class="thumb">${thumb}</div></td>
+        <td>
+          <div class="title"><a href="${esc(url)}" target="_blank" rel="noopener">${esc(title)}</a></div>
+          <div class="src">${esc(source)}</div>
+        </td>
+        <td>${statusBadge(it)}</td>
+        <td class="right num">${fmt(risk,6)}</td>
+        <td class="right num">${fmt(pos,6)}</td>
+        <td class="right num">${fmt(unc,6)}</td>
+        <td class="right num ${numClass(net)}">${fmt(net,6)}</td>
+      </tr>`;
+    }).join("");
+
+    const joinedCount = countJoined(items);
+    el.metaLine.textContent = `sent: /analysis/sentiment_latest.json / meta_used: ${meta_used} / joined: ${joinedCount} / total: ${items.length}`;
+    el.joinedN.textContent = String(joinedCount);
+    el.totalN.textContent = String(items.length);
+  }
+
+  async function boot(){
+    try{
+      el.ledDbg.style.background = "#3ddc84";
+      el.dbg2.textContent = "debug2: loading...";
+      setDebug("debug: loading...");
+
+      const SENT_CAND = [
+        "/analysis/sentiment_latest.json",
+        "/analysis/world_politics/analysis/sentiment_latest.json",
+        "/static/analysis/sentiment_latest.json",
+        "/static/analysis/world_politics/analysis/sentiment_latest.json",
       ];
 
-      const out = [];
-      out.push(...preferred);
-
-      for (const r of roots){
-        for (const p of vmPaths){
-          out.push((r || "") + "/" + p);
-        }
-      }
-      return uniq(out.map(u => u.replaceAll("//","/")));
-    }
-
-    const VIEWMODEL_URLS = buildViewModelUrls();
-
-    const HEALTH_URLS = [
-      "/analysis/health_latest.json",
-      "/data/health_latest.json",
-      "/health_latest.json",
-      "/analysis/data_health_latest.json",
-      "/data/data_health_latest.json",
-      "/static/health_latest.json",
-      "/static/analysis/health_latest.json",
-      "/static/data/health_latest.json",
-    ];
-
-    async function fetchFirstJson(urls){
-      let lastErr = null;
-      for (const url of urls){
-        try{
-          const res = await fetch(url, { cache: "no-store" });
-          if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-          const json = await res.json();
-          return { url, json };
-        }catch(e){
-          lastErr = { url, error: e };
-        }
-      }
-      throw lastErr || new Error("no candidate urls");
-    }
-
-    function setText(id, v){
-      const el = document.getElementById(id);
-      if (el) el.textContent = (v ?? "--");
-    }
-
-    function escapeHtml(str){
-      return String(str)
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
-    }
-
-    function guessAsOf(obj){
-      return obj?.as_of
-        || obj?.asOf
-        || obj?.generated_at
-        || obj?.generatedAt
-        || obj?.meta?.as_of
-        || obj?.meta?.generated_at
-        || obj?.date
-        || "--";
-    }
-
-    function showErr(msg){
-      const box = document.getElementById("errBox");
-      box.innerHTML = `<div class="err">${escapeHtml(msg)}</div>`;
-    }
-
-    function pickSummary(vm){
-      return vm?.daily_summary
-          || vm?.summary
-          || vm?.data?.daily_summary
-          || vm?.data?.summary
-          || vm?.latest_summary
-          || "";
-    }
-
-    function pickBullets(vm){
-      return vm?.bullets
-          || vm?.highlights
-          || vm?.key_points
-          || vm?.data?.bullets
-          || vm?.data?.highlights
-          || [];
-    }
-
-    function pickHealthCounts(h){
-      const c = h?.counts || h?.count || h?.summary || h || {};
-      const ok = c.OK ?? c.ok ?? c.Ok ?? c.ok_count ?? null;
-      const warn = c.WARN ?? c.warn ?? c.Warn ?? c.warn_count ?? null;
-      const ng = c.NG ?? c.ng ?? c.Ng ?? c.ng_count ?? null;
-      return { ok, warn, ng };
-    }
-
-    (async function main(){
-      // 1) ViewModel
-      try{
-        const { url, json } = await fetchFirstJson(VIEWMODEL_URLS);
-        const asOf = guessAsOf(json);
-        setText("asOfText", asOf);
-        setText("srcInfo", `source: ${url}`);
-        setText("snapInfo", `as_of: ${asOf}`);
-
-        const summary = pickSummary(json);
-        const bullets = pickBullets(json);
-
-        const summaryBox = document.getElementById("summaryBox");
-        summaryBox.innerHTML = summary
-          ? escapeHtml(String(summary)).replaceAll("\n","<br>")
-          : `<span class="muted">summary not found</span>`;
-
-        const ul = document.getElementById("bullets");
-        if (Array.isArray(bullets) && bullets.length){
-          ul.innerHTML = bullets.slice(0, 8).map(x => `<li>${escapeHtml(String(x))}</li>`).join("");
+      let sentPath = null;
+      let sentJson = null;
+      const sentErrs = [];
+      for (const p of SENT_CAND){
+        const r = await fetchJsonOptional(p);
+        if (r.ok){
+          sentPath = r.path;
+          sentJson = r.json;
+          break;
         }else{
-          ul.innerHTML = `<li class="muted">highlights not found</li>`;
+          sentErrs.push(r.path);
         }
-      }catch(e){
-        setText("asOfText", "--");
-        setText("srcInfo", "source: load error");
-        setText("snapInfo", "load error");
-
-        const summaryBox = document.getElementById("summaryBox");
-        summaryBox.innerHTML = `<span class="muted">view model load failed</span>`;
-        const ul = document.getElementById("bullets");
-        ul.innerHTML = `<li class="muted">—</li>`;
-
-        showErr(`view model load failed. last tried: ${e?.url || "?"} / ${String(e?.error || e)}`);
+      }
+      if (!sentJson){
+        el.dbg2.textContent = "debug2: FAIL(sent)";
+        el.ledDbg.style.background = "#ff6b6b";
+        setDebug("sentiment load failed:\n" + sentErrs.join("\n"));
+        joinedItems = [];
+        renderSources([]);
+        renderTable();
+        return;
       }
 
-      // 2) Health
-      try{
-        const { url, json } = await fetchFirstJson(HEALTH_URLS);
-        setText("healthInfo", `source: ${url}`);
-
-        const { ok, warn, ng } = pickHealthCounts(json);
-        setText("okVal", ok ?? "--");
-        setText("warnVal", warn ?? "--");
-        setText("ngVal", ng ?? "--");
-      }catch(e){
-        setText("healthInfo", "source: load error");
-        setText("okVal", "--");
-        setText("warnVal", "--");
-        setText("ngVal", "--");
-
-        const prev = document.getElementById("errBox").innerHTML;
-        const msg = `health load failed. last tried: ${e?.url || "?"} / ${String(e?.error || e)}`;
-        if (!prev) showErr(msg);
+      sentItems = asArrayFromJson(sentJson);
+      if (!Array.isArray(sentItems) || sentItems.length === 0){
+        el.dbg2.textContent = "debug2: FAIL(sent array)";
+        el.ledDbg.style.background = "#ff6b6b";
+        setDebug("sentiment parsed but array empty (unexpected shape)");
+        joinedItems = [];
+        renderSources([]);
+        renderTable();
+        return;
       }
-    })();
-  </script>
+
+      sentItems = sentItems.map(x=>{
+        const o = Object.assign({}, x);
+        if (o.positive == null && o.pos != null) o.positive = o.pos;
+        if (o.uncertainty == null && o.unc != null) o.uncertainty = o.unc;
+        if (!o._meta) o._meta = {};
+        return o;
+      });
+
+      joinedItems = sentItems.map(s => Object.assign({}, s, { _meta: s._meta || {} }));
+
+      as_of = (sentItems[0] && (sentItems[0].as_of || sentItems[0].date)) || "-";
+      fillAsOfPill(as_of);
+
+      const avg = (arr, key) => {
+        let s=0,c=0;
+        for (const it of arr){ const v = Number(it[key]); if (isFinite(v)){ s+=v; c++; } }
+        return c? s/c : 0;
+      };
+
+      el.kAsOf.textContent = as_of;
+      el.kN.textContent = String(sentItems.length);
+      el.sentItemsN.textContent = String(sentItems.length);
+      el.kRisk.textContent = fmt(avg(sentItems,"risk"),6);
+      el.kPos.textContent  = fmt(avg(sentItems,"positive"),6);
+      el.kUnc.textContent  = fmt(avg(sentItems,"uncertainty"),6);
+      el.kNote.textContent = "join: url variants → title normalize / meta: merge all candidates (anti-regression)";
+      el.kNote2.textContent = "";
+
+      (async ()=>{
+        try{
+          const TS_CAND = [
+            "/analysis/sentiment_timeseries.csv",
+            "/analysis/world_politics/analysis/sentiment_timeseries.csv",
+            "/static/analysis/sentiment_timeseries.csv",
+            "/static/analysis/world_politics/analysis/sentiment_timeseries.csv",
+          ];
+          let text = null;
+          for (const p of TS_CAND){
+            try{ text = await fetchText(p); break; }catch(_){}
+          }
+          const rows = text ? parseCsvTimeseries(text) : [];
+          drawTrend(el.trend, rows);
+        }catch(e){
+          drawTrend(el.trend, []);
+        }
+      })();
+
+      const META_JSON_CAND = [
+        "/analysis/daily_news_categorized_latest.json",
+        "/analysis/daily_news_latest.json",
+
+        "/analysis/world_politics/analysis/daily_news_categorized_latest.json",
+        "/analysis/world_politics/analysis/daily_news_latest.json",
+
+        "/static/analysis/daily_news_categorized_latest.json",
+        "/static/analysis/daily_news_latest.json",
+
+        "/static/analysis/world_politics/analysis/daily_news_categorized_latest.json",
+        "/static/analysis/world_politics/analysis/daily_news_latest.json",
+      ];
+
+      const META_JSONL_CAND = [
+        `/analysis/events_${as_of}.jsonl`,
+        `/analysis/world_politics/analysis/events_${as_of}.jsonl`,
+        `/static/analysis/events_${as_of}.jsonl`,
+        `/static/analysis/world_politics/analysis/events_${as_of}.jsonl`,
+      ];
+
+      const metaItemsAll = [];
+      const metaOkPaths = [];
+      const metaNgPaths = [];
+
+      for (const p of META_JSON_CAND){
+        const r = await fetchJsonOptional(p);
+        if (r.ok){
+          const arr = asArrayFromJson(r.json);
+          if (arr && arr.length){
+            metaItemsAll.push(...arr);
+            metaOkPaths.push(`${p}(${arr.length})`);
+          }else{
+            metaNgPaths.push(`${p}(empty)`);
+          }
+        }else{
+          metaNgPaths.push(`${p}(fail)`);
+        }
+      }
+
+      for (const p of META_JSONL_CAND){
+        const r = await fetchJsonlOptional(p);
+        if (r.ok){
+          metaItemsAll.push(...r.items);
+          metaOkPaths.push(`${p}(${r.items.length})`);
+        }else{
+          metaNgPaths.push(`${p}(fail)`);
+        }
+      }
+
+      const seen = new Set();
+      const metaDedup = [];
+      for (const raw of metaItemsAll){
+        const it = normalizeMetaItem(raw);
+        if (!it) continue;
+        const keys = normalizeUrlVariants(it.url);
+        const k = keys[0] || (normalizeTitle(it.title) ? "T:" + normalizeTitle(it.title) : "");
+        if (!k) continue;
+        if (seen.has(k)) continue;
+        seen.add(k);
+        metaDedup.push(raw);
+      }
+
+      meta_used = metaOkPaths.length ? metaOkPaths.join(" + ") : "-";
+      el.metaItemsN.textContent = String(metaDedup.length);
+
+      if (metaDedup.length > 0){
+        const j = joinSentWithMeta(sentItems, metaDedup);
+        joinedItems = j.joined;
+
+        setDebug(
+          [
+            "debug2: ok",
+            `sent=${sentPath}`,
+            `meta_used=${meta_used}`,
+            `meta_ng=${metaNgPaths.length}`,
+            `metaItems(merged)=${metaItemsAll.length} metaItems(dedup)=${metaDedup.length}`,
+            `sentItems=${sentItems.length} joined=${j.joined_url + j.joined_title} (url=${j.joined_url}, title=${j.joined_title})`,
+          ].join("\n")
+        );
+        el.dbg2.textContent = "debug2: ok";
+        el.ledDbg.style.background = "#3ddc84";
+      }else{
+        setDebug(
+          [
+            "debug2: ok (meta missing → sentiment only)",
+            `sent=${sentPath}`,
+            `meta_used=${meta_used}`,
+            `meta_ng=${metaNgPaths.length}`,
+            `metaItems=0 sentItems=${sentItems.length} joined=0`,
+          ].join("\n")
+        );
+        el.dbg2.textContent = "debug2: ok (meta missing)";
+        el.ledDbg.style.background = "#fbbf24";
+      }
+
+      renderSources(joinedItems);
+      renderTable();
+
+    }catch(e){
+      el.dbg2.textContent = "debug2: BOOT ERROR";
+      el.ledDbg.style.background = "#ff6b6b";
+      setDebug("BOOT ERROR:\n" + (e && e.stack ? e.stack : String(e)));
+      joinedItems = (sentItems && sentItems.length) ? sentItems.map(s=>Object.assign({}, s, { _meta: s._meta || {} })) : [];
+      renderSources(joinedItems);
+      renderTable();
+    }
+  }
+
+  el.btnReload.addEventListener("click", ()=>boot());
+  el.btnReset.addEventListener("click", ()=>{
+    el.q.value = "";
+    el.srcSel.value = "__ALL__";
+    el.sortSel.value = "risk_desc";
+    el.showMissing.checked = true;
+    renderTable();
+  });
+
+  el.q.addEventListener("input", ()=>renderTable());
+  el.srcSel.addEventListener("change", ()=>renderTable());
+  el.sortSel.addEventListener("change", ()=>renderTable());
+  el.showMissing.addEventListener("change", ()=>renderTable());
+
+  el.btnOpenVM.addEventListener("click", ()=>window.open("/analysis/view_model_latest.json", "_blank", "noopener"));
+  el.btnOpenSent.addEventListener("click", ()=>window.open("/analysis/sentiment_latest.json", "_blank", "noopener"));
+  el.btnOpenTS.addEventListener("click", ()=>window.open("/analysis/sentiment_timeseries.csv", "_blank", "noopener"));
+
+  boot();
+})();
+</script>
 </body>
 </html>
