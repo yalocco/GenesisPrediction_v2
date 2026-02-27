@@ -1,670 +1,492 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="dark"/>
   <title>LABOS / Index</title>
 
-  <!-- project global css (if exists) -->
-  <link rel="stylesheet" href="./app.css" />
+  <link rel="stylesheet" href="/static/app.css?v=081867"/>
 
   <style>
+    /* index.html 側にある最小の補助スタイル（既存の雰囲気を維持） */
     :root{
-      --bg0:#050a16;
-      --bg1:#07102a;
-      --card: rgba(255,255,255,.06);
-      --card2: rgba(255,255,255,.08);
-      --bd: rgba(255,255,255,.10);
-      --txt: rgba(255,255,255,.92);
-      --mut: rgba(255,255,255,.65);
-      --mut2: rgba(255,255,255,.50);
-      --accent:#8b5cf6;
-      --ok:#22c55e;
+      --bg0:#070b14;
+      --bg1:#0b1020;
+      --panel:#101a33;
+      --panel2:#0f172a;
+      --border:rgba(255,255,255,.08);
+      --text:rgba(255,255,255,.92);
+      --muted:rgba(255,255,255,.65);
+      --muted2:rgba(255,255,255,.45);
+      --accent:#7c3aed;
+      --accent2:#22c55e;
       --warn:#fbbf24;
       --ng:#ef4444;
-      --shadow: 0 18px 45px rgba(0,0,0,.45);
-      --r:16px;
-      --r2:22px;
-      --w: 1080px;
+      --ok:#22c55e;
+      --shadow:0 22px 70px rgba(0,0,0,.55);
+      --r:22px;
     }
-
-    html,body{ height:100%; }
     body{
       margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      background: radial-gradient(1200px 800px at 25% 12%, rgba(139,92,246,.22), transparent 60%),
-                  radial-gradient(900px 700px at 70% 25%, rgba(59,130,246,.18), transparent 58%),
-                  linear-gradient(180deg, var(--bg1), var(--bg0) 52%, #040812);
-      color: var(--txt);
+      background:
+        radial-gradient(1000px 700px at 25% 0%, rgba(124,58,237,.25), transparent 60%),
+        radial-gradient(1000px 700px at 85% 10%, rgba(34,197,94,.10), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", Arial, "Apple Color Emoji","Segoe UI Emoji";
     }
+    a{ color:inherit; text-decoration:none; }
+    .wrap{ max-width:1180px; margin:0 auto; padding:18px 18px 60px; }
 
-    a{ color: inherit; text-decoration: none; }
-    .wrap{ max-width: var(--w); margin: 0 auto; padding: 18px 18px 46px; }
-
-    /* top bar */
-    .top{
+    .topbar{
       display:flex; align-items:center; justify-content:space-between;
-      padding: 10px 12px;
-      border: 1px solid rgba(255,255,255,.08);
-      background: rgba(0,0,0,.14);
+      gap:14px;
+      padding:14px 16px;
+      border:1px solid var(--border);
+      border-radius:999px;
+      background:rgba(15,23,42,.55);
       backdrop-filter: blur(10px);
-      border-radius: 999px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      box-shadow: 0 10px 40px rgba(0,0,0,.35);
     }
-    .brand{ display:flex; align-items:center; gap:10px; padding: 4px 8px; }
+    .brand{ display:flex; align-items:center; gap:12px; min-width:240px;}
     .logo{
-      width: 22px; height: 22px; border-radius: 8px;
-      background: radial-gradient(circle at 30% 25%, #67e8f9, #8b5cf6 55%, #0ea5e9 100%);
-      box-shadow: 0 10px 25px rgba(139,92,246,.25);
+      width:34px; height:34px; border-radius:12px;
+      background: radial-gradient(circle at 30% 30%, #60a5fa, #7c3aed 55%, #22c55e 120%);
+      box-shadow: 0 10px 30px rgba(124,58,237,.25);
     }
-    .btxt{ line-height:1.05; }
-    .btxt .t{ font-weight: 800; letter-spacing: .3px; font-size: 13px; }
-    .btxt .s{ font-size: 11px; color: var(--mut); font-weight: 600; }
+    .brand .t1{ font-weight:800; letter-spacing:.2px; }
+    .brand .t2{ font-size:12px; color:var(--muted); margin-top:2px; }
 
     .nav{
-      display:flex; gap:8px; align-items:center;
-      padding: 4px;
-      background: rgba(255,255,255,.04);
-      border: 1px solid rgba(255,255,255,.06);
-      border-radius: 999px;
+      display:flex; gap:10px;
+      padding:6px;
+      border:1px solid var(--border);
+      border-radius:999px;
+      background:rgba(10,16,32,.35);
     }
-    .pill{
-      display:inline-flex; align-items:center; gap:8px;
-      padding: 8px 14px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 700;
-      color: rgba(255,255,255,.80);
-      border: 1px solid transparent;
+    .nav a{
+      padding:10px 16px;
+      border-radius:999px;
+      color:var(--muted);
+      transition: .15s ease;
+      border:1px solid transparent;
     }
-    .pill:hover{
-      border-color: rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
-    }
-    .pill.on{
-      color: #fff;
-      background: rgba(139,92,246,.22);
-      border-color: rgba(139,92,246,.32);
-      box-shadow: 0 12px 24px rgba(139,92,246,.14);
+    .nav a:hover{ color:var(--text); background:rgba(255,255,255,.04); }
+    .nav a.active{
+      color:var(--text);
+      background:rgba(124,58,237,.18);
+      border-color: rgba(124,58,237,.35);
+      box-shadow: inset 0 0 0 1px rgba(124,58,237,.18);
     }
 
     .asof{
-      display:flex; align-items:center; gap:8px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.08);
-      background: rgba(0,0,0,.12);
-      color: rgba(255,255,255,.76);
-      font-size: 12px;
-      font-weight: 700;
-      white-space: nowrap;
+      display:flex; align-items:center; gap:10px;
+      padding:10px 14px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:rgba(15,23,42,.55);
+      min-width:240px;
+      justify-content:flex-end;
     }
     .dot{
-      width: 9px; height: 9px; border-radius: 999px;
-      background: rgba(255,255,255,.20);
-      box-shadow: 0 0 0 3px rgba(255,255,255,.06);
+      width:10px; height:10px; border-radius:999px;
+      background:var(--accent2);
+      box-shadow: 0 0 0 4px rgba(34,197,94,.15);
+      flex:0 0 auto;
     }
-    .dot.ok{ background: var(--ok); box-shadow: 0 0 0 3px rgba(34,197,94,.15); }
-    .dot.warn{ background: var(--warn); box-shadow: 0 0 0 3px rgba(251,191,36,.15); }
-    .dot.ng{ background: var(--ng); box-shadow: 0 0 0 3px rgba(239,68,68,.15); }
+    .asofText{ font-size:13px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-    /* title area */
-    .hero{ padding: 26px 8px 14px; }
-    .h1{ font-size: 22px; font-weight: 900; letter-spacing: .2px; }
-    .sub{ margin-top: 6px; color: var(--mut); font-size: 12px; font-weight: 650; display:flex; gap:10px; flex-wrap:wrap; }
-    .sub code{
-      padding: 2px 6px;
-      border-radius: 8px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.08);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 11px;
-      color: rgba(255,255,255,.78);
+    h1{
+      margin:26px 0 8px;
+      font-size:42px;
+      letter-spacing:.2px;
+    }
+    .sub{
+      color:var(--muted);
+      margin:0 0 20px;
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    }
+    .pill{
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.04);
+      font-size:12px;
+      color:var(--muted);
     }
 
-    /* grid */
     .grid{
       display:grid;
-      grid-template-columns: 1.3fr .9fr;
-      gap: 14px;
-      align-items: start;
+      grid-template-columns: 1.25fr .75fr;
+      gap:18px;
+      margin-top:18px;
     }
-    @media (max-width: 960px){
-      .grid{ grid-template-columns: 1fr; }
-      .asof{ display:none; }
+    @media (max-width: 980px){
+      .grid{ grid-template-columns:1fr; }
+      .brand{ min-width:unset; }
+      .asof{ min-width:unset; }
     }
 
     .card{
-      border-radius: var(--r2);
-      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
-      border: 1px solid rgba(255,255,255,.08);
+      border:1px solid var(--border);
+      border-radius:var(--r);
+      background:rgba(15,23,42,.45);
+      backdrop-filter: blur(10px);
       box-shadow: var(--shadow);
-      overflow: hidden;
+      overflow:hidden;
     }
-    .hd{
-      padding: 14px 16px 12px;
-      display:flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-      background: rgba(0,0,0,.10);
+    .card .hd{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:16px 18px;
+      border-bottom:1px solid var(--border);
     }
-    .ttl{ font-weight: 900; letter-spacing:.2px; }
-    .mini{ color: var(--mut2); font-weight: 700; font-size: 12px; }
-    .bd{ padding: 14px 16px 16px; }
+    .card .hd h2{
+      margin:0;
+      font-size:18px;
+      letter-spacing:.2px;
+    }
+    .card .bd{ padding:16px 18px; color:var(--muted); }
 
-    /* snapshot */
-    .tiles{
+    .snapshotGrid{
       display:grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      gap:12px;
+      margin-top:10px;
     }
-    @media (max-width: 520px){
-      .tiles{ grid-template-columns: 1fr; }
+    .mini{
+      padding:14px 14px;
+      border-radius:18px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.03);
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px;
     }
-    .btn{
-      display:flex;
-      align-items:center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 12px 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.08);
-      background: rgba(255,255,255,.04);
-      transition: transform .04s ease, background .12s ease, border-color .12s ease;
-      cursor: pointer;
-      user-select: none;
-    }
-    .btn:hover{
-      background: rgba(255,255,255,.06);
-      border-color: rgba(255,255,255,.12);
-      transform: translateY(-1px);
-    }
-    .btn .t{ font-weight: 900; font-size: 13px; }
-    .btn .d{ color: var(--mut); font-size: 11px; font-weight: 650; margin-top: 2px; }
-    .btn .chev{ color: rgba(255,255,255,.55); font-weight: 900; }
+    .mini .k{ font-weight:800; color:var(--text); }
+    .mini .v{ color:var(--muted); font-size:13px; }
 
-    .summary{
-      margin-top: 12px;
-      padding: 12px 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.08);
-      background: rgba(0,0,0,.10);
-      color: rgba(255,255,255,.86);
-      font-size: 12px;
-      line-height: 1.6;
-      min-height: 44px;
-      white-space: pre-wrap;
-    }
-    .bullets{
-      margin: 10px 0 0;
-      padding: 0 0 0 18px;
-      color: rgba(255,255,255,.78);
-      font-size: 12px;
-      line-height: 1.6;
-    }
-    .bullets li{ margin: 6px 0; }
-    .muted{ color: var(--mut); }
-
-    /* health */
-    .health-grid{
+    .health{
       display:grid;
       grid-template-columns: 1fr 1fr 1fr;
-      gap: 10px;
+      gap:12px;
+      margin-top:14px;
     }
-    .pillbox{
-      padding: 12px 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.08);
-      background: rgba(255,255,255,.04);
+    .healthBox{
+      padding:14px;
+      border-radius:18px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.03);
     }
-    .pillbox .k{
-      display:flex; justify-content: space-between; align-items:center;
-      font-size: 12px; font-weight: 900;
-    }
-    .pillbox .k span:last-child{ font-weight: 750; color: var(--mut2); }
-    .pillbox .v{
-      margin-top: 8px;
-      font-size: 22px;
-      font-weight: 950;
-      letter-spacing: .3px;
-    }
-    .pillbox.ok .v{ color: var(--ok); }
-    .pillbox.warn .v{ color: var(--warn); }
-    .pillbox.ng .v{ color: var(--ng); }
+    .healthBox .t{ color:var(--muted); font-size:12px; letter-spacing:.2px; }
+    .healthBox .n{ font-size:34px; font-weight:900; margin-top:6px; }
+    .ok{ color:var(--ok); }
+    .warn{ color:var(--warn); }
+    .ng{ color:var(--ng); }
 
-    .footnote{
-      margin-top: 12px;
-      color: var(--mut);
-      font-size: 11px;
-      font-weight: 650;
-      line-height: 1.5;
+    .smallNote{
+      margin-top:12px;
+      color:var(--muted2);
+      font-size:12px;
+      line-height:1.6;
+      white-space:pre-wrap;
     }
-
-    .err{
-      margin-top: 12px;
-      padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(239,68,68,.30);
-      background: rgba(239,68,68,.10);
-      color: rgba(255,255,255,.88);
-      font-size: 12px;
-      line-height: 1.5;
-      white-space: pre-wrap;
+    .mono{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     }
   </style>
 </head>
 
 <body>
   <div class="wrap">
-    <header class="top">
-      <a class="brand" href="./index.html" id="brandLink">
-        <div class="logo"></div>
-        <div class="btxt">
-          <div class="t">LABOS</div>
-          <div class="s">World Politics / Index</div>
+
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <div class="t1">LABOS</div>
+          <div class="t2">World Politics / Index</div>
         </div>
-      </a>
+      </div>
 
       <nav class="nav" aria-label="primary">
-        <a class="pill on" href="./index.html" id="navIndex">Index</a>
-        <a class="pill" href="./overlay.html" id="navOverlay">Overlay</a>
-        <a class="pill" href="./sentiment.html" id="navSentiment">Sentiment</a>
-        <a class="pill" href="./digest.html" id="navDigest">Digest</a>
+        <a class="active" href="/static/index.html">Index</a>
+        <a href="/static/overlay.html">Overlay</a>
+        <a href="/static/sentiment.html">Sentiment</a>
+        <a href="/static/digest.html">Digest</a>
       </nav>
 
-      <div class="asof" title="as_of from view model">
+      <div class="asof" id="asOfPill" title="as_of: from view_model_latest.json (fallback: daily_summary_latest.json)">
         <span class="dot" id="asDot"></span>
-        <span id="asOfText">as_of: --</span>
+        <span class="asofText" id="asOfText">as_of: --</span>
       </div>
-    </header>
+    </div>
 
-    <section class="hero">
-      <div class="h1">LABOS Index</div>
-      <div class="sub">
-        <span>ヘッダ統一（sentiment基準）＋主要導線＋今日の要約＋Healthを集約。</span>
-        <code id="srcInfo">source: --</code>
-      </div>
-    </section>
+    <h1>LABOS Index</h1>
+    <p class="sub">
+      ヘッダ統一（sentiment基準）＋主要導線＋今日の要約＋Healthを集約。
+      <span class="pill mono" id="vmSourcePill">source: /analysis/view_model_latest.json</span>
+    </p>
 
     <div class="grid">
-      <section class="card">
+      <div class="card">
         <div class="hd">
-          <div class="ttl">Today Snapshot</div>
-          <div class="mini" id="snapInfo">--</div>
+          <h2>Today Snapshot</h2>
+          <div class="pill mono" id="snapshotMeta">as_of: --</div>
         </div>
         <div class="bd">
-          <div class="tiles">
-            <a class="btn" href="./overlay.html" id="goOverlay">
+          <div class="snapshotGrid">
+            <a class="mini" href="/static/overlay.html">
               <div>
-                <div class="t">Overlay</div>
-                <div class="d">FX / overlay panels</div>
+                <div class="k">Overlay</div>
+                <div class="v">FX / overlay panels</div>
               </div>
-              <div class="chev">›</div>
+              <div class="v">›</div>
             </a>
-
-            <a class="btn" href="./sentiment.html" id="goSentiment">
+            <a class="mini" href="/static/sentiment.html">
               <div>
-                <div class="t">Sentiment</div>
-                <div class="d">risk / positive / uncertainty</div>
+                <div class="k">Sentiment</div>
+                <div class="v">risk / positive / uncertainty</div>
               </div>
-              <div class="chev">›</div>
+              <div class="v">›</div>
             </a>
-
-            <a class="btn" href="./digest.html" id="goDigest">
+            <a class="mini" href="/static/digest.html">
               <div>
-                <div class="t">Digest</div>
-                <div class="d">daily digest view</div>
+                <div class="k">Digest</div>
+                <div class="v">daily digest view</div>
               </div>
-              <div class="chev">›</div>
+              <div class="v">›</div>
             </a>
-
-            <a class="btn" href="./index.html" id="goRefresh">
+            <a class="mini" href="javascript:void(0)" id="reloadBtn">
               <div>
-                <div class="t">Refresh</div>
-                <div class="d">reload this page</div>
+                <div class="k">Refresh</div>
+                <div class="v">reload this page</div>
               </div>
-              <div class="chev">↻</div>
+              <div class="v">↻</div>
             </a>
           </div>
 
-          <div class="summary" id="summaryBox">loading...</div>
-          <ul class="bullets" id="bullets"><li class="muted">loading...</li></ul>
-
-          <div class="err" id="errBox" style="display:none"></div>
+          <div class="smallNote mono" id="sourceHtmlLine">source_html=--</div>
+          <div class="smallNote" id="highlightsLine">• highlights not found</div>
         </div>
-      </section>
+      </div>
 
-      <aside class="card">
+      <div class="card">
         <div class="hd">
-          <div class="ttl">Data Health</div>
-          <div class="mini" id="healthInfo">source: --</div>
+          <h2>Data Health</h2>
+          <div class="pill mono" id="healthSourcePill">source: /analysis/health_latest.json</div>
         </div>
         <div class="bd">
-          <div class="health-grid">
-            <div class="pillbox ok">
-              <div class="k"><span>OK</span><span>count</span></div>
-              <div class="v" id="okVal">--</div>
+          <div class="health">
+            <div class="healthBox">
+              <div class="t">OK <span class="mono">count</span></div>
+              <div class="n ok mono" id="okCount">--</div>
             </div>
-            <div class="pillbox warn">
-              <div class="k"><span>WARN</span><span>count</span></div>
-              <div class="v" id="warnVal">--</div>
+            <div class="healthBox">
+              <div class="t">WARN <span class="mono">count</span></div>
+              <div class="n warn mono" id="warnCount">--</div>
             </div>
-            <div class="pillbox ng">
-              <div class="k"><span>NG</span><span>count</span></div>
-              <div class="v" id="ngVal">--</div>
+            <div class="healthBox">
+              <div class="t">NG <span class="mono">count</span></div>
+              <div class="n ng mono" id="ngCount">--</div>
             </div>
           </div>
-
-          <div class="footnote">
-            ※ Index は「導線と状況把握」を最優先。詳細は各ページへ。<br>
-            ※ GUI は read-only（SST）。PNG/CSV/JSON を読むだけで再計算しません。
+          <div class="smallNote">
+            ※ Index は「導線と状況把握」を最優先。詳細は各ページへ。<br/>
+            ※ GUI は read-only (SST) 。PNG/CSV/JSON を読むだけで再計算しません。
           </div>
         </div>
-      </aside>
+      </div>
     </div>
+
   </div>
 
-  <script>
-    (function(){
-      "use strict";
+<script>
+(function(){
+  "use strict";
 
-      function esc(s){
-        return String(s ?? "")
-          .replaceAll("&","&amp;")
-          .replaceAll("<","&lt;")
-          .replaceAll(">","&gt;")
-          .replaceAll('"',"&quot;")
-          .replaceAll("'","&#039;");
+  function q(id){ return document.getElementById(id); }
+  function setText(id, txt){ const el=q(id); if(el) el.textContent = txt; }
+  function setAttr(id, k, v){ const el=q(id); if(el) el.setAttribute(k, v); }
+  function uniq(arr){
+    const s = new Set();
+    const out = [];
+    for (const x of arr){
+      const k = String(x || "");
+      if (!k || s.has(k)) continue;
+      s.add(k);
+      out.push(x);
+    }
+    return out;
+  }
+
+  async function fetchJson(url){
+    const r = await fetch(url, { cache: "no-store" });
+    if (!r.ok) throw new Error(`HTTP ${r.status} ${url}`);
+    return await r.json();
+  }
+
+  async function fetchFirstJson(urls){
+    let lastErr = null;
+    for (const u of urls){
+      try{
+        const j = await fetchJson(u);
+        return { url: u, json: j };
+      }catch(e){
+        lastErr = e;
       }
-      function uniq(arr){
-        const out = [];
-        const seen = new Set();
-        for (const x of arr){
-          const s = String(x || "").trim();
-          if (!s) continue;
-          if (seen.has(s)) continue;
-          seen.add(s);
-          out.push(s);
-        }
-        return out;
+    }
+    throw (lastErr || new Error("fetchFirstJson: all failed"));
+  }
+
+  function guessAsOf(obj){
+    if (!obj || typeof obj !== "object") return "--";
+    const keys = ["as_of","asOf","date","generated_at","generatedAt","created_at","createdAt","updated_at","updatedAt","ts","timestamp"];
+    for (const k of keys){
+      if (typeof obj[k] === "string" && obj[k]) return obj[k];
+    }
+    if (obj.meta && typeof obj.meta === "object"){
+      for (const k of keys){
+        if (typeof obj.meta[k] === "string" && obj.meta[k]) return obj.meta[k];
       }
-      function qs(){ return new URLSearchParams(location.search); }
+    }
+    return "--";
+  }
 
-      // cache-busting: if no v=, self-redirect once
-      (function ensureV(){
-        const p = qs();
-        if (!p.get("v")){
-          p.set("v", Math.random().toString(16).slice(2,8));
-          const url = location.pathname + "?" + p.toString();
-          location.replace(url);
-        }
-      })();
-
-      const v = qs().get("v") || "";
-
-      function withV(path){
-        try{
-          const u = new URL(path, location.href);
-          u.searchParams.set("v", v);
-          return u.pathname + "?" + u.searchParams.toString();
-        }catch(_){
-          const join = path.includes("?") ? "&" : "?";
-          return path + join + "v=" + encodeURIComponent(v);
-        }
+  function guessAsOfAny(d){
+    if (!d) return "--";
+    if (Array.isArray(d)) return guessAsOf(d[0] || {});
+    if (typeof d === "object"){
+      // common shapes: {items:[...]}, {articles:[...]} etc.
+      for (const k of ["items","articles","data","rows","results","events"]){
+        if (Array.isArray(d[k]) && d[k].length) return guessAsOf(d[k][0] || d);
       }
+    }
+    return guessAsOf(d);
+  }
 
-      // apply v= to nav links (avoid stale css/js/img)
-      const navIds = ["brandLink","navIndex","navOverlay","navSentiment","navDigest","goOverlay","goSentiment","goDigest","goRefresh"];
-      for (const id of navIds){
-        const a = document.getElementById(id);
-        if (!a) continue;
-        const href = a.getAttribute("href") || "";
-        if (!href) continue;
-        a.setAttribute("href", withV(href));
+  function buildViewModelUrls(){
+    return uniq([
+      "/analysis/view_model_latest.json",
+      "/analysis/digest/view_model_latest.json",
+      "/analysis/view/view_model_latest.json",
+      "/analysis/world_politics/analysis/view_model_latest.json",
+      "/analysis/world_politics/static/view_model_latest.json",
+      "/static/analysis/view_model_latest.json",
+      "/static/analysis/world_politics/analysis/view_model_latest.json",
+    ]);
+  }
+
+  const VIEWMODEL_URLS = buildViewModelUrls();
+  const SUMMARY_URLS = uniq([
+    "/analysis/daily_summary_latest.json",
+    "/analysis/world_politics/analysis/daily_summary_latest.json",
+    "/analysis/world_politics/static/daily_summary_latest.json",
+    "/static/analysis/daily_summary_latest.json",
+    "/static/analysis/world_politics/analysis/daily_summary_latest.json",
+    "/static/world_politics/static/daily_summary_latest.json",
+  ]);
+
+  const HEALTH_URLS = uniq([
+    "/analysis/health_latest.json",
+    "/analysis/world_politics/analysis/health_latest.json",
+    "/static/analysis/health_latest.json",
+  ]);
+
+  function setDotState(state){
+    const el = q("asDot");
+    if (!el) return;
+    if (state === "ok"){
+      el.style.background = "var(--accent2)";
+      el.style.boxShadow = "0 0 0 4px rgba(34,197,94,.15)";
+    }else if (state === "warn"){
+      el.style.background = "var(--warn)";
+      el.style.boxShadow = "0 0 0 4px rgba(251,191,36,.12)";
+    }else{
+      el.style.background = "var(--ng)";
+      el.style.boxShadow = "0 0 0 4px rgba(239,68,68,.12)";
+    }
+  }
+
+  function safeNum(x){
+    const n = Number(x);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  async function main(){
+    // reload
+    const rb = q("reloadBtn");
+    if (rb) rb.addEventListener("click", ()=>location.reload());
+
+    // view model
+    const vmRes = await fetchFirstJson(VIEWMODEL_URLS);
+    setText("vmSourcePill", "source: " + vmRes.url);
+
+    let asOf = guessAsOf(vmRes.json);
+    if (asOf === "--") asOf = "";
+    setText("asOfText", "as_of: " + (asOf || "--"));
+    setText("snapshotMeta", "as_of: " + (asOf || "--"));
+
+    // Prefer daily_summary_latest.json for "today-ness" when view_model is stale.
+    try{
+      const s = await fetchFirstJson(SUMMARY_URLS);
+      const summaryAsOf = guessAsOfAny(s.json);
+      if (summaryAsOf && summaryAsOf !== "--" && summaryAsOf !== asOf){
+        asOf = summaryAsOf;
+        setText("asOfText", "as_of: " + asOf);
+        setText("snapshotMeta", "as_of: " + asOf);
+        setAttr("asOfPill", "title", `as_of source overridden by daily_summary_latest.json (${s.url})`);
       }
+    }catch(_){
+      // ignore: keep view_model as_of
+    }
 
-      function setText(id, text){
-        const el = document.getElementById(id);
-        if (el) el.textContent = text;
-      }
+    // source_html line (best-effort)
+    const srcHtml = (vmRes.json && (vmRes.json.source_html || (vmRes.json.meta && vmRes.json.meta.source_html))) || "";
+    if (srcHtml){
+      setText("sourceHtmlLine", "source_html=" + srcHtml);
+    }else{
+      setText("sourceHtmlLine", "source_html=--");
+    }
 
-      function showErr(msg){
-        const box = document.getElementById("errBox");
-        box.style.display = "block";
-        box.textContent = msg;
-      }
+    // highlights (best-effort)
+    const highlights = (vmRes.json && (vmRes.json.highlights || (vmRes.json.meta && vmRes.json.meta.highlights))) || null;
+    if (Array.isArray(highlights) && highlights.length){
+      setText("highlightsLine", "• " + highlights.join(" / "));
+    }else{
+      setText("highlightsLine", "• highlights not found");
+    }
 
-      function guessAsOf(obj){
-        return obj?.as_of
-          || obj?.asOf
-          || obj?.generated_at
-          || obj?.generatedAt
-          || obj?.meta?.as_of
-          || obj?.meta?.generated_at
-          || obj?.date
-          || "--";
-      }
+    // health
+    try{
+      const h = await fetchFirstJson(HEALTH_URLS);
+      setText("healthSourcePill", "source: " + h.url);
 
-      function isNonEmptyString(x){
-        return (typeof x === "string") && x.trim().length > 0;
-      }
+      const ok = safeNum(h.json && (h.json.ok_count ?? h.json.ok ?? h.json.OK));
+      const warn = safeNum(h.json && (h.json.warn_count ?? h.json.warn ?? h.json.WARN));
+      const ng = safeNum(h.json && (h.json.ng_count ?? h.json.ng ?? h.json.NG));
 
-      // ---- ViewModel extractors (match current schema: date/meta/sections/today/...)
-      function extractSummary(vm){
-        // 1) obvious fields (future-proof)
-        const direct =
-          vm?.daily_summary || vm?.summary || vm?.latest_summary ||
-          vm?.today?.daily_summary || vm?.today?.summary || vm?.today?.latest_summary ||
-          vm?.today?.digest || vm?.today?.today_summary ||
-          vm?.meta?.summary || "";
-        if (isNonEmptyString(direct)) return String(direct).trim();
+      setText("okCount", String(ok));
+      setText("warnCount", String(warn));
+      setText("ngCount", String(ng));
 
-        // 2) sections/cards scan (current schema: sections: [{id,title,cards,...}])
-        const sections = Array.isArray(vm?.sections) ? vm.sections : [];
-        const candKeys = ["summary","daily_summary","text","body","content","message","markdown","md","note","notes"];
-        for (const sec of sections){
-          const cards = Array.isArray(sec?.cards) ? sec.cards : [];
-          for (const card of cards){
-            for (const k of candKeys){
-              const v = card?.[k];
-              if (isNonEmptyString(v) && String(v).trim().length >= 20){
-                return String(v).trim();
-              }
-            }
-            // sometimes nested
-            for (const k of ["data","payload","value"]){
-              const inner = card?.[k];
-              if (inner && typeof inner === "object"){
-                for (const kk of candKeys){
-                  const v2 = inner?.[kk];
-                  if (isNonEmptyString(v2) && String(v2).trim().length >= 20){
-                    return String(v2).trim();
-                  }
-                }
-              }
-            }
-          }
-          // fallback: section notes
-          for (const k of ["notes","note"]){
-            const vv = sec?.[k];
-            if (isNonEmptyString(vv) && String(vv).trim().length >= 20){
-              return String(vv).trim();
-            }
-          }
-        }
+      if (ng > 0) setDotState("ng");
+      else if (warn > 0) setDotState("warn");
+      else setDotState("ok");
+    }catch(e){
+      setText("okCount","--");
+      setText("warnCount","--");
+      setText("ngCount","--");
+      setDotState("warn");
+    }
+  }
 
-        return "";
-      }
+  main().catch((e)=>{
+    console.error(e);
+    setText("asOfText", "as_of: (error)");
+    setDotState("ng");
+  });
 
-      function extractBullets(vm){
-        // 1) obvious fields (future-proof)
-        const direct =
-          vm?.bullets || vm?.highlights || vm?.key_points ||
-          vm?.today?.bullets || vm?.today?.highlights || vm?.today?.key_points ||
-          vm?.meta?.bullets || vm?.meta?.highlights || [];
-        if (Array.isArray(direct) && direct.length) return direct;
-
-        // 2) sections/cards scan
-        const sections = Array.isArray(vm?.sections) ? vm.sections : [];
-        const candKeys = ["bullets","highlights","points","key_points","items","lines","list"];
-        for (const sec of sections){
-          const cards = Array.isArray(sec?.cards) ? sec.cards : [];
-          for (const card of cards){
-            for (const k of candKeys){
-              const v = card?.[k];
-              if (Array.isArray(v) && v.length) return v;
-            }
-            // sometimes single string with lines
-            for (const k of ["bullets_text","highlights_text","text","body","content"]){
-              const v2 = card?.[k];
-              if (isNonEmptyString(v2) && String(v2).includes("\n")){
-                const lines = String(v2).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-                if (lines.length >= 2) return lines;
-              }
-            }
-            // nested
-            for (const k of ["data","payload","value"]){
-              const inner = card?.[k];
-              if (inner && typeof inner === "object"){
-                for (const kk of candKeys){
-                  const v3 = inner?.[kk];
-                  if (Array.isArray(v3) && v3.length) return v3;
-                }
-              }
-            }
-          }
-        }
-        return [];
-      }
-
-      function pickHealthCounts(h){
-        const c = h?.counts || h?.count || h?.summary || h || {};
-        const ok = c.OK ?? c.ok ?? c.Ok ?? c.ok_count ?? null;
-        const warn = c.WARN ?? c.warn ?? c.Warn ?? c.warn_count ?? null;
-        const ng = c.NG ?? c.ng ?? c.Ng ?? c.ng_count ?? null;
-        return { ok, warn, ng };
-      }
-
-      async function fetchFirstJson(urls){
-        let last = null;
-        for (const url of urls){
-          try{
-            const res = await fetch(withV(url), { cache: "no-store" });
-            if (!res.ok) throw new Error(res.status + " " + res.statusText);
-            const json = await res.json();
-            return { url, json };
-          }catch(e){
-            last = { url, error: e };
-          }
-        }
-        throw last || new Error("no candidate urls");
-      }
-
-      // candidates (sentimentで実績が出た入口を最優先)
-      function buildViewModelUrls(){
-        const roots = ["", "/analysis", "/data", "/static", "/static/analysis", "/static/data"];
-        const preferred = ["/analysis/view_model_latest.json"];
-        const paths = [
-          "view_model_latest.json",
-          "world_politics/analysis/view_model_latest.json",
-          "world_politics/view_model_latest.json",
-          "digest/view_model_latest.json",
-          "digest/view/view_model_latest.json",
-        ];
-        const out = [];
-        out.push(...preferred);
-        for (const r of roots){
-          for (const p of paths){
-            out.push((r || "") + "/" + p);
-          }
-        }
-        return uniq(out.map(s => s.replaceAll("//","/")));
-      }
-
-      const VIEWMODEL_URLS = buildViewModelUrls();
-
-      const HEALTH_URLS = uniq([
-        "/analysis/health_latest.json",
-        "/data/health_latest.json",
-        "/health_latest.json",
-        "/analysis/data_health_latest.json",
-        "/data/data_health_latest.json",
-        "/static/health_latest.json",
-        "/static/analysis/health_latest.json",
-        "/static/data/health_latest.json",
-      ]);
-
-      (async function main(){
-        // 1) ViewModel -> snapshot
-        try{
-          const { url, json } = await fetchFirstJson(VIEWMODEL_URLS);
-          const asOf = guessAsOf(json);
-
-          setText("asOfText", "as_of: " + asOf);
-          setText("srcInfo", "source: " + url);
-          setText("snapInfo", "as_of: " + asOf + " / v=" + v);
-
-          const summary = extractSummary(json);
-          const bullets = extractBullets(json);
-
-          const summaryBox = document.getElementById("summaryBox");
-          summaryBox.innerHTML = summary
-            ? esc(String(summary)).replaceAll("\n","<br>")
-            : '<span class="muted">summary not found</span>';
-
-          const ul = document.getElementById("bullets");
-          if (Array.isArray(bullets) && bullets.length){
-            ul.innerHTML = bullets.slice(0, 8).map(x => "<li>" + esc(String(x)) + "</li>").join("");
-          }else{
-            ul.innerHTML = '<li class="muted">highlights not found</li>';
-          }
-        }catch(e){
-          setText("asOfText", "as_of: --");
-          setText("srcInfo", "source: load error");
-          setText("snapInfo", "load error / v=" + v);
-
-          const summaryBox = document.getElementById("summaryBox");
-          summaryBox.innerHTML = '<span class="muted">view model load failed</span>';
-
-          const ul = document.getElementById("bullets");
-          ul.innerHTML = '<li class="muted">—</li>';
-
-          const msg = "view model load failed.\nlast tried: " + (e?.url || "?") + "\n" + String(e?.error || e);
-          showErr(msg);
-        }
-
-        // 2) Health
-        try{
-          const { url, json } = await fetchFirstJson(HEALTH_URLS);
-          setText("healthInfo", "source: " + url);
-
-          const { ok, warn, ng } = pickHealthCounts(json);
-          setText("okVal", ok ?? "--");
-          setText("warnVal", warn ?? "--");
-          setText("ngVal", ng ?? "--");
-
-          const dot = document.getElementById("asDot");
-          dot.classList.remove("ok","warn","ng");
-          if ((ng ?? 0) > 0) dot.classList.add("ng");
-          else if ((warn ?? 0) > 0) dot.classList.add("warn");
-          else dot.classList.add("ok");
-        }catch(e){
-          setText("healthInfo", "source: load error");
-          setText("okVal", "--");
-          setText("warnVal", "--");
-          setText("ngVal", "--");
-
-          const msg = "health load failed.\nlast tried: " + (e?.url || "?") + "\n" + String(e?.error || e);
-          const box = document.getElementById("errBox");
-          if (box.style.display === "none") showErr(msg);
-        }
-      })();
-    })();
-  </script>
+})();
+</script>
 </body>
 </html>
