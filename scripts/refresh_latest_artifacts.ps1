@@ -1,35 +1,36 @@
 # scripts/refresh_latest_artifacts.ps1
-# Refresh *_latest.json artifacts.
+# Refresh *_latest.json by copying the newest dated artifact that exists.
+# Read-only / SST: no recalculation (except sentiment sync), only file selection + copy.
 #
-# Design:
-# - daily_news_latest / daily_summary_latest は "dated -> latest" の SST copy-only
-# - sentiment_latest は daily_news と同一世代である必要があるため、ここで再生成して整合させる
-#
-# Why:
-# - 手動で daily_news を更新したのに sentiment を更新しないと、UI join が 0 になる（世代ズレ）
+# - daily_news_latest.json     <- latest daily_news_YYYY-MM-DD.json
+# - daily_summary_latest.json  <- latest daily_summary_YYYY-MM-DD.json
+# - view_model_latest.json     <- latest view_model_YYYY-MM-DD.json (NEW)
+# - sentiment_latest.json      <- rebuilt to match the chosen daily_news date (SYNC)
 #
 # Usage:
 #   powershell -ExecutionPolicy Bypass -File scripts/refresh_latest_artifacts.ps1
 #   powershell -ExecutionPolicy Bypass -File scripts/refresh_latest_artifacts.ps1 -WhatIf
-#
-# Options:
-#   -RebuildSentiment:$false で sentiment 再生成を止める（非推奨）
 
 [CmdletBinding(SupportsShouldProcess=$true)]
 param(
-  [string]$AnalysisDir = "data\world_politics\analysis",
-  [switch]$RebuildSentiment = $true
+  [string]$AnalysisDir = "data\world_politics\analysis"
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 function Resolve-RepoRoot {
-  if ($PSScriptRoot) {
-    return (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+  try {
+    $p = Resolve-Path (Join-Path $PSScriptRoot "..")
+    return $p.Path
+  } catch {
+    return (Get-Location).Path
   }
-  return (Resolve-Path "..").Path
 }
+
+$RepoRoot = Resolve-RepoRoot
+$PyExe = Join-Path $RepoRoot ".venv\Scripts\python.exe"
+$BuildSent = Join-Path $RepoRoot "scripts\build_daily_sentiment.py"
 
 function Get-LatestDatedFile {
   param(
@@ -81,76 +82,44 @@ function Copy-Latest {
   return $latest
 }
 
-function Ensure-Sentiment-InSync {
+function Rebuild-Sentiment {
   param(
-    [Parameter(Mandatory=$true)][string]$RepoRoot,
-    [Parameter(Mandatory=$true)][string]$AnalysisDirAbs,
     [Parameter(Mandatory=$true)][string]$Date
   )
 
-  $py = Join-Path $RepoRoot ".venv\Scripts\python.exe"
-  $tool = Join-Path $RepoRoot "scripts\build_daily_sentiment.py"
-
-  if (-not (Test-Path $py)) {
-    throw ("[ERROR] python not found: {0}" -f $py)
+  if (-not (Test-Path $PyExe)) {
+    throw "python exe not found: $PyExe"
   }
-  if (-not (Test-Path $tool)) {
-    throw ("[ERROR] build tool not found: {0}" -f $tool)
+  if (-not (Test-Path $BuildSent)) {
+    throw "sentiment builder not found: $BuildSent"
   }
 
-  $sentLatest = Join-Path $AnalysisDirAbs "sentiment_latest.json"
-  $sentDated  = Join-Path $AnalysisDirAbs ("sentiment_{0}.json" -f $Date)
-
-  # build_daily_sentiment.py reads: daily_news_<date>.json under analysis dir
-  # and writes: sentiment_latest.json + sentiment_<date>.json
-  $cmd = """$py"" ""$tool"" --date $Date"
-
-  if ($PSCmdlet.ShouldProcess($sentLatest, "Rebuild sentiment for date=$Date (CMD: $cmd)")) {
-    Write-Host ("[DO] rebuild sentiment: date={0}" -f $Date)
-    & $py $tool --date $Date
-    if ($LASTEXITCODE -ne 0) {
-      throw ("[ERROR] build_daily_sentiment.py failed (exit={0})" -f $LASTEXITCODE)
-    }
-
-    if (-not (Test-Path $sentLatest)) {
-      throw ("[ERROR] sentiment_latest.json was not created: {0}" -f $sentLatest)
-    }
-    if (-not (Test-Path $sentDated)) {
-      throw ("[ERROR] sentiment dated file was not created: {0}" -f $sentDated)
-    }
-
-    Write-Host ("[OK] sentiment rebuilt and synced to daily_news_{0}.json" -f $Date)
+  $cmd = "`"$PyExe`" `"$BuildSent`" --date $Date"
+  if ($PSCmdlet.ShouldProcess((Join-Path $AnalysisDir "sentiment_latest.json"), "Rebuild sentiment for date=$Date (CMD: $cmd)")) {
+    Write-Host "[DO] rebuild sentiment: date=$Date"
+    & $PyExe $BuildSent --date $Date
+    if ($LASTEXITCODE -ne 0) { throw "sentiment rebuild failed (exit=$LASTEXITCODE)" }
+    Write-Host "[OK] sentiment rebuilt and synced to daily_news_$Date.json"
   }
 }
 
-# -----------------------------
-# Main
-# -----------------------------
-$ROOT = Resolve-RepoRoot
-
-# Normalize analysis dir to absolute path
-$analysisAbs = Join-Path $ROOT $AnalysisDir
-
 Write-Host "=== Refresh latest artifacts (SST copy + sentiment sync) ==="
-Write-Host "RepoRoot  : $ROOT"
-Write-Host "AnalysisDir: $AnalysisDir"
+Write-Host ("RepoRoot  : " + $RepoRoot)
+Write-Host ("AnalysisDir: " + $AnalysisDir)
 Write-Host ""
 
-# 1) Copy daily_news_latest + daily_summary_latest from newest dated files
-$latestNews = Copy-Latest -Dir $analysisAbs -Prefix "daily_news"
-Copy-Latest -Dir $analysisAbs -Prefix "daily_summary" | Out-Null
+# 1) Copy latest daily_news / daily_summary / view_model
+$news   = Copy-Latest -Dir $AnalysisDir -Prefix "daily_news"
+$sum    = Copy-Latest -Dir $AnalysisDir -Prefix "daily_summary"
+$vm     = Copy-Latest -Dir $AnalysisDir -Prefix "view_model"
 
-# 2) Rebuild sentiment so it matches the same date as daily_news_latest
-if ($RebuildSentiment) {
-  if ($null -eq $latestNews) {
-    Write-Warning "daily_news dated file not found; skipping sentiment rebuild."
-  } else {
-    Ensure-Sentiment-InSync -RepoRoot $ROOT -AnalysisDirAbs $analysisAbs -Date $latestNews.Date
-  }
+Write-Host ""
+
+# 2) Sentiment must match the daily_news date (anti-regression)
+if ($null -ne $news -and $news.Date) {
+  Rebuild-Sentiment -Date $news.Date
 } else {
-  Write-Warning "RebuildSentiment is OFF. Sentiment may drift from daily_news."
-  # keep legacy behavior: copy latest sentiment dated file if any
-  Copy-Latest -Dir $analysisAbs -Prefix "sentiment" | Out-Null
+  Write-Warning "Skip sentiment rebuild: daily_news latest date not found."
 }
 
 Write-Host ""
