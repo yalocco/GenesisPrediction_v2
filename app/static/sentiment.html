@@ -149,7 +149,10 @@
     .small{font-size:11px}
     .right{text-align:right}
     .footerNote{margin:10px 0 0;font-size:11px;color:var(--muted);line-height:1.5;}
-  </style>
+  
+  /* Trend canvas should fill the card width */
+  .trend-canvas{width:100%;height:220px;display:block;}
+</style>
 </head>
 <body>
   <div class="wrap">
@@ -247,7 +250,7 @@
           <div class="card" style="margin-top:12px">
             <div class="inner">
               <h2>Sentiment Trend</h2>
-              <canvas id="trend" height="200"></canvas>
+              <canvas id="trend" class="trend-canvas"></canvas>
               <div class="footerNote">※ risk / positive / uncertainty を各段で独立スケール描画。</div>
             </div>
           </div>
@@ -566,19 +569,12 @@ How it works
     const h = canvas.height = Math.max(1, ch) * devicePixelRatio;
     ctx.clearRect(0,0,w,h);
 
-    // Colors from CSS variables (keeps theme consistent)
-    const css = getComputedStyle(document.documentElement);
-    const colRisk = (css.getPropertyValue("--bad") || "#ff6b6b").trim();
-    const colPos  = (css.getPropertyValue("--good") || "#2dd4bf").trim();
-    const colUnc  = (css.getPropertyValue("--warn") || "#fbbf24").trim();
-    const colGrid = "rgba(255,255,255,.18)";
-
     ctx.lineWidth = 1.2*devicePixelRatio;
     ctx.font = `${11*devicePixelRatio}px ${getComputedStyle(document.body).fontFamily}`;
-    ctx.fillStyle = "rgba(232,238,252,.9)";
 
     if (!rows || rows.length === 0){
       ctx.globalAlpha = .6;
+      ctx.fillStyle = "rgba(220,230,245,0.75)";
       ctx.fillText("timeseries not found", 18*devicePixelRatio, 28*devicePixelRatio);
       ctx.globalAlpha = 1;
       return;
@@ -589,44 +585,61 @@ How it works
     const bandH = (h - pad*2 - gap*2) / 3;
 
     const maxX = rows.length - 1;
+    const xAt = (i)=> pad + (w - pad*2) * (i/maxX);
 
-    function drawBand(y0, arr, label, color){
-      const maxV = Math.max(1e-9, ...arr);
-      const minV = Math.min(0, ...arr);
-      const yy = v => y0 + bandH - (v - minV) / (maxV - minV || 1) * bandH;
+    const frameColor = "rgba(255,255,255,0.18)";
+    const gridColor  = "rgba(255,255,255,0.10)";
+    const textColor  = "rgba(220,230,245,0.75)";
+    const subtleText = "rgba(220,230,245,0.55)";
+
+    function drawBand(y0, arr, label, lineColor){
+      const y1 = y0 + bandH;
 
       // frame
-      ctx.globalAlpha = .35;
-      ctx.strokeStyle = colGrid;
+      ctx.strokeStyle = frameColor;
+      ctx.lineWidth = 1.0*devicePixelRatio;
       ctx.strokeRect(pad, y0, w-pad*2, bandH);
 
       // label
-      ctx.globalAlpha = .7;
-      ctx.fillText(label, pad, y0 + 12*devicePixelRatio);
+      ctx.fillStyle = subtleText;
+      ctx.fillText(label, pad + 6*devicePixelRatio, y0 + 14*devicePixelRatio);
 
-      // series line (3-color)
-      ctx.globalAlpha = 1;
-      ctx.strokeStyle = color;
+      // range
+      const vmax = Math.max(...arr);
+      const vmin = Math.min(...arr);
+      const yAt = (v)=> y1 - ((v - vmin) / Math.max(1e-9,(vmax-vmin))) * (bandH - 18*devicePixelRatio) - 8*devicePixelRatio;
+
+      // grid baseline
+      ctx.strokeStyle = gridColor;
       ctx.beginPath();
-      for (let i=0;i<arr.length;i++){
-        const x = pad + (w-pad*2) * (i / (maxX||1));
-        const y = yy(arr[i]);
-        if (i===0) ctx.moveTo(x,y);
-        else ctx.lineTo(x,y);
-      }
+      ctx.moveTo(pad, y1 - 10*devicePixelRatio);
+      ctx.lineTo(w-pad, y1 - 10*devicePixelRatio);
       ctx.stroke();
 
-      // annotations
-      ctx.globalAlpha = .8;
-      ctx.fillText("max: " + maxV.toFixed(6), w - pad - 110*devicePixelRatio, y0 + 12*devicePixelRatio);
-      ctx.fillText(rows[0].date, pad, y0 + bandH - 6*devicePixelRatio);
-      ctx.fillText(rows[rows.length-1].date, w - pad - 70*devicePixelRatio, y0 + bandH - 6*devicePixelRatio);
-      ctx.globalAlpha = 1;
+      // line
+      ctx.strokeStyle = lineColor;
+      ctx.lineWidth = 2.2*devicePixelRatio;
+      ctx.beginPath();
+      arr.forEach((v,i)=>{
+        const x = xAt(i);
+        const y = yAt(v);
+        if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+
+      // max label
+      ctx.fillStyle = subtleText;
+      ctx.fillText(`max: ${vmax.toFixed(6)}`, w - pad - 140*devicePixelRatio, y0 + 14*devicePixelRatio);
+
+      // endpoints dates
+      ctx.fillStyle = subtleText;
+      ctx.fillText(rows[0].date, pad + 4*devicePixelRatio, y1 - 6*devicePixelRatio);
+      ctx.fillText(rows[rows.length-1].date, w - pad - 86*devicePixelRatio, y1 - 6*devicePixelRatio);
     }
 
-    drawBand(pad, rows.map(r=>r.risk), "risk", colRisk);
-    drawBand(pad + bandH + gap, rows.map(r=>r.pos), "positive", colPos);
-    drawBand(pad + (bandH+gap)*2, rows.map(r=>r.unc), "uncertainty", colUnc);
+    drawBand(pad, rows.map(r=>r.risk), "risk", "#ff4d4d");
+    drawBand(pad + (bandH+gap)*1, rows.map(r=>r.pos), "positive", "#00d7c7");
+    drawBand(pad + (bandH+gap)*2, rows.map(r=>r.unc), "uncertainty", "#ffcc33");
   }
 
   const el = {
@@ -800,6 +813,43 @@ How it works
     el.totalN.textContent = String(items.length);
   }
 
+
+  async function resolveAsOfFallback(){
+    // If sentiment items don't carry as_of/date, fall back to other "latest" artifacts.
+    const pickAsOf = (j) => {
+      if (!j || typeof j !== "object") return "";
+      return (
+        j.as_of || j.date ||
+        (j.meta && (j.meta.as_of || j.meta.date)) ||
+        (j.summary && (j.summary.as_of || j.summary.date)) ||
+        ""
+      );
+    };
+
+    const CAND = [
+      // Prefer daily_summary (it is guaranteed by Morning Ritual)
+      "/analysis/daily_summary_latest.json",
+      "/analysis/world_politics/analysis/daily_summary_latest.json",
+      "/static/analysis/daily_summary_latest.json",
+      "/static/analysis/world_politics/analysis/daily_summary_latest.json",
+
+      // Then view_model (may be stale, but better than "-")
+      "/analysis/view_model_latest.json",
+      "/analysis/world_politics/analysis/view_model_latest.json",
+      "/static/analysis/view_model_latest.json",
+      "/static/analysis/world_politics/analysis/view_model_latest.json",
+    ];
+
+    for (const p of CAND){
+      const r = await fetchJsonOptional(p);
+      if (r.ok){
+        const a = pickAsOf(r.json);
+        if (a) return a;
+      }
+    }
+    return "";
+  }
+
   async function boot(){
     try{
       el.ledDbg.style.background = "#3ddc84";
@@ -857,7 +907,18 @@ How it works
 
       joinedItems = sentItems.map(s => Object.assign({}, s, { _meta: s._meta || {} }));
 
-      as_of = (sentItems[0] && (sentItems[0].as_of || sentItems[0].date)) || "-";
+      // as_of: prefer sentiment payload, otherwise fall back to daily_summary/view_model.
+      let a0 =
+        (sentItems[0] && (sentItems[0].as_of || sentItems[0].date)) ||
+        (sentJson && (sentJson.as_of || sentJson.date)) ||
+        (sentJson && sentJson.meta && (sentJson.meta.as_of || sentJson.meta.date)) ||
+        "";
+
+      if (!a0){
+        a0 = await resolveAsOfFallback();
+      }
+
+      as_of = a0 || "-";
       fillAsOfPill(as_of);
 
       const avg = (arr, key) => {
@@ -908,12 +969,15 @@ How it works
         "/static/analysis/world_politics/analysis/daily_news_latest.json",
       ];
 
-      const META_JSONL_CAND = [
-        `/analysis/events_${as_of}.jsonl`,
-        `/analysis/world_politics/analysis/events_${as_of}.jsonl`,
-        `/static/analysis/events_${as_of}.jsonl`,
-        `/static/analysis/world_politics/analysis/events_${as_of}.jsonl`,
-      ];
+      const META_JSONL_CAND = [];
+      if (/^\d{4}-\d{2}-\d{2}$/.test(as_of)){
+        META_JSONL_CAND.push(
+          `/analysis/events_${as_of}.jsonl`,
+          `/analysis/world_politics/analysis/events_${as_of}.jsonl`,
+          `/static/analysis/events_${as_of}.jsonl`,
+          `/static/analysis/world_politics/analysis/events_${as_of}.jsonl`,
+        );
+      }
 
       const metaItemsAll = [];
       const metaOkPaths = [];
