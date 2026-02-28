@@ -197,27 +197,21 @@
 <body>
   <div class="wrap">
 
-    <div class="topbar">
+    <header class="top">
       <div class="brand">
-        <div class="logo" aria-hidden="true"></div>
-        <div>
-          <div class="t1">LABOS</div>
-          <div class="t2">World Politics / Overlay</div>
-        </div>
-      </div>
-
-      <nav class="nav" aria-label="primary">
-        <a href="/static/index.html">Index</a>
-        <a class="active" href="/static/overlay.html">Overlay</a>
-        <a href="/static/sentiment.html">Sentiment</a>
-        <a href="/static/digest.html">Digest</a>
-      </nav>
-
-      <div class="asof" id="asofTop" title="as_of: from view_model_latest.json (fallback: daily_summary_latest.json)">
         <span class="dot"></span>
-        <span class="asofText mono" id="asofTextTop">as_of: --</span>
+        <div class="name">GenesisPrediction v2</div>
       </div>
-    </div>
+      <nav>
+        <a href="./index.html">Home</a>
+        <a href="./overlay.html">Overlay</a>
+        <a href="./sentiment.html">Sentiment</a>
+        <span class="pill" id="statusPill"><span class="spin" id="spin"></span><span id="statusText">Loading…</span></span>
+        <span class="pill" id="asofPill"><span class="led"></span><span id="asofText">as_of: -</span></span>
+      </nav>
+    </header>
+
+    
 
     <h1>FX Overlay</h1>
     <p class="sub">
