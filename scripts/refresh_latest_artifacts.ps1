@@ -1,126 +1,136 @@
-# scripts/refresh_latest_artifacts.ps1
-# Refresh *_latest.json by copying the newest dated artifact that exists.
-# Read-only / SST: no recalculation (except sentiment sync), only file selection + copy.
-#
-# - daily_news_latest.json     <- latest daily_news_YYYY-MM-DD.json
-# - daily_summary_latest.json  <- latest daily_summary_YYYY-MM-DD.json
-# - view_model_latest.json     <- latest view_model_YYYY-MM-DD.json (NEW)
-# - sentiment_latest.json      <- rebuilt to match the chosen daily_news date (SYNC)
-#
-# Usage:
-#   powershell -ExecutionPolicy Bypass -File scripts/refresh_latest_artifacts.ps1
-#   powershell -ExecutionPolicy Bypass -File scripts/refresh_latest_artifacts.ps1 -WhatIf
+<# 
+GenesisPrediction v2
+refresh_latest_artifacts.ps1
 
-[CmdletBinding(SupportsShouldProcess=$true)]
+Purpose
+- Ensure "latest" artifacts are refreshed into all known consumer locations:
+  1) data/world_politics/analysis/*_latest.json         (source of truth for GUI data)
+  2) data/world_politics/analysis/sentiment_timeseries.csv (trend source for Sentiment UI)
+  3) data/digest/*                                     (legacy aliases used by older UI)
+  4) dist/labos_deploy/analysis/*                       (local deploy bundle often served at /analysis/*)
+
+Why
+- Fixes UI serving stale deploy-bundle artifacts (Index/Sentiment as_of drift).
+- Fixes "Sentiment Trend not enough points" when /analysis/sentiment_timeseries.csv is missing.
+- Safe: copy-only, no generation, no modification of analysis content.
+
+Run (repo root):
+  powershell -ExecutionPolicy Bypass -File scripts/refresh_latest_artifacts.ps1
+#>
+
 param(
-  [string]$AnalysisDir = "data\world_politics\analysis"
+  [Parameter(Mandatory = $false)]
+  [string]$Root
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+function NowStamp { return (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss") }
+function Log([string]$msg) { Write-Host ("[{0}] {1}" -f (NowStamp), $msg) }
+
 function Resolve-RepoRoot {
-  try {
-    $p = Resolve-Path (Join-Path $PSScriptRoot "..")
-    return $p.Path
-  } catch {
-    return (Get-Location).Path
+  if ($Root -and -not [string]::IsNullOrWhiteSpace($Root)) {
+    return (Resolve-Path $Root).Path
+  }
+  if ($PSScriptRoot) {
+    return (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+  }
+  return (Resolve-Path "..").Path
+}
+
+function Ensure-Dir([string]$path) {
+  if (-not (Test-Path $path)) {
+    New-Item -ItemType Directory -Force -Path $path | Out-Null
   }
 }
 
-$RepoRoot = Resolve-RepoRoot
-$PyExe = Join-Path $RepoRoot ".venv\Scripts\python.exe"
-$BuildSent = Join-Path $RepoRoot "scripts\build_daily_sentiment.py"
-
-function Get-LatestDatedFile {
-  param(
-    [Parameter(Mandatory=$true)][string]$Dir,
-    [Parameter(Mandatory=$true)][string]$Prefix
-  )
-
-  if (-not (Test-Path $Dir)) { return $null }
-
-  $rx = "^" + [Regex]::Escape($Prefix) + "_(?<d>\d{4}-\d{2}-\d{2})\.json$"
-
-  $candidates = Get-ChildItem -Path $Dir -File -Filter "${Prefix}_*.json" |
-    ForEach-Object {
-      $m = [regex]::Match($_.Name, $rx)
-      if ($m.Success) {
-        [pscustomobject]@{
-          Path = $_.FullName
-          Date = $m.Groups["d"].Value
-        }
-      }
-    } |
-    Where-Object { $_ -ne $null }
-
-  if (-not $candidates) { return $null }
-
-  return ($candidates | Sort-Object Date | Select-Object -Last 1)
-}
-
-function Copy-Latest {
-  param(
-    [Parameter(Mandatory=$true)][string]$Dir,
-    [Parameter(Mandatory=$true)][string]$Prefix
-  )
-
-  $latest = Get-LatestDatedFile -Dir $Dir -Prefix $Prefix
-  if ($null -eq $latest) {
-    Write-Warning "No dated files found for prefix '$Prefix' in: $Dir"
-    return $null
-  }
-
-  $src = $latest.Path
-  $dst = Join-Path $Dir "${Prefix}_latest.json"
-
-  if ($PSCmdlet.ShouldProcess($dst, "Copy from $src")) {
-    Copy-Item $src $dst -Force
-    Write-Host "[OK] $Prefix -> $($latest.Date)"
-  }
-
-  return $latest
-}
-
-function Rebuild-Sentiment {
-  param(
-    [Parameter(Mandatory=$true)][string]$Date
-  )
-
-  if (-not (Test-Path $PyExe)) {
-    throw "python exe not found: $PyExe"
-  }
-  if (-not (Test-Path $BuildSent)) {
-    throw "sentiment builder not found: $BuildSent"
-  }
-
-  $cmd = "`"$PyExe`" `"$BuildSent`" --date $Date"
-  if ($PSCmdlet.ShouldProcess((Join-Path $AnalysisDir "sentiment_latest.json"), "Rebuild sentiment for date=$Date (CMD: $cmd)")) {
-    Write-Host "[DO] rebuild sentiment: date=$Date"
-    & $PyExe $BuildSent --date $Date
-    if ($LASTEXITCODE -ne 0) { throw "sentiment rebuild failed (exit=$LASTEXITCODE)" }
-    Write-Host "[OK] sentiment rebuilt and synced to daily_news_$Date.json"
+function Copy-IfExists([string]$src, [string]$dst) {
+  if (Test-Path $src) {
+    Ensure-Dir (Split-Path $dst -Parent)
+    Copy-Item -Force -Path $src -Destination $dst
+    Log ("[OK] copy: {0} -> {1}" -f $src, $dst)
+    return $true
+  } else {
+    Log ("[SKIP] missing: {0}" -f $src)
+    return $false
   }
 }
 
-Write-Host "=== Refresh latest artifacts (SST copy + sentiment sync) ==="
-Write-Host ("RepoRoot  : " + $RepoRoot)
-Write-Host ("AnalysisDir: " + $AnalysisDir)
-Write-Host ""
+function Show-Stamp([string]$label, [string]$path) {
+  if (Test-Path $path) {
+    $it = Get-Item $path
+    Log ("STAMP {0}: {1}  ({2} bytes)" -f $label, $it.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss"), $it.Length)
+  } else {
+    Log ("STAMP {0}: MISSING" -f $label)
+  }
+}
 
-# 1) Copy latest daily_news / daily_summary / view_model
-$news   = Copy-Latest -Dir $AnalysisDir -Prefix "daily_news"
-$sum    = Copy-Latest -Dir $AnalysisDir -Prefix "daily_summary"
-$vm     = Copy-Latest -Dir $AnalysisDir -Prefix "view_model"
+# -----------------------------
+# Main
+# -----------------------------
+$ROOT = Resolve-RepoRoot
+
+$SRC_WP  = Join-Path $ROOT "data\world_politics\analysis"
+$DST_DEP = Join-Path $ROOT "dist\labos_deploy\analysis"
+
+# Legacy aliases historically used by UI
+$DST_DIGEST       = Join-Path $ROOT "data\digest"
+$DST_DIGEST_VIEW  = Join-Path $ROOT "data\digest\view"
 
 Write-Host ""
+Write-Host "refresh_latest_artifacts"
+Write-Host ("ROOT: {0}" -f $ROOT)
+Write-Host ("SRC : {0}" -f $SRC_WP)
+Write-Host ("DEP : {0}" -f $DST_DEP)
+Write-Host ("DIG : {0}" -f $DST_DIGEST)
+Write-Host ""
 
-# 2) Sentiment must match the daily_news date (anti-regression)
-if ($null -ne $news -and $news.Date) {
-  Rebuild-Sentiment -Date $news.Date
-} else {
-  Write-Warning "Skip sentiment rebuild: daily_news latest date not found."
+# Validate source
+if (-not (Test-Path $SRC_WP)) {
+  throw ("Source folder not found: {0}" -f $SRC_WP)
 }
 
-Write-Host ""
-Write-Host "Done."
+# Ensure destinations exist
+Ensure-Dir $DST_DEP
+Ensure-Dir $DST_DIGEST
+Ensure-Dir $DST_DIGEST_VIEW
+
+# ---- Copy core "latest" artifacts ----
+$src_view_model = Join-Path $SRC_WP "view_model_latest.json"
+$src_summary    = Join-Path $SRC_WP "daily_summary_latest.json"
+$src_sentiment  = Join-Path $SRC_WP "sentiment_latest.json"
+$src_health     = Join-Path $SRC_WP "health_latest.json"
+$src_ts         = Join-Path $SRC_WP "sentiment_timeseries.csv"
+
+# 1) Deploy bundle (served as /analysis/* in many local setups)
+Copy-IfExists $src_view_model (Join-Path $DST_DEP "view_model_latest.json") | Out-Null
+Copy-IfExists $src_summary    (Join-Path $DST_DEP "daily_summary_latest.json") | Out-Null
+Copy-IfExists $src_sentiment  (Join-Path $DST_DEP "sentiment_latest.json") | Out-Null
+Copy-IfExists $src_health     (Join-Path $DST_DEP "health_latest.json") | Out-Null
+Copy-IfExists $src_ts         (Join-Path $DST_DEP "sentiment_timeseries.csv") | Out-Null
+
+# 2) Digest aliases (legacy UI paths)
+Copy-IfExists $src_view_model (Join-Path $DST_DIGEST "view_model_latest.json") | Out-Null
+Copy-IfExists $src_view_model (Join-Path $DST_DIGEST_VIEW "view_model_latest.json") | Out-Null
+
+# Optional mirrors (harmless)
+Copy-IfExists $src_summary   (Join-Path $DST_DIGEST "daily_summary_latest.json") | Out-Null
+Copy-IfExists $src_sentiment (Join-Path $DST_DIGEST "sentiment_latest.json") | Out-Null
+Copy-IfExists $src_health    (Join-Path $DST_DIGEST "health_latest.json") | Out-Null
+Copy-IfExists $src_ts        (Join-Path $DST_DIGEST "sentiment_timeseries.csv") | Out-Null
+
+# ---- Report timestamps (helps confirm stale vs fresh) ----
+Log "----- TIMESTAMPS -----"
+Show-Stamp "SRC view_model_latest" $src_view_model
+Show-Stamp "SRC sentiment_timeseries" $src_ts
+Show-Stamp "DEP view_model_latest" (Join-Path $DST_DEP "view_model_latest.json")
+Show-Stamp "DEP daily_summary_latest" (Join-Path $DST_DEP "daily_summary_latest.json")
+Show-Stamp "DEP sentiment_latest" (Join-Path $DST_DEP "sentiment_latest.json")
+Show-Stamp "DEP sentiment_timeseries" (Join-Path $DST_DEP "sentiment_timeseries.csv")
+Show-Stamp "DEP health_latest" (Join-Path $DST_DEP "health_latest.json")
+Show-Stamp "DIG view_model_latest" (Join-Path $DST_DIGEST "view_model_latest.json")
+Show-Stamp "DIG view/view_model_latest" (Join-Path $DST_DIGEST_VIEW "view_model_latest.json")
+Show-Stamp "DIG sentiment_timeseries" (Join-Path $DST_DIGEST "sentiment_timeseries.csv")
+
+Log "DONE refresh_latest_artifacts"
