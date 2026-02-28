@@ -1,491 +1,416 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <meta name="color-scheme" content="dark"/>
-  <title>LABOS / Index</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LABOS - GenesisPrediction v2</title>
 
-  <link rel="stylesheet" href="/static/app.css?v=081867"/>
+  <!--
+    Index: SAFE RECOVERY BUILD (Index loading + freshness fix)
+    - Robust JSON loader with fallback candidates
+    - Shows PARTIAL state (which artifacts loaded / missing)
+    - Picks "as_of" by newest timestamp among loaded artifacts (fixes stale view_model_latest)
+    - Cache-bust fetches (same-origin)
+  -->
+  <link rel="stylesheet" href="/static/app.css?v=980ed81" />
 
   <style>
-    /* index.html 側にある最小の補助スタイル（既存の雰囲気を維持） */
-    :root{
-      --bg0:#070b14;
-      --bg1:#0b1020;
-      --panel:#101a33;
-      --panel2:#0f172a;
-      --border:rgba(255,255,255,.08);
-      --text:rgba(255,255,255,.92);
-      --muted:rgba(255,255,255,.65);
-      --muted2:rgba(255,255,255,.45);
-      --accent:#7c3aed;
-      --accent2:#22c55e;
-      --warn:#fbbf24;
-      --ng:#ef4444;
-      --ok:#22c55e;
-      --shadow:0 22px 70px rgba(0,0,0,.55);
-      --r:22px;
-    }
-    body{
-      margin:0;
-      background:
-        radial-gradient(1000px 700px at 25% 0%, rgba(124,58,237,.25), transparent 60%),
-        radial-gradient(1000px 700px at 85% 10%, rgba(34,197,94,.10), transparent 55%),
-        linear-gradient(180deg, var(--bg0), var(--bg1));
-      color:var(--text);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", Arial, "Apple Color Emoji","Segoe UI Emoji";
-    }
-    a{ color:inherit; text-decoration:none; }
-    .wrap{ max-width:1180px; margin:0 auto; padding:18px 18px 60px; }
-
-    .topbar{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:14px;
-      padding:14px 16px;
-      border:1px solid var(--border);
-      border-radius:999px;
-      background:rgba(15,23,42,.55);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 10px 40px rgba(0,0,0,.35);
-    }
-    .brand{ display:flex; align-items:center; gap:12px; min-width:240px;}
-    .logo{
-      width:34px; height:34px; border-radius:12px;
-      background: radial-gradient(circle at 30% 30%, #60a5fa, #7c3aed 55%, #22c55e 120%);
-      box-shadow: 0 10px 30px rgba(124,58,237,.25);
-    }
-    .brand .t1{ font-weight:800; letter-spacing:.2px; }
-    .brand .t2{ font-size:12px; color:var(--muted); margin-top:2px; }
-
-    .nav{
-      display:flex; gap:10px;
-      padding:6px;
-      border:1px solid var(--border);
-      border-radius:999px;
-      background:rgba(10,16,32,.35);
-    }
-    .nav a{
-      padding:10px 16px;
-      border-radius:999px;
-      color:var(--muted);
-      transition: .15s ease;
-      border:1px solid transparent;
-    }
-    .nav a:hover{ color:var(--text); background:rgba(255,255,255,.04); }
-    .nav a.active{
-      color:var(--text);
-      background:rgba(124,58,237,.18);
-      border-color: rgba(124,58,237,.35);
-      box-shadow: inset 0 0 0 1px rgba(124,58,237,.18);
-    }
-
-    .asof{
-      display:flex; align-items:center; gap:10px;
-      padding:10px 14px;
-      border-radius:999px;
-      border:1px solid var(--border);
-      background:rgba(15,23,42,.55);
-      min-width:240px;
-      justify-content:flex-end;
-    }
-    .dot{
-      width:10px; height:10px; border-radius:999px;
-      background:var(--accent2);
-      box-shadow: 0 0 0 4px rgba(34,197,94,.15);
-      flex:0 0 auto;
-    }
-    .asofText{ font-size:13px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-
-    h1{
-      margin:26px 0 8px;
-      font-size:42px;
-      letter-spacing:.2px;
-    }
-    .sub{
-      color:var(--muted);
-      margin:0 0 20px;
-      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-    }
-    .pill{
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid var(--border);
-      background:rgba(255,255,255,.04);
-      font-size:12px;
-      color:var(--muted);
-    }
-
-    .grid{
-      display:grid;
-      grid-template-columns: 1.25fr .75fr;
-      gap:18px;
-      margin-top:18px;
-    }
-    @media (max-width: 980px){
-      .grid{ grid-template-columns:1fr; }
-      .brand{ min-width:unset; }
-      .asof{ min-width:unset; }
-    }
-
-    .card{
-      border:1px solid var(--border);
-      border-radius:var(--r);
-      background:rgba(15,23,42,.45);
-      backdrop-filter: blur(10px);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-    }
-    .card .hd{
-      display:flex; align-items:center; justify-content:space-between;
-      padding:16px 18px;
-      border-bottom:1px solid var(--border);
-    }
-    .card .hd h2{
-      margin:0;
-      font-size:18px;
-      letter-spacing:.2px;
-    }
-    .card .bd{ padding:16px 18px; color:var(--muted); }
-
-    .snapshotGrid{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:12px;
-      margin-top:10px;
-    }
-    .mini{
-      padding:14px 14px;
-      border-radius:18px;
-      border:1px solid var(--border);
-      background:rgba(255,255,255,.03);
-      display:flex; align-items:center; justify-content:space-between;
-      gap:10px;
-    }
-    .mini .k{ font-weight:800; color:var(--text); }
-    .mini .v{ color:var(--muted); font-size:13px; }
-
-    .health{
-      display:grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap:12px;
-      margin-top:14px;
-    }
-    .healthBox{
-      padding:14px;
-      border-radius:18px;
-      border:1px solid var(--border);
-      background:rgba(255,255,255,.03);
-    }
-    .healthBox .t{ color:var(--muted); font-size:12px; letter-spacing:.2px; }
-    .healthBox .n{ font-size:34px; font-weight:900; margin-top:6px; }
-    .ok{ color:var(--ok); }
-    .warn{ color:var(--warn); }
-    .ng{ color:var(--ng); }
-
-    .smallNote{
-      margin-top:12px;
-      color:var(--muted2);
-      font-size:12px;
-      line-height:1.6;
-      white-space:pre-wrap;
-    }
-    .mono{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    }
+    .wrap{max-width:1100px;margin:0 auto;padding:14px}
+    .topbar{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:10px 14px;position:sticky;top:0;z-index:50;background:rgba(10,14,20,.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08)}
+    .brand{display:flex;flex-direction:column;line-height:1.05}
+    .brand .name{font-weight:800;letter-spacing:.2px}
+    .brand .sub{opacity:.8;font-size:.86rem}
+    nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    nav a{display:inline-block;padding:8px 10px;border:1px solid rgba(255,255,255,.14);border-radius:999px;text-decoration:none}
+    nav a:hover{border-color:rgba(105,169,255,.6)}
+    .pill{display:inline-flex;gap:8px;align-items:center;padding:7px 10px;border:1px solid rgba(255,255,255,.14);border-radius:999px;opacity:.95}
+    .muted{opacity:.78}
+    .grid{display:grid;grid-template-columns:1fr;gap:12px}
+    @media(min-width:900px){.grid{grid-template-columns:1fr 1fr}}
+    .card{border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:14px;background:rgba(255,255,255,.03)}
+    .card h2{margin:0 0 8px 0;font-size:1.02rem}
+    .kpi-row{display:grid;grid-template-columns:1fr;gap:10px}
+    @media(min-width:900px){.kpi-row{grid-template-columns:repeat(3,1fr)}}
+    .kpi{border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:12px;background:rgba(255,255,255,.02)}
+    .kpi .label{opacity:.78;font-size:.86rem}
+    .kpi .value{font-size:1.45rem;font-weight:800;margin-top:2px}
+    .kpi .note{opacity:.78;font-size:.86rem;margin-top:4px}
+    .spin{width:16px;height:16px;border-radius:999px;border:2px solid rgba(255,255,255,.25);border-top-color:rgba(255,255,255,.85);animation:sp 1s linear infinite}
+    @keyframes sp{to{transform:rotate(360deg)}}
+    .err{border-color:rgba(255,90,90,.55);background:rgba(255,90,90,.08)}
+    .warn{border-color:rgba(255,205,90,.55);background:rgba(255,205,90,.08)}
+    code{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+    .small{font-size:.9rem}
+    .list{margin:8px 0 0 0;padding-left:18px}
+    .list li{margin:4px 0}
+    .footer{opacity:.7;font-size:.85rem;margin:22px 0 10px 0}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .tag{display:inline-flex;gap:6px;align-items:center;padding:4px 8px;border:1px solid rgba(255,255,255,.14);border-radius:999px;font-size:.84rem}
   </style>
 </head>
 
 <body>
-  <div class="wrap">
-
-    <div class="topbar">
-      <div class="brand">
-        <div class="logo" aria-hidden="true"></div>
-        <div>
-          <div class="t1">LABOS</div>
-          <div class="t2">World Politics / Index</div>
-        </div>
-      </div>
-
-      <nav class="nav" aria-label="primary">
-        <a class="active" href="/static/index.html">Index</a>
-        <a href="/static/overlay.html">Overlay</a>
-        <a href="/static/sentiment.html">Sentiment</a>
-        <a href="/static/digest.html">Digest</a>
-      </nav>
-
-      <div class="asof" id="asOfPill" title="as_of: from view_model_latest.json (fallback: daily_summary_latest.json)">
-        <span class="dot" id="asDot"></span>
-        <span class="asofText" id="asOfText">as_of: --</span>
-      </div>
+  <header class="topbar">
+    <div class="brand">
+      <div class="name">LABOS</div>
+      <div class="sub">GenesisPrediction v2</div>
     </div>
+    <nav>
+      <a class="nav-link" href="/static/index.html?v=980ed81">Home</a>
+      <a class="nav-link" href="/static/overlay.html?v=980ed81">Overlay</a>
+      <a class="nav-link" href="/static/sentiment.html?v=980ed81">Sentiment</a>
+      <span class="pill"><span class="spin" id="spin"></span><span id="statusText">Loading…</span></span>
+      <span class="pill muted">as_of: <span id="asOf">—</span></span>
+    </nav>
+  </header>
 
-    <h1>LABOS Index</h1>
-    <p class="sub">
-      ヘッダ統一（sentiment基準）＋主要導線＋今日の要約＋Healthを集約。
-      <span class="pill mono" id="vmSourcePill">source: /analysis/view_model_latest.json</span>
-    </p>
-
-    <div class="grid">
-      <div class="card">
-        <div class="hd">
-          <h2>Today Snapshot</h2>
-          <div class="pill mono" id="snapshotMeta">as_of: --</div>
-        </div>
-        <div class="bd">
-          <div class="snapshotGrid">
-            <a class="mini" href="/static/overlay.html">
-              <div>
-                <div class="k">Overlay</div>
-                <div class="v">FX / overlay panels</div>
-              </div>
-              <div class="v">›</div>
-            </a>
-            <a class="mini" href="/static/sentiment.html">
-              <div>
-                <div class="k">Sentiment</div>
-                <div class="v">risk / positive / uncertainty</div>
-              </div>
-              <div class="v">›</div>
-            </a>
-            <a class="mini" href="/static/digest.html">
-              <div>
-                <div class="k">Digest</div>
-                <div class="v">daily digest view</div>
-              </div>
-              <div class="v">›</div>
-            </a>
-            <a class="mini" href="javascript:void(0)" id="reloadBtn">
-              <div>
-                <div class="k">Refresh</div>
-                <div class="v">reload this page</div>
-              </div>
-              <div class="v">↻</div>
-            </a>
-          </div>
-
-          <div class="smallNote mono" id="sourceHtmlLine">source_html=--</div>
-          <div class="smallNote" id="highlightsLine">• highlights not found</div>
-        </div>
+  <main class="wrap">
+    <section class="kpi-row" aria-label="Key metrics">
+      <div class="kpi">
+        <div class="label">Events (today)</div>
+        <div class="value" id="kpiEvents">—</div>
+        <div class="note" id="kpiEventsNote">—</div>
       </div>
-
-      <div class="card">
-        <div class="hd">
-          <h2>Data Health</h2>
-          <div class="pill mono" id="healthSourcePill">source: /analysis/health_latest.json</div>
-        </div>
-        <div class="bd">
-          <div class="health">
-            <div class="healthBox">
-              <div class="t">OK <span class="mono">count</span></div>
-              <div class="n ok mono" id="okCount">--</div>
-            </div>
-            <div class="healthBox">
-              <div class="t">WARN <span class="mono">count</span></div>
-              <div class="n warn mono" id="warnCount">--</div>
-            </div>
-            <div class="healthBox">
-              <div class="t">NG <span class="mono">count</span></div>
-              <div class="n ng mono" id="ngCount">--</div>
-            </div>
-          </div>
-          <div class="smallNote">
-            ※ Index は「導線と状況把握」を最優先。詳細は各ページへ。<br/>
-            ※ GUI は read-only (SST) 。PNG/CSV/JSON を読むだけで再計算しません。
-          </div>
-        </div>
+      <div class="kpi">
+        <div class="label">Sentiment</div>
+        <div class="value" id="kpiSentiment">—</div>
+        <div class="note" id="kpiSentimentNote">—</div>
       </div>
+      <div class="kpi">
+        <div class="label">Data Health</div>
+        <div class="value" id="kpiHealth">—</div>
+        <div class="note" id="kpiHealthNote">—</div>
+      </div>
+    </section>
+
+    <section class="grid" style="margin-top:12px">
+      <article class="card" id="cardSummary">
+        <h2>Daily Summary</h2>
+        <div class="row small muted" style="margin-bottom:8px">
+          <span>source:</span> <code id="srcLabel">—</code>
+        </div>
+        <div id="summaryBody" class="small muted">Loading…</div>
+      </article>
+
+      <article class="card" id="cardNow">
+        <h2>Today Snapshot</h2>
+        <div id="snapshotBody" class="small muted">Loading…</div>
+        <div class="row" style="margin-top:10px">
+          <span class="tag muted">loaded: <code id="loadedTags">—</code></span>
+          <span class="tag muted">missing: <code id="missingTags">—</code></span>
+        </div>
+      </article>
+    </section>
+
+    <section class="card warn" id="cardPartial" style="margin-top:12px; display:none">
+      <h2>Partial data loaded</h2>
+      <div class="small" id="partialMsg"></div>
+      <div class="small muted" style="margin-top:8px">Loaded sources:</div>
+      <ul class="list small muted" id="partialLoaded"></ul>
+      <div class="small muted" style="margin-top:8px">Tried URLs (last run):</div>
+      <ul class="list small muted" id="partialTried"></ul>
+      <div class="small muted" style="margin-top:8px">
+        Tip: open DevTools Console/Network to see 404/403 for missing JSON URLs.
+      </div>
+    </section>
+
+    <section class="card err" id="cardError" style="margin-top:12px; display:none">
+      <h2>Loading failed</h2>
+      <div class="small" id="errorMsg"></div>
+      <div class="small muted" style="margin-top:8px">Tried URLs:</div>
+      <ul class="list small muted" id="errorTried"></ul>
+      <div class="small muted" style="margin-top:8px">
+        Tip: hard reload (Ctrl+F5) or open a Private Window to avoid cache.
+      </div>
+    </section>
+
+    <div class="footer">
+      <div>GenesisPrediction v2 • UI recovery build (Index loading + freshness fix) • commit: <code>980ed81</code></div>
     </div>
-
-  </div>
+  </main>
 
 <script>
-(function(){
-  "use strict";
+(() => {
+  const $ = (id) => document.getElementById(id);
 
-  function q(id){ return document.getElementById(id); }
-  function setText(id, txt){ const el=q(id); if(el) el.textContent = txt; }
-  function setAttr(id, k, v){ const el=q(id); if(el) el.setAttribute(k, v); }
-  function uniq(arr){
-    const s = new Set();
-    const out = [];
-    for (const x of arr){
-      const k = String(x || "");
-      if (!k || s.has(k)) continue;
-      s.add(k);
-      out.push(x);
-    }
-    return out;
-  }
+  const state = {
+    tried: [],
+    loaded: {},
+    model: null,
+    summary: null,
+    health: null,
+    sentiment: null
+  };
 
-  async function fetchJson(url){
-    const r = await fetch(url, { cache: "no-store" });
-    if (!r.ok) throw new Error(`HTTP ${r.status} ${url}`);
-    return await r.json();
-  }
-
-  async function fetchFirstJson(urls){
-    let lastErr = null;
-    for (const u of urls){
-      try{
-        const j = await fetchJson(u);
-        return { url: u, json: j };
-      }catch(e){
-        lastErr = e;
-      }
-    }
-    throw (lastErr || new Error("fetchFirstJson: all failed"));
-  }
-
-  function guessAsOf(obj){
-    if (!obj || typeof obj !== "object") return "--";
-    const keys = ["as_of","asOf","date","generated_at","generatedAt","created_at","createdAt","updated_at","updatedAt","ts","timestamp"];
-    for (const k of keys){
-      if (typeof obj[k] === "string" && obj[k]) return obj[k];
-    }
-    if (obj.meta && typeof obj.meta === "object"){
-      for (const k of keys){
-        if (typeof obj.meta[k] === "string" && obj.meta[k]) return obj.meta[k];
-      }
-    }
-    return "--";
-  }
-
-  function guessAsOfAny(d){
-    if (!d) return "--";
-    if (Array.isArray(d)) return guessAsOf(d[0] || {});
-    if (typeof d === "object"){
-      // common shapes: {items:[...]}, {articles:[...]} etc.
-      for (const k of ["items","articles","data","rows","results","events"]){
-        if (Array.isArray(d[k]) && d[k].length) return guessAsOf(d[k][0] || d);
-      }
-    }
-    return guessAsOf(d);
-  }
-
-  function buildViewModelUrls(){
-    return uniq([
-      "/analysis/view_model_latest.json",
-      "/analysis/digest/view_model_latest.json",
-      "/analysis/view/view_model_latest.json",
-      "/analysis/world_politics/analysis/view_model_latest.json",
-      "/analysis/world_politics/static/view_model_latest.json",
-      "/static/analysis/view_model_latest.json",
-      "/static/analysis/world_politics/analysis/view_model_latest.json",
-    ]);
-  }
-
-  const VIEWMODEL_URLS = buildViewModelUrls();
-  const SUMMARY_URLS = uniq([
-    "/analysis/daily_summary_latest.json",
-    "/analysis/world_politics/analysis/daily_summary_latest.json",
-    "/analysis/world_politics/static/daily_summary_latest.json",
-    "/static/analysis/daily_summary_latest.json",
-    "/static/analysis/world_politics/analysis/daily_summary_latest.json",
-    "/static/world_politics/static/daily_summary_latest.json",
-  ]);
-
-  const HEALTH_URLS = uniq([
+  const CANDIDATES = [
+    "/analysis/world_politics/view_model_latest.json",
+    "/analysis/world_politics/daily_summary_latest.json",
+    "/analysis/world_politics/sentiment_latest.json",
     "/analysis/health_latest.json",
-    "/analysis/world_politics/analysis/health_latest.json",
-    "/static/analysis/health_latest.json",
-  ]);
 
-  function setDotState(state){
-    const el = q("asDot");
-    if (!el) return;
-    if (state === "ok"){
-      el.style.background = "var(--accent2)";
-      el.style.boxShadow = "0 0 0 4px rgba(34,197,94,.15)";
-    }else if (state === "warn"){
-      el.style.background = "var(--warn)";
-      el.style.boxShadow = "0 0 0 4px rgba(251,191,36,.12)";
-    }else{
-      el.style.background = "var(--ng)";
-      el.style.boxShadow = "0 0 0 4px rgba(239,68,68,.12)";
+    "/analysis/view_model_latest.json",
+    "/analysis/daily_summary_latest.json",
+    "/analysis/sentiment_latest.json",
+    "/analysis/health_latest.json",
+
+    "/data/world_politics/analysis/view_model_latest.json",
+    "/data/world_politics/analysis/daily_summary_latest.json",
+    "/data/world_politics/analysis/sentiment_latest.json",
+    "/data/world_politics/analysis/health_latest.json",
+
+    "/data/digest/view_model_latest.json",
+    "/data/digest/view/view_model_latest.json"
+  ];
+
+  function setStatus(text, isError=false) {
+    $("statusText").textContent = text;
+    $("spin").style.display = isError ? "none" : "inline-block";
+  }
+
+  function cacheBust(url) {
+    const u = new URL(url, window.location.origin);
+    u.searchParams.set("cb", Date.now().toString());
+    return u.toString();
+  }
+
+  async function fetchJson(url, timeoutMs=12000) {
+    state.tried.push(url);
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), timeoutMs);
+    try {
+      const res = await fetch(cacheBust(url), { signal: ctl.signal, cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+      const txt = await res.text();
+      const cleaned = txt.replace(/^\uFEFF/, "").trim();
+      return JSON.parse(cleaned);
+    } finally {
+      clearTimeout(t);
     }
   }
 
-  function safeNum(x){
-    const n = Number(x);
-    return Number.isFinite(n) ? n : 0;
+  function getAsOfRaw(obj) {
+    const keys = ["as_of","asOf","date","day","generated_at","generatedAt","fetched_at","fetchedAt"];
+    for (const k of keys) if (obj && obj[k]) return String(obj[k]);
+    if (obj && obj.meta && (obj.meta.as_of || obj.meta.asOf || obj.meta.date)) {
+      return String(obj.meta.as_of || obj.meta.asOf || obj.meta.date);
+    }
+    return null;
   }
 
-  async function main(){
-    // reload
-    const rb = q("reloadBtn");
-    if (rb) rb.addEventListener("click", ()=>location.reload());
+  function parseAsOfToMs(s) {
+    if (!s) return null;
+    const raw = String(s).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      const ms = Date.parse(raw + "T00:00:00Z");
+      return Number.isFinite(ms) ? ms : null;
+    }
+    const ms = Date.parse(raw);
+    return Number.isFinite(ms) ? ms : null;
+  }
 
-    // view model
-    const vmRes = await fetchFirstJson(VIEWMODEL_URLS);
-    setText("vmSourcePill", "source: " + vmRes.url);
+  function pickNewestAsOf() {
+    const candidates = [
+      { kind: "daily_summary", obj: state.summary },
+      { kind: "sentiment", obj: state.sentiment },
+      { kind: "health", obj: state.health },
+      { kind: "view_model", obj: state.model }
+    ];
 
-    let asOf = guessAsOf(vmRes.json);
-    if (asOf === "--") asOf = "";
-    setText("asOfText", "as_of: " + (asOf || "--"));
-    setText("snapshotMeta", "as_of: " + (asOf || "--"));
+    let best = null;
+    for (const c of candidates) {
+      const raw = getAsOfRaw(c.obj);
+      const ms = parseAsOfToMs(raw);
+      if (ms === null) continue;
+      if (!best || ms > best.ms) best = { kind: c.kind, raw, ms };
+    }
 
-    // Prefer daily_summary_latest.json for "today-ness" when view_model is stale.
-    try{
-      const s = await fetchFirstJson(SUMMARY_URLS);
-      const summaryAsOf = guessAsOfAny(s.json);
-      if (summaryAsOf && summaryAsOf !== "--" && summaryAsOf !== asOf){
-        asOf = summaryAsOf;
-        setText("asOfText", "as_of: " + asOf);
-        setText("snapshotMeta", "as_of: " + asOf);
-        setAttr("asOfPill", "title", `as_of source overridden by daily_summary_latest.json (${s.url})`);
+    if (best) return best;
+
+    for (const c of candidates) {
+      const raw = getAsOfRaw(c.obj);
+      if (raw) return { kind: c.kind, raw, ms: null };
+    }
+    return { kind: "none", raw: "—", ms: null };
+  }
+
+  function safeText(x, fallback="—") {
+    if (x === null || x === undefined) return fallback;
+    const s = String(x);
+    return s.length ? s : fallback;
+  }
+
+  function formatSentiment(obj) {
+    if (!obj) return null;
+    const cand = obj.latest || obj.today || obj;
+    const r = cand.risk ?? cand.neg ?? cand.negative;
+    const p = cand.positive ?? cand.pos;
+    const u = cand.uncertainty ?? cand.uncertain;
+    const nums = [r,p,u].filter(v => typeof v === "number");
+    if (nums.length === 0) return null;
+    return { r, p, u };
+  }
+
+  function render() {
+    const bestAsOf = pickNewestAsOf();
+    $("asOf").textContent = safeText(bestAsOf.raw);
+
+    const loadedKinds = Object.keys(state.loaded).sort();
+    const srcLines = loadedKinds.map(k => `${k}: ${state.loaded[k]}`);
+    $("srcLabel").textContent = srcLines.length ? srcLines.join(" | ") : "—";
+
+    const summaryText =
+      (state.summary && (state.summary.summary || state.summary.text || state.summary.body)) ||
+      (state.model && (state.model.daily_summary || state.model.summary || state.model.text)) ||
+      null;
+    $("summaryBody").textContent = summaryText ? String(summaryText) : "—";
+
+    const events =
+      (state.summary && (state.summary.events_count || state.summary.eventsCount)) ||
+      (state.model && (state.model.events_count || state.model.eventsCount || (Array.isArray(state.model.events) ? state.model.events.length : null))) ||
+      null;
+    $("kpiEvents").textContent = safeText(events);
+    $("kpiEventsNote").textContent =
+      (state.summary && state.summary.query) ? `query: ${safeText(state.summary.query, "—")}` :
+      (state.model && state.model.query) ? `query: ${safeText(state.model.query, "—")}` :
+      "—";
+
+    const s = formatSentiment(state.sentiment || (state.model && state.model.sentiment));
+    if (s) {
+      const r = (typeof s.r === "number") ? s.r.toFixed(2) : "—";
+      const p = (typeof s.p === "number") ? s.p.toFixed(2) : "—";
+      const u = (typeof s.u === "number") ? s.u.toFixed(2) : "—";
+      $("kpiSentiment").textContent = "OK";
+      $("kpiSentimentNote").textContent = `risk ${r} / pos ${p} / unc ${u}`;
+    } else {
+      $("kpiSentiment").textContent = "—";
+      $("kpiSentimentNote").textContent = "—";
+    }
+
+    const h = state.health;
+    if (h && (h.ok !== undefined || h.warn !== undefined || h.ng !== undefined || h.OK !== undefined || h.WARN !== undefined || h.NG !== undefined)) {
+      const ok = (h.ok ?? h.OK ?? h.ok_count);
+      const warn = (h.warn ?? h.WARN ?? h.warn_count);
+      const ng = (h.ng ?? h.NG ?? h.ng_count);
+      $("kpiHealth").textContent = safeText(ok);
+      $("kpiHealthNote").textContent = `warn ${safeText(warn)} / ng ${safeText(ng)}`;
+    } else {
+      $("kpiHealth").textContent = "—";
+      $("kpiHealthNote").textContent = "—";
+    }
+
+    const allKinds = ["view_model","daily_summary","sentiment","health"];
+    const missingKinds = allKinds.filter(k => !state.loaded[k]);
+    $("loadedTags").textContent = loadedKinds.length ? loadedKinds.join(", ") : "—";
+    $("missingTags").textContent = missingKinds.length ? missingKinds.join(", ") : "—";
+
+    const parts = [];
+    parts.push(`as_of: ${safeText(bestAsOf.raw)} (from ${bestAsOf.kind})`);
+    if (events !== null && events !== undefined) parts.push(`events: ${safeText(events)}`);
+    if (s) parts.push(`sentiment: risk ${typeof s.r==="number"?s.r.toFixed(2):"—"}, pos ${typeof s.p==="number"?s.p.toFixed(2):"—"}, unc ${typeof s.u==="number"?s.u.toFixed(2):"—"}`);
+    $("snapshotBody").textContent = parts.join(" • ");
+
+    if (missingKinds.length && loadedKinds.length) {
+      $("cardPartial").style.display = "block";
+      $("partialMsg").textContent = `Loaded: ${loadedKinds.join(", ")} / Missing: ${missingKinds.join(", ")}`;
+
+      const ulLoaded = $("partialLoaded");
+      ulLoaded.innerHTML = "";
+      for (const k of loadedKinds) {
+        const li = document.createElement("li");
+        li.textContent = `${k}: ${state.loaded[k]}`;
+        ulLoaded.appendChild(li);
       }
-    }catch(_){
-      // ignore: keep view_model as_of
-    }
 
-    // source_html line (best-effort)
-    const srcHtml = (vmRes.json && (vmRes.json.source_html || (vmRes.json.meta && vmRes.json.meta.source_html))) || "";
-    if (srcHtml){
-      setText("sourceHtmlLine", "source_html=" + srcHtml);
-    }else{
-      setText("sourceHtmlLine", "source_html=--");
-    }
-
-    // highlights (best-effort)
-    const highlights = (vmRes.json && (vmRes.json.highlights || (vmRes.json.meta && vmRes.json.meta.highlights))) || null;
-    if (Array.isArray(highlights) && highlights.length){
-      setText("highlightsLine", "• " + highlights.join(" / "));
-    }else{
-      setText("highlightsLine", "• highlights not found");
-    }
-
-    // health
-    try{
-      const h = await fetchFirstJson(HEALTH_URLS);
-      setText("healthSourcePill", "source: " + h.url);
-
-      const ok = safeNum(h.json && (h.json.ok_count ?? h.json.ok ?? h.json.OK));
-      const warn = safeNum(h.json && (h.json.warn_count ?? h.json.warn ?? h.json.WARN));
-      const ng = safeNum(h.json && (h.json.ng_count ?? h.json.ng ?? h.json.NG));
-
-      setText("okCount", String(ok));
-      setText("warnCount", String(warn));
-      setText("ngCount", String(ng));
-
-      if (ng > 0) setDotState("ng");
-      else if (warn > 0) setDotState("warn");
-      else setDotState("ok");
-    }catch(e){
-      setText("okCount","--");
-      setText("warnCount","--");
-      setText("ngCount","--");
-      setDotState("warn");
+      const ulTried = $("partialTried");
+      ulTried.innerHTML = "";
+      for (const u of state.tried.slice(0, 40)) {
+        const li = document.createElement("li");
+        li.textContent = u;
+        ulTried.appendChild(li);
+      }
     }
   }
 
-  main().catch((e)=>{
-    console.error(e);
-    setText("asOfText", "as_of: (error)");
-    setDotState("ng");
-  });
+  function showError(err) {
+    $("cardError").style.display = "block";
+    $("errorMsg").textContent = `${err && err.message ? err.message : err}`;
+    const ul = $("errorTried");
+    ul.innerHTML = "";
+    for (const u of state.tried) {
+      const li = document.createElement("li");
+      li.textContent = u;
+      ul.appendChild(li);
+    }
+    setStatus("Error", true);
+    $("summaryBody").textContent = "—";
+    $("snapshotBody").textContent = "—";
+  }
 
+  async function loadFirstMatching(kind, urls) {
+    for (const url of urls) {
+      try {
+        const obj = await fetchJson(url);
+        return { url, obj };
+      } catch (e) {}
+    }
+    throw new Error(`No ${kind} source found (all candidates failed).`);
+  }
+
+  async function main() {
+    setStatus("Loading…");
+    try {
+      const vmUrls = CANDIDATES.filter(u => u.includes("view_model_latest"));
+      if (vmUrls.length) {
+        try {
+          const { url, obj } = await loadFirstMatching("view_model", vmUrls);
+          state.loaded.view_model = url;
+          state.model = obj;
+        } catch (e) {}
+      }
+
+      const sumUrls = CANDIDATES.filter(u => u.includes("daily_summary_latest"));
+      if (sumUrls.length) {
+        try {
+          const { url, obj } = await loadFirstMatching("daily_summary_latest", sumUrls);
+          state.loaded.daily_summary = url;
+          state.summary = obj;
+        } catch (e) {}
+      }
+
+      const sUrls = CANDIDATES.filter(u => u.includes("sentiment_latest"));
+      if (sUrls.length) {
+        try {
+          const { url, obj } = await loadFirstMatching("sentiment_latest", sUrls);
+          state.loaded.sentiment = url;
+          state.sentiment = obj;
+        } catch (e) {}
+      }
+
+      const hUrls = CANDIDATES.filter(u => u.includes("health_latest"));
+      if (hUrls.length) {
+        try {
+          const { url, obj } = await loadFirstMatching("health_latest", hUrls);
+          state.loaded.health = url;
+          state.health = obj;
+        } catch (e) {}
+      }
+
+      if (!state.model && !state.summary && !state.sentiment && !state.health) {
+        throw new Error("No data loaded (all artifacts missing or blocked).");
+      }
+
+      render();
+
+      const loadedKinds = Object.keys(state.loaded);
+      const missing = ["view_model","daily_summary","sentiment","health"].filter(k => !state.loaded[k]);
+      if (missing.length && loadedKinds.length) setStatus("Partial");
+      else setStatus("Ready");
+    } catch (err) {
+      showError(err);
+    }
+  }
+
+  main();
 })();
 </script>
 </body>
