@@ -1,6 +1,10 @@
 <# 
 Morning Ritual (single entrypoint)
 UTC-aligned version: prevents JST/UTC date drift.
+
+Update (2026-02-28):
+- Rebuild view_model_latest.json from freshest *_latest artifacts
+- Refresh latest artifacts into dist/labos_deploy and digest aliases
 #>
 
 param(
@@ -110,6 +114,12 @@ try {
 
   # 3) Health
   Run-Py "3) Build Data Health" $py (Join-Path $ROOT "scripts\build_data_health.py") @("--date", $Date)
+
+  # 3-1) Rebuild view_model_latest (fix stale view_model)
+  Run-Py "3-1) Rebuild view_model_latest" $py (Join-Path $ROOT "scripts\build_view_model_latest.py") @("--date", $Date)
+
+  # 3-2) Refresh latest artifacts into deploy bundle + digest aliases
+  Run-Pwsh "3-2) Refresh latest artifacts" (Join-Path $ROOT "scripts\refresh_latest_artifacts.ps1") @()
 
   Log "DONE Morning Ritual (UTC aligned)"
 }
