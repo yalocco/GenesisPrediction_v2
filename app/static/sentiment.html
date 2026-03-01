@@ -41,41 +41,36 @@
     body{
       margin:0;
       background:
-        radial-gradient(1200px 600px at 75% 35%, rgba(66, 223, 204, 0.10), transparent 60%),
-        radial-gradient(900px 520px at 18% 28%, rgba(105, 169, 255, 0.18), transparent 55%),
-        radial-gradient(900px 520px at 42% 86%, rgba(105, 169, 255, 0.08), transparent 55%),
-        linear-gradient(180deg, #070a14, #0b1020 45%, #0a1124 100%);
-      color:var(--text);
-      font-family:var(--font);
-      letter-spacing:.2px;
-      overflow-y:auto;
+        radial-gradient(1100px 700px at 15% 0%, rgba(106,84,255,.24), transparent 55%),
+        radial-gradient(900px 700px at 90% 15%, rgba(0,220,255,.16), transparent 55%),
+        linear-gradient(180deg, #070b16, #0a1024);
     }
-
-    .wrap{max-width:1200px;margin:0 auto;padding:22px 18px 44px;}
-    header.top{
-      display:flex;align-items:center;justify-content:space-between;gap:14px;
-      padding:10px 16px;border:1px solid var(--stroke);border-radius:999px;
-      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-      box-shadow: 0 6px 20px rgba(0,0,0,.25);
-      position:sticky;top:10px;backdrop-filter: blur(10px);z-index:20;
-    }
-    .brand{display:flex;align-items:center;gap:10px;min-width:220px;}
-    .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(105,169,255,.18);}
-    .brand .name{font-weight:700;font-size:14px;opacity:.95;}
-    nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
-    nav a{
-      text-decoration:none;padding:7px 12px;border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.12);
+    .brand-title{font-weight:700;font-size:13px;opacity:.95;letter-spacing:.02em;line-height:1.1}
+    .nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;flex:1;}
+    a.pill{
+      text-decoration:none;
+      display:inline-flex;align-items:center;gap:8px;
+      padding:7px 12px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
       font-size:12px;opacity:.92;color:inherit;
+      transition: border-color .15s ease, transform .15s ease;
+      user-select:none;white-space:nowrap;
     }
-    nav a:hover{border-color:rgba(105,169,255,.5)}
+    a.pill:hover{border-color:rgba(105,169,255,.5);transform:translateY(-1px)}
+    a.pill.active{border-color:rgba(105,169,255,.55);color:rgba(255,255,255,.92)}
     .pill{
-      display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.10);font-size:12px;opacity:.9;
+      display:inline-flex;align-items:center;gap:8px;
+      padding:7px 12px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.10);
+      font-size:12px;opacity:.9;
+      white-space:nowrap;
     }
     .pill .led{width:8px;height:8px;border-radius:50%;background:#3ddc84;box-shadow:0 0 0 3px rgba(61,220,132,.15);}
     .pill .spin{width:14px;height:14px;border-radius:999px;border:2px solid rgba(255,255,255,.25);border-top-color:rgba(255,255,255,.85);animation:sp 1s linear infinite}
     @keyframes sp{to{transform:rotate(360deg)}}
+}
 
     h1{margin:26px 0 6px;font-size:34px;letter-spacing:.6px;}
     .sub{margin:0 0 14px;color:var(--muted);font-size:12px;line-height:1.4;}
@@ -171,23 +166,118 @@
       padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.12)
     }
     .legend .sw{width:10px;height:10px;border-radius:50%}
-  </style>
+  
+/* Phase2 strict layout overrides (ensure applied) */
+.topbar{margin:0 !important;border-radius:0 !important;}
+.topbar-inner{max-width:1140px !important;padding:12px 18px !important;}
+.wrap{max-width:1140px !important;padding:18px 18px 40px !important;margin:0 auto !important;}
+
+
+/* === Phase2 C: unified slim header (index/sentiment/overlay) === */
+.topbar{border-radius:0 !important;margin:0 !important;padding:0 !important;}
+.topbar-inner{
+  padding:10px 18px !important;
+  min-height:44px !important;
+}
+.brand{gap:9px !important;}
+.dot, .brand .dot, .brand span.dot, .brand div.dot{
+  width:9px !important;height:9px !important;
+  background:rgba(122,167,255,.95) !important;
+  box-shadow:0 0 0 4px rgba(122,167,255,.10) !important;
+}
+.brand-title{font-size:12px !important; font-weight:700 !important; letter-spacing:.02em !important;}
+a.pill, .pill{
+  padding:6px 11px !important;
+  font-size:12px !important;
+  line-height:1.1 !important;
+}
+.nav{gap:8px !important;}
+/* keep pills from wrapping too tall */
+.nav{align-items:center !important;}
+
+
+
+/* === Phase2 C2: final tighten (slimmer + perfect alignment) === */
+.topbar{background:rgba(10,14,28,.62) !important;}
+.topbar-inner{
+  padding:8px 18px !important;
+  min-height:40px !important;
+}
+/* ensure brand sits truly left, nav truly right */
+.brand{min-width:0 !important; margin-right:10px !important;}
+.nav{flex:1 !important; justify-content:flex-end !important; flex-wrap:nowrap !important; gap:7px !important;}
+/* if nav overflows on small widths, allow wrap only below 980px */
+@media (max-width: 980px){
+  .nav{flex-wrap:wrap !important;}
+}
+/* tighter pills */
+a.pill, .pill{
+  padding:5px 10px !important;
+  font-size:11.5px !important;
+  line-height:1.0 !important;
+}
+.brand-title{font-size:12px !important; line-height:1.0 !important;}
+.dot, .brand .dot, .brand span.dot, .brand div.dot{
+  width:8px !important;height:8px !important;
+  box-shadow:0 0 0 4px rgba(122,167,255,.10) !important;
+}
+
+
+
+/* === Phase2 C3: lock to SENTIMENT baseline (header + content container) === */
+:root{
+  --ui-max: 1200px;
+  --ui-pad-x: 18px;
+}
+/* header: sentiment-like (flat, no extra frame) */
+.topbar{
+  border-radius:0 !important;
+  margin:0 !important;
+  padding:0 !important;
+  background:rgba(8,10,20,.55) !important;
+  border-bottom:1px solid rgba(255,255,255,.06) !important;
+}
+.topbar-inner{
+  width:100% !important;
+  max-width:var(--ui-max) !important;
+  margin:0 auto !important;
+  padding:8px var(--ui-pad-x) !important;
+  min-height:40px !important;
+}
+.brand{justify-content:flex-start !important;}
+.nav{justify-content:flex-end !important;}
+/* content container width: match sentiment */
+main, .wrap, .container, .content, .page{
+  max-width:var(--ui-max) !important;
+}
+main{padding-left:var(--ui-pad-x) !important; padding-right:var(--ui-pad-x) !important;}
+/* keep the blue dot visible even if any earlier rule breaks it */
+.dot, .brand .dot, .brand span.dot, .brand div.dot{
+  width:8px !important;height:8px !important;
+  background:rgba(122,167,255,.95) !important;
+  box-shadow:0 0 0 4px rgba(122,167,255,.10) !important;
+}
+
+</style>
 </head>
 
 <body>
   <div class="wrap">
-    <header class="top">
-      <div class="brand">
-        <span class="dot"></span>
-        <div class="name">GenesisPrediction v2</div>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <span class="dot"></span>
+          <div class="brand-title">GenesisPrediction v2</div>
+        </div>
+        <nav class="nav">
+          <a class="pill" href="/static/index.html">Home</a>
+          <a class="pill" href="/static/overlay.html">Overlay</a>
+          <a class="pill active" href="/static/sentiment.html">Sentiment</a>
+
+          <span class="pill" id="statusPill"><span class="spin" id="spin"></span><span id="statusText">Loading…</span></span>
+          <span class="pill" id="asofPill"><span class="led"></span><span id="asofText">as_of: -</span></span>
+        </nav>
       </div>
-      <nav>
-        <a href="./index.html">Home</a>
-        <a href="./overlay.html">Overlay</a>
-        <a href="./sentiment.html">Sentiment</a>
-        <span class="pill" id="statusPill"><span class="spin" id="spin"></span><span id="statusText">Loading…</span></span>
-        <span class="pill" id="asofPill"><span class="led"></span><span id="asofText">as_of: -</span></span>
-      </nav>
     </header>
 
     <h1>Sentiment（記事別）</h1>

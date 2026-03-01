@@ -237,7 +237,94 @@
     }
     .error-box h3{margin:0 0 6px;font-size:13px}
     .footer-note{margin-top:18px;opacity:.75}
-  </style>
+  
+
+/* === Phase2 C: unified slim header (index/sentiment/overlay) === */
+.topbar{border-radius:0 !important;margin:0 !important;padding:0 !important;}
+.topbar-inner{
+  padding:10px 18px !important;
+  min-height:44px !important;
+}
+.brand{gap:9px !important;}
+.dot, .brand .dot, .brand span.dot, .brand div.dot{
+  width:9px !important;height:9px !important;
+  background:rgba(122,167,255,.95) !important;
+  box-shadow:0 0 0 4px rgba(122,167,255,.10) !important;
+}
+.brand-title{font-size:12px !important; font-weight:700 !important; letter-spacing:.02em !important;}
+a.pill, .pill{
+  padding:6px 11px !important;
+  font-size:12px !important;
+  line-height:1.1 !important;
+}
+.nav{gap:8px !important;}
+/* keep pills from wrapping too tall */
+.nav{align-items:center !important;}
+
+
+
+/* === Phase2 C2: final tighten (slimmer + perfect alignment) === */
+.topbar{background:rgba(10,14,28,.62) !important;}
+.topbar-inner{
+  padding:8px 18px !important;
+  min-height:40px !important;
+}
+/* ensure brand sits truly left, nav truly right */
+.brand{min-width:0 !important; margin-right:10px !important;}
+.nav{flex:1 !important; justify-content:flex-end !important; flex-wrap:nowrap !important; gap:7px !important;}
+/* if nav overflows on small widths, allow wrap only below 980px */
+@media (max-width: 980px){
+  .nav{flex-wrap:wrap !important;}
+}
+/* tighter pills */
+a.pill, .pill{
+  padding:5px 10px !important;
+  font-size:11.5px !important;
+  line-height:1.0 !important;
+}
+.brand-title{font-size:12px !important; line-height:1.0 !important;}
+.dot, .brand .dot, .brand span.dot, .brand div.dot{
+  width:8px !important;height:8px !important;
+  box-shadow:0 0 0 4px rgba(122,167,255,.10) !important;
+}
+
+
+
+/* === Phase2 C3: lock to SENTIMENT baseline (header + content container) === */
+:root{
+  --ui-max: 1200px;
+  --ui-pad-x: 18px;
+}
+/* header: sentiment-like (flat, no extra frame) */
+.topbar{
+  border-radius:0 !important;
+  margin:0 !important;
+  padding:0 !important;
+  background:rgba(8,10,20,.55) !important;
+  border-bottom:1px solid rgba(255,255,255,.06) !important;
+}
+.topbar-inner{
+  width:100% !important;
+  max-width:var(--ui-max) !important;
+  margin:0 auto !important;
+  padding:8px var(--ui-pad-x) !important;
+  min-height:40px !important;
+}
+.brand{justify-content:flex-start !important;}
+.nav{justify-content:flex-end !important;}
+/* content container width: match sentiment */
+main, .wrap, .container, .content, .page{
+  max-width:var(--ui-max) !important;
+}
+main{padding-left:var(--ui-pad-x) !important; padding-right:var(--ui-pad-x) !important;}
+/* keep the blue dot visible even if any earlier rule breaks it */
+.dot, .brand .dot, .brand span.dot, .brand div.dot{
+  width:8px !important;height:8px !important;
+  background:rgba(122,167,255,.95) !important;
+  box-shadow:0 0 0 4px rgba(122,167,255,.10) !important;
+}
+
+</style>
 </head>
 <body>
   <header class="topbar">
