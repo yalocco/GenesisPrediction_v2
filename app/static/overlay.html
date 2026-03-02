@@ -154,6 +154,7 @@
     }
 
     .imgwrap{
+      position:relative; /* A-2: 右上オーバーレイ用 */
       border:1px solid rgba(255,255,255,.10);
       border-radius:16px;
       background: rgba(0,0,0,.12);
@@ -167,6 +168,26 @@
       object-fit: contain;
       background: rgba(0,0,0,.14);
     }
+
+    /* A-2: 画像右上に Decision バッジ（--の時は非表示） */
+    .corner{
+      position:absolute;
+      top:12px;
+      right:12px;
+      z-index:5;
+      display:none; /* default hidden */
+      box-shadow: 0 10px 26px rgba(0,0,0,.28);
+      backdrop-filter: blur(8px);
+      background: rgba(10,14,26,.55);
+      border-color: rgba(255,255,255,.14);
+      padding:7px 12px;
+      font-size:12px;
+    }
+    .corner .led{width:8px; height:8px}
+    .corner.ok{background: rgba(10,18,14,.55)}
+    .corner.warn{background: rgba(22,18,10,.55)}
+    .corner.off{background: rgba(22,10,10,.55)}
+
     .msg{color:var(--muted); font-size:12px; line-height:1.55; margin-top:10px}
     details{margin-top:10px}
     details summary{cursor:pointer; color:rgba(255,255,255,.84); font-weight:800}
@@ -251,6 +272,12 @@
           </div>
 
           <div class="imgwrap">
+            <!-- A-2: 画像右上の Decision バッジ -->
+            <div class="badge na corner" id="corner-badge" aria-hidden="true">
+              <span class="led" aria-hidden="true"></span>
+              <span id="corner-text">--</span>
+            </div>
+
             <img id="overlay-img" alt="FX overlay" loading="eager" />
           </div>
 
@@ -282,6 +309,10 @@
   const elDecisionReason = $("decision-reason");
   const elPairText = $("pair-text");
 
+  // A-2 corner
+  const elCornerBadge = $("corner-badge");
+  const elCornerText = $("corner-text");
+
   const selPair = $("pair-select");
 
   const btnOpenImage = $("open-image");
@@ -308,19 +339,35 @@
     try { return JSON.stringify(obj, null, 2); } catch(e) { return String(obj); }
   }
 
+  function applyBadgeClass(el, stateUpper){
+    el.classList.remove("ok","warn","off","na");
+    if(stateUpper === "ON" || stateUpper === "OK"){
+      el.classList.add("ok");
+    }else if(stateUpper === "WARN" || stateUpper === "WARNING"){
+      el.classList.add("warn");
+    }else if(stateUpper === "OFF" || stateUpper === "STOP"){
+      el.classList.add("off");
+    }else{
+      el.classList.add("na");
+    }
+  }
+
   function setBadge(state){
     const s = (state || "--").toString().toUpperCase();
     elDecisionText.textContent = (s === "" ? "--" : s);
+    applyBadgeClass(elDecisionBadge, s);
+  }
 
-    elDecisionBadge.classList.remove("ok","warn","off","na");
-    if(s === "ON" || s === "OK"){
-      elDecisionBadge.classList.add("ok");
-    }else if(s === "WARN" || s === "WARNING"){
-      elDecisionBadge.classList.add("warn");
-    }else if(s === "OFF" || s === "STOP"){
-      elDecisionBadge.classList.add("off");
+  // A-2: corner badge（--の時は隠す）
+  function setCorner(state){
+    const s = (state || "--").toString().toUpperCase();
+    elCornerText.textContent = (s === "" ? "--" : s);
+    applyBadgeClass(elCornerBadge, s);
+
+    if(s === "--" || s === "" || s === "NA"){
+      elCornerBadge.style.display = "none";
     }else{
-      elDecisionBadge.classList.add("na");
+      elCornerBadge.style.display = "inline-flex";
     }
   }
 
@@ -461,6 +508,7 @@
   async function main(){
     try{
       setBadge("--");
+      setCorner("--");
       elDecisionReason.textContent = "--";
       elPairText.textContent = "--";
       setPillText(elAsOf, "as_of: --");
@@ -482,6 +530,7 @@
         elImg.removeAttribute("src");
         btnOpenImage.onclick = () => alert("overlay image not found (safe)");
         syncPairSelect(base || "", null);
+        setCorner("--"); // hide
       }else{
         elImg.src = imgUrl + (imgUrl.includes("?") ? "&" : "?") + "v=" + Date.now();
         btnOpenImage.onclick = () => window.open(imgUrl, "_blank", "noopener,noreferrer");
@@ -503,6 +552,7 @@
       const picked = await pickFirstWorkingDecisionJson();
       if(!picked){
         setBadge("--");
+        setCorner("--");
         elDecisionReason.textContent = "--";
         elDbg.textContent = safeJsonStringify({ note: "decision json not found (safe)", tried: candidates.decisions });
         btnOpenJson.onclick = () => alert("decision json not found (safe)");
@@ -514,6 +564,7 @@
 
       const state = fields.state ? String(fields.state).toUpperCase() : "--";
       setBadge(state);
+      setCorner(state);
 
       const reason = (fields.reason != null && String(fields.reason).trim() !== "") ? String(fields.reason).trim() : "--";
       const src = (fields.source != null && String(fields.source).trim() !== "") ? String(fields.source).trim() : "";
@@ -540,6 +591,7 @@
       elMsg.textContent = "ERROR (safe): " + (e && e.message ? e.message : String(e));
       elDbg.textContent = safeJsonStringify({ error: String(e) });
       setBadge("--");
+      setCorner("--");
       elDecisionReason.textContent = "--";
     }
   }
