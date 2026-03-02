@@ -2,1035 +2,667 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
   <title>Sentiment - GenesisPrediction v2</title>
 
-  <!--
-    Sentiment UI: RECOVERY + 3-AXIS TREND (v3)
-    - 3軸（3パネル）Trend: risk / positive / uncertainty を分離して描画（各パネル独立スケール）
-    - 色の消失/ズレ防止: CSS変数 + DPR + ResizeObserver
-    - サムネ改善: referrerpolicy=no-referrer + favicon fallback + 広いキー対応
-    - sentiment_latest.json / sentiment_timeseries.csv を複数候補から探索
-  -->
-
-  <link rel="stylesheet" href="/static/app.css?v=980ed81" />
+  <link rel="stylesheet" href="/static/app.css" />
 
   <style>
     :root{
-      --stroke:#1f2a48;
-      --text:#e8eefc;
-      --muted:#a9b6d8;
-      --accent:#69a9ff;
-      --good:#2dd4bf;
-      --bad:#ff6b6b;
-      --warn:#fbbf24;
-      --shadow:0 12px 34px rgba(0,0,0,.40);
-      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      --bg0:#070b14;
+      --bg1:#0b1327;
+      --stroke:rgba(255,255,255,.14);
+      --text:rgba(255,255,255,.92);
+      --muted:rgba(255,255,255,.68);
+      --pill:rgba(105,169,255,.18);
+      --pillStroke:rgba(105,169,255,.35);
+      --focus:rgba(105,169,255,.55);
 
-      --trend-risk: var(--bad);
-      --trend-pos:  var(--good);
-      --trend-unc:  var(--warn);
-
-      --trend-frame: rgba(255,255,255,0.18);
-      --trend-grid:  rgba(255,255,255,0.10);
-      --trend-text:  rgba(220,230,245,0.58);
-      --trend-soft:  rgba(255,255,255,0.06);
+      /* Sentiment colors */
+      --pos: rgba(60,210,140,.95);
+      --neg: rgba(255,110,110,.95);
+      --neu: rgba(200,210,230,.70);
+      --mix: rgba(255,196,70,.95);
+      --unk: rgba(160,170,190,.60);
     }
-
     html,body{height:100%}
     body{
       margin:0;
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", "Meiryo", Arial, "Apple Color Emoji","Segoe UI Emoji";
       background:
-        radial-gradient(1100px 700px at 15% 0%, rgba(106,84,255,.24), transparent 55%),
-        radial-gradient(900px 700px at 90% 15%, rgba(0,220,255,.16), transparent 55%),
-        linear-gradient(180deg, #070b16, #0a1024);
+        radial-gradient(1200px 600px at 20% 0%, rgba(105,169,255,.18), transparent 55%),
+        radial-gradient(900px 500px at 85% 15%, rgba(255,196,70,.12), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-y:auto;
     }
-    .brand-title{font-weight:700;font-size:13px;opacity:.95;letter-spacing:.02em;line-height:1.1}
-    .nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;flex:1;}
-    a.pill{
-      text-decoration:none;
-      display:inline-flex;align-items:center;gap:8px;
-      padding:7px 12px;border-radius:999px;
+    .container{max-width:1100px; margin:0 auto; padding:18px 14px 40px;}
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between; gap:14px;
+      padding:14px 14px; border:1px solid var(--stroke);
+      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border-radius:18px; box-shadow:0 10px 30px rgba(0,0,0,.25);
+      backdrop-filter: blur(10px);
+    }
+    .brand{display:flex; align-items:center; gap:10px; min-width: 220px;}
+    .brand .dot{
+      width:12px; height:12px; border-radius:999px;
+      background:rgba(105,169,255,.95); box-shadow:0 0 0 5px rgba(105,169,255,.18);
+    }
+    .brand .t1{font-weight:800; letter-spacing:.2px;}
+    .brand .t2{font-size:12px; color:var(--muted); margin-top:2px;}
+    nav{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;}
+    nav a{
+      text-decoration:none; color:var(--text);
+      font-weight:700; font-size:13px;
+      padding:8px 10px; border-radius:999px;
       border:1px solid rgba(255,255,255,.10);
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-      font-size:12px;opacity:.92;color:inherit;
-      transition: border-color .15s ease, transform .15s ease;
-      user-select:none;white-space:nowrap;
+      background:rgba(255,255,255,.03);
     }
-    a.pill:hover{border-color:rgba(105,169,255,.5);transform:translateY(-1px)}
-    a.pill.active{border-color:rgba(105,169,255,.55);color:rgba(255,255,255,.92)}
+    nav a:hover{border-color:rgba(105,169,255,.5)}
+    nav a.active{
+      border-color:var(--pillStroke);
+      background:var(--pill);
+    }
+
+    .grid{display:grid; grid-template-columns: 1fr; gap:14px; margin-top:14px;}
+    .card{
+      border:1px solid var(--stroke);
+      background:rgba(255,255,255,.04);
+      border-radius:18px;
+      box-shadow:0 10px 30px rgba(0,0,0,.18);
+      backdrop-filter: blur(10px);
+      overflow:hidden;
+    }
+    .card-h{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+      padding:14px 14px 10px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+    }
+    .card-h h1{margin:0; font-size:16px; letter-spacing:.2px}
+    .meta{display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:flex-end;}
     .pill{
-      display:inline-flex;align-items:center;gap:8px;
-      padding:7px 12px;border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.10);
-      font-size:12px;opacity:.9;
+      font-size:12px; font-weight:700; color:rgba(255,255,255,.86);
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.03);
+      padding:6px 10px; border-radius:999px;
       white-space:nowrap;
     }
-    .pill .led{width:8px;height:8px;border-radius:50%;background:#3ddc84;box-shadow:0 0 0 3px rgba(61,220,132,.15);}
-    .pill .spin{width:14px;height:14px;border-radius:999px;border:2px solid rgba(255,255,255,.25);border-top-color:rgba(255,255,255,.85);animation:sp 1s linear infinite}
-    @keyframes sp{to{transform:rotate(360deg)}}
-}
+    .pill.muted{color:var(--muted)}
+    .pill.linklike{cursor:pointer}
+    .pill.linklike:hover{border-color:rgba(105,169,255,.5)}
 
-    h1{margin:26px 0 6px;font-size:34px;letter-spacing:.6px;}
-    .sub{margin:0 0 14px;color:var(--muted);font-size:12px;line-height:1.4;}
+    .body{padding:14px;}
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between}
+    .legend{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+    .dot{
+      width:10px; height:10px; border-radius:999px; display:inline-block; margin-right:6px;
+      box-shadow: 0 0 0 4px rgba(255,255,255,.06);
+    }
+    .dot.pos{background:var(--pos)}
+    .dot.neg{background:var(--neg)}
+    .dot.neu{background:var(--neu)}
+    .dot.mix{background:var(--mix)}
+    .dot.unk{background:var(--unk)}
+    .lg{font-size:12px; color:rgba(255,255,255,.86); font-weight:800; display:flex; align-items:center}
 
-    .grid{display:grid;grid-template-columns: 1.2fr .8fr;gap:16px;margin-top:12px;}
-    @media (max-width: 980px){
-      .grid{grid-template-columns:1fr}
-      header.top{position:static}
-      .brand{min-width:unset}
+    /* Trend chart */
+    .chartwrap{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:16px;
+      background:rgba(0,0,0,.14);
+      overflow:hidden;
+      padding:10px;
+    }
+    canvas{width:100%; height:320px; display:block}
+
+    /* Article list */
+    .tools{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .search{
+      flex:1;
+      min-width: 220px;
+      font-size:13px;
+      font-weight:800;
+      letter-spacing:.1px;
+      color:rgba(255,255,255,.92);
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      outline:none;
+    }
+    .search:focus{border-color:var(--focus); box-shadow: 0 0 0 4px rgba(105,169,255,.15)}
+    .select{
+      appearance:none;
+      -webkit-appearance:none;
+      -moz-appearance:none;
+      font-size:13px;
+      font-weight:900;
+      letter-spacing:.2px;
+      color:rgba(255,255,255,.92);
+      padding:10px 34px 10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      outline:none;
+      cursor:pointer;
+      position:relative;
+    }
+    .select:focus{border-color: var(--focus); box-shadow: 0 0 0 4px rgba(105,169,255,.15)}
+    .select-wrap{position:relative; display:inline-flex; align-items:center}
+    .select-wrap:after{
+      content:"▾";
+      position:absolute;
+      right:12px;
+      top:50%;
+      transform: translateY(-50%);
+      color: rgba(255,255,255,.72);
+      pointer-events:none;
+      font-size:12px;
+      font-weight:900;
     }
 
-    .card{
+    .list{display:grid; grid-template-columns: 1fr; gap:10px; margin-top:12px;}
+    .item{
+      display:grid;
+      grid-template-columns: 140px 1fr;
+      gap:12px;
+      padding:12px;
       border:1px solid rgba(255,255,255,.10);
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-      border-radius: 22px;
-      box-shadow: var(--shadow);
+      background:rgba(255,255,255,.03);
+      border-radius:16px;
       overflow:hidden;
     }
-    .card .inner{padding:14px 14px 12px;}
-    .card h2{margin:0 0 8px;font-size:14px;letter-spacing:.35px;opacity:.95;}
-
-    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;}
-    .btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
-    button.btn{
-      border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.16);
-      color:var(--text);border-radius:999px;padding:7px 10px;font-size:12px;cursor:pointer;
-    }
-    button.btn:hover{border-color:rgba(105,169,255,.55)}
-
-    .kpis{display:grid;grid-template-columns: repeat(4, minmax(0,1fr));gap:10px;margin-top:10px;}
-    @media (max-width: 980px){.kpis{grid-template-columns: repeat(2, minmax(0,1fr))}}
-    .kpi{
-      border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.12);
-      border-radius:14px;padding:10px 10px 9px;min-height:56px;
-    }
-    .kpi .lab{font-size:11px;color:var(--muted)}
-    .kpi .val{font-size:15px;font-weight:700;margin-top:4px}
-    .kpi .tiny{font-size:10px;color:var(--muted);margin-top:2px}
-
-    .controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;align-items:center;}
-    input.search{
-      flex:1 1 240px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.14);
-      color:var(--text);border-radius:999px;padding:9px 12px;outline:none;font-size:12px;
-    }
-    select.sel{
-      border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.14);
-      color:var(--text);border-radius:999px;padding:9px 10px;outline:none;font-size:12px;
-    }
-    label.chk{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);user-select:none;}
-    .note{
-      margin-top:10px;font-size:11px;color:var(--muted);line-height:1.4;white-space:pre-wrap;
-    }
-    .mini{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;}
-    .mini .tag{
-      font-size:11px;color:var(--muted);border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.12);padding:6px 10px;border-radius:999px;
-    }
-    .mini .tag strong{color:var(--text);font-weight:700}
-    .how{font-size:12px;color:var(--muted);line-height:1.5;white-space:pre-wrap;}
-
-    .sectionTitle{margin:22px 0 10px;font-size:16px;letter-spacing:.35px;opacity:.95;}
-    .tableWrap{
-      border:1px solid rgba(255,255,255,.10);
-      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.08));
-      border-radius: 22px;
-      overflow:hidden;
-      box-shadow: var(--shadow);
-    }
-    table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;}
-    thead th{
-      text-align:left;padding:12px 12px;font-size:11px;color:var(--muted);
-      background:rgba(0,0,0,.22);border-bottom:1px solid rgba(255,255,255,.10);
-      position:sticky;top:0;z-index:5;
-    }
-    tbody td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:middle;}
-    tbody tr:hover td{background:rgba(105,169,255,.06)}
     .thumb{
-      width:34px;height:34px;border-radius:10px;border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.20);overflow:hidden;display:flex;align-items:center;justify-content:center;
+      width:100%;
+      height:92px;
+      border-radius:14px;
+      background:rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.10);
+      overflow:hidden;
     }
-    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
-    .title{font-weight:700;color:var(--text);line-height:1.25;margin-bottom:2px;}
-    .src{font-size:11px;color:var(--muted);line-height:1.2;}
-    .num{font-variant-numeric: tabular-nums;}
-    .small{font-size:11px}
-    .right{text-align:right}
-    .footerNote{margin:10px 0 0;font-size:11px;color:var(--muted);line-height:1.5;}
-
-    .trend3{width:100%;height:300px;display:block;}
-    .legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-    .legend .it{
-      display:inline-flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);
-      padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.12)
+    .thumb img{width:100%; height:100%; object-fit:cover; display:block}
+    .tmeta{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:6px}
+    .badge{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:999px;
+      font-weight:900; font-size:12px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.03);
     }
-    .legend .sw{width:10px;height:10px;border-radius:50%}
-  
-/* Phase2 strict layout overrides (ensure applied) */
-.topbar{margin:0 !important;border-radius:0 !important;}
-.topbar-inner{max-width:1140px !important;padding:12px 18px !important;}
-.wrap{max-width:1140px !important;padding:18px 18px 40px !important;margin:0 auto !important;}
+    .badge .led{width:8px; height:8px; border-radius:999px; background:rgba(255,255,255,.35)}
+    .badge.pos{border-color: rgba(60,210,140,.35); background: rgba(60,210,140,.10)}
+    .badge.pos .led{background: var(--pos)}
+    .badge.neg{border-color: rgba(255,110,110,.35); background: rgba(255,110,110,.10)}
+    .badge.neg .led{background: var(--neg)}
+    .badge.neu{border-color: rgba(200,210,230,.25); background: rgba(200,210,230,.06)}
+    .badge.neu .led{background: var(--neu)}
+    .badge.mix{border-color: rgba(255,196,70,.35); background: rgba(255,196,70,.10)}
+    .badge.mix .led{background: var(--mix)}
+    .badge.unk{border-color: rgba(160,170,190,.25); background: rgba(160,170,190,.06)}
+    .badge.unk .led{background: var(--unk)}
 
+    .title{margin:0; font-size:14px; line-height:1.35; letter-spacing:.1px}
+    .title a{color:rgba(255,255,255,.92); text-decoration:none}
+    .title a:hover{text-decoration:underline}
+    .desc{margin:6px 0 0; color:var(--muted); font-size:12px; line-height:1.55}
+    .src{color:rgba(255,255,255,.72); font-size:12px; font-weight:800}
+    .time{color:rgba(255,255,255,.58); font-size:12px; font-weight:700}
 
-/* === Phase2 C: unified slim header (index/sentiment/overlay) === */
-.topbar{border-radius:0 !important;margin:0 !important;padding:0 !important;}
-.topbar-inner{
-  padding:10px 18px !important;
-  min-height:44px !important;
-}
-.brand{gap:9px !important;}
-.dot, .brand .dot, .brand span.dot, .brand div.dot{
-  width:9px !important;height:9px !important;
-  background:rgba(122,167,255,.95) !important;
-  box-shadow:0 0 0 4px rgba(122,167,255,.10) !important;
-}
-.brand-title{font-size:12px !important; font-weight:700 !important; letter-spacing:.02em !important;}
-a.pill, .pill{
-  padding:6px 11px !important;
-  font-size:12px !important;
-  line-height:1.1 !important;
-}
-.nav{gap:8px !important;}
-/* keep pills from wrapping too tall */
-.nav{align-items:center !important;}
+    details{margin-top:12px}
+    details summary{cursor:pointer; color:rgba(255,255,255,.84); font-weight:800}
+    pre{
+      margin:10px 0 0;
+      padding:12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.22);
+      color:rgba(255,255,255,.86);
+      overflow:auto;
+      font-size:12px;
+      line-height:1.45;
+      white-space:pre-wrap;
+      word-break:break-word;
+    }
 
-
-
-/* === Phase2 C2: final tighten (slimmer + perfect alignment) === */
-.topbar{background:rgba(10,14,28,.62) !important;}
-.topbar-inner{
-  padding:8px 18px !important;
-  min-height:40px !important;
-}
-/* ensure brand sits truly left, nav truly right */
-.brand{min-width:0 !important; margin-right:10px !important;}
-.nav{flex:1 !important; justify-content:flex-end !important; flex-wrap:nowrap !important; gap:7px !important;}
-/* if nav overflows on small widths, allow wrap only below 980px */
-@media (max-width: 980px){
-  .nav{flex-wrap:wrap !important;}
-}
-/* tighter pills */
-a.pill, .pill{
-  padding:5px 10px !important;
-  font-size:11.5px !important;
-  line-height:1.0 !important;
-}
-.brand-title{font-size:12px !important; line-height:1.0 !important;}
-.dot, .brand .dot, .brand span.dot, .brand div.dot{
-  width:8px !important;height:8px !important;
-  box-shadow:0 0 0 4px rgba(122,167,255,.10) !important;
-}
-
-
-
-/* === Phase2 C3: lock to SENTIMENT baseline (header + content container) === */
-:root{
-  --ui-max: 1200px;
-  --ui-pad-x: 18px;
-}
-/* header: sentiment-like (flat, no extra frame) */
-.topbar{
-  border-radius:0 !important;
-  margin:0 !important;
-  padding:0 !important;
-  background:rgba(8,10,20,.55) !important;
-  border-bottom:1px solid rgba(255,255,255,.06) !important;
-}
-.topbar-inner{
-  width:100% !important;
-  max-width:var(--ui-max) !important;
-  margin:0 auto !important;
-  padding:8px var(--ui-pad-x) !important;
-  min-height:40px !important;
-}
-.brand{justify-content:flex-start !important;}
-.nav{justify-content:flex-end !important;}
-/* content container width: match sentiment */
-main, .wrap, .container, .content, .page{
-  max-width:var(--ui-max) !important;
-}
-main{padding-left:var(--ui-pad-x) !important; padding-right:var(--ui-pad-x) !important;}
-/* keep the blue dot visible even if any earlier rule breaks it */
-.dot, .brand .dot, .brand span.dot, .brand div.dot{
-  width:8px !important;height:8px !important;
-  background:rgba(122,167,255,.95) !important;
-  box-shadow:0 0 0 4px rgba(122,167,255,.10) !important;
-}
-
-</style>
+    @media (max-width: 720px){
+      .item{grid-template-columns: 1fr}
+      .thumb{height:160px}
+      canvas{height:260px}
+    }
+  </style>
 </head>
 
 <body>
-  <div class="wrap">
-    <header class="topbar">
-      <div class="topbar-inner">
-        <div class="brand">
-          <span class="dot"></span>
-          <div class="brand-title">GenesisPrediction v2</div>
-        </div>
-        <nav class="nav">
-          <a class="pill" href="/static/index.html">Home</a>
-          <a class="pill" href="/static/overlay.html">Overlay</a>
-          <a class="pill active" href="/static/sentiment.html">Sentiment</a>
-
-          <span class="pill" id="statusPill"><span class="spin" id="spin"></span><span id="statusText">Loading…</span></span>
-          <span class="pill" id="asofPill"><span class="led"></span><span id="asofText">as_of: -</span></span>
-        </nav>
-      </div>
-    </header>
-
-    <h1>Sentiment（記事別）</h1>
-    <p class="sub">
-      主データ: <code>/analysis/sentiment_latest.json</code><br/>
-      Trend（3軸）: <code>/analysis/sentiment_timeseries.csv</code>（候補を複数探索）
-    </p>
-
-    <div class="grid">
-      <div class="card">
-        <div class="inner">
-          <div class="row">
-            <h2>Controls</h2>
-            <div class="mini">
-              <span class="tag"><strong>items</strong>=<span class="num" id="sentItemsN">-</span></span>
-              <span class="tag"><strong>rendered</strong>=<span class="num" id="renderedN">-</span>/<span class="num" id="totalN">-</span></span>
-              <span class="tag"><strong>trend_points</strong>=<span class="num" id="trendN">-</span></span>
-            </div>
-          </div>
-
-          <div class="btns" style="margin-top:10px">
-            <button class="btn" id="btnReload">Reload</button>
-            <button class="btn" id="btnReset">Reset filters</button>
-            <button class="btn" id="btnOpenSent">Open sentiment_latest.json</button>
-            <button class="btn" id="btnOpenTS">Open sentiment_timeseries.csv</button>
-          </div>
-
-          <div class="kpis">
-            <div class="kpi">
-              <div class="lab">as_of</div>
-              <div class="val num" id="kAsOf">-</div>
-              <div class="tiny">date</div>
-            </div>
-            <div class="kpi">
-              <div class="lab">risk</div>
-              <div class="val num" id="kRisk">-</div>
-              <div class="tiny">avg</div>
-            </div>
-            <div class="kpi">
-              <div class="lab">positive</div>
-              <div class="val num" id="kPos">-</div>
-              <div class="tiny">avg</div>
-            </div>
-            <div class="kpi">
-              <div class="lab">uncertainty</div>
-              <div class="val num" id="kUnc">-</div>
-              <div class="tiny">avg</div>
-            </div>
-            <div class="kpi" style="grid-column: span 4;">
-              <div class="lab">source</div>
-              <div class="val small" id="kSource">-</div>
-              <div class="tiny" id="kSource2">-</div>
-            </div>
-          </div>
-
-          <div class="controls">
-            <input class="search" id="q" placeholder="search (title/source)" />
-            <select class="sel" id="srcSel">
-              <option value="__ALL__">All</option>
-            </select>
-            <select class="sel" id="sortSel">
-              <option value="risk_desc">risk ↓</option>
-              <option value="pos_desc">positive ↓</option>
-              <option value="unc_desc">uncertainty ↓</option>
-              <option value="net_asc">net ↑ (more negative)</option>
-              <option value="net_desc">net ↓ (more positive)</option>
-            </select>
-            <label class="chk">
-              <input type="checkbox" id="showMissing" checked />
-              show missing
-            </label>
-          </div>
-
-          <div class="note" id="debug">debug: -</div>
-
-          <div class="card" style="margin-top:12px">
-            <div class="inner">
-              <h2>Sentiment Trend（3軸）</h2>
-              <canvas id="trend3" class="trend3"></canvas>
-
-              <div class="legend">
-                <span class="it"><span class="sw" id="swRisk"></span>risk</span>
-                <span class="it"><span class="sw" id="swPos"></span>positive</span>
-                <span class="it"><span class="sw" id="swUnc"></span>uncertainty</span>
-              </div>
-
-              <div class="footerNote">※ 3パネル（risk / pos / unc）を分離して描画。各パネルは独立スケール（0..max）。右側に max を表示。</div>
-            </div>
-          </div>
+  <div class="container">
+    <div class="topbar">
+      <div class="brand">
+        <div class="dot" aria-hidden="true"></div>
+        <div>
+          <div class="t1">GenesisPrediction v2</div>
+          <div class="t2">Sentiment / Trend</div>
         </div>
       </div>
 
-      <div class="card">
-        <div class="inner">
-          <div class="row">
-            <h2>How it works</h2>
-            <span class="pill"><span class="led" id="ledDbg"></span><span id="dbg2">-</span></span>
-          </div>
-          <div class="how">
-1) /analysis/sentiment_latest.json を探索してロード
-2) items / articles / rows など配列を自動判定
-3) サムネ: urlToImage 系キーを広く探索 + referrerpolicy=no-referrer + favicon fallback
-4) Trend: sentiment_timeseries.csv を探索してロード（推奨）。無ければ items 日付集計にフォールバック。
-          </div>
-        </div>
-      </div>
+      <nav aria-label="primary">
+        <a class="nav-link" href="/static/index.html">Home</a>
+        <a class="nav-link" href="/static/overlay.html">Overlay</a>
+        <a class="nav-link active" href="/static/sentiment.html">Sentiment</a>
+        <a class="nav-link" href="/static/digest.html">Digest</a>
+      </nav>
     </div>
 
-    <div class="sectionTitle">Articles &amp; Sentiment</div>
-    <div class="tableWrap">
-      <table>
-        <thead>
-          <tr>
-            <th style="width:44px">thumb</th>
-            <th>title</th>
-            <th style="width:130px">source</th>
-            <th class="right" style="width:90px">risk</th>
-            <th class="right" style="width:90px">positive</th>
-            <th class="right" style="width:100px">uncertainty</th>
-            <th class="right" style="width:90px">net</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
+    <div class="grid">
+
+      <section class="card">
+        <header class="card-h">
+          <h1>Sentiment</h1>
+          <div class="meta">
+            <span class="pill muted" id="asof">as_of: --</span>
+            <span class="pill muted" id="srcpill">source: sentiment_latest.json</span>
+            <span class="pill linklike" id="open-json">Open JSON</span>
+          </div>
+        </header>
+
+        <div class="body">
+          <div class="row" style="margin-bottom:10px">
+            <div class="legend" aria-label="legend">
+              <div class="lg"><span class="dot pos"></span>Positive</div>
+              <div class="lg"><span class="dot neg"></span>Negative</div>
+              <div class="lg"><span class="dot neu"></span>Neutral</div>
+              <div class="lg"><span class="dot mix"></span>Mixed</div>
+              <div class="lg"><span class="dot unk"></span>Unknown</div>
+            </div>
+            <div class="tools">
+              <input class="search" id="q" placeholder="Search title/source..." />
+              <span class="select-wrap" title="Filter sentiment label">
+                <select class="select" id="flt">
+                  <option value="">All</option>
+                  <option value="pos">Positive</option>
+                  <option value="neg">Negative</option>
+                  <option value="neu">Neutral</option>
+                  <option value="mix">Mixed</option>
+                  <option value="unk">Unknown</option>
+                </select>
+              </span>
+            </div>
+          </div>
+
+          <div class="chartwrap">
+            <canvas id="trend"></canvas>
+          </div>
+
+          <div class="list" id="list"></div>
+
+          <details>
+            <summary>raw (debug)</summary>
+            <pre id="debug">{}</pre>
+          </details>
+        </div>
+      </section>
+
     </div>
   </div>
 
 <script>
-(() => {
-  "use strict";
+(function(){
   const $ = (id) => document.getElementById(id);
+  const elAsOf = $("asof");
+  const elSrc = $("srcpill");
+  const btnOpen = $("open-json");
+  const elDbg = $("debug");
+  const elList = $("list");
+  const elQ = $("q");
+  const elF = $("flt");
+  const cv = $("trend");
+  const ctx = cv.getContext("2d");
 
-  function safeNum(x){
-    const n = Number(x);
-    return Number.isFinite(n) ? n : null;
-  }
-  function fmt(x, d=2){
-    const n = safeNum(x);
-    if (n === null) return "-";
-    return n.toFixed(d);
-  }
-  function esc(s){
-    return String(s ?? "").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
-  }
-  function cssVar(name, fallback){
-    const v = getComputedStyle(document.documentElement).getPropertyValue(name);
-    const s = (v || "").trim();
-    return s || fallback;
+  function safeJson(obj){
+    try { return JSON.stringify(obj, null, 2); } catch(e){ return String(obj); }
   }
 
-  const CAND_SENT = [
-    "/analysis/sentiment_latest.json",
-    "/analysis/world_politics/sentiment_latest.json",
-    "/data/world_politics/analysis/sentiment_latest.json",
-    "/data/digest/sentiment_latest.json",
-    "/dist/labos_deploy/analysis/sentiment_latest.json"
-  ];
-  const CAND_TS = [
-    "/analysis/sentiment_timeseries.csv",
-    "/analysis/world_politics/sentiment_timeseries.csv",
-    "/data/world_politics/analysis/sentiment_timeseries.csv",
-    "/data/digest/sentiment_timeseries.csv",
-    "/dist/labos_deploy/analysis/sentiment_timeseries.csv"
-  ];
+  function setText(el, text){ el.textContent = text; }
 
-  async function fetchText(url){
-    const u = new URL(url, window.location.origin);
-    u.searchParams.set("cb", Date.now().toString());
-    const r = await fetch(u.toString(), { cache:"no-store" });
-    if (!r.ok) throw new Error(`HTTP ${r.status} ${url}`);
-    return await r.text();
-  }
   async function fetchJson(url){
-    const t = (await fetchText(url)).replace(/^\\uFEFF/, "").trim();
-    return JSON.parse(t);
+    const res = await fetch(url, {cache: "no-store"});
+    if(!res.ok) throw new Error("HTTP " + res.status + " for " + url);
+    return await res.json();
   }
 
-  function pickArray(obj){
-    if (!obj) return [];
-    if (Array.isArray(obj)) return obj;
-    if (typeof obj !== "object") return [];
-    for (const k of ["articles","items","rows","data","results","events"]){
-      if (Array.isArray(obj[k])) return obj[k];
-    }
-    for (const k of Object.keys(obj)){
-      if (Array.isArray(obj[k])) return obj[k];
-    }
-    return [];
-  }
+  // SST location candidates (safe)
+  const candidates = [
+    "/analysis/world_politics/sentiment_latest.json",
+    "/analysis/world_politics/analysis/sentiment_latest.json",
+    "/analysis/sentiment_latest.json",
+    "/data/world_politics/analysis/sentiment_latest.json"
+  ];
 
-  function extractAsOf(obj){
-    if (!obj) return null;
-    const directKeys = ["as_of","asOf","date","day","generated_at","generatedAt","fetched_at","fetchedAt"];
-    for (const k of directKeys){
-      if (obj[k]) return String(obj[k]);
-    }
-    if (obj.meta){
-      for (const k of ["as_of","asOf","date","day","generated_at","generatedAt"]){
-        if (obj.meta[k]) return String(obj.meta[k]);
+  async function pick(){
+    for(const url of candidates){
+      try{
+        const j = await fetchJson(url);
+        return { url, json: j };
+      }catch(e){
+        // ignore
       }
     }
     return null;
   }
 
-  function itemSent(item){
-    if (!item || typeof item !== "object") return {risk:null,pos:null,unc:null};
-    const base = (item.latest && typeof item.latest === "object") ? item.latest :
-                 (item.today && typeof item.today === "object") ? item.today :
-                 item;
-    const risk = safeNum(base.risk ?? base.neg ?? base.negative ?? base.risk_score ?? base.riskScore);
-    const pos  = safeNum(base.positive ?? base.pos ?? base.positive_score ?? base.positiveScore);
-    const unc  = safeNum(base.uncertainty ?? base.uncertain ?? base.uncertainty_score ?? base.uncertaintyScore);
-    return {risk, pos, unc};
+  function normLabel(raw){
+    const s = (raw == null ? "" : String(raw)).toLowerCase();
+    if(!s) return "unk";
+    if(s.includes("pos") || s.includes("good") || s.includes("bull")) return "pos";
+    if(s.includes("neg") || s.includes("bad") || s.includes("bear")) return "neg";
+    if(s.includes("neu") || s.includes("neutral")) return "neu";
+    if(s.includes("mix") || s.includes("both")) return "mix";
+    if(s === "0") return "neu";
+    return "unk";
   }
 
-  function itemTitle(item){ return item.title ?? item.headline ?? item.name ?? item.summary ?? ""; }
-  function itemSource(item){
-    const s = item.source;
-    if (typeof s === "string") return s;
-    if (s && typeof s === "object") return s.name ?? s.id ?? "";
-    return item.publisher ?? item.site ?? "";
+  function labelFromScore(score){
+    const n = Number(score);
+    if(!Number.isFinite(n)) return "unk";
+    if(n > 0.15) return "pos";
+    if(n < -0.15) return "neg";
+    return "neu";
   }
-  function itemUrl(item){ return item.url ?? item.link ?? ""; }
-  function itemThumb(item){
-    if (!item || typeof item !== "object") return "";
-    const direct =
-      item.urlToImage ?? item.url_to_image ?? item.image_url ?? item.imageUrl ?? item.image ??
-      item.ogImage ?? item.og_image ?? item.thumbnail ?? item.thumb ?? item.icon ?? "";
-    if (direct) return direct;
 
-    // Nested common shapes
-    const a = item.article && typeof item.article === "object" ? item.article : null;
-    if (a){
-      const v = a.urlToImage ?? a.url_to_image ?? a.image_url ?? a.imageUrl ?? a.image ??
-                a.thumbnail ?? a.thumb ?? a.icon ?? "";
-      if (v) return v;
-      const s = a.source && typeof a.source === "object" ? a.source : null;
-      if (s){
-        const vv = s.urlToImage ?? s.image ?? s.icon ?? "";
-        if (vv) return vv;
+  function articleLabel(a){
+    if(a == null) return "unk";
+
+    const cand = a.sentiment_label ?? a.label ?? a.sentiment ?? a.polarity_label ?? a.class ?? null;
+    if(cand != null && typeof cand !== "object") return normLabel(cand);
+    if(cand != null && typeof cand === "object"){
+      // Sometimes {label: "..."} or {sentiment:"..."}
+      const inner = cand.label ?? cand.sentiment ?? cand.polarity ?? cand.name ?? null;
+      if(inner != null) return normLabel(inner);
+    }
+
+    const score = a.sentiment_score ?? a.score ?? a.polarity ?? a.compound ?? a.vader ?? null;
+    if(score != null && typeof score !== "object") return labelFromScore(score);
+    if(score != null && typeof score === "object"){
+      const inner = score.compound ?? score.score ?? score.value ?? null;
+      if(inner != null) return labelFromScore(inner);
+    }
+
+    return "unk";
+  }
+
+  function badgeHtml(lbl){
+    const map = {pos:"Positive", neg:"Negative", neu:"Neutral", mix:"Mixed", unk:"Unknown"};
+    const name = map[lbl] || "Unknown";
+    return `<span class="badge ${lbl}"><span class="led" aria-hidden="true"></span>${name}</span>`;
+  }
+
+  function fmtTimeVal(v){
+    if(v == null) return "";
+    if(typeof v === "string") return v;
+    if(typeof v === "number") return String(v);
+    if(typeof v === "object"){
+      // common object shapes
+      const inner = v.iso ?? v.date ?? v.datetime ?? v.time ?? v.value ?? v.publishedAt ?? v.published_at ?? null;
+      if(inner != null) return fmtTimeVal(inner);
+      try { return JSON.stringify(v); } catch(e){ return ""; }
+    }
+    return String(v);
+  }
+
+  function fmtTime(v){
+    const s = fmtTimeVal(v);
+    if(!s) return "";
+    return String(s).replace("T"," ").replace("Z","");
+  }
+
+  function normalizeSourceVal(v){
+    if(v == null) return "";
+    if(typeof v === "string") return v;
+    if(typeof v === "number") return String(v);
+    if(typeof v === "object"){
+      // newsapi shape: { id, name }
+      const inner = v.name ?? v.title ?? v.source ?? v.provider ?? v.id ?? null;
+      if(inner != null && typeof inner !== "object") return String(inner);
+      // fallback: try to find first string property
+      for(const k of ["name","title","id","domain","publisher"]){
+        if(v[k] != null && typeof v[k] !== "object") return String(v[k]);
       }
+      return "";
     }
-
-    const raw = item.raw && typeof item.raw === "object" ? item.raw : null;
-    if (raw){
-      const v = raw.urlToImage ?? raw.image_url ?? raw.imageUrl ?? raw.thumbnail ?? raw.ogImage ?? "";
-      if (v) return v;
-    }
-
-    const meta = item.meta && typeof item.meta === "object" ? item.meta : null;
-    if (meta){
-      const v = meta.image ?? meta.thumbnail ?? meta.ogImage ?? meta.icon ?? "";
-      if (v) return v;
-    }
-
-    return "";
-  }
-  function faviconFromUrl(url){
-    try{ const u = new URL(url); return u.origin + "/favicon.ico"; }catch(_){ return ""; }
+    return String(v);
   }
 
-  // Trend 3-axis
-  const trendCanvas = $("trend3");
-  const ctx = trendCanvas.getContext("2d");
-  const trendState = { points: [] };
+  function articleSource(a){
+    return normalizeSourceVal(a.source ?? a.source_name ?? a.provider ?? a.publisher ?? a.site ?? "");
+  }
 
-  function canvasResizeToDisplaySize(canvas){
+  function pickArticles(root){
+    if(!root) return [];
+    if(Array.isArray(root.articles)) return root.articles;
+    if(Array.isArray(root.items)) return root.items;
+    if(Array.isArray(root.news)) return root.news;
+    if(Array.isArray(root.data)) return root.data;
+    if(Array.isArray(root)) return root;
+    return [];
+  }
+
+  function pickAsOf(root){
+    return root.as_of ?? root.asof ?? root.date ?? root.day ?? root.generated_at ?? root.updated_at ?? null;
+  }
+
+  // --- simple trend renderer (safe) ---
+  function resizeCanvas(){
     const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    const w = Math.max(1, Math.round(rect.width * dpr));
-    const h = Math.max(1, Math.round(rect.height * dpr));
-    if (canvas.width !== w || canvas.height !== h){
-      canvas.width = w;
-      canvas.height = h;
-      return true;
-    }
-    return false;
+    const rect = cv.getBoundingClientRect();
+    const w = Math.max(320, Math.floor(rect.width));
+    const h = Math.max(240, Math.floor(rect.height));
+    cv.width = Math.floor(w * dpr);
+    cv.height = Math.floor(h * dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    return {w, h};
   }
 
-  function drawPanel({x0,x1,y0,y1, label, color, arr, vmax, showXLabels}){
-    const dpr = window.devicePixelRatio || 1;
-    const cFrame= cssVar("--trend-frame","rgba(255,255,255,0.18)");
-    const cGrid = cssVar("--trend-grid", "rgba(255,255,255,0.10)");
-    const cText = cssVar("--trend-text", "rgba(220,230,245,0.58)");
-    const cSoft = cssVar("--trend-soft", "rgba(255,255,255,0.06)");
+  function extractTrend(root){
+    const cand =
+      root.trend ?? root.trends ?? root.series ?? root.timeline ??
+      (root.view_model && (root.view_model.trend ?? root.view_model.timeline)) ??
+      null;
 
-    ctx.fillStyle = cSoft;
-    ctx.fillRect(x0, y0, x1-x0, y1-y0);
+    if(Array.isArray(cand)) return cand;
 
-    ctx.strokeStyle = cFrame;
-    ctx.lineWidth = Math.max(1, Math.round(dpr));
-    ctx.strokeRect(x0, y0, x1-x0, y1-y0);
-
-    ctx.strokeStyle = cGrid;
-    ctx.lineWidth = Math.max(1, Math.round(dpr));
-    for (let i=1;i<=2;i++){
-      const y = y0 + (y1-y0) * (i/3);
-      ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
-    }
-
-    ctx.fillStyle = cText;
-    ctx.font = `${Math.round(11*dpr)}px ui-sans-serif, system-ui`;
-    ctx.textAlign = "left";
-    ctx.fillText(label, x0 + Math.round(8*dpr), y0 + Math.round(14*dpr));
-    ctx.textAlign = "right";
-    ctx.fillText(`max ${vmax.toFixed(2)}`, x1 - Math.round(6*dpr), y0 + Math.round(14*dpr));
-    ctx.textAlign = "left";
-
-    const n = arr.length;
-    if (n < 2) return;
-
-    const ix0 = x0 + Math.round(10*dpr);
-    const ix1 = x1 - Math.round(10*dpr);
-    const iy0 = y0 + Math.round(20*dpr);
-    const iy1 = y1 - Math.round(10*dpr);
-
-    function xAt(i){
-      const t = i/(n-1);
-      return ix0 + (ix1-ix0)*t;
-    }
-    function yAt(v){
-      if (v === null) return null;
-      const t = v / vmax;
-      return iy1 - (iy1-iy0)*t;
-    }
-
-    ctx.strokeStyle = color;
-    ctx.lineWidth = Math.max(2, Math.round(1.6*dpr));
-    ctx.beginPath();
-    let started = false;
-    for (let i=0;i<n;i++){
-      const y = yAt(arr[i]);
-      if (y === null){ started = false; continue; }
-      const x = xAt(i);
-      if (!started){ ctx.moveTo(x,y); started = true; }
-      else { ctx.lineTo(x,y); }
-    }
-    ctx.stroke();
-
-    if (showXLabels){
-      const pts = trendState.points;
-      const step = Math.max(1, Math.round((n-1)/4));
-      ctx.fillStyle = cText;
-      ctx.font = `${Math.round(10*dpr)}px ui-sans-serif, system-ui`;
-      ctx.textAlign = "center";
-      for (let i=0;i<n;i+=step){
-        const d = String(pts[i].date ?? "").slice(5,10);
-        if (!d) continue;
-        const x = xAt(i);
-        ctx.fillText(d, x, y1 - Math.round(6*dpr));
-      }
-      ctx.textAlign = "left";
-    }
-  }
-
-  function drawTrend3(){
-    if (!trendCanvas || !ctx) return;
-    canvasResizeToDisplaySize(trendCanvas);
-
-    const w = trendCanvas.width;
-    const h = trendCanvas.height;
-    ctx.clearRect(0,0,w,h);
-
-    const pts = trendState.points || [];
-    const n = pts.length;
-    if (n < 2){
-      const dpr = window.devicePixelRatio || 1;
-      ctx.fillStyle = cssVar("--trend-text","rgba(220,230,245,0.58)");
-      ctx.font = `${Math.round(12*dpr)}px ui-sans-serif, system-ui`;
-      ctx.fillText("not enough points (need sentiment_timeseries.csv)", Math.round(12*dpr), Math.round(20*dpr));
-      return;
-    }
-
-    const cRisk = cssVar("--trend-risk", "#ff6b6b");
-    const cPos  = cssVar("--trend-pos",  "#2dd4bf");
-    const cUnc  = cssVar("--trend-unc",  "#fbbf24");
-    $("swRisk").style.background = cRisk;
-    $("swPos").style.background  = cPos;
-    $("swUnc").style.background  = cUnc;
-
-    const arrR = pts.map(p => safeNum(p.risk));
-    const arrP = pts.map(p => safeNum(p.pos));
-    const arrU = pts.map(p => safeNum(p.unc));
-
-    function maxOf(arr){
-      let m = 0;
-      for (const v of arr){
-        if (typeof v === "number" && v > m) m = v;
-      }
-      return m > 0 ? m : 1;
-    }
-    const maxR = maxOf(arrR);
-    const maxP = maxOf(arrP);
-    const maxU = maxOf(arrU);
-
-    const dpr = window.devicePixelRatio || 1;
-    const pad = Math.round(10*dpr);
-    const gap = Math.round(10*dpr);
-    const panelH = Math.floor((h - pad*2 - gap*2) / 3);
-
-    const x0 = pad;
-    const x1 = w - pad;
-
-    const y0a = pad;
-    const y1a = y0a + panelH;
-
-    const y0b = y1a + gap;
-    const y1b = y0b + panelH;
-
-    const y0c = y1b + gap;
-    const y1c = y0c + panelH;
-
-    drawPanel({x0,x1,y0:y0a,y1:y1a,label:"risk",        color:cRisk, arr:arrR, vmax:maxR, showXLabels:false});
-    drawPanel({x0,x1,y0:y0b,y1:y1b,label:"positive",    color:cPos,  arr:arrP, vmax:maxP, showXLabels:false});
-    drawPanel({x0,x1,y0:y0c,y1:y1c,label:"uncertainty", color:cUnc,  arr:arrU, vmax:maxU, showXLabels:true});
-  }
-
-  const ro = new ResizeObserver(() => { try{ drawTrend3(); }catch(_){ } });
-  ro.observe(trendCanvas);
-
-  function parseCSV(text){
-    // Tolerant CSV/TSV parser:
-    // - accepts delimiter "," or "\t"
-    // - accepts headers like "as_of", "date", "day"
-    // - accepts quoted fields
-    // - if headers are unknown, uses first column as date and next 3 numeric columns as risk/pos/unc
-    const raw = text.replace(/^\uFEFF/, "");
-    const lines = raw.split(/\r?\n/).filter(l => l.trim().length>0);
-    if (!lines.length) return [];
-
-    // detect delimiter by first line
-    const headLine = lines[0];
-    const delim = (headLine.includes("\t") && !headLine.includes(",")) ? "\t" : ",";
-
-    function splitLine(line){
-      // simple CSV splitter with quotes (supports chosen delimiter)
-      const out = [];
-      let cur = "";
-      let inQ = false;
-      for (let i=0;i<line.length;i++){
-        const ch = line[i];
-        if (ch === '"'){
-          if (inQ && line[i+1] === '"'){ cur += '"'; i++; }
-          else { inQ = !inQ; }
-          continue;
+    if(cand && typeof cand === "object"){
+      const dates = cand.dates || cand.date || cand.day || null;
+      const a = cand.positive || cand.pos || cand.good || null;
+      const b = cand.negative || cand.neg || cand.bad || null;
+      const c = cand.neutral || cand.neu || null;
+      if(Array.isArray(dates) && (Array.isArray(a) || Array.isArray(b) || Array.isArray(c))){
+        const n = dates.length;
+        const out = [];
+        for(let i=0;i<n;i++){
+          out.push({date: dates[i], positive: a ? a[i] : null, negative: b ? b[i] : null, neutral: c ? c[i] : null});
         }
-        if (!inQ && ch === delim){
-          out.push(cur);
-          cur = "";
-          continue;
-        }
-        cur += ch;
+        return out;
       }
-      out.push(cur);
-      return out.map(s => s.trim());
-    }
-
-    const header = splitLine(lines[0]).map(s => s.replace(/^"|"$/g,"").trim());
-    const lower = header.map(h => h.toLowerCase());
-
-    const idx = (names) => {
-      for (const n of names){
-        const i = lower.indexOf(n);
-        if (i >= 0) return i;
-      }
-      return -1;
-    };
-
-    const idxDate = idx(["date","day","as_of","asof"]);
-    const idxRisk = idx(["risk","neg","negative"]);
-    const idxPos  = idx(["positive","pos"]);
-    const idxUnc  = idx(["uncertainty","unc","uncertain"]);
-
-    const out = [];
-    for (let i=1;i<lines.length;i++){
-      const parts = splitLine(lines[i]);
-      if (!parts.length) continue;
-
-      let date = "";
-      let risk = null, pos = null, unc = null;
-
-      if (idxDate >= 0) date = String(parts[idxDate] ?? "");
-      // normalize date to YYYY-MM-DD if possible
-      if (date) date = date.slice(0,10);
-
-      if (idxRisk >= 0) risk = safeNum(parts[idxRisk]);
-      if (idxPos  >= 0) pos  = safeNum(parts[idxPos]);
-      if (idxUnc  >= 0) unc  = safeNum(parts[idxUnc]);
-
-      // Fallback: unknown header layout
-      if (!date){
-        const maybe = String(parts[0] ?? "");
-        if (/^\d{4}-\d{2}-\d{2}/.test(maybe)) date = maybe.slice(0,10);
-      }
-      if (risk===null && pos===null && unc===null){
-        // try take next numeric columns (1..)
-        const nums = [];
-        for (let k=1;k<parts.length;k++){
-          const n = safeNum(parts[k]);
-          if (n !== null) nums.push(n);
-        }
-        if (nums.length >= 3){
-          risk = nums[0]; pos = nums[1]; unc = nums[2];
-        }
-      }
-
-      if (!date) continue;
-      if (risk===null && pos===null && unc===null) continue;
-      out.push({date, risk, pos, unc});
-    }
-    out.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
-    return out;
-  }
-
-
-  function renderTable(items, opts){
-    const tbody = $("tbody");
-    tbody.innerHTML = "";
-
-    const q = (opts.q || "").trim().toLowerCase();
-    const srcFilter = opts.src || "__ALL__";
-    const showMissing = !!opts.showMissing;
-
-    const rows = [];
-    for (const it of items){
-      const title = String(itemTitle(it) || "");
-      const source = String(itemSource(it) || "");
-      const url = String(itemUrl(it) || "");
-      const thumb = String(itemThumb(it) || "");
-      const s = itemSent(it);
-
-      const hasAny = (s.risk !== null || s.pos !== null || s.unc !== null);
-      if (!showMissing && !hasAny) continue;
-
-      if (q){
-        const hay = (title + " " + source).toLowerCase();
-        if (!hay.includes(q)) continue;
-      }
-      if (srcFilter !== "__ALL__" && source !== srcFilter) continue;
-
-      const net = (s.pos ?? 0) - (s.risk ?? 0);
-      rows.push({title, source, url, thumb, ...s, net});
-    }
-
-    const sortKey = opts.sort || "risk_desc";
-    const av = (v) => (v === null || v === undefined) ? -1e9 : v;
-    rows.sort((a,b) => {
-      if (sortKey === "risk_desc") return av(b.risk) - av(a.risk);
-      if (sortKey === "pos_desc") return av(b.pos) - av(a.pos);
-      if (sortKey === "unc_desc") return av(b.unc) - av(a.unc);
-      if (sortKey === "net_asc") return av(a.net) - av(b.net);
-      if (sortKey === "net_desc") return av(b.net) - av(a.net);
-      return 0;
-    });
-
-    let rendered = 0;
-    for (const r of rows){
-      const tr = document.createElement("tr");
-
-      const tdThumb = document.createElement("td");
-      const fallback = r.url ? faviconFromUrl(r.url) : "";
-      const src = r.thumb || "";
-      const initial = src || fallback || "";
-      // Inline SVG fallback (always safe)
-      const svg = encodeURIComponent(
-        `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
-          <defs>
-            <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#69a9ff" stop-opacity="0.35"/>
-              <stop offset="1" stop-color="#2dd4bf" stop-opacity="0.25"/>
-            </linearGradient>
-          </defs>
-          <rect width="64" height="64" rx="14" ry="14" fill="url(#g)"/>
-          <path d="M18 42h28" stroke="rgba(255,255,255,0.55)" stroke-width="3" stroke-linecap="round"/>
-          <path d="M18 28h18" stroke="rgba(255,255,255,0.45)" stroke-width="3" stroke-linecap="round"/>
-        </svg>`
-      );
-      const svgUrl = `data:image/svg+xml,${svg}`;
-
-      tdThumb.innerHTML = `
-        <div class="thumb">
-          <img src="${esc(initial || svgUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer"
-            onerror="this.onerror=null; ${fallback ? `if (this.src!== '${esc(fallback)}') { this.src='${esc(fallback)}'; } else { this.src='${esc(svgUrl)}'; }` : `this.src='${esc(svgUrl)}';`}">
-        </div>
-      `;
-      tr.appendChild(tdThumb);
-
-      const tdTitle = document.createElement("td");
-      const safeTitle = esc(r.title || "(no title)");
-      const safeUrl = esc(r.url || "");
-      tdTitle.innerHTML = `
-        <div class="title">${safeUrl ? `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeTitle}</a>` : safeTitle}</div>
-        <div class="src">${esc(r.url || "")}</div>
-      `;
-      tr.appendChild(tdTitle);
-
-      const tdSrc = document.createElement("td");
-      tdSrc.innerHTML = `<div class="src">${esc(r.source || "-")}</div>`;
-      tr.appendChild(tdSrc);
-
-      const tdRisk = document.createElement("td"); tdRisk.className="right num"; tdRisk.textContent = fmt(r.risk, 3); tr.appendChild(tdRisk);
-      const tdPos  = document.createElement("td"); tdPos.className ="right num"; tdPos.textContent  = fmt(r.pos, 3);  tr.appendChild(tdPos);
-      const tdUnc  = document.createElement("td"); tdUnc.className ="right num"; tdUnc.textContent  = fmt(r.unc, 3);  tr.appendChild(tdUnc);
-      const tdNet  = document.createElement("td"); tdNet.className ="right num"; tdNet.textContent  = fmt(r.net, 3);  tr.appendChild(tdNet);
-
-      tbody.appendChild(tr);
-      rendered++;
-    }
-
-    $("renderedN").textContent = String(rendered);
-    $("totalN").textContent = String(items.length);
-
-    const srcSel = $("srcSel");
-    const current = srcSel.value;
-    const sources = Array.from(new Set(items.map(it => String(itemSource(it)||"").trim()).filter(Boolean))).sort();
-    srcSel.innerHTML = '<option value="__ALL__">All</option>' + sources.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("");
-    if (sources.includes(current)) srcSel.value = current;
-  }
-
-  const ui = { items: [], srcPath: "", tsPath: "", asOf: "-" };
-
-  function setStatus(text, ready){
-    $("statusText").textContent = text;
-    $("spin").style.display = ready ? "none" : "inline-block";
-  }
-
-  function avg(nums){
-    const xs = nums.filter(v => typeof v === "number" && Number.isFinite(v));
-    if (!xs.length) return null;
-    return xs.reduce((a,b)=>a+b,0)/xs.length;
-  }
-
-  async function loadTrendFromCSV(){
-    for (const p of CAND_TS){
-      try{
-        const t = await fetchText(p);
-        const pts = parseCSV(t);
-        if (pts.length){ ui.tsPath = p; return pts; } else { ui.tsPath = p + " (parsed 0)"; return []; }
-      }catch(_){}
     }
     return [];
   }
 
-  function buildTrendFallback(items){
-    const buckets = new Map();
-    for (const it of items){
-      const d = String(it.date ?? it.day ?? it.as_of ?? it.asOf ?? it.publishedAt ?? it.published_at ?? "").slice(0,10);
-      if (!/\\d{4}-\\d{2}-\\d{2}/.test(d)) continue;
-      if (!buckets.has(d)) buckets.set(d, []);
-      buckets.get(d).push(itemSent(it));
+  function getVal(p, keys){
+    for(const k of keys){
+      if(p && Object.prototype.hasOwnProperty.call(p, k) && p[k] != null){
+        const v = Number(p[k]);
+        if(Number.isFinite(v)) return v;
+      }
     }
-    if (!buckets.size) return [];
-    const days = Array.from(buckets.keys()).sort();
-    const pts = [];
-    for (const d of days){
-      const arr = buckets.get(d);
-      pts.push({ date: d, risk: avg(arr.map(x=>x.risk)), pos: avg(arr.map(x=>x.pos)), unc: avg(arr.map(x=>x.unc)) });
-    }
-    return pts;
+    return NaN;
   }
 
-  function updateKPIs(){
-    const items = ui.items || [];
-    $("sentItemsN").textContent = String(items.length);
+  function drawTrend(points){
+    const {w, h} = resizeCanvas();
+    ctx.clearRect(0,0,w,h);
 
-    const sents = items.map(itemSent);
-    const r = avg(sents.map(s => s.risk));
-    const p = avg(sents.map(s => s.pos));
-    const u = avg(sents.map(s => s.unc));
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(255,255,255,.08)";
+    for(let i=1;i<6;i++){
+      const y = Math.round((h-20) * i/6) + 10;
+      ctx.beginPath(); ctx.moveTo(10,y); ctx.lineTo(w-10,y); ctx.stroke();
+    }
 
-    $("kRisk").textContent = fmt(r, 2);
-    $("kPos").textContent  = fmt(p, 2);
-    $("kUnc").textContent  = fmt(u, 2);
-    $("kAsOf").textContent = ui.asOf || "-";
-    $("asofText").textContent = "as_of: " + (ui.asOf || "-");
-    $("kSource").textContent = ui.srcPath || "-";
-    $("kSource2").textContent = ui.tsPath ? (`trend: ${ui.tsPath}`) : "trend: fallback (no csv)";
+    if(!points || points.length < 2){
+      ctx.fillStyle = "rgba(255,255,255,.55)";
+      ctx.font = "700 12px system-ui";
+      ctx.fillText("trend data not found (safe)", 14, 24);
+      return;
+    }
+
+    const xs = points.map((_,i)=> i);
+    const pos = points.map(p => getVal(p, ["positive","pos","good","p"]));
+    const neg = points.map(p => getVal(p, ["negative","neg","bad","n"]));
+    const neu = points.map(p => getVal(p, ["neutral","neu","u"]));
+
+    const all = [...pos, ...neg, ...neu].filter(v => Number.isFinite(v));
+    const min = all.length ? Math.min(...all) : -1;
+    const max = all.length ? Math.max(...all) : 1;
+    const pad = (max-min) * 0.08 || 0.2;
+    const lo = min - pad;
+    const hi = max + pad;
+
+    function x(i){ return 10 + (w-20) * (i/(xs.length-1)); }
+    function y(v){
+      if(!Number.isFinite(v)) return null;
+      const t = (v - lo) / (hi - lo || 1);
+      return 10 + (h-20) * (1 - t);
+    }
+
+    function drawSeries(vals, stroke){
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      let started = false;
+      for(let i=0;i<vals.length;i++){
+        const yy = y(vals[i]);
+        if(yy == null) continue;
+        const xx = x(i);
+        if(!started){ ctx.moveTo(xx,yy); started=true; }
+        else ctx.lineTo(xx,yy);
+      }
+      if(started) ctx.stroke();
+    }
+
+    const cs = getComputedStyle(document.documentElement);
+    const cPos = cs.getPropertyValue("--pos").trim() || "rgba(60,210,140,.95)";
+    const cNeg = cs.getPropertyValue("--neg").trim() || "rgba(255,110,110,.95)";
+    const cNeu = cs.getPropertyValue("--neu").trim() || "rgba(200,210,230,.70)";
+
+    drawSeries(pos, cPos);
+    drawSeries(neg, cNeg);
+    drawSeries(neu, cNeu);
+
+    const last = points[points.length-1];
+    const lastDate = last.date ?? last.day ?? last.as_of ?? "";
+    ctx.fillStyle = "rgba(255,255,255,.72)";
+    ctx.font = "800 12px system-ui";
+    ctx.fillText(String(lastDate).slice(0,16), 14, h-10);
   }
 
-  function applyFilters(){
-    renderTable(ui.items, {
-      q: $("q").value,
-      src: $("srcSel").value,
-      sort: $("sortSel").value,
-      showMissing: $("showMissing").checked
+  function escapeHtml(s){
+    return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+  }
+  function escapeAttr(s){
+    return String(s).replaceAll('"',"&quot;");
+  }
+
+  function renderList(articles){
+    const q = (elQ.value || "").toLowerCase().trim();
+    const flt = (elF.value || "").toLowerCase();
+
+    const filtered = articles.filter(a => {
+      const lbl = articleLabel(a);
+      if(flt && lbl !== flt) return false;
+
+      if(!q) return true;
+      const t = String(a.title ?? a.headline ?? "").toLowerCase();
+      const s = String(articleSource(a) ?? "").toLowerCase();
+      return t.includes(q) || s.includes(q);
     });
-  }
 
-  async function load(){
-    setStatus("Loading…", false);
-    $("debug").textContent = "debug: loading…";
-    ui.tsPath = "";
-    try{
-      let loaded = null;
-      for (const p of CAND_SENT){
-        try{ loaded = { path:p, json: await fetchJson(p) }; break; }catch(_){}
-      }
-      if (!loaded) throw new Error("sentiment_latest not found. tried:\\n" + CAND_SENT.join("\\n"));
+    elList.innerHTML = filtered.slice(0, 200).map(a => {
+      const title = String(a.title ?? a.headline ?? "(no title)");
+      const url = a.url ?? a.link ?? "#";
+      const desc = String(a.description ?? a.summary ?? a.snippet ?? "").trim();
+      const src = articleSource(a);
+      const time = fmtTime(a.publishedAt ?? a.published_at ?? a.time ?? a.datetime ?? "");
+      const img = a.urlToImage ?? a.image ?? a.image_url ?? a.thumbnail ?? "";
+      const lbl = articleLabel(a);
 
-      ui.srcPath = loaded.path;
-      const asOfRaw = extractAsOf(loaded.json) || "-";
-      ui.asOf = (String(asOfRaw).length >= 10) ? String(asOfRaw).slice(0,10) : String(asOfRaw);
+      const srcHtml = src ? `<span class="src">${escapeHtml(src)}</span>` : "";
+      const timeHtml = time ? `<span class="time">${escapeHtml(time)}</span>` : "";
 
-      ui.items = pickArray(loaded.json);
+      return `
+        <article class="item">
+          <div class="thumb">${img ? `<img referrerpolicy="no-referrer" loading="lazy" src="${escapeAttr(img)}" alt="">` : ""}</div>
+          <div>
+            <div class="tmeta">
+              ${badgeHtml(lbl)}
+              ${srcHtml}
+              ${timeHtml}
+            </div>
+            <h2 class="title"><a href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(title)}</a></h2>
+            ${desc ? `<p class="desc">${escapeHtml(desc)}</p>` : ""}
+          </div>
+        </article>
+      `;
+    }).join("");
 
-      let pts = await loadTrendFromCSV();
-      if (!pts.length) pts = buildTrendFallback(ui.items);
-      if (!pts.length){
-        const sents = ui.items.map(itemSent);
-        pts = [{date: ui.asOf || "", risk: avg(sents.map(s=>s.risk)), pos: avg(sents.map(s=>s.pos)), unc: avg(sents.map(s=>s.unc))}];
-      }
-      trendState.points = pts;
-      $("trendN").textContent = String(pts.length);
-      drawTrend3();
-
-      $("dbg2").textContent = "loaded";
-      $("ledDbg").style.background = "#3ddc84";
-      $("debug").textContent =
-        "debug: ok\\n" +
-        "sentiment: " + ui.srcPath + "\\n" +
-        (ui.tsPath ? ("trend: " + ui.tsPath + "\\n") : "trend: fallback (csv not found)\\n") +
-        "tried sentiment:\\n" + CAND_SENT.join("\\n") + "\\n\\n" +
-        "tried trend:\\n" + CAND_TS.join("\\n");
-
-      updateKPIs();
-      applyFilters();
-      setStatus("Ready", true);
-    }catch(err){
-      $("ledDbg").style.background = "#ff6b6b";
-      $("dbg2").textContent = "error";
-      $("debug").textContent = "debug: " + (err && err.message ? err.message : String(err));
-      setStatus("Error", true);
+    if(filtered.length === 0){
+      elList.innerHTML = `<div class="pill muted">No items (safe)</div>`;
     }
   }
 
-  $("btnReload").addEventListener("click", () => load());
-  $("btnReset").addEventListener("click", () => {
-    $("q").value = "";
-    $("srcSel").value = "__ALL__";
-    $("sortSel").value = "risk_desc";
-    $("showMissing").checked = true;
-    applyFilters();
+  let state = { url:null, json:null, articles:[] };
+
+  async function main(){
+    const picked = await pick();
+    if(!picked){
+      setText(elAsOf, "as_of: --");
+      setText(elSrc, "source: not found (safe)");
+      elDbg.textContent = safeJson({ tried: candidates, note: "sentiment json not found" });
+      drawTrend([]);
+      elList.innerHTML = `<div class="pill muted">sentiment_latest.json not found (safe)</div>`;
+      btnOpen.onclick = () => alert("sentiment json not found (safe)");
+      return;
+    }
+
+    state.url = picked.url;
+    state.json = picked.json;
+
+    setText(elSrc, "source: " + picked.url);
+    const asof = pickAsOf(picked.json);
+    setText(elAsOf, "as_of: " + (asof ? String(asof) : "--"));
+
+    btnOpen.onclick = () => window.open(picked.url, "_blank", "noopener,noreferrer");
+
+    state.articles = pickArticles(picked.json);
+    elDbg.textContent = safeJson({ picked_json: picked.url, as_of: asof ?? null, articles_count: state.articles.length });
+
+    const tr = extractTrend(picked.json);
+    drawTrend(tr);
+
+    renderList(state.articles);
+
+    elQ.addEventListener("input", () => renderList(state.articles));
+    elF.addEventListener("change", () => renderList(state.articles));
+    window.addEventListener("resize", () => drawTrend(tr));
+  }
+
+  main().catch(e => {
+    elDbg.textContent = safeJson({ error: String(e) });
+    drawTrend([]);
+    elList.innerHTML = `<div class="pill muted">ERROR (safe): ${escapeHtml(e && e.message ? e.message : String(e))}</div>`;
   });
-  $("btnOpenSent").addEventListener("click", () => window.open("/analysis/sentiment_latest.json?cb="+Date.now(), "_blank"));
-  $("btnOpenTS").addEventListener("click", () => window.open("/analysis/sentiment_timeseries.csv?cb="+Date.now(), "_blank"));
-
-  $("q").addEventListener("input", () => applyFilters());
-  $("srcSel").addEventListener("change", () => applyFilters());
-  $("sortSel").addEventListener("change", () => applyFilters());
-  $("showMissing").addEventListener("change", () => applyFilters());
-
-  load();
 })();
 </script>
+
 </body>
 </html>
