@@ -1,381 +1,494 @@
 <!doctype html>
-<html lang="en">
+<html lang="ja">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>FX Overlay - GenesisPrediction v2</title>
-<style>
-  :root{color-scheme:dark;}
-  body{
-    margin:0;
-    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-    background: radial-gradient(1200px 800px at 15% 20%, rgba(120,80,255,.25), transparent 60%),
-                radial-gradient(1200px 800px at 80% 30%, rgba(0,180,160,.20), transparent 60%),
-                linear-gradient(180deg, #061022 0%, #040813 60%, #02040b 100%);
-    color: rgba(245,248,255,.92);
-  }
-  .topbar{
-    position: sticky; top:0; z-index:20;
-    backdrop-filter: blur(10px);
-    background: rgba(3,8,18,.72);
-    border-bottom: 1px solid rgba(255,255,255,.06);
-  }
-  .topbarInner{
-    max-width: 1200px; margin:0 auto; padding: 10px 16px;
-    display:flex; align-items:center; gap:12px; justify-content:space-between;
-  }
-  .brand{display:flex; align-items:center; gap:10px; min-width: 220px;}
-  .dot{width:10px; height:10px; border-radius:999px; background: rgba(105,169,255,.9); box-shadow: 0 0 0 4px rgba(105,169,255,.18);}
-  .brandName{font-weight:650; letter-spacing:.2px; opacity:.95; font-size:14px;}
-  nav{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;}
-  .navLink{
-    padding: 7px 12px;
-    border-radius: 999px;
-    border: 1px solid rgba(255,255,255,.10);
-    background: rgba(255,255,255,.04);
-    color: rgba(245,248,255,.92);
-    text-decoration:none;
-    font-size: 12px;
-    line-height: 1;
-  }
-  .navLink:hover{border-color: rgba(105,169,255,.55)}
-  .navLink.active{border-color: rgba(105,169,255,.75); box-shadow: 0 0 0 3px rgba(105,169,255,.12) inset;}
-  .pill{
-    display:inline-flex; align-items:center; gap:8px;
-    padding: 7px 12px;
-    border-radius: 999px;
-    border: 1px solid rgba(255,255,255,.10);
-    background: rgba(255,255,255,.03);
-    font-size:12px;
-    color: rgba(245,248,255,.86);
-    white-space:nowrap;
-  }
-  .pillDot{width:8px; height:8px; border-radius:999px; background: rgba(75,220,160,.95); box-shadow:0 0 0 4px rgba(75,220,160,.14);}
-  .pillDot.err{background: rgba(255,96,96,.95); box-shadow:0 0 0 4px rgba(255,96,96,.14);}
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Overlay - GenesisPrediction v2</title>
 
-  .wrap{max-width:1200px; margin:0 auto; padding: 22px 16px 40px;}
-  h1{margin: 12px 0 6px; font-size: 52px; letter-spacing:.2px;}
-  .sub{opacity:.8; font-size: 13px;}
-  .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+  <!-- Shared UI baseline: sentiment.html に寄せる（外部CSSを優先） -->
+  <link rel="stylesheet" href="/static/app.css" />
 
-  .card{
-    margin-top: 18px;
-    border-radius: 18px;
-    border: 1px solid rgba(255,255,255,.08);
-    background: linear-gradient(180deg, rgba(255,255,255,.06) 0%, rgba(255,255,255,.03) 100%);
-    box-shadow: 0 12px 40px rgba(0,0,0,.35);
-    overflow:hidden;
-  }
-  .cardHd{
-    padding: 14px 14px;
-    border-bottom: 1px solid rgba(255,255,255,.06);
-    display:flex; align-items:center; justify-content:space-between; gap:12px;
-  }
-  .cardTitle{font-weight:650; letter-spacing:.2px; opacity:.92;}
-  .tabs{display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:center;}
-  .tab{
-    cursor:pointer;
-    padding: 9px 14px;
-    border-radius: 999px;
-    border: 1px solid rgba(255,255,255,.10);
-    background: rgba(255,255,255,.03);
-    font-size: 12px;
-    color: rgba(245,248,255,.88);
-    user-select:none;
-  }
-  .tab:hover{border-color: rgba(105,169,255,.55)}
-  .tab.active{border-color: rgba(155,110,255,.78); background: rgba(155,110,255,.14); box-shadow: 0 0 0 3px rgba(155,110,255,.10) inset;}
+  <style>
+    /* 保険：app.css が無い/壊れていても最低限見える */
+    :root{
+      --bg0:#070b14;
+      --bg1:#0b1327;
+      --glass:rgba(255,255,255,.06);
+      --stroke:rgba(255,255,255,.14);
+      --text:rgba(255,255,255,.92);
+      --muted:rgba(255,255,255,.68);
+      --ok:rgba(60,210,140,.95);
+      --warn:rgba(255,196,70,.95);
+      --off:rgba(255,110,110,.95);
+      --pill:rgba(105,169,255,.18);
+      --pillStroke:rgba(105,169,255,.35);
+    }
+    html,body{height:100%}
+    body{
+      margin:0;
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", "Meiryo", Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background:
+        radial-gradient(1200px 600px at 20% 0%, rgba(105,169,255,.18), transparent 55%),
+        radial-gradient(900px 500px at 85% 15%, rgba(255,196,70,.12), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-y:auto;
+    }
+    .container{max-width:1100px; margin:0 auto; padding:18px 14px 40px;}
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between; gap:14px;
+      padding:14px 14px; border:1px solid var(--stroke);
+      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border-radius:18px; box-shadow:0 10px 30px rgba(0,0,0,.25);
+      backdrop-filter: blur(10px);
+    }
+    .brand{display:flex; align-items:center; gap:10px; min-width: 220px;}
+    .brand .dot{
+      width:12px; height:12px; border-radius:999px;
+      background:rgba(105,169,255,.95); box-shadow:0 0 0 5px rgba(105,169,255,.18);
+    }
+    .brand .t1{font-weight:800; letter-spacing:.2px;}
+    .brand .t2{font-size:12px; color:var(--muted); margin-top:2px;}
+    nav{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;}
+    nav a{
+      text-decoration:none; color:var(--text);
+      font-weight:700; font-size:13px;
+      padding:8px 10px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.03);
+    }
+    nav a:hover{border-color:rgba(105,169,255,.5)}
+    nav a.active{
+      border-color:var(--pillStroke);
+      background:var(--pill);
+    }
 
-  .imgWrap{padding: 14px;}
-  .imgTop{display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin-bottom: 10px;}
-  .imgTitle{font-weight:650; opacity:.92;}
-  .imgPath{opacity:.65; font-size: 12px;}
-  .imgBox{
-    border-radius: 16px;
-    border: 1px solid rgba(255,255,255,.08);
-    background: rgba(0,0,0,.18);
-    padding: 10px;
-    display:flex; align-items:center; justify-content:center;
-    min-height: 240px;
-  }
-  img{max-width:100%; height:auto; border-radius: 12px; background:#fff;}
+    .grid{display:grid; grid-template-columns: 1fr; gap:14px; margin-top:14px;}
+    .card{
+      border:1px solid var(--stroke);
+      background:rgba(255,255,255,.04);
+      border-radius:18px;
+      box-shadow:0 10px 30px rgba(0,0,0,.18);
+      backdrop-filter: blur(10px);
+      overflow:hidden;
+    }
+    .card-h{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+      padding:14px 14px 10px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+    }
+    .card-h h1{margin:0; font-size:16px; letter-spacing:.2px}
+    .meta{display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:flex-end;}
+    .pill{
+      font-size:12px; font-weight:700; color:rgba(255,255,255,.86);
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.03);
+      padding:6px 10px; border-radius:999px;
+    }
+    .pill.muted{color:var(--muted)}
+    .pill.linklike{cursor:pointer}
+    .pill.linklike:hover{border-color:rgba(105,169,255,.5)}
+    .body{padding:14px;}
+    .kvs{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px;}
+    .kv{
+      display:flex; gap:8px; align-items:center;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.03);
+      padding:8px 10px; border-radius:14px;
+    }
+    .kv .k{font-size:12px; color:var(--muted); font-weight:700}
+    .kv .v{font-size:13px; font-weight:800; letter-spacing:.2px}
 
-  .msg{
-    width:100%;
-    border-radius: 14px;
-    border: 1px solid rgba(255,255,255,.08);
-    background: rgba(255,255,255,.03);
-    padding: 12px 12px;
-    color: rgba(245,248,255,.86);
-    font-size: 12px;
-  }
-  .msg strong{font-weight:650;}
+    /* A: まずは「画像の上ではなく、テキスト行」で ON/WARN/OFF を安全表示 */
+    .badge{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:999px;
+      font-weight:900; font-size:13px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.03);
+    }
+    .badge .led{width:9px; height:9px; border-radius:999px; background:rgba(255,255,255,.35)}
+    .badge.ok{border-color: rgba(60,210,140,.35); background: rgba(60,210,140,.10)}
+    .badge.ok .led{background: var(--ok)}
+    .badge.warn{border-color: rgba(255,196,70,.35); background: rgba(255,196,70,.10)}
+    .badge.warn .led{background: var(--warn)}
+    .badge.off{border-color: rgba(255,110,110,.35); background: rgba(255,110,110,.10)}
+    .badge.off .led{background: var(--off)}
+    .badge.na{border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.03)}
+    .badge.na .led{background: rgba(255,255,255,.35)}
 
-  @media (max-width: 820px){
-    h1{font-size: 40px;}
-    .brand{min-width: unset;}
-  }
-</style>
+    .imgwrap{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:16px;
+      background: rgba(0,0,0,.12);
+      overflow:hidden;
+    }
+    .imgwrap img{
+      display:block;
+      width:100%;
+      height:auto;
+      max-height: 900px;
+      object-fit: contain;
+      background: rgba(0,0,0,.14);
+    }
+    .msg{color:var(--muted); font-size:12px; line-height:1.55; margin-top:10px}
+    details{margin-top:10px}
+    details summary{cursor:pointer; color:rgba(255,255,255,.84); font-weight:800}
+    pre{
+      margin:10px 0 0;
+      padding:12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.22);
+      color:rgba(255,255,255,.86);
+      overflow:auto;
+      font-size:12px;
+      line-height:1.45;
+      white-space:pre-wrap;
+      word-break:break-word;
+    }
+  </style>
 </head>
+
 <body>
-  <header class="topbar">
-    <div class="topbarInner">
+  <div class="container">
+    <div class="topbar">
       <div class="brand">
-        <span class="dot" aria-hidden="true"></span>
-        <span class="brandName">GenesisPrediction v2</span>
+        <div class="dot" aria-hidden="true"></div>
+        <div>
+          <div class="t1">GenesisPrediction v2</div>
+          <div class="t2">FX Overlay / Decision UI</div>
+        </div>
       </div>
-      <nav>
-        <a class="navLink" href="/static/index.html">Home</a>
-        <a class="navLink active" href="/static/overlay.html">Overlay</a>
-        <a class="navLink" href="/static/sentiment.html">Sentiment</a>
-        <span class="pill" id="statusPill"><span class="pillDot" id="statusDot"></span><span id="statusText">Loading...</span></span>
-        <span class="pill"><span class="pillDot" id="asofDot"></span><span class="mono" id="asofText">as_of: --</span></span>
+
+      <nav aria-label="primary">
+        <a class="nav-link" href="/static/index.html">Home</a>
+        <a class="nav-link active" href="/static/overlay.html">Overlay</a>
+        <a class="nav-link" href="/static/sentiment.html">Sentiment</a>
+        <a class="nav-link" href="/static/digest.html">Digest</a>
       </nav>
     </div>
-  </header>
 
-  <main class="wrap">
-    <h1>FX Overlay</h1>
-    <div class="sub mono">/analysis/view_model_latest.json から as_of を確定し、/analysis/fx の variants を表示。</div>
+    <div class="grid">
+      <section class="card" id="card-main">
+        <header class="card-h">
+          <h1>FX Overlay</h1>
+          <div class="meta">
+            <span class="pill muted" id="asof">as_of: --</span>
+            <span class="pill muted" id="basepill">base: auto</span>
+            <span class="pill linklike" id="open-image">Open image</span>
+            <span class="pill linklike" id="open-json">Open JSON</span>
+          </div>
+        </header>
 
-    <div class="card">
-      <div class="cardHd">
-        <div class="cardTitle">Overlay Images</div>
-        <div class="tabs" id="tabs"></div>
-        <div class="pill mono" id="metaLine">as_of=-- / view=--</div>
-      </div>
-      <div class="imgWrap">
-        <div class="imgTop">
-          <div class="imgTitle mono" id="panelTitle">--</div>
-          <div class="imgPath mono" id="panelPath">--</div>
+        <div class="body">
+          <!-- ✅ A: まずはここで安全に表示（画像の上ではない） -->
+          <div class="kvs">
+            <div class="kv">
+              <div class="k">Decision</div>
+              <div class="v">
+                <span class="badge na" id="decision-badge" title="analysis のFX判断（ON/WARN/OFF）">
+                  <span class="led" aria-hidden="true"></span>
+                  <span id="decision-text">--</span>
+                </span>
+              </div>
+            </div>
+
+            <div class="kv">
+              <div class="k">Reason</div>
+              <div class="v" id="decision-reason">--</div>
+            </div>
+
+            <div class="kv">
+              <div class="k">Pair</div>
+              <div class="v" id="pair-text">--</div>
+            </div>
+          </div>
+
+          <div class="imgwrap">
+            <img id="overlay-img" alt="FX overlay" loading="eager" />
+          </div>
+
+          <div class="msg" id="status-msg">
+            loading...
+          </div>
+
+          <!-- デバッグは折りたたみ -->
+          <details>
+            <summary>raw (debug)</summary>
+            <pre id="debug-pre">{}</pre>
+          </details>
         </div>
-        <div class="imgBox" id="imgBox">
-          <img id="panelImg" alt="fx overlay" />
-        </div>
-      </div>
+      </section>
     </div>
-  </main>
+  </div>
 
 <script>
 (function(){
-  "use strict";
+  // =============================================================
+  // Overlay - 安全設計
+  // - SST: analysis/ を読むだけ（GUIで計算しない）
+  // - 自動検出は「壊さない」優先：存在する最初のURLを採用
+  // - 判断ON/WARN/OFF は JSONが無い/変わっても "--" で崩さない
+  // =============================================================
 
-  function q(id){ return document.getElementById(id); }
-  function setText(id, txt){ const el=q(id); if(el) el.textContent = txt; }
-  function setStatus(ok, text){
-    const dot = q("statusDot");
-    const pill = q("statusPill");
-    if(dot) dot.classList.toggle("err", !ok);
-    if(pill) pill.title = ok ? "" : (text || "error");
-    setText("statusText", text || (ok ? "Ready" : "Error"));
+  const $ = (id) => document.getElementById(id);
+
+  const elAsOf = $("asof");
+  const elBase = $("basepill");
+  const elImg = $("overlay-img");
+  const elMsg = $("status-msg");
+  const elDbg = $("debug-pre");
+
+  const elDecisionBadge = $("decision-badge");
+  const elDecisionText = $("decision-text");
+  const elDecisionReason = $("decision-reason");
+  const elPairText = $("pair-text");
+
+  const btnOpenImage = $("open-image");
+  const btnOpenJson = $("open-json");
+
+  // -------------------------
+  // URL helpers
+  // -------------------------
+  function getQueryParam(name){
+    const u = new URL(window.location.href);
+    return u.searchParams.get(name);
   }
 
-  async function headOk(url){
-    try{
-      const r = await fetch(url, { method: "HEAD", cache: "no-store" });
-      return r.ok;
-    }catch(_){
-      return false;
+  function setPillText(el, text){ el.textContent = text; }
+
+  function safeJsonStringify(obj){
+    try { return JSON.stringify(obj, null, 2); } catch(e) { return String(obj); }
+  }
+
+  function setBadge(state){
+    // state: "ON" | "WARN" | "OFF" | "--"
+    const s = (state || "--").toString().toUpperCase();
+    elDecisionText.textContent = (s === "" ? "--" : s);
+
+    elDecisionBadge.classList.remove("ok","warn","off","na");
+    if(s === "ON" || s === "OK"){
+      elDecisionBadge.classList.add("ok");
+    }else if(s === "WARN" || s === "WARNING"){
+      elDecisionBadge.classList.add("warn");
+    }else if(s === "OFF" || s === "STOP"){
+      elDecisionBadge.classList.add("off");
+    }else{
+      elDecisionBadge.classList.add("na");
     }
+  }
+
+  async function probeImage(url){
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
+      img.src = url + (url.includes("?") ? "&" : "?") + "v=" + Date.now();
+    });
   }
 
   async function fetchJson(url){
-    const r = await fetch(url, { cache: "no-store" });
-    if (!r.ok) throw new Error(`HTTP ${r.status} ${url}`);
-    return await r.json();
+    const res = await fetch(url, {cache: "no-store"});
+    if(!res.ok) throw new Error("HTTP " + res.status + " for " + url);
+    return await res.json();
   }
 
-  async function fetchFirstJson(urls){
-    let lastErr = null;
-    for (const u of urls){
-      try{
-        const j = await fetchJson(u);
-        return { url: u, json: j };
-      }catch(e){
-        lastErr = e;
-      }
-    }
-    throw (lastErr || new Error("fetchFirstJson: all failed"));
-  }
-
-  function extractAsOf(obj){
-    if (!obj || typeof obj !== "object") return "";
-    if (typeof obj.as_of === "string" && obj.as_of) return obj.as_of;
-    if (obj.meta && typeof obj.meta === "object" && typeof obj.meta.as_of === "string" && obj.meta.as_of) return obj.meta.as_of;
-    if (typeof obj.asOf === "string" && obj.asOf) return obj.asOf;
-    if (typeof obj.date === "string" && obj.date) return obj.date;
-    return "";
-  }
-
-  function extractAsOfAny(d){
-    if (!d) return "";
-    if (Array.isArray(d)) return extractAsOf(d[0] || {});
-    if (typeof d === "object"){
-      for (const k of ["items","articles","data","rows","results","events"]){
-        if (Array.isArray(d[k]) && d[k].length) return extractAsOf(d[k][0] || d);
-      }
-    }
-    return extractAsOf(d);
-  }
-
-  function getQuery(){
-    const p = new URLSearchParams(location.search);
-    return {
-      view: (p.get("view") || "JPYTHB").toUpperCase(),
-      v: p.get("v") || "",
-    };
-  }
-
-  function updateMeta(asOf, view){
-    setText("asofText", `as_of: ${asOf || "--"}`);
-    setText("metaLine", `as_of=${asOf || "--"} / view=${view}`);
-  }
-
-  function buildTabs(labels, active, onPick){
-    const root = q("tabs");
-    if (!root) return;
-    root.innerHTML = "";
-    for (const lab of labels){
-      const el = document.createElement("div");
-      el.className = "tab" + (lab === active ? " active" : "");
-      el.textContent = lab;
-      el.addEventListener("click", ()=> onPick(lab));
-      root.appendChild(el);
-    }
-  }
-
-  async function resolveFxBase(){
-    // Prefer direct /analysis (FastAPI often mounts analysis as data root)
-    // Fallback to /static/analysis (some deployments mirror under static)
-    const probes = [
+  // -------------------------
+  // Candidate endpoints (壊さない優先で複数用意)
+  // -------------------------
+  // ✅ 現在のSST: analysis/fx には fx_overlay_latest_{pair}.png が存在する
+  const candidates = {
+    images: [
+      // pair別 latest（現在の主流）
       "/analysis/fx/fx_overlay_latest_jpythb.png",
-      "/analysis/fx_overlay_latest_jpythb.png",
-      "/static/analysis/fx/fx_overlay_latest_jpythb.png",
-      "/static/analysis/fx_overlay_latest_jpythb.png",
+      "/analysis/fx/fx_overlay_latest_usdjpy.png",
+      "/analysis/fx/fx_overlay_latest_usdthb.png",
+
+      // 旧/別名の保険
+      "/analysis/fx/fx_overlay_latest.png",
+      "/analysis/fx/fx_overlay_multi_latest.png",
+      "/analysis/fx/overlay_latest.png",
+      "/analysis/fx/fx_overlay.png"
+    ],
+
+    // JSON: 判断やas_ofを拾えそうなものを順に試す（無ければ無視）
+    decisions: [
+      "/analysis/fx/fx_decision_latest.json",
+      "/analysis/fx/remittance_today_latest.json",
+      "/analysis/fx/fx_overlay_latest.json",
+      "/analysis/fx/dashboard_latest.json"
+    ],
+  };
+
+  // base指定が来たら「追加候補を前に挿す」
+  // 例: overlay.html?base=usdjpy → fx_overlay_latest_usdjpy.png を最優先
+  function applyBase(base){
+    if(!base) return;
+    const b = base.toLowerCase().trim();
+    if(!b) return;
+
+    setPillText(elBase, "base: " + b);
+
+    // 画像：このリポジトリでは fx_overlay_latest_{pair}.png が確実
+    const baseImages = [
+      `/analysis/fx/fx_overlay_latest_${b}.png`,
+
+      // 保険（もし命名が変わっても）
+      `/analysis/fx/${b}/fx_overlay_latest.png`,
+      `/analysis/fx/${b}/overlay_latest.png`,
+      `/analysis/fx/${b}_fx_overlay_latest.png`,
+      `/analysis/fx/fx_overlay_${b}_latest.png`,
+      `/analysis/fx/fx_overlay_${b}.png`
     ];
-    for (const p of probes){
-      if (await headOk(p)){
-        // return directory portion
-        return p.replace(/\/fx_overlay_latest_jpythb\.png$/, "");
+    candidates.images = [...baseImages, ...candidates.images];
+
+    // JSON: pair別が将来できても拾えるように
+    const baseDecisions = [
+      `/analysis/fx/${b}/fx_decision_latest.json`,
+      `/analysis/fx/${b}/remittance_today_latest.json`,
+      `/analysis/fx/fx_decision_${b}_latest.json`
+    ];
+    candidates.decisions = [...baseDecisions, ...candidates.decisions];
+
+    elPairText.textContent = b;
+  }
+
+  async function pickFirstWorkingImage(){
+    for(const url of candidates.images){
+      const ok = await probeImage(url);
+      if(ok) return url;
+    }
+    return null;
+  }
+
+  function extractDecisionFields(obj){
+    const has = (o,k) => o && Object.prototype.hasOwnProperty.call(o,k) && o[k] != null;
+    const getAny = (o, keys) => {
+      for(const k of keys){
+        if(has(o,k)) return o[k];
+      }
+      return null;
+    };
+
+    const flat = obj || {};
+    const nested = (typeof flat.decision === "object" && flat.decision) ||
+                   (typeof flat.signal === "object" && flat.signal) ||
+                   (typeof flat.fx === "object" && flat.fx) ||
+                   (typeof flat.overlay === "object" && flat.overlay) ||
+                   {};
+
+    const state =
+      getAny(flat, ["state","status","action","signal","decision","remittance_action","mode"]) ??
+      getAny(nested, ["state","status","action","signal","decision"]);
+
+    const reason =
+      getAny(flat, ["reason","why","note","message","comment","summary"]) ??
+      getAny(nested, ["reason","why","note","message","comment"]);
+
+    const as_of =
+      getAny(flat, ["as_of","asof","date","today","generated_at","updated_at"]) ??
+      getAny(nested, ["as_of","asof","date","today","generated_at","updated_at"]);
+
+    const pair =
+      getAny(flat, ["pair","symbol","base","fx_pair"]) ??
+      getAny(nested, ["pair","symbol","base","fx_pair"]);
+
+    return { state, reason, as_of, pair };
+  }
+
+  async function pickFirstWorkingDecisionJson(){
+    for(const url of candidates.decisions){
+      try{
+        const j = await fetchJson(url);
+        return { url, json: j };
+      }catch(e){
+        // ignore
       }
     }
-    // no probe hit -> default to /analysis/fx (most common in this project)
-    return "/analysis/fx";
-  }
-
-  function fxPath(base, view){
-    const key = view.toUpperCase();
-    if (key === "USDJPY") return `${base}/fx_overlay_latest_usdjpy.png`;
-    if (key === "USDTHB") return `${base}/fx_overlay_latest_usdthb.png`;
-    return `${base}/fx_overlay_latest_jpythb.png`;
-  }
-
-  function showNotFound(tried){
-    const box = q("imgBox");
-    if(!box) return;
-    box.innerHTML = `<div class="msg"><strong>Overlay image not found.</strong><br/>Tried:<br/><span class="mono">${tried.replace(/</g,"&lt;")}</span></div>`;
+    return null;
   }
 
   async function main(){
-    setStatus(true, "Loading...");
-
-    const qs = getQuery();
-    const view = qs.view;
-
-    // 1) view_model (as_of)
-    const SOURCE_URLS = [
-      "/analysis/view_model_latest.json",
-      "/analysis/digest/view_model_latest.json",
-      "/analysis/view/view_model_latest.json",
-      "/analysis/world_politics/analysis/view_model_latest.json",
-      "/static/analysis/view_model_latest.json",
-      "/static/analysis/world_politics/analysis/view_model_latest.json",
-    ];
-    const SUMMARY_URLS = [
-      "/analysis/daily_summary_latest.json",
-      "/analysis/world_politics/analysis/daily_summary_latest.json",
-      "/analysis/world_politics/static/daily_summary_latest.json",
-      "/static/analysis/daily_summary_latest.json",
-      "/static/analysis/world_politics/analysis/daily_summary_latest.json",
-      "/static/world_politics/static/daily_summary_latest.json",
-    ];
-
-    let asOf = "";
     try{
-      const vm = await fetchFirstJson(SOURCE_URLS);
-      asOf = extractAsOf(vm.json) || "";
+      setBadge("--");
+      elDecisionReason.textContent = "--";
+      elPairText.textContent = "--";
+      setPillText(elAsOf, "as_of: --");
 
-      // Prefer daily_summary for today-ness
-      try{
-        const s = await fetchFirstJson(SUMMARY_URLS);
-        const sAs = extractAsOfAny(s.json);
-        if (sAs) asOf = sAs;
-      }catch(_){ /* ignore */ }
-    }catch(e){
-      // as_of could fail in static-only environments; still try to render image.
-      console.warn(e);
-    }
+      const base = getQueryParam("base");
+      if(base) applyBase(base);
 
-    updateMeta(asOf, view);
+      // 1) 画像を決定
+      elMsg.textContent = "loading overlay image...";
+      const imgUrl = await pickFirstWorkingImage();
+      if(!imgUrl){
+        elMsg.textContent = "overlay image not found in analysis/fx (safe fallback: showing empty).";
+        elImg.removeAttribute("src");
+        btnOpenImage.onclick = () => alert("overlay image not found (safe)");
+      }else{
+        elImg.src = imgUrl + (imgUrl.includes("?") ? "&" : "?") + "v=" + Date.now();
+        btnOpenImage.onclick = () => window.open(imgUrl, "_blank", "noopener,noreferrer");
+        elMsg.textContent = "overlay image: " + imgUrl;
 
-    // 2) tabs
-    const labels = ["JPYTHB","USDJPY","USDTHB"];
-    const active = labels.includes(view) ? view : "JPYTHB";
-    buildTabs(labels, active, (lab)=>{
-      const u = new URL(location.href);
-      u.searchParams.set("view", lab);
-      location.href = u.toString();
-    });
-
-    setText("panelTitle", active);
-
-    // 3) resolve base path dynamically
-    const base = await resolveFxBase();
-    const path = fxPath(base, active);
-    setText("panelPath", path);
-
-    // 4) render image (fallback if missing)
-    const img = document.createElement("img");
-    img.alt = "fx overlay";
-    img.onload = ()=>{ setStatus(true, "Ready"); };
-    img.onerror = async ()=>{
-      // try a couple alternative bases if first path 404s
-      const alts = [
-        path,
-        fxPath("/analysis/fx", active),
-        fxPath("/analysis", active),
-        fxPath("/static/analysis/fx", active),
-        fxPath("/static/analysis", active),
-      ];
-      for (const p of alts){
-        if (await headOk(p)){
-          const bust = (qs.v || String(Date.now()));
-          img.src = p + (p.includes("?") ? "&" : "?") + "v=" + encodeURIComponent(bust);
-          setText("panelPath", p);
-          setStatus(true, "Ready");
-          return;
+        // base未指定のときは、選ばれた画像から pair を推測して表示だけ更新（データ推論ではなく表示補助）
+        if(!base){
+          const m = imgUrl.match(/fx_overlay_latest_([a-z0-9_]+)\.png$/i);
+          if(m && m[1]){
+            const p = m[1].toLowerCase();
+            elPairText.textContent = p;
+            setPillText(elBase, "base: auto→" + p);
+          }
         }
       }
-      setStatus(false, "No image");
-      showNotFound(alts.join("\n"));
-    };
 
-    const bust = (qs.v || String(Date.now()));
-    img.src = path + (path.includes("?") ? "&" : "?") + "v=" + encodeURIComponent(bust);
+      // 2) 判断JSON（あれば）
+      elMsg.textContent += " / loading decision...";
+      const picked = await pickFirstWorkingDecisionJson();
+      if(!picked){
+        setBadge("--");
+        elDecisionReason.textContent = "--";
+        elDbg.textContent = safeJsonStringify({ note: "decision json not found (safe)", tried: candidates.decisions });
+        btnOpenJson.onclick = () => alert("decision json not found (safe)");
+        return;
+      }
 
-    const box = q("imgBox");
-    if (box){
-      box.innerHTML = "";
-      box.appendChild(img);
+      const { url, json } = picked;
+      const fields = extractDecisionFields(json);
+
+      const state = fields.state ? String(fields.state).toUpperCase() : "--";
+      setBadge(state);
+      elDecisionReason.textContent = (fields.reason != null && String(fields.reason).trim() !== "") ? String(fields.reason) : "--";
+
+      if(fields.pair != null && String(fields.pair).trim() !== ""){
+        elPairText.textContent = String(fields.pair);
+      }
+      if(fields.as_of != null && String(fields.as_of).trim() !== ""){
+        setPillText(elAsOf, "as_of: " + String(fields.as_of));
+      }
+
+      btnOpenJson.onclick = () => window.open(url, "_blank", "noopener,noreferrer");
+      elDbg.textContent = safeJsonStringify({ picked_json: url, fields, raw: json });
+
+      elMsg.textContent = (imgUrl ? ("OK: " + imgUrl) : "WARN: no image") + " / JSON: " + url;
+
+    }catch(e){
+      elMsg.textContent = "ERROR (safe): " + (e && e.message ? e.message : String(e));
+      elDbg.textContent = safeJsonStringify({ error: String(e) });
+      setBadge("--");
+      elDecisionReason.textContent = "--";
     }
   }
 
-  main().catch((e)=>{
-    console.error(e);
-    setStatus(false, "Error");
-    setText("asofText", "as_of: (error)");
-  });
+  btnOpenImage.onclick = () => {
+    if(elImg && elImg.src) window.open(elImg.src, "_blank", "noopener,noreferrer");
+  };
+  btnOpenJson.onclick = () => alert("loading...");
+
+  main();
 })();
 </script>
+
 </body>
 </html>
