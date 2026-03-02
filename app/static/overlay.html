@@ -14,7 +14,6 @@
     :root{
       --bg0:#070b14;
       --bg1:#0b1327;
-      --glass:rgba(255,255,255,.06);
       --stroke:rgba(255,255,255,.14);
       --text:rgba(255,255,255,.92);
       --muted:rgba(255,255,255,.68);
@@ -23,6 +22,7 @@
       --off:rgba(255,110,110,.95);
       --pill:rgba(105,169,255,.18);
       --pillStroke:rgba(105,169,255,.35);
+      --focus:rgba(105,169,255,.55);
     }
     html,body{height:100%}
     body{
@@ -118,6 +118,45 @@
     .badge.na{border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.03)}
     .badge.na .led{background: rgba(255,255,255,.35)}
 
+    /* Pair selector (安全：UIはURL base を更新して reload するだけ) */
+    .select{
+      appearance:none;
+      -webkit-appearance:none;
+      -moz-appearance:none;
+      font-size:13px;
+      font-weight:900;
+      letter-spacing:.2px;
+      color:rgba(255,255,255,.92);
+      padding:8px 34px 8px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      outline:none;
+      cursor:pointer;
+      position:relative;
+    }
+    .select:focus{
+      border-color: var(--focus);
+      box-shadow: 0 0 0 4px rgba(105,169,255,.15);
+    }
+    .select-wrap{
+      position:relative;
+      display:inline-flex;
+      align-items:center;
+    }
+    .select-wrap:after{
+      content:"▾";
+      position:absolute;
+      right:12px;
+      top:50%;
+      transform: translateY(-50%);
+      color: rgba(255,255,255,.72);
+      pointer-events:none;
+      font-size:12px;
+      font-weight:900;
+    }
+
     .imgwrap{
       border:1px solid rgba(255,255,255,.10);
       border-radius:16px;
@@ -183,7 +222,7 @@
         </header>
 
         <div class="body">
-          <!-- ✅ A: まずはここで安全に表示（画像の上ではない） -->
+          <!-- ✅ A: テキスト行で安全に表示（画像の上ではない） -->
           <div class="kvs">
             <div class="kv">
               <div class="k">Decision</div>
@@ -202,7 +241,19 @@
 
             <div class="kv">
               <div class="k">Pair</div>
-              <div class="v" id="pair-text">--</div>
+              <div class="v" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <span id="pair-text">--</span>
+
+                <!-- ✅ 追加：ペア選択（安全：URL param を更新して reload するだけ） -->
+                <span class="select-wrap" title="Select pair (updates ?base=... and reload)">
+                  <select id="pair-select" class="select" aria-label="Select FX pair">
+                    <option value="">auto</option>
+                    <option value="jpythb">jpythb</option>
+                    <option value="usdjpy">usdjpy</option>
+                    <option value="usdthb">usdthb</option>
+                  </select>
+                </span>
+              </div>
             </div>
           </div>
 
@@ -214,7 +265,6 @@
             loading...
           </div>
 
-          <!-- デバッグは折りたたみ -->
           <details>
             <summary>raw (debug)</summary>
             <pre id="debug-pre">{}</pre>
@@ -231,6 +281,7 @@
   // - SST: analysis/ を読むだけ（GUIで計算しない）
   // - 自動検出は「壊さない」優先：存在する最初のURLを採用
   // - 判断ON/WARN/OFF は JSONが無い/変わっても "--" で崩さない
+  // - Pair選択は安全に：URLの ?base=... を更新して reload するだけ（状態を持たない）
   // =============================================================
 
   const $ = (id) => document.getElementById(id);
@@ -246,6 +297,8 @@
   const elDecisionReason = $("decision-reason");
   const elPairText = $("pair-text");
 
+  const selPair = $("pair-select");
+
   const btnOpenImage = $("open-image");
   const btnOpenJson = $("open-json");
 
@@ -257,6 +310,17 @@
     return u.searchParams.get(name);
   }
 
+  function setQueryParam(name, value){
+    const u = new URL(window.location.href);
+    if(value == null || String(value).trim() === ""){
+      u.searchParams.delete(name);
+    }else{
+      u.searchParams.set(name, String(value));
+    }
+    // reload（履歴を汚さない）
+    window.location.replace(u.toString());
+  }
+
   function setPillText(el, text){ el.textContent = text; }
 
   function safeJsonStringify(obj){
@@ -264,7 +328,6 @@
   }
 
   function setBadge(state){
-    // state: "ON" | "WARN" | "OFF" | "--"
     const s = (state || "--").toString().toUpperCase();
     elDecisionText.textContent = (s === "" ? "--" : s);
 
@@ -296,24 +359,18 @@
   }
 
   // -------------------------
-  // Candidate endpoints (壊さない優先で複数用意)
+  // Candidate endpoints
   // -------------------------
-  // ✅ 現在のSST: analysis/fx には fx_overlay_latest_{pair}.png が存在する
   const candidates = {
     images: [
-      // pair別 latest（現在の主流）
       "/analysis/fx/fx_overlay_latest_jpythb.png",
       "/analysis/fx/fx_overlay_latest_usdjpy.png",
       "/analysis/fx/fx_overlay_latest_usdthb.png",
-
-      // 旧/別名の保険
       "/analysis/fx/fx_overlay_latest.png",
       "/analysis/fx/fx_overlay_multi_latest.png",
       "/analysis/fx/overlay_latest.png",
       "/analysis/fx/fx_overlay.png"
     ],
-
-    // JSON: 判断やas_ofを拾えそうなものを順に試す（無ければ無視）
     decisions: [
       "/analysis/fx/fx_decision_latest.json",
       "/analysis/fx/remittance_today_latest.json",
@@ -323,7 +380,6 @@
   };
 
   // base指定が来たら「追加候補を前に挿す」
-  // 例: overlay.html?base=usdjpy → fx_overlay_latest_usdjpy.png を最優先
   function applyBase(base){
     if(!base) return;
     const b = base.toLowerCase().trim();
@@ -331,11 +387,9 @@
 
     setPillText(elBase, "base: " + b);
 
-    // 画像：このリポジトリでは fx_overlay_latest_{pair}.png が確実
+    // 画像：確実系（fx_overlay_latest_{pair}.png）を最優先
     const baseImages = [
       `/analysis/fx/fx_overlay_latest_${b}.png`,
-
-      // 保険（もし命名が変わっても）
       `/analysis/fx/${b}/fx_overlay_latest.png`,
       `/analysis/fx/${b}/overlay_latest.png`,
       `/analysis/fx/${b}_fx_overlay_latest.png`,
@@ -410,6 +464,19 @@
     return null;
   }
 
+  function inferPairFromImgUrl(imgUrl){
+    if(!imgUrl) return null;
+    const m = imgUrl.match(/fx_overlay_latest_([a-z0-9_]+)\.png$/i);
+    return (m && m[1]) ? m[1].toLowerCase() : null;
+  }
+
+  function syncPairSelect(baseParam, inferredPair){
+    // URL base を最優先。無ければ推測値。無いなら auto。
+    const val = (baseParam && baseParam.trim() !== "") ? baseParam.toLowerCase().trim()
+              : (inferredPair ? inferredPair : "");
+    selPair.value = val;
+  }
+
   async function main(){
     try{
       setBadge("--");
@@ -420,6 +487,12 @@
       const base = getQueryParam("base");
       if(base) applyBase(base);
 
+      // Pair selector: 変更したらURL更新→reload（安全）
+      selPair.addEventListener("change", () => {
+        const v = selPair.value;
+        setQueryParam("base", v);
+      });
+
       // 1) 画像を決定
       elMsg.textContent = "loading overlay image...";
       const imgUrl = await pickFirstWorkingImage();
@@ -427,20 +500,21 @@
         elMsg.textContent = "overlay image not found in analysis/fx (safe fallback: showing empty).";
         elImg.removeAttribute("src");
         btnOpenImage.onclick = () => alert("overlay image not found (safe)");
+        syncPairSelect(base || "", null);
       }else{
         elImg.src = imgUrl + (imgUrl.includes("?") ? "&" : "?") + "v=" + Date.now();
         btnOpenImage.onclick = () => window.open(imgUrl, "_blank", "noopener,noreferrer");
         elMsg.textContent = "overlay image: " + imgUrl;
 
-        // base未指定のときは、選ばれた画像から pair を推測して表示だけ更新（データ推論ではなく表示補助）
-        if(!base){
-          const m = imgUrl.match(/fx_overlay_latest_([a-z0-9_]+)\.png$/i);
-          if(m && m[1]){
-            const p = m[1].toLowerCase();
-            elPairText.textContent = p;
-            setPillText(elBase, "base: auto→" + p);
-          }
+        const inferred = inferPairFromImgUrl(imgUrl);
+        if(!base && inferred){
+          elPairText.textContent = inferred;
+          setPillText(elBase, "base: auto→" + inferred);
+        }else if(base){
+          elPairText.textContent = base.toLowerCase().trim();
         }
+
+        syncPairSelect(base || "", inferred);
       }
 
       // 2) 判断JSON（あれば）
@@ -481,6 +555,7 @@
     }
   }
 
+  // open buttons default (safe)
   btnOpenImage.onclick = () => {
     if(elImg && elImg.src) window.open(elImg.src, "_blank", "noopener,noreferrer");
   };
