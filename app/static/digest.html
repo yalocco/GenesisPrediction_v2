@@ -1,628 +1,364 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="dark light" />
   <title>Digest - GenesisPrediction v2</title>
-
   <link rel="stylesheet" href="/static/app.css" />
-
   <style>
-    :root{
-      --bg0:#070b14;
-      --bg1:#0b1327;
-      --stroke:rgba(255,255,255,.14);
-      --text:rgba(255,255,255,.92);
-      --muted:rgba(255,255,255,.68);
-      --pill:rgba(105,169,255,.18);
-      --pillStroke:rgba(105,169,255,.35);
-      --focus:rgba(105,169,255,.55);
-
-      --pos: rgba(60,210,140,.95);
-      --neg: rgba(255,110,110,.95);
-      --neu: rgba(200,210,230,.70);
-      --mix: rgba(255,196,70,.95);
-      --unk: rgba(160,170,190,.60);
-    }
-    html,body{height:100%}
-    body{
-      margin:0;
-      color:var(--text);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", "Meiryo", Arial, "Apple Color Emoji","Segoe UI Emoji";
-      background:
-        radial-gradient(1200px 600px at 20% 0%, rgba(105,169,255,.18), transparent 55%),
-        radial-gradient(900px 500px at 85% 15%, rgba(255,196,70,.12), transparent 55%),
-        linear-gradient(180deg, var(--bg0), var(--bg1));
-      overflow-y:auto;
-    }
-    .container{max-width:1150px; margin:0 auto; padding:18px 14px 46px;}
-    .topbar{
-      display:flex; align-items:center; justify-content:space-between; gap:14px;
-      padding:14px 14px; border:1px solid var(--stroke);
-      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
-      border-radius:18px; box-shadow:0 10px 30px rgba(0,0,0,.25);
-      backdrop-filter: blur(10px);
-    }
-    .brand{display:flex; align-items:center; gap:10px; min-width: 220px;}
-    .brand .dot{
-      width:12px; height:12px; border-radius:999px;
-      background:rgba(105,169,255,.95); box-shadow:0 0 0 5px rgba(105,169,255,.18);
-    }
-    .brand .t1{font-weight:800; letter-spacing:.2px;}
-    .brand .t2{font-size:12px; color:var(--muted); margin-top:2px;}
-    nav{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;}
-    nav a{
-      text-decoration:none; color:var(--text);
-      font-weight:700; font-size:13px;
-      padding:8px 10px; border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.03);
-    }
-    nav a:hover{border-color:rgba(105,169,255,.5)}
-    nav a.active{
-      border-color:var(--pillStroke);
-      background:var(--pill);
-    }
-
-    .grid{display:grid; grid-template-columns: 1fr; gap:14px; margin-top:14px;}
-    .card{
-      border:1px solid var(--stroke);
-      background:rgba(255,255,255,.04);
-      border-radius:18px;
-      box-shadow:0 10px 30px rgba(0,0,0,.18);
-      backdrop-filter: blur(10px);
-      overflow:hidden;
-    }
-    .card-h{
-      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
-      padding:14px 14px 10px;
-      border-bottom:1px solid rgba(255,255,255,.10);
-    }
-    .card-h h1{margin:0; font-size:16px; letter-spacing:.2px}
-    .meta{display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:flex-end;}
-    .pill{
-      font-size:12px; font-weight:800; color:rgba(255,255,255,.86);
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.03);
-      padding:6px 10px; border-radius:999px;
-      white-space:nowrap;
-    }
-    .pill.muted{color:var(--muted)}
-    .pill.linklike{cursor:pointer}
-    .pill.linklike:hover{border-color:rgba(105,169,255,.5)}
-
-    .body{padding:14px;}
-
-    .hero{
-      display:grid;
-      grid-template-columns: 1.1fr .9fr;
-      gap:12px;
-      margin-bottom:14px;
-    }
-    .heroBox{
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.14);
-      border-radius:16px;
-      padding:12px;
-      overflow:hidden;
-    }
-    .heroTitle{
-      margin:0 0 6px;
-      font-size:14px;
-      font-weight:900;
-      letter-spacing:.2px;
-    }
-    .heroText{
-      margin:0;
-      color:rgba(255,255,255,.74);
-      font-size:12px;
-      line-height:1.6;
-      white-space:pre-wrap;
-      word-break:break-word;
-    }
-    .kpis{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
-    .kpi{
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.03);
-      border-radius:14px;
-      padding:10px 12px;
-      min-width: 120px;
-    }
-    .kpi .k{font-size:11px; color:rgba(255,255,255,.64); font-weight:900}
-    .kpi .v{font-size:16px; font-weight:1000; margin-top:2px}
-    .kpi .s{font-size:11px; color:rgba(255,255,255,.62); font-weight:800; margin-top:2px}
-
-    .tools{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; margin:10px 0 0}
-    .search{
-      flex:1;
-      min-width: 220px;
-      font-size:13px;
-      font-weight:800;
-      letter-spacing:.1px;
-      color:rgba(255,255,255,.92);
-      padding:10px 12px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.12);
-      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
-      outline:none;
-    }
-    .search:focus{border-color:var(--focus); box-shadow: 0 0 0 4px rgba(105,169,255,.15)}
-    .select{
-      appearance:none;
-      -webkit-appearance:none;
-      -moz-appearance:none;
-      font-size:13px;
-      font-weight:900;
-      letter-spacing:.2px;
-      color:rgba(255,255,255,.92);
-      padding:10px 34px 10px 12px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.12);
-      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
-      outline:none;
-      cursor:pointer;
-      position:relative;
-    }
-    .select:focus{border-color: var(--focus); box-shadow: 0 0 0 4px rgba(105,169,255,.15)}
-    .select-wrap{position:relative; display:inline-flex; align-items:center}
-    .select-wrap:after{
-      content:"▾";
-      position:absolute;
-      right:12px;
-      top:50%;
-      transform: translateY(-50%);
-      color: rgba(255,255,255,.72);
-      pointer-events:none;
-      font-size:12px;
-      font-weight:900;
-    }
-
-    /* Big cards */
-    .list{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap:12px;
-      margin-top:12px;
-    }
-    .item{
-      position:relative;
-      display:grid;
-      grid-template-columns: 320px 1fr;
-      gap:14px;
-      padding:12px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.03);
-      border-radius:18px;
-      overflow:hidden;
-      transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
-    }
-    .item:hover{
-      transform: translateY(-1px);
-      box-shadow: 0 14px 40px rgba(0,0,0,.28);
-      border-color: rgba(255,255,255,.18);
-    }
-    .thumb{
-      width:100%;
-      height:180px;
-      border-radius:16px;
-      background:rgba(0,0,0,.22);
-      border:1px solid rgba(255,255,255,.10);
-      overflow:hidden;
-    }
-    .thumb img{width:100%; height:100%; object-fit:cover; display:block}
-    .title{margin:0; font-size:16px; line-height:1.35; letter-spacing:.1px}
-    .title a{color:rgba(255,255,255,.92); text-decoration:none}
-    .title a:hover{text-decoration:underline}
-    .desc{margin:8px 0 0; color:rgba(255,255,255,.74); font-size:13px; line-height:1.6}
-    .tmeta{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px}
-    .src{color:rgba(255,255,255,.82); font-size:12px; font-weight:900}
-    .time{color:rgba(255,255,255,.62); font-size:12px; font-weight:800}
-
-    .badge{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:6px 10px; border-radius:999px;
-      font-weight:1000; font-size:12px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.03);
-    }
-    .badge .led{width:8px; height:8px; border-radius:999px; background:rgba(255,255,255,.35)}
-    .badge.pos{border-color: rgba(60,210,140,.35); background: rgba(60,210,140,.10)}
-    .badge.pos .led{background: var(--pos)}
-    .badge.neg{border-color: rgba(255,110,110,.35); background: rgba(255,110,110,.10)}
-    .badge.neg .led{background: var(--neg)}
-    .badge.neu{border-color: rgba(105,169,255,.26); background: rgba(105,169,255,.08)}
-    .badge.neu .led{background: rgba(105,169,255,.85)}
-    .badge.mix{border-color: rgba(255,196,70,.35); background: rgba(255,196,70,.10)}
-    .badge.mix .led{background: var(--mix)}
-    .badge.unk{border-color: rgba(160,170,190,.25); background: rgba(160,170,190,.06)}
-    .badge.unk .led{background: var(--unk)}
-
-    details{margin-top:12px}
-    details summary{cursor:pointer; color:rgba(255,255,255,.84); font-weight:900}
-    pre{
-      margin:10px 0 0;
-      padding:12px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.22);
-      color:rgba(255,255,255,.86);
-      overflow:auto;
-      font-size:12px;
-      line-height:1.45;
-      white-space:pre-wrap;
-      word-break:break-word;
-    }
-
-    @media (max-width: 920px){
-      .hero{grid-template-columns: 1fr}
-      .item{grid-template-columns: 1fr}
-      .thumb{height:200px}
-    }
+    /* Digest-only small adjustments (keep sentiment baseline look) */
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);color:rgba(240,245,255,.92);font-size:12px}
+    .muted{color:rgba(240,245,255,.68)}
+    .grid2{display:grid;grid-template-columns:1.2fr .9fr;gap:14px}
+    @media (max-width: 920px){.grid2{grid-template-columns:1fr}}
+    .kpiGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    .kpi{padding:12px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)}
+    .kpi .v{font-size:22px;font-weight:700;line-height:1.1}
+    .kpi .l{font-size:12px;color:rgba(240,245,255,.68);margin-top:6px}
+    .bar{height:10px;border-radius:999px;overflow:hidden;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)}
+    .bar > div{height:100%;float:left}
+    .card{border-radius:18px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);padding:16px}
+    .list{display:flex;flex-direction:column;gap:10px}
+    .item{display:grid;grid-template-columns:120px 1fr;gap:14px;align-items:stretch}
+    @media (max-width: 720px){.item{grid-template-columns:90px 1fr}}
+    .thumb{border-radius:14px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);overflow:hidden}
+    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+    .thumb .ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:rgba(240,245,255,.35);font-size:12px}
+    .title{font-size:15px;font-weight:700;line-height:1.25;margin:0 0 6px 0}
+    .desc{font-size:12.5px;line-height:1.35;color:rgba(240,245,255,.72);margin:0}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .right{margin-left:auto}
+    .btn{cursor:pointer}
+    pre{white-space:pre-wrap;word-break:break-word}
   </style>
 </head>
-
 <body>
-  <div class="container">
-    <div class="topbar">
+  <div class="page">
+    <header class="topbar">
       <div class="brand">
-        <div class="dot" aria-hidden="true"></div>
+        <div class="dot"></div>
         <div>
-          <div class="t1">GenesisPrediction v2</div>
-          <div class="t2">Digest / Highlights</div>
+          <div class="title">GenesisPrediction v2</div>
+          <div class="subtitle">Digest / Highlights</div>
         </div>
       </div>
-
-      <nav aria-label="primary">
+      <nav>
         <a class="nav-link" href="/static/index.html">Home</a>
         <a class="nav-link" href="/static/overlay.html">Overlay</a>
         <a class="nav-link" href="/static/sentiment.html">Sentiment</a>
         <a class="nav-link active" href="/static/digest.html">Digest</a>
       </nav>
-    </div>
+    </header>
 
-    <div class="grid">
-      <section class="card">
-        <header class="card-h">
+    <main class="content">
+      <section class="panel">
+        <div class="panel-head">
           <h1>Digest</h1>
-          <div class="meta">
-            <span class="pill muted" id="asof">as_of: --</span>
-            <span class="pill muted" id="srcpill">source: --</span>
-            <span class="pill muted" id="countpill">items: --</span>
-            <span class="pill linklike" id="open-json">Open JSON</span>
+          <div class="row right">
+            <span class="pill" id="pillAsOf">as_of: --</span>
+            <span class="pill" id="pillSrc">source: --</span>
+            <span class="pill" id="pillItems">items: --</span>
+            <button class="pill btn" id="btnOpen">Open JSON</button>
           </div>
-        </header>
+        </div>
 
-        <div class="body">
-          <div class="hero">
-            <div class="heroBox">
-              <div class="heroTitle">Summary</div>
-              <p class="heroText" id="summary">loading...</p>
-              <div class="tools">
-                <input class="search" id="q" placeholder="Search title/source..." />
-                <span class="select-wrap" title="Sort">
-                  <select class="select" id="sort">
-                    <option value="new">Newest</option>
-                    <option value="old">Oldest</option>
-                    <option value="src">Source</option>
-                  </select>
-                </span>
-              </div>
+        <div class="grid2">
+          <div class="card">
+            <div class="row" style="margin-bottom:10px">
+              <strong>Summary</strong>
+              <span class="muted" id="sumHint">loading...</span>
             </div>
-
-            <div class="heroBox">
-              <div class="heroTitle">KPIs</div>
-              <div class="kpis" id="kpis">
-                <div class="kpi"><div class="k">Total</div><div class="v">--</div><div class="s">articles</div></div>
-                <div class="kpi"><div class="k">Positive</div><div class="v">--</div><div class="s">count</div></div>
-                <div class="kpi"><div class="k">Negative</div><div class="v">--</div><div class="s">count</div></div>
-                <div class="kpi"><div class="k">Neutral</div><div class="v">--</div><div class="s">count</div></div>
-                <div class="kpi"><div class="k">Mixed</div><div class="v">--</div><div class="s">count</div></div>
-                <div class="kpi"><div class="k">Unknown</div><div class="v">--</div><div class="s">count</div></div>
-              </div>
+            <pre id="sumText" class="muted" style="margin:0"></pre>
+            <div class="row" style="margin-top:12px">
+              <input id="q" class="input" placeholder="Search title/source..." style="flex:1" />
+              <select id="sort" class="input" style="width:120px">
+                <option value="new">Newest</option>
+                <option value="old">Oldest</option>
+              </select>
             </div>
           </div>
 
+          <div class="card">
+            <div class="row" style="margin-bottom:10px">
+              <strong>KPIs</strong>
+              <span class="muted" id="kpiHint"></span>
+            </div>
+            <div class="kpiGrid">
+              <div class="kpi"><div class="v" id="kAll">--</div><div class="l">Total<br/>articles</div></div>
+              <div class="kpi"><div class="v" id="kPos">--</div><div class="l">Positive<br/>count</div></div>
+              <div class="kpi"><div class="v" id="kNeg">--</div><div class="l">Negative<br/>count</div></div>
+              <div class="kpi"><div class="v" id="kNeu">--</div><div class="l">Neutral<br/>count</div></div>
+              <div class="kpi"><div class="v" id="kMix">--</div><div class="l">Mixed<br/>count</div></div>
+              <div class="kpi"><div class="v" id="kUnk">--</div><div class="l">Unknown<br/>count</div></div>
+            </div>
+            <div style="margin-top:14px">
+              <div class="muted" style="font-size:12px;margin-bottom:8px">Sentiment balance</div>
+              <div class="bar" id="balBar">
+                <div id="bPos" style="width:0%"></div>
+                <div id="bNeu" style="width:0%"></div>
+                <div id="bNeg" style="width:0%"></div>
+                <div id="bMix" style="width:0%"></div>
+                <div id="bUnk" style="width:0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <div class="row" style="margin-bottom:10px">
+            <strong>Top highlights</strong>
+            <span class="muted" id="listHint"></span>
+          </div>
           <div class="list" id="list"></div>
-
-          <details>
-            <summary>raw (debug)</summary>
-            <pre id="debug">{}</pre>
+          <details style="margin-top:12px">
+            <summary class="muted">raw (debug)</summary>
+            <pre id="dbg" class="muted" style="margin-top:10px">{}</pre>
           </details>
         </div>
       </section>
-    </div>
+    </main>
   </div>
 
 <script>
 (function(){
-  const $ = (id) => document.getElementById(id);
-  const elAsOf = $("asof");
-  const elSrc = $("srcpill");
-  const elCount = $("countpill");
-  const btnOpen = $("open-json");
-  const elSummary = $("summary");
-  const elList = $("list");
-  const elDbg = $("debug");
-  const elQ = $("q");
-  const elSort = $("sort");
-  const elKpis = $("kpis");
+  "use strict";
 
-  function safeJson(obj){
-    try { return JSON.stringify(obj, null, 2); } catch(e){ return String(obj); }
-  }
-  function setText(el, text){ el.textContent = text; }
-  function escapeHtml(s){
-    return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
-  }
-  function escapeAttr(s){
-    return String(s).replaceAll('"',"&quot;");
+  function el(id){ return document.getElementById(id); }
+  function setText(node, txt){ node.textContent = (txt == null ? "" : String(txt)); }
+  function safeJson(obj){ try{ return JSON.stringify(obj, null, 2); }catch(e){ return "{}"; } }
+
+  function fetchJson(url){
+    return fetch(url, {cache:"no-store"}).then(function(r){
+      if(!r.ok) throw new Error("HTTP " + r.status + " for " + url);
+      return r.json();
+    });
   }
 
-  async function fetchJson(url){
-    const res = await fetch(url, {cache:"no-store"});
-    if(!res.ok) throw new Error("HTTP " + res.status + " for " + url);
-    return await res.json();
-  }
-
-  // Digest candidates (safe + flexible)
-  const candidates = [
-    "/analysis/world_politics/analysis/daily_summary_latest.json",
-    "/analysis/world_politics/daily_summary_latest.json",
-    "/analysis/daily_summary_latest.json",
-    "/data/world_politics/analysis/daily_summary_latest.json",
-    "/data/world_politics/analysis/daily_news_latest.json",
-    "/analysis/world_politics/analysis/daily_news_latest.json",
-    "/analysis/world_politics/daily_news_latest.json"
-  ];
-
-  async function pick(){
-    for(const url of candidates){
-      try{
-        const j = await fetchJson(url);
-        return { url, json: j };
-      }catch(e){ /* ignore */ }
+  function firstOk(urls){
+    var i = 0;
+    function next(){
+      if(i >= urls.length) return Promise.resolve(null);
+      var u = urls[i++];
+      return fetchJson(u).then(function(j){ return {url:u, json:j}; }).catch(function(){ return next(); });
     }
-    return null;
+    return next();
   }
 
   function pickAsOf(root){
-    return root.as_of ?? root.asof ?? root.date ?? root.day ?? root.generated_at ?? root.updated_at ?? null;
-  }
-
-  function normalizeSourceVal(v){
-    if(v == null) return "";
-    if(typeof v === "string") return v;
-    if(typeof v === "number") return String(v);
-    if(typeof v === "object"){
-      const inner = v.name ?? v.title ?? v.source ?? v.provider ?? v.id ?? null;
-      if(inner != null && typeof inner !== "object") return String(inner);
-      for(const k of ["name","title","id","domain","publisher"]){
-        if(v[k] != null && typeof v[k] !== "object") return String(v[k]);
-      }
-      return "";
-    }
-    return String(v);
-  }
-  function articleSource(a){
-    return normalizeSourceVal(a.source ?? a.source_name ?? a.provider ?? a.publisher ?? a.site ?? "");
-  }
-
-  function fmtTimeVal(v){
-    if(v == null) return "";
-    if(typeof v === "string") return v;
-    if(typeof v === "number") return String(v);
-    if(typeof v === "object"){
-      const inner = v.iso ?? v.date ?? v.datetime ?? v.time ?? v.value ?? v.publishedAt ?? v.published_at ?? null;
-      if(inner != null) return fmtTimeVal(inner);
-      try { return JSON.stringify(v); } catch(e){ return ""; }
-    }
-    return String(v);
-  }
-  function fmtTime(v){
-    const s = fmtTimeVal(v);
-    if(!s) return "";
-    return String(s).replace("T"," ").replace("Z","");
-  }
-
-  function normLabel(raw){
-    const s = (raw == null ? "" : String(raw)).toLowerCase();
-    if(!s) return "unk";
-    if(s.includes("pos") || s.includes("good") || s.includes("bull")) return "pos";
-    if(s.includes("neg") || s.includes("bad") || s.includes("bear")) return "neg";
-    if(s.includes("neu") || s.includes("neutral")) return "neu";
-    if(s.includes("mix") || s.includes("both")) return "mix";
-    if(s === "0") return "neu";
-    return "unk";
-  }
-  function labelFromScore(score){
-    const n = Number(score);
-    if(!Number.isFinite(n)) return "unk";
-    if(n > 0.15) return "pos";
-    if(n < -0.15) return "neg";
-    return "neu";
-  }
-  function articleLabel(a){
-    if(a == null) return "unk";
-    const cand = a.sentiment_label ?? a.label ?? a.sentiment ?? a.polarity_label ?? a.class ?? null;
-    if(cand != null && typeof cand !== "object") return normLabel(cand);
-    if(cand != null && typeof cand === "object"){
-      const inner = cand.label ?? cand.sentiment ?? cand.polarity ?? cand.name ?? null;
-      if(inner != null) return normLabel(inner);
-    }
-    const score = a.sentiment_score ?? a.score ?? a.polarity ?? a.compound ?? a.vader ?? null;
-    if(score != null && typeof score !== "object") return labelFromScore(score);
-    if(score != null && typeof score === "object"){
-      const inner = score.compound ?? score.score ?? score.value ?? null;
-      if(inner != null) return labelFromScore(inner);
-    }
-    return "unk";
-  }
-  function badgeHtml(lbl){
-    const map = {pos:"Positive", neg:"Negative", neu:"Neutral", mix:"Mixed", unk:"Unknown"};
-    const name = map[lbl] || "Unknown";
-    return `<span class="badge ${lbl}"><span class="led" aria-hidden="true"></span>${name}</span>`;
+    return (root && (root.as_of || root.date || root.generated_at || root.fetched_at)) ? String(root.as_of || root.date || root.generated_at || root.fetched_at).slice(0,10) : "";
   }
 
   function pickArticles(root){
     if(!root) return [];
-    if(Array.isArray(root.articles)) return root.articles;
     if(Array.isArray(root.items)) return root.items;
-    if(Array.isArray(root.news)) return root.news;
-    if(Array.isArray(root.data)) return root.data;
-
-    // Some summaries embed under payload/result
-    const nested = root.payload ?? root.result ?? root.output ?? root.summary ?? root.daily ?? null;
-    if(nested && typeof nested === "object"){
-      if(Array.isArray(nested.articles)) return nested.articles;
-      if(Array.isArray(nested.items)) return nested.items;
-      if(Array.isArray(nested.news)) return nested.news;
-    }
+    if(Array.isArray(root.articles)) return root.articles;
+    if(root.yesterday_summary && Array.isArray(root.yesterday_summary.items)) return root.yesterday_summary.items;
     return [];
   }
 
   function pickSummaryText(root){
-    const keys = ["summary", "digest", "highlights", "overview", "text"];
-    for(const k of keys){
-      const v = root && root[k];
-      if(typeof v === "string" && v.trim()) return v.trim();
-      if(v && typeof v === "object"){
-        const inner = v.text ?? v.summary ?? v.overview ?? null;
-        if(typeof inner === "string" && inner.trim()) return inner.trim();
+    if(!root) return "";
+    if(typeof root.summary === "string" && root.summary) return root.summary;
+    if(root.yesterday_summary){
+      if(typeof root.yesterday_summary.text === "string" && root.yesterday_summary.text) return root.yesterday_summary.text;
+      if(Array.isArray(root.yesterday_summary.titles) && root.yesterday_summary.titles.length){
+        return "Yesterday titles:\n" + root.yesterday_summary.titles.slice(0, 30).map(function(t){return "- " + String(t);}).join("\n");
       }
-    }
-    // fallback: top bullets
-    const bullets = root && (root.bullets ?? root.key_points ?? root.keyPoints ?? root.points ?? null);
-    if(Array.isArray(bullets) && bullets.length){
-      return bullets.slice(0,12).map(x => "• " + String(x)).join("\n");
     }
     return "";
   }
 
-  function sortArticles(arr, mode){
-    const a = arr.slice();
-    function timeKey(x){
-      const t = x.publishedAt ?? x.published_at ?? x.published ?? x.time ?? x.datetime ?? x.date ?? null;
-      const s = fmtTime(t);
-      return s || "";
-    }
-    if(mode === "old"){
-      a.sort((x,y) => timeKey(x).localeCompare(timeKey(y)));
-    }else if(mode === "src"){
-      a.sort((x,y) => String(articleSource(x)).localeCompare(String(articleSource(y))));
-    }else{
-      a.sort((x,y) => timeKey(y).localeCompare(timeKey(x))); // new
-    }
-    return a;
+  function sentimentLabel(a){
+    var s = (a && (a.sentiment || a.label || a.polarity || a.type)) ? String(a.sentiment || a.label || a.polarity || a.type) : "unknown";
+    s = s.toLowerCase();
+    if(s.indexOf("pos") >= 0) return "positive";
+    if(s.indexOf("neg") >= 0) return "negative";
+    if(s.indexOf("neu") >= 0) return "neutral";
+    if(s.indexOf("mix") >= 0) return "mixed";
+    return "unknown";
   }
 
-  function renderKpis(articles){
-    const counts = {pos:0, neg:0, neu:0, mix:0, unk:0};
-    for(const a of articles){
-      const l = articleLabel(a);
-      counts[l] = (counts[l] || 0) + 1;
-    }
-    const total = articles.length;
-    const tpl = (k, v, s) => `<div class="kpi"><div class="k">${escapeHtml(k)}</div><div class="v">${escapeHtml(v)}</div><div class="s">${escapeHtml(s)}</div></div>`;
-    elKpis.innerHTML = [
-      tpl("Total", String(total), "articles"),
-      tpl("Positive", String(counts.pos||0), "count"),
-      tpl("Negative", String(counts.neg||0), "count"),
-      tpl("Neutral",  String(counts.neu||0), "count"),
-      tpl("Mixed",    String(counts.mix||0), "count"),
-      tpl("Unknown",  String(counts.unk||0), "count"),
-    ].join("");
+  function score(a){
+    var t = (a && (a.title || a.headline)) ? String(a.title || a.headline) : "";
+    var d = (a && (a.description || a.summary)) ? String(a.description || a.summary) : "";
+    var w = t.length * 2 + d.length;
+    if(a && a.urlToImage) w += 40;
+    if(a && (a.importance || a.rank)) w += Number(a.importance || a.rank) * 10;
+    return w;
   }
 
-  function renderList(articles){
-    const q = (elQ.value || "").toLowerCase().trim();
-    const sorted = sortArticles(articles, elSort.value || "new");
-    const filtered = sorted.filter(a => {
-      if(!q) return true;
-      const t = String(a.title ?? a.headline ?? "").toLowerCase();
-      const s = String(articleSource(a) ?? "").toLowerCase();
-      return t.includes(q) || s.includes(q);
+  function renderBar(counts){
+    var total = counts.positive + counts.neutral + counts.negative + counts.mixed + counts.unknown;
+    function pct(n){ return total ? (n * 100 / total) : 0; }
+    el("bPos").style.width = pct(counts.positive) + "%";
+    el("bNeu").style.width = pct(counts.neutral) + "%";
+    el("bNeg").style.width = pct(counts.negative) + "%";
+    el("bMix").style.width = pct(counts.mixed) + "%";
+    el("bUnk").style.width = pct(counts.unknown) + "%";
+
+    /* No explicit colors (project rule). Using default currentColor via inline is avoided.
+       We'll rely on browser defaults; app.css likely styles progress. */
+  }
+
+  function renderList(items){
+    var q = String(el("q").value || "").toLowerCase();
+    var sort = el("sort").value;
+
+    var arr = items.slice();
+    arr = arr.filter(function(a){
+      var t = (a.title || a.headline || "");
+      var s = (a.source && (a.source.name || a.source)) ? (a.source.name || a.source) : "";
+      var hay = (String(t) + " " + String(s)).toLowerCase();
+      return !q || hay.indexOf(q) >= 0;
     });
 
-    elList.innerHTML = filtered.slice(0, 80).map(a => {
-      const title = String(a.title ?? a.headline ?? "(no title)");
-      const url = a.url ?? a.link ?? "#";
-      const desc = String(a.description ?? a.summary ?? a.snippet ?? "").trim();
-      const src = articleSource(a);
-      const time = fmtTime(a.publishedAt ?? a.published_at ?? a.published ?? a.time ?? a.datetime ?? "");
-      const img = a.urlToImage ?? a.image ?? a.image_url ?? a.thumbnail ?? "";
-      const lbl = articleLabel(a);
+    arr.sort(function(a,b){
+      var da = (a.publishedAt || a.published_at || a.date || "");
+      var db = (b.publishedAt || b.published_at || b.date || "");
+      if(sort === "old") return String(da).localeCompare(String(db));
+      return String(db).localeCompare(String(da));
+    });
 
-      const srcHtml = src ? `<span class="src">${escapeHtml(src)}</span>` : "";
-      const timeHtml = time ? `<span class="time">${escapeHtml(time)}</span>` : "";
-
-      return `
-        <article class="item">
-          <div class="thumb">${img ? `<img referrerpolicy="no-referrer" loading="lazy" src="${escapeAttr(img)}" alt="">` : ""}</div>
-          <div>
-            <h2 class="title"><a href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(title)}</a></h2>
-            ${desc ? `<p class="desc">${escapeHtml(desc)}</p>` : ""}
-            <div class="tmeta">
-              ${badgeHtml(lbl)}
-              ${srcHtml}
-              ${timeHtml}
-            </div>
-          </div>
-        </article>
-      `;
-    }).join("");
-
-    if(filtered.length === 0){
-      elList.innerHTML = `<div class="pill muted">No items (safe)</div>`;
-    }
-  }
-
-  async function main(){
-    const picked = await pick();
-    if(!picked){
-      setText(elAsOf, "as_of: --");
-      setText(elSrc, "source: not found (safe)");
-      setText(elCount, "items: --");
-      setText(elSummary, "digest json not found (safe)");
-      elDbg.textContent = safeJson({ tried: candidates });
-      btnOpen.onclick = () => alert("digest json not found (safe)");
-      elList.innerHTML = `<div class="pill muted">daily_summary_latest.json not found (safe)</div>`;
+    var top = arr.slice(0, 20);
+    var host = el("list");
+    host.innerHTML = "";
+    if(!top.length){
+      el("listHint").textContent = "No items (safe)";
       return;
     }
+    el("listHint").textContent = "showing " + top.length + " / " + arr.length;
 
-    setText(elSrc, "source: " + picked.url);
-    const asof = pickAsOf(picked.json);
-    setText(elAsOf, "as_of: " + (asof ? String(asof) : "--"));
-    btnOpen.onclick = () => window.open(picked.url, "_blank", "noopener,noreferrer");
+    top.forEach(function(a){
+      var wrap = document.createElement("div");
+      wrap.className = "item";
 
-    const articles = pickArticles(picked.json);
-    setText(elCount, "items: " + String(articles.length));
+      var th = document.createElement("div");
+      th.className = "thumb";
+      if(a.urlToImage){
+        var img = document.createElement("img");
+        img.src = a.urlToImage;
+        img.alt = "";
+        th.appendChild(img);
+      }else{
+        var ph = document.createElement("div");
+        ph.className = "ph";
+        ph.textContent = "no image";
+        th.appendChild(ph);
+      }
 
-    const summary = pickSummaryText(picked.json);
-    setText(elSummary, summary || "No summary text (safe)");
+      var body = document.createElement("div");
+      var h = document.createElement("p");
+      h.className = "title";
+      h.textContent = a.title || a.headline || "(no title)";
+      var d = document.createElement("p");
+      d.className = "desc";
+      d.textContent = a.description || a.summary || "";
+      var meta = document.createElement("div");
+      meta.className = "row";
+      meta.style.marginTop = "8px";
 
-    renderKpis(articles);
-    renderList(articles);
+      var lab = document.createElement("span");
+      lab.className = "pill";
+      lab.textContent = sentimentLabel(a);
 
-    elQ.addEventListener("input", () => renderList(articles));
-    elSort.addEventListener("change", () => renderList(articles));
+      var src = document.createElement("span");
+      src.className = "pill muted";
+      var sname = (a.source && (a.source.name || a.source)) ? (a.source.name || a.source) : "";
+      src.textContent = sname ? String(sname) : "source: --";
 
-    elDbg.textContent = safeJson({
-      picked: picked.url,
-      as_of: asof ?? null,
-      items: articles.length,
-      has_summary: Boolean(summary),
-      note: "Digest tries daily_summary_latest first; falls back to daily_news_latest."
+      meta.appendChild(lab);
+      meta.appendChild(src);
+
+      body.appendChild(h);
+      body.appendChild(d);
+      body.appendChild(meta);
+
+      wrap.appendChild(th);
+      wrap.appendChild(body);
+
+      wrap.addEventListener("click", function(){
+        if(a.url) window.open(a.url, "_blank", "noopener,noreferrer");
+      });
+
+      host.appendChild(wrap);
     });
   }
 
-  main().catch(e => {
-    elDbg.textContent = safeJson({ error: String(e) });
-    setText(elSummary, "ERROR (safe): " + (e && e.message ? e.message : String(e)));
-    elList.innerHTML = `<div class="pill muted">ERROR (safe)</div>`;
-  });
+  function main(){
+    var candSummary = [
+      "/data/world_politics/analysis/daily_summary_latest.json",
+      "/data/world_politics/analysis/daily_news_latest.json",
+      "/data/world_politics/analysis/sentiment_latest.json"
+    ];
+    var candArticles = [
+      "/data/world_politics/analysis/sentiment_latest.json",
+      "/data/world_politics/analysis/daily_news_latest.json",
+      "/data/world_politics/analysis/daily_summary_latest.json"
+    ];
+
+    Promise.all([firstOk(candSummary), firstOk(candArticles)]).then(function(res){
+      var pickedSum = res[0];
+      var pickedArt = res[1];
+
+      if(!pickedSum && !pickedArt){
+        setText(el("sumHint"), "sources not found (safe)");
+        setText(el("dbg"), safeJson({ tried_summary: candSummary, tried_articles: candArticles }));
+        return;
+      }
+
+      var asof = pickAsOf(pickedSum && pickedSum.json) || pickAsOf(pickedArt && pickedArt.json);
+      setText(el("pillAsOf"), "as_of: " + (asof || "--"));
+
+      var src = (pickedSum && pickedSum.url) ? pickedSum.url : ((pickedArt && pickedArt.url) ? pickedArt.url : "");
+      setText(el("pillSrc"), "source: " + (src || "--"));
+      el("btnOpen").onclick = function(){ if(src) window.open(src, "_blank", "noopener,noreferrer"); };
+
+      var summary = pickSummaryText(pickedSum && pickedSum.json) || pickSummaryText(pickedArt && pickedArt.json);
+      setText(el("sumText"), summary || "No summary text (safe)");
+      setText(el("sumHint"), summary ? "" : "No summary text (safe)");
+
+      var items = pickArticles(pickedArt && pickedArt.json);
+      setText(el("pillItems"), "items: " + (items ? items.length : 0));
+
+      var counts = {positive:0, negative:0, neutral:0, mixed:0, unknown:0};
+      (items || []).forEach(function(a){
+        var s = sentimentLabel(a);
+        if(counts.hasOwnProperty(s)) counts[s] += 1;
+        else counts.unknown += 1;
+      });
+
+      setText(el("kAll"), (items || []).length);
+      setText(el("kPos"), counts.positive);
+      setText(el("kNeg"), counts.negative);
+      setText(el("kNeu"), counts.neutral);
+      setText(el("kMix"), counts.mixed);
+      setText(el("kUnk"), counts.unknown);
+      renderBar(counts);
+
+      // choose top by heuristic score
+      var ranked = (items || []).slice().sort(function(a,b){ return score(b) - score(a); });
+      window.__digest_items = ranked;
+
+      renderList(ranked);
+
+      el("q").addEventListener("input", function(){ renderList(window.__digest_items || []); });
+      el("sort").addEventListener("change", function(){ renderList(window.__digest_items || []); });
+
+      setText(el("dbg"), safeJson({
+        picked_summary: pickedSum ? pickedSum.url : "",
+        picked_articles: pickedArt ? pickedArt.url : "",
+        as_of: asof,
+        items: (items || []).length,
+        counts: counts
+      }));
+    }).catch(function(e){
+      setText(el("sumHint"), "error (safe)");
+      setText(el("dbg"), safeJson({ error: String(e && e.message ? e.message : e) }));
+    });
+  }
+
+  main();
 })();
 </script>
-
 </body>
 </html>
