@@ -6,11 +6,9 @@
   <meta name="color-scheme" content="dark light" />
   <title>Overlay - GenesisPrediction v2</title>
 
-  <!-- Shared UI baseline: sentiment.html に寄せる（外部CSSを優先） -->
   <link rel="stylesheet" href="/static/app.css" />
 
   <style>
-    /* 保険：app.css が無い/壊れていても最低限見える */
     :root{
       --bg0:#070b14;
       --bg1:#0b1327;
@@ -100,7 +98,6 @@
     .kv .k{font-size:12px; color:var(--muted); font-weight:700}
     .kv .v{font-size:13px; font-weight:800; letter-spacing:.2px}
 
-    /* A: まずは「画像の上ではなく、テキスト行」で ON/WARN/OFF を安全表示 */
     .badge{
       display:inline-flex; align-items:center; gap:8px;
       padding:6px 10px; border-radius:999px;
@@ -118,7 +115,6 @@
     .badge.na{border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.03)}
     .badge.na .led{background: rgba(255,255,255,.35)}
 
-    /* Pair selector (安全：UIはURL base を更新して reload するだけ) */
     .select{
       appearance:none;
       -webkit-appearance:none;
@@ -222,7 +218,6 @@
         </header>
 
         <div class="body">
-          <!-- ✅ A: テキスト行で安全に表示（画像の上ではない） -->
           <div class="kvs">
             <div class="kv">
               <div class="k">Decision</div>
@@ -243,8 +238,6 @@
               <div class="k">Pair</div>
               <div class="v" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                 <span id="pair-text">--</span>
-
-                <!-- ✅ 追加：ペア選択（安全：URL param を更新して reload するだけ） -->
                 <span class="select-wrap" title="Select pair (updates ?base=... and reload)">
                   <select id="pair-select" class="select" aria-label="Select FX pair">
                     <option value="">auto</option>
@@ -276,14 +269,6 @@
 
 <script>
 (function(){
-  // =============================================================
-  // Overlay - 安全設計
-  // - SST: analysis/ を読むだけ（GUIで計算しない）
-  // - 自動検出は「壊さない」優先：存在する最初のURLを採用
-  // - 判断ON/WARN/OFF は JSONが無い/変わっても "--" で崩さない
-  // - Pair選択は安全に：URLの ?base=... を更新して reload するだけ（状態を持たない）
-  // =============================================================
-
   const $ = (id) => document.getElementById(id);
 
   const elAsOf = $("asof");
@@ -302,9 +287,6 @@
   const btnOpenImage = $("open-image");
   const btnOpenJson = $("open-json");
 
-  // -------------------------
-  // URL helpers
-  // -------------------------
   function getQueryParam(name){
     const u = new URL(window.location.href);
     return u.searchParams.get(name);
@@ -317,7 +299,6 @@
     }else{
       u.searchParams.set(name, String(value));
     }
-    // reload（履歴を汚さない）
     window.location.replace(u.toString());
   }
 
@@ -358,9 +339,6 @@
     return await res.json();
   }
 
-  // -------------------------
-  // Candidate endpoints
-  // -------------------------
   const candidates = {
     images: [
       "/analysis/fx/fx_overlay_latest_jpythb.png",
@@ -372,6 +350,9 @@
       "/analysis/fx/fx_overlay.png"
     ],
     decisions: [
+      "/analysis/fx/fx_decision_latest_jpythb.json",
+      "/analysis/fx/fx_decision_latest_usdjpy.json",
+      "/analysis/fx/fx_decision_latest_usdthb.json",
       "/analysis/fx/fx_decision_latest.json",
       "/analysis/fx/remittance_today_latest.json",
       "/analysis/fx/fx_overlay_latest.json",
@@ -379,7 +360,6 @@
     ],
   };
 
-  // base指定が来たら「追加候補を前に挿す」
   function applyBase(base){
     if(!base) return;
     const b = base.toLowerCase().trim();
@@ -387,7 +367,6 @@
 
     setPillText(elBase, "base: " + b);
 
-    // 画像：確実系（fx_overlay_latest_{pair}.png）を最優先
     const baseImages = [
       `/analysis/fx/fx_overlay_latest_${b}.png`,
       `/analysis/fx/${b}/fx_overlay_latest.png`,
@@ -398,10 +377,9 @@
     ];
     candidates.images = [...baseImages, ...candidates.images];
 
-    // JSON: pair別が将来できても拾えるように
     const baseDecisions = [
+      `/analysis/fx/fx_decision_latest_${b}.json`,
       `/analysis/fx/${b}/fx_decision_latest.json`,
-      `/analysis/fx/${b}/remittance_today_latest.json`,
       `/analysis/fx/fx_decision_${b}_latest.json`
     ];
     candidates.decisions = [...baseDecisions, ...candidates.decisions];
@@ -442,14 +420,18 @@
       getAny(nested, ["reason","why","note","message","comment"]);
 
     const as_of =
-      getAny(flat, ["as_of","asof","date","today","generated_at","updated_at"]) ??
-      getAny(nested, ["as_of","asof","date","today","generated_at","updated_at"]);
+      getAny(flat, ["as_of","asof","date","day","today","generated_at","updated_at"]) ??
+      getAny(nested, ["as_of","asof","date","day","today","generated_at","updated_at"]);
 
     const pair =
       getAny(flat, ["pair","symbol","base","fx_pair"]) ??
       getAny(nested, ["pair","symbol","base","fx_pair"]);
 
-    return { state, reason, as_of, pair };
+    const source =
+      getAny(flat, ["source","src","input","from"]) ??
+      getAny(nested, ["source","src","input","from"]);
+
+    return { state, reason, as_of, pair, source };
   }
 
   async function pickFirstWorkingDecisionJson(){
@@ -471,7 +453,6 @@
   }
 
   function syncPairSelect(baseParam, inferredPair){
-    // URL base を最優先。無ければ推測値。無いなら auto。
     const val = (baseParam && baseParam.trim() !== "") ? baseParam.toLowerCase().trim()
               : (inferredPair ? inferredPair : "");
     selPair.value = val;
@@ -487,15 +468,15 @@
       const base = getQueryParam("base");
       if(base) applyBase(base);
 
-      // Pair selector: 変更したらURL更新→reload（安全）
       selPair.addEventListener("change", () => {
-        const v = selPair.value;
-        setQueryParam("base", v);
+        setQueryParam("base", selPair.value);
       });
 
-      // 1) 画像を決定
+      // 1) image
       elMsg.textContent = "loading overlay image...";
       const imgUrl = await pickFirstWorkingImage();
+      let inferred = null;
+
       if(!imgUrl){
         elMsg.textContent = "overlay image not found in analysis/fx (safe fallback: showing empty).";
         elImg.removeAttribute("src");
@@ -506,7 +487,7 @@
         btnOpenImage.onclick = () => window.open(imgUrl, "_blank", "noopener,noreferrer");
         elMsg.textContent = "overlay image: " + imgUrl;
 
-        const inferred = inferPairFromImgUrl(imgUrl);
+        inferred = inferPairFromImgUrl(imgUrl);
         if(!base && inferred){
           elPairText.textContent = inferred;
           setPillText(elBase, "base: auto→" + inferred);
@@ -517,7 +498,7 @@
         syncPairSelect(base || "", inferred);
       }
 
-      // 2) 判断JSON（あれば）
+      // 2) decision JSON
       elMsg.textContent += " / loading decision...";
       const picked = await pickFirstWorkingDecisionJson();
       if(!picked){
@@ -533,11 +514,19 @@
 
       const state = fields.state ? String(fields.state).toUpperCase() : "--";
       setBadge(state);
-      elDecisionReason.textContent = (fields.reason != null && String(fields.reason).trim() !== "") ? String(fields.reason) : "--";
+
+      const reason = (fields.reason != null && String(fields.reason).trim() !== "") ? String(fields.reason).trim() : "--";
+      const src = (fields.source != null && String(fields.source).trim() !== "") ? String(fields.source).trim() : "";
+      elDecisionReason.textContent = src ? (reason + " / " + src) : reason;
 
       if(fields.pair != null && String(fields.pair).trim() !== ""){
         elPairText.textContent = String(fields.pair);
+      }else if(base){
+        elPairText.textContent = base.toLowerCase().trim();
+      }else if(inferred){
+        elPairText.textContent = inferred;
       }
+
       if(fields.as_of != null && String(fields.as_of).trim() !== ""){
         setPillText(elAsOf, "as_of: " + String(fields.as_of));
       }
@@ -555,7 +544,6 @@
     }
   }
 
-  // open buttons default (safe)
   btnOpenImage.onclick = () => {
     if(elImg && elImg.src) window.open(elImg.src, "_blank", "noopener,noreferrer");
   };
