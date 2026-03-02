@@ -19,7 +19,6 @@
       --pillStroke:rgba(105,169,255,.35);
       --focus:rgba(105,169,255,.55);
 
-      /* Sentiment colors */
       --pos: rgba(60,210,140,.95);
       --neg: rgba(255,110,110,.95);
       --neu: rgba(200,210,230,.70);
@@ -107,7 +106,6 @@
     .dot.unk{background:var(--unk)}
     .lg{font-size:12px; color:rgba(255,255,255,.86); font-weight:800; display:flex; align-items:center}
 
-    /* Trend chart */
     .chartwrap{
       border:1px solid rgba(255,255,255,.10);
       border-radius:16px;
@@ -117,7 +115,6 @@
     }
     canvas{width:100%; height:320px; display:block}
 
-    /* Article list */
     .tools{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
     .search{
       flex:1;
@@ -254,14 +251,15 @@
     </div>
 
     <div class="grid">
-
       <section class="card">
         <header class="card-h">
           <h1>Sentiment</h1>
           <div class="meta">
             <span class="pill muted" id="asof">as_of: --</span>
             <span class="pill muted" id="srcpill">source: sentiment_latest.json</span>
+            <span class="pill muted" id="trendpill">trend: --</span>
             <span class="pill linklike" id="open-json">Open JSON</span>
+            <span class="pill linklike" id="open-trend" style="display:none">Open trend JSON</span>
           </div>
         </header>
 
@@ -301,7 +299,6 @@
           </details>
         </div>
       </section>
-
     </div>
   </div>
 
@@ -310,7 +307,9 @@
   const $ = (id) => document.getElementById(id);
   const elAsOf = $("asof");
   const elSrc = $("srcpill");
+  const elTrend = $("trendpill");
   const btnOpen = $("open-json");
+  const btnOpenTrend = $("open-trend");
   const elDbg = $("debug");
   const elList = $("list");
   const elQ = $("q");
@@ -321,7 +320,6 @@
   function safeJson(obj){
     try { return JSON.stringify(obj, null, 2); } catch(e){ return String(obj); }
   }
-
   function setText(el, text){ el.textContent = text; }
 
   async function fetchJson(url){
@@ -330,15 +328,25 @@
     return await res.json();
   }
 
-  // SST location candidates (safe)
-  const candidates = [
+  // Sentiment SST candidates (safe)
+  const sentimentCandidates = [
     "/analysis/world_politics/sentiment_latest.json",
     "/analysis/world_politics/analysis/sentiment_latest.json",
     "/analysis/sentiment_latest.json",
     "/data/world_politics/analysis/sentiment_latest.json"
   ];
 
-  async function pick(){
+  // Trend candidates (view_model, etc.)
+  const trendCandidates = [
+    "/data/digest/view_model_latest.json",
+    "/data/digest/view/view_model_latest.json",
+    "/data/world_politics/analysis/view_model_latest.json",
+    "/analysis/digest/view_model_latest.json",
+    "/analysis/digest/view/view_model_latest.json",
+    "/analysis/world_politics/analysis/view_model_latest.json"
+  ];
+
+  async function pick(candidates){
     for(const url of candidates){
       try{
         const j = await fetchJson(url);
@@ -375,7 +383,6 @@
     const cand = a.sentiment_label ?? a.label ?? a.sentiment ?? a.polarity_label ?? a.class ?? null;
     if(cand != null && typeof cand !== "object") return normLabel(cand);
     if(cand != null && typeof cand === "object"){
-      // Sometimes {label: "..."} or {sentiment:"..."}
       const inner = cand.label ?? cand.sentiment ?? cand.polarity ?? cand.name ?? null;
       if(inner != null) return normLabel(inner);
     }
@@ -401,7 +408,6 @@
     if(typeof v === "string") return v;
     if(typeof v === "number") return String(v);
     if(typeof v === "object"){
-      // common object shapes
       const inner = v.iso ?? v.date ?? v.datetime ?? v.time ?? v.value ?? v.publishedAt ?? v.published_at ?? null;
       if(inner != null) return fmtTimeVal(inner);
       try { return JSON.stringify(v); } catch(e){ return ""; }
@@ -420,10 +426,8 @@
     if(typeof v === "string") return v;
     if(typeof v === "number") return String(v);
     if(typeof v === "object"){
-      // newsapi shape: { id, name }
       const inner = v.name ?? v.title ?? v.source ?? v.provider ?? v.id ?? null;
       if(inner != null && typeof inner !== "object") return String(inner);
-      // fallback: try to find first string property
       for(const k of ["name","title","id","domain","publisher"]){
         if(v[k] != null && typeof v[k] !== "object") return String(v[k]);
       }
@@ -450,7 +454,228 @@
     return root.as_of ?? root.asof ?? root.date ?? root.day ?? root.generated_at ?? root.updated_at ?? null;
   }
 
-  // --- simple trend renderer (safe) ---
+  // --- trend extraction (view_model etc.) ---
+  function isArticleLikeObject(p){
+    if(!p || typeof p !== "object" || Array.isArray(p)) return false;
+    const keys = Object.keys(p).map(x => x.toLowerCase());
+    const hasTitle = keys.includes("title");
+    const hasUrl = keys.includes("url");
+    const hasSource = keys.includes("source");
+    const hasPublished = keys.includes("publishedat") || keys.includes("published_at");
+    return (hasTitle && (hasUrl || hasSource)) || (hasTitle && hasPublished);
+  }
+
+  function isLikelyDateKey(k){
+    const s = String(k).toLowerCase();
+    return ["date","day","as_of","asof","dt","time","timestamp","t","x"].includes(s);
+  }
+
+  function scorePointShape(arr){
+    if(!Array.isArray(arr) || arr.length < 2) return -1;
+    // reject if looks like articles
+    let articleLike = 0;
+    for(let i=0;i<Math.min(arr.length, 10);i++){
+      if(isArticleLikeObject(arr[i])) articleLike++;
+    }
+    if(articleLike >= 3) return -1;
+
+    let okObj = 0;
+    let score = 0;
+    for(let i=0;i<Math.min(arr.length, 12);i++){
+      const p = arr[i];
+      if(!p || typeof p !== "object" || Array.isArray(p)) continue;
+      okObj++;
+      const keys = Object.keys(p);
+      const hasDate = keys.some(isLikelyDateKey);
+      const nums = keys
+        .filter(k => !isLikelyDateKey(k))
+        .map(k => Number(p[k]))
+        .filter(v => Number.isFinite(v)).length;
+      if(hasDate) score += 4;
+      if(nums >= 1) score += 1;
+      if(nums >= 2) score += 4;
+      if(nums >= 3) score += 5;
+    }
+    if(okObj < 2) return -1;
+    return score;
+  }
+
+  function toPointsFromWide(obj){
+    if(!obj || typeof obj !== "object") return [];
+    const dates = obj.dates ?? obj.date ?? obj.day ?? obj.x ?? null;
+    if(!Array.isArray(dates) || dates.length < 2) return [];
+    const pos = obj.positive ?? obj.pos ?? obj.good ?? obj.p ?? null;
+    const neg = obj.negative ?? obj.neg ?? obj.bad ?? obj.n ?? null;
+    const neu = obj.neutral ?? obj.neu ?? obj.u ?? null;
+    const mix = obj.mixed ?? obj.mix ?? null;
+    const unk = obj.unknown ?? obj.unk ?? null;
+    const n = dates.length;
+    const out = [];
+    for(let i=0;i<n;i++){
+      out.push({
+        date: dates[i],
+        positive: Array.isArray(pos) ? pos[i] : undefined,
+        negative: Array.isArray(neg) ? neg[i] : undefined,
+        neutral: Array.isArray(neu) ? neu[i] : undefined,
+        mixed: Array.isArray(mix) ? mix[i] : undefined,
+        unknown: Array.isArray(unk) ? unk[i] : undefined,
+      });
+    }
+    return out;
+  }
+
+  function normalizePoint(p){
+    if(!p || typeof p !== "object" || Array.isArray(p)) return null;
+    const date = p.date ?? p.day ?? p.as_of ?? p.asof ?? p.dt ?? p.time ?? p.timestamp ?? p.t ?? p.x ?? null;
+    const positive = p.positive ?? p.pos ?? p.good ?? p.p ?? p.up ?? null;
+    const negative = p.negative ?? p.neg ?? p.bad ?? p.n ?? p.down ?? null;
+    const neutral  = p.neutral  ?? p.neu ?? p.u ?? p.mid ?? null;
+    const mixed    = p.mixed    ?? p.mix ?? null;
+    const unknown  = p.unknown  ?? p.unk ?? null;
+    return { date, positive, negative, neutral, mixed, unknown };
+  }
+
+  function normalizeTrend(points){
+    if(!Array.isArray(points) || points.length < 2) return [];
+    const out = [];
+    for(const p of points){
+      const np = normalizePoint(p);
+      if(np) out.push(np);
+    }
+    return out;
+  }
+
+  function extractTrendDirect(root){
+    const keyPriority = [
+      "trend3","trend_3","sentiment_trend3","sentimentTrend3",
+      "trend","trends","series","timeline",
+      "sentiment_trend","sentimentTrend","trend_points","points"
+    ];
+    if(Array.isArray(root)) return root;
+    if(root && typeof root === "object"){
+      for(const k of keyPriority){
+        if(root[k] != null){
+          const v = root[k];
+          if(Array.isArray(v)) return v;
+          const wide = toPointsFromWide(v);
+          if(wide.length >= 2) return wide;
+          if(v && typeof v === "object"){
+            const vv = v.trend ?? v.timeline ?? v.series ?? v.trend3 ?? v.points ?? null;
+            if(Array.isArray(vv)) return vv;
+            const wide2 = toPointsFromWide(vv);
+            if(wide2.length >= 2) return wide2;
+          }
+        }
+      }
+      // nested common keys
+      const nested = root.view_model ?? root.view ?? root.model ?? root.result ?? root.outputs ?? root.summary ?? null;
+      if(nested && typeof nested === "object"){
+        const arr = extractTrendDirect(nested);
+        if(Array.isArray(arr) && arr.length >= 2) return arr;
+      }
+    }
+    return [];
+  }
+
+  function findBestTrend(root, maxDepth=5){
+    const seen = new Set();
+    let best = { score: -1, arr: null, path: null };
+
+    function visit(node, path, depth){
+      if(!node || typeof node !== "object") return;
+      if(seen.has(node)) return;
+      seen.add(node);
+
+      if(Array.isArray(node)){
+        const sc = scorePointShape(node);
+        if(sc > best.score){
+          best = { score: sc, arr: node, path: path.slice() };
+        }
+        return;
+      }
+      if(depth >= maxDepth) return;
+      for(const [k,v] of Object.entries(node)){
+        if(v && typeof v === "object"){
+          // Avoid scanning typical article arrays quickly
+          if((k === "items" || k === "articles") && Array.isArray(v)){
+            continue;
+          }
+          visit(v, path.concat([k]), depth+1);
+        }
+      }
+    }
+
+    visit(root, [], 0);
+    return best;
+  }
+
+  function extractTrendRobust(root){
+    const arr = extractTrendDirect(root);
+    if(Array.isArray(arr) && arr.length >= 2 && typeof arr[0] === "object" && !Array.isArray(arr[0]) && !isArticleLikeObject(arr[0])){
+      return { points: normalizeTrend(arr), path: null, score: null };
+    }
+    const wide = toPointsFromWide(root);
+    if(wide.length >= 2) return { points: normalizeTrend(wide), path: null, score: null };
+
+    const best = findBestTrend(root, 5);
+    if(best.arr && best.score >= 8){
+      return { points: normalizeTrend(best.arr), path: best.path, score: best.score };
+    }
+    return { points: [], path: null, score: best.score };
+  }
+
+  // --- build trend from articles (fallback) ---
+  function dateFromArticle(a){
+    const t = a.publishedAt ?? a.published_at ?? a.published ?? a.time ?? a.datetime ?? a.date ?? a.day ?? null;
+    if(!t) return null;
+    const s = String(t);
+    // accept YYYY-MM-DD, YYYY/MM/DD
+    const m = s.match(/(\d{4})[-\/](\d{2})[-\/](\d{2})/);
+    if(!m) return null;
+    return `${m[1]}-${m[2]}-${m[3]}`;
+  }
+
+  function buildTrendFromArticlesByDay(articles){
+    const map = new Map();
+    for(const a of (articles || [])){
+      const d = dateFromArticle(a);
+      if(!d) continue;
+      const lbl = articleLabel(a);
+      if(!map.has(d)){
+        map.set(d, {date:d, positive:0, negative:0, neutral:0, mixed:0, unknown:0});
+      }
+      const row = map.get(d);
+      if(lbl === "pos") row.positive += 1;
+      else if(lbl === "neg") row.negative += 1;
+      else if(lbl === "neu") row.neutral += 1;
+      else if(lbl === "mix") row.mixed += 1;
+      else row.unknown += 1;
+    }
+    return Array.from(map.values()).sort((a,b)=> String(a.date).localeCompare(String(b.date)));
+  }
+
+  function buildTrendFromArticlesBins(articles, bins=12){
+    const n = (articles || []).length;
+    if(n < 2) return [];
+    const b = Math.max(2, Math.min(bins, n));
+    const out = [];
+    for(let i=0;i<b;i++){
+      out.push({date:`bin${i+1}`, positive:0, negative:0, neutral:0, mixed:0, unknown:0});
+    }
+    for(let idx=0; idx<n; idx++){
+      const a = articles[idx];
+      const lbl = articleLabel(a);
+      const bi = Math.min(b-1, Math.floor((idx / n) * b));
+      const row = out[bi];
+      if(lbl === "pos") row.positive += 1;
+      else if(lbl === "neg") row.negative += 1;
+      else if(lbl === "neu") row.neutral += 1;
+      else if(lbl === "mix") row.mixed += 1;
+      else row.unknown += 1;
+    }
+    return out;
+  }
+
   function resizeCanvas(){
     const dpr = window.devicePixelRatio || 1;
     const rect = cv.getBoundingClientRect();
@@ -460,31 +685,6 @@
     cv.height = Math.floor(h * dpr);
     ctx.setTransform(dpr,0,0,dpr,0,0);
     return {w, h};
-  }
-
-  function extractTrend(root){
-    const cand =
-      root.trend ?? root.trends ?? root.series ?? root.timeline ??
-      (root.view_model && (root.view_model.trend ?? root.view_model.timeline)) ??
-      null;
-
-    if(Array.isArray(cand)) return cand;
-
-    if(cand && typeof cand === "object"){
-      const dates = cand.dates || cand.date || cand.day || null;
-      const a = cand.positive || cand.pos || cand.good || null;
-      const b = cand.negative || cand.neg || cand.bad || null;
-      const c = cand.neutral || cand.neu || null;
-      if(Array.isArray(dates) && (Array.isArray(a) || Array.isArray(b) || Array.isArray(c))){
-        const n = dates.length;
-        const out = [];
-        for(let i=0;i<n;i++){
-          out.push({date: dates[i], positive: a ? a[i] : null, negative: b ? b[i] : null, neutral: c ? c[i] : null});
-        }
-        return out;
-      }
-    }
-    return [];
   }
 
   function getVal(p, keys){
@@ -520,12 +720,14 @@
     const pos = points.map(p => getVal(p, ["positive","pos","good","p"]));
     const neg = points.map(p => getVal(p, ["negative","neg","bad","n"]));
     const neu = points.map(p => getVal(p, ["neutral","neu","u"]));
+    const mix = points.map(p => getVal(p, ["mixed","mix"]));
+    const unk = points.map(p => getVal(p, ["unknown","unk"]));
 
-    const all = [...pos, ...neg, ...neu].filter(v => Number.isFinite(v));
-    const min = all.length ? Math.min(...all) : -1;
+    const all = [...pos, ...neg, ...neu, ...mix, ...unk].filter(v => Number.isFinite(v));
+    const min = all.length ? Math.min(...all) : 0;
     const max = all.length ? Math.max(...all) : 1;
-    const pad = (max-min) * 0.08 || 0.2;
-    const lo = min - pad;
+    const pad = (max-min) * 0.08 || 1;
+    const lo = Math.max(0, min - pad);
     const hi = max + pad;
 
     function x(i){ return 10 + (w-20) * (i/(xs.length-1)); }
@@ -554,13 +756,17 @@
     const cPos = cs.getPropertyValue("--pos").trim() || "rgba(60,210,140,.95)";
     const cNeg = cs.getPropertyValue("--neg").trim() || "rgba(255,110,110,.95)";
     const cNeu = cs.getPropertyValue("--neu").trim() || "rgba(200,210,230,.70)";
+    const cMix = cs.getPropertyValue("--mix").trim() || "rgba(255,196,70,.95)";
+    const cUnk = cs.getPropertyValue("--unk").trim() || "rgba(160,170,190,.60)";
 
     drawSeries(pos, cPos);
     drawSeries(neg, cNeg);
     drawSeries(neu, cNeu);
+    drawSeries(mix, cMix);
+    drawSeries(unk, cUnk);
 
     const last = points[points.length-1];
-    const lastDate = last.date ?? last.day ?? last.as_of ?? "";
+    const lastDate = last.date ?? last.day ?? last.as_of ?? last.asof ?? "";
     ctx.fillStyle = "rgba(255,255,255,.72)";
     ctx.font = "800 12px system-ui";
     ctx.fillText(String(lastDate).slice(0,16), 14, h-10);
@@ -580,7 +786,6 @@
     const filtered = articles.filter(a => {
       const lbl = articleLabel(a);
       if(flt && lbl !== flt) return false;
-
       if(!q) return true;
       const t = String(a.title ?? a.headline ?? "").toLowerCase();
       const s = String(articleSource(a) ?? "").toLowerCase();
@@ -592,7 +797,7 @@
       const url = a.url ?? a.link ?? "#";
       const desc = String(a.description ?? a.summary ?? a.snippet ?? "").trim();
       const src = articleSource(a);
-      const time = fmtTime(a.publishedAt ?? a.published_at ?? a.time ?? a.datetime ?? "");
+      const time = fmtTime(a.publishedAt ?? a.published_at ?? a.published ?? a.time ?? a.datetime ?? "");
       const img = a.urlToImage ?? a.image ?? a.image_url ?? a.thumbnail ?? "";
       const lbl = articleLabel(a);
 
@@ -620,40 +825,100 @@
     }
   }
 
-  let state = { url:null, json:null, articles:[] };
-
   async function main(){
-    const picked = await pick();
-    if(!picked){
+    const pickedSent = await pick(sentimentCandidates);
+    if(!pickedSent){
       setText(elAsOf, "as_of: --");
       setText(elSrc, "source: not found (safe)");
-      elDbg.textContent = safeJson({ tried: candidates, note: "sentiment json not found" });
+      setText(elTrend, "trend: --");
+      elDbg.textContent = safeJson({ tried_sentiment: sentimentCandidates, note: "sentiment json not found" });
       drawTrend([]);
       elList.innerHTML = `<div class="pill muted">sentiment_latest.json not found (safe)</div>`;
       btnOpen.onclick = () => alert("sentiment json not found (safe)");
       return;
     }
 
-    state.url = picked.url;
-    state.json = picked.json;
-
-    setText(elSrc, "source: " + picked.url);
-    const asof = pickAsOf(picked.json);
+    setText(elSrc, "source: " + pickedSent.url);
+    const asof = pickAsOf(pickedSent.json);
     setText(elAsOf, "as_of: " + (asof ? String(asof) : "--"));
+    btnOpen.onclick = () => window.open(pickedSent.url, "_blank", "noopener,noreferrer");
 
-    btnOpen.onclick = () => window.open(picked.url, "_blank", "noopener,noreferrer");
+    const articles = pickArticles(pickedSent.json);
+    renderList(articles);
 
-    state.articles = pickArticles(picked.json);
-    elDbg.textContent = safeJson({ picked_json: picked.url, as_of: asof ?? null, articles_count: state.articles.length });
+    // Try view_model trend first
+    let trendPoints = [];
+    let trendFrom = null;
+    let trendPath = null;
+    let trendScore = null;
+    let computed = false;
+    let computedMode = null;
 
-    const tr = extractTrend(picked.json);
-    drawTrend(tr);
+    const pickedTrend = await pick(trendCandidates);
+    if(pickedTrend){
+      trendFrom = pickedTrend.url;
+      const r = extractTrendRobust(pickedTrend.json);
+      trendPoints = r.points || [];
+      trendPath = r.path || null;
+      trendScore = r.score;
+    }
 
-    renderList(state.articles);
+    // Fallback 1: by day from articles
+    if(!trendPoints || trendPoints.length < 2){
+      const byDay = buildTrendFromArticlesByDay(articles);
+      if(byDay.length >= 2){
+        trendPoints = byDay;
+        computed = true;
+        computedMode = "articles/day";
+        trendFrom = pickedSent.url + " (computed)";
+      }
+    }
 
-    elQ.addEventListener("input", () => renderList(state.articles));
-    elF.addEventListener("change", () => renderList(state.articles));
-    window.addEventListener("resize", () => drawTrend(tr));
+    // Fallback 2: bins by index (always works when dates missing)
+    if(!trendPoints || trendPoints.length < 2){
+      const bins = buildTrendFromArticlesBins(articles, 12);
+      if(bins.length >= 2){
+        trendPoints = bins;
+        computed = true;
+        computedMode = "articles/bins";
+        trendFrom = pickedSent.url + " (computed)";
+      }
+    }
+
+    // trend pill + open trend json
+    if(trendPoints && trendPoints.length >= 2){
+      if(computed){
+        setText(elTrend, "trend: computed (" + computedMode + ")");
+        btnOpenTrend.style.display = "none";
+      }else{
+        const pathText = trendPath ? (" @" + trendPath.join(".")) : "";
+        setText(elTrend, "trend: view_model" + pathText);
+        btnOpenTrend.style.display = "inline-flex";
+        btnOpenTrend.onclick = () => window.open(pickedTrend.url, "_blank", "noopener,noreferrer");
+      }
+    }else{
+      setText(elTrend, "trend: --");
+      btnOpenTrend.style.display = "none";
+    }
+
+    drawTrend(trendPoints);
+
+    elDbg.textContent = safeJson({
+      picked_sentiment: pickedSent.url,
+      as_of: asof ?? null,
+      articles_count: articles.length,
+      trend_from: trendFrom,
+      trend_points: trendPoints ? trendPoints.length : 0,
+      trend_path: computed ? null : trendPath,
+      trend_score: computed ? null : trendScore,
+      computed_from_articles: computed,
+      computed_mode: computedMode,
+      tried_trend_candidates: pickedTrend ? undefined : trendCandidates
+    });
+
+    elQ.addEventListener("input", () => renderList(articles));
+    elF.addEventListener("change", () => renderList(articles));
+    window.addEventListener("resize", () => drawTrend(trendPoints));
   }
 
   main().catch(e => {
