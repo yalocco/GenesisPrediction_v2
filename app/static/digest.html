@@ -4,119 +4,410 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Digest - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css" />
+  <link rel="stylesheet" href="/static/app.css?v=latest" />
+
   <style>
-    /* Digest-only small adjustments (keep sentiment baseline look) */
-    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);color:rgba(240,245,255,.92);font-size:12px}
-    .muted{color:rgba(240,245,255,.68)}
-    .grid2{display:grid;grid-template-columns:1.2fr .9fr;gap:14px}
-    @media (max-width: 920px){.grid2{grid-template-columns:1fr}}
-    .kpiGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-    .kpi{padding:12px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)}
-    .kpi .v{font-size:22px;font-weight:700;line-height:1.1}
-    .kpi .l{font-size:12px;color:rgba(240,245,255,.68);margin-top:6px}
-    .bar{height:10px;border-radius:999px;overflow:hidden;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)}
-    .bar > div{height:100%;float:left}
-    .card{border-radius:18px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);padding:16px}
-    .list{display:flex;flex-direction:column;gap:10px}
-    .item{display:grid;grid-template-columns:120px 1fr;gap:14px;align-items:stretch}
-    @media (max-width: 720px){.item{grid-template-columns:90px 1fr}}
-    .thumb{border-radius:14px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);overflow:hidden}
-    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
-    .thumb .ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:rgba(240,245,255,.35);font-size:12px}
-    .title{font-size:15px;font-weight:700;line-height:1.25;margin:0 0 6px 0}
-    .desc{font-size:12.5px;line-height:1.35;color:rgba(240,245,255,.72);margin:0}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .right{margin-left:auto}
-    .btn{cursor:pointer}
-    pre{white-space:pre-wrap;word-break:break-word}
+    /* Digest-specific layout (keep minimal; rely on app.css theme) */
+    .page{
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 18px 14px 42px;
+    }
+    .panel{
+      border-radius: 18px;
+      padding: 16px 16px 14px;
+    }
+    .panel + .panel{ margin-top: 14px; }
+
+    .row{
+      display: grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap: 14px;
+    }
+    @media (max-width: 980px){
+      .row{ grid-template-columns: 1fr; }
+    }
+
+    .h1{
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: .2px;
+      margin: 0 0 6px 0;
+    }
+    .sub{
+      opacity: .8;
+      font-size: 12px;
+      margin: 0;
+    }
+
+    .pillrow{
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+    }
+    .pill{
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .toolbar{
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .tool-left{
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .search{
+      min-width: 260px;
+      max-width: 520px;
+      flex: 1 1 320px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      outline: none;
+      font-size: 13px;
+    }
+    .select{
+      padding: 9px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+    }
+
+    .kpis{
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .kpi{
+      border-radius: 14px;
+      padding: 12px 12px 10px;
+      min-height: 64px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .kpi .n{
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .kpi .l{
+      opacity: .8;
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .balance{
+      margin-top: 10px;
+    }
+    .balance .label{
+      font-size: 12px;
+      opacity: .8;
+      margin: 0 0 6px 0;
+    }
+    .bar{
+      height: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+    .bar > div{
+      height: 10px;
+      display: inline-block;
+    }
+    /* No explicit colors: rely on borders/opacity and default theme */
+    .seg-pos{ opacity: .9; }
+    .seg-neg{ opacity: .65; }
+    .seg-neu{ opacity: .5; }
+    .seg-mix{ opacity: .35; }
+    .seg-unk{ opacity: .25; }
+
+    .summaryBox{
+      border-radius: 16px;
+      padding: 12px 12px 10px;
+      margin-top: 10px;
+    }
+    .summaryText{
+      font-size: 12px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      margin: 0;
+      opacity: .9;
+    }
+    .summaryActions{
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .btn{
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .muted{
+      opacity: .75;
+      font-size: 12px;
+    }
+
+    .sectionTitle{
+      display:flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 0 0 10px 0;
+    }
+    .sectionTitle h2{
+      font-size: 14px;
+      font-weight: 700;
+      margin: 0;
+    }
+    .sectionTitle .hint{
+      font-size: 12px;
+      opacity: .75;
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .list{
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .card{
+      border-radius: 18px;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 12px;
+      cursor: pointer;
+    }
+    @media (max-width: 720px){
+      .card{ grid-template-columns: 1fr; }
+    }
+    .thumb{
+      width: 140px;
+      height: 92px;
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      opacity: .75;
+    }
+    @media (max-width: 720px){
+      .thumb{ width: 100%; height: 170px; }
+    }
+    .thumb img{
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display:block;
+    }
+
+    .title{
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 1.25;
+      margin: 0 0 6px 0;
+    }
+    .desc{
+      font-size: 12px;
+      opacity: .86;
+      line-height: 1.45;
+      margin: 0;
+    }
+    .metaRow{
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 10px;
+    }
+    .tag{
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      line-height: 1;
+      opacity: .95;
+    }
+    .tag small{ opacity: .75; }
+
+    .debug{
+      margin-top: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 11px;
+      opacity: .85;
+      white-space: pre-wrap;
+      line-height: 1.35;
+      border-radius: 14px;
+      padding: 10px;
+    }
   </style>
 </head>
+
 <body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <div>
+        <div class="brand-title">GenesisPrediction v2</div>
+        <div class="brand-sub">Digest / Highlights</div>
+      </div>
+    </div>
+    <nav>
+      <a class="nav-link" href="/static/index.html">Home</a>
+      <a class="nav-link" href="/static/overlay.html">Overlay</a>
+      <a class="nav-link" href="/static/sentiment.html">Sentiment</a>
+      <a class="nav-link active" href="/static/digest.html">Digest</a>
+    </nav>
+  </header>
+
   <div class="page">
-    <header class="topbar">
-      <div class="brand">
-        <div class="dot"></div>
+
+    <section class="panel">
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
         <div>
-          <div class="title">GenesisPrediction v2</div>
-          <div class="subtitle">Digest / Highlights</div>
+          <div class="h1">Digest</div>
+          <p class="sub">Daily summary + top highlights (robust / safe).</p>
+        </div>
+        <div class="pillrow">
+          <span id="pillAsOf" class="pill">as_of: --</span>
+          <span id="pillSource" class="pill">source: --</span>
+          <span id="pillItems" class="pill">items: --</span>
+          <a id="btnOpenJson" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open JSON</a>
         </div>
       </div>
-      <nav>
-        <a class="nav-link" href="/static/index.html">Home</a>
-        <a class="nav-link" href="/static/overlay.html">Overlay</a>
-        <a class="nav-link" href="/static/sentiment.html">Sentiment</a>
-        <a class="nav-link active" href="/static/digest.html">Digest</a>
-      </nav>
-    </header>
 
-    <main class="content">
-      <section class="panel">
-        <div class="panel-head">
-          <h1>Digest</h1>
-          <div class="row right">
-            <span class="pill" id="pillAsOf">as_of: --</span>
-            <span class="pill" id="pillSrc">source: --</span>
-            <span class="pill" id="pillItems">items: --</span>
-            <button class="pill btn" id="btnOpen">Open JSON</button>
+      <div class="row" style="margin-top: 12px;">
+        <div class="summaryBox">
+          <div class="sectionTitle">
+            <h2>Summary</h2>
+            <p id="sumHint" class="hint">loading…</p>
           </div>
-        </div>
 
-        <div class="grid2">
-          <div class="card">
-            <div class="row" style="margin-bottom:10px">
-              <strong>Summary</strong>
-              <span class="muted" id="sumHint">loading...</span>
-            </div>
-            <pre id="sumText" class="muted" style="margin:0"></pre>
-            <div class="row" style="margin-top:12px">
-              <input id="q" class="input" placeholder="Search title/source..." style="flex:1" />
-              <select id="sort" class="input" style="width:120px">
-                <option value="new">Newest</option>
-                <option value="old">Oldest</option>
+          <pre id="sumText" class="summaryText">loading…</pre>
+
+          <div class="toolbar">
+            <div class="tool-left">
+              <input id="q" class="search" type="search" placeholder="Search title/source…" />
+              <select id="sentFilter" class="select">
+                <option value="all">All</option>
+                <option value="positive">Positive</option>
+                <option value="negative">Negative</option>
+                <option value="neutral">Neutral</option>
+                <option value="mixed">Mixed</option>
+                <option value="unknown">Unknown</option>
               </select>
             </div>
+
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+              <select id="sort" class="select">
+                <option value="score">Top (score)</option>
+                <option value="newest">Newest (as_of)</option>
+                <option value="az">Title (A→Z)</option>
+              </select>
+
+              <button id="btnToggleSummary" class="btn" type="button">Collapse summary</button>
+            </div>
           </div>
 
-          <div class="card">
-            <div class="row" style="margin-bottom:10px">
-              <strong>KPIs</strong>
-              <span class="muted" id="kpiHint"></span>
+          <div class="summaryActions">
+            <span id="sumMeta" class="muted">--</span>
+          </div>
+        </div>
+
+        <div class="summaryBox">
+          <div class="sectionTitle">
+            <h2>KPIs</h2>
+            <p id="kpiHint" class="hint">loading…</p>
+          </div>
+
+          <div class="kpis">
+            <div class="kpi">
+              <div id="kTotal" class="n">--</div>
+              <div class="l">Total articles</div>
             </div>
-            <div class="kpiGrid">
-              <div class="kpi"><div class="v" id="kAll">--</div><div class="l">Total<br/>articles</div></div>
-              <div class="kpi"><div class="v" id="kPos">--</div><div class="l">Positive<br/>count</div></div>
-              <div class="kpi"><div class="v" id="kNeg">--</div><div class="l">Negative<br/>count</div></div>
-              <div class="kpi"><div class="v" id="kNeu">--</div><div class="l">Neutral<br/>count</div></div>
-              <div class="kpi"><div class="v" id="kMix">--</div><div class="l">Mixed<br/>count</div></div>
-              <div class="kpi"><div class="v" id="kUnk">--</div><div class="l">Unknown<br/>count</div></div>
+            <div class="kpi">
+              <div id="kPos" class="n">--</div>
+              <div class="l">Positive</div>
             </div>
-            <div style="margin-top:14px">
-              <div class="muted" style="font-size:12px;margin-bottom:8px">Sentiment balance</div>
-              <div class="bar" id="balBar">
-                <div id="bPos" style="width:0%"></div>
-                <div id="bNeu" style="width:0%"></div>
-                <div id="bNeg" style="width:0%"></div>
-                <div id="bMix" style="width:0%"></div>
-                <div id="bUnk" style="width:0%"></div>
+            <div class="kpi">
+              <div id="kNeg" class="n">--</div>
+              <div class="l">Negative</div>
+            </div>
+            <div class="kpi">
+              <div id="kNeu" class="n">--</div>
+              <div class="l">Neutral</div>
+            </div>
+            <div class="kpi">
+              <div id="kMix" class="n">--</div>
+              <div class="l">Mixed</div>
+            </div>
+            <div class="kpi">
+              <div id="kUnk" class="n">--</div>
+              <div class="l">Unknown</div>
+            </div>
+          </div>
+
+          <div class="balance">
+            <p class="label">Sentiment balance</p>
+            <div class="bar">
+              <div style="display:flex; width:100%;">
+                <div id="bPos" class="seg-pos" style="width:0%"></div>
+                <div id="bNeg" class="seg-neg" style="width:0%"></div>
+                <div id="bNeu" class="seg-neu" style="width:0%"></div>
+                <div id="bMix" class="seg-mix" style="width:0%"></div>
+                <div id="bUnk" class="seg-unk" style="width:0%"></div>
               </div>
             </div>
+            <p id="balanceNote" class="muted" style="margin:8px 0 0 0;">--</p>
           </div>
         </div>
+      </div>
+    </section>
 
-        <div class="card" style="margin-top:14px">
-          <div class="row" style="margin-bottom:10px">
-            <strong>Top highlights</strong>
-            <span class="muted" id="listHint"></span>
-          </div>
-          <div class="list" id="list"></div>
-          <details style="margin-top:12px">
-            <summary class="muted">raw (debug)</summary>
-            <pre id="dbg" class="muted" style="margin-top:10px">{}</pre>
-          </details>
-        </div>
-      </section>
-    </main>
+    <section class="panel">
+      <div class="sectionTitle">
+        <h2>Top highlights</h2>
+        <p id="listHint" class="hint">--</p>
+      </div>
+
+      <div id="list" class="list"></div>
+
+      <details style="margin-top:12px;">
+        <summary class="btn" style="display:inline-flex;">raw (debug)</summary>
+        <pre id="dbg" class="debug">{}</pre>
+      </details>
+    </section>
+
   </div>
 
 <script>
@@ -124,153 +415,227 @@
   "use strict";
 
   function el(id){ return document.getElementById(id); }
-  function setText(node, txt){ node.textContent = (txt == null ? "" : String(txt)); }
-  function safeJson(obj){ try{ return JSON.stringify(obj, null, 2); }catch(e){ return "{}"; } }
+
+  function safeText(x){
+    try{
+      if(x === null || x === undefined) return "";
+      if(typeof x === "string") return x;
+      return String(x);
+    }catch(_e){
+      return "";
+    }
+  }
+
+  function safeJson(obj){
+    try{
+      return JSON.stringify(obj, null, 2);
+    }catch(_e){
+      return "{}";
+    }
+  }
+
+  function setText(node, txt){
+    if(!node) return;
+    node.textContent = (txt === null || txt === undefined) ? "" : String(txt);
+  }
 
   function fetchJson(url){
-    return fetch(url, {cache:"no-store"}).then(function(r){
-      if(!r.ok) throw new Error("HTTP " + r.status + " for " + url);
-      return r.json();
-    });
+    return fetch(url, { cache: "no-store" })
+      .then(function(r){
+        if(!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      });
   }
 
   function firstOk(urls){
+    var tried = [];
     var i = 0;
-    function next(){
-      if(i >= urls.length) return Promise.resolve(null);
+    function step(){
+      if(i >= urls.length) return Promise.resolve({ ok:false, tried: tried });
       var u = urls[i++];
-      return fetchJson(u).then(function(j){ return {url:u, json:j}; }).catch(function(){ return next(); });
+      tried.push(u);
+      return fetchJson(u).then(function(j){
+        return { ok:true, url:u, json:j, tried: tried };
+      }).catch(function(){
+        return step();
+      });
     }
-    return next();
+    return step();
   }
 
   function pickAsOf(root){
-    return (root && (root.as_of || root.date || root.generated_at || root.fetched_at)) ? String(root.as_of || root.date || root.generated_at || root.fetched_at).slice(0,10) : "";
-  }
-
-  function pickArticles(root){
-    if(!root) return [];
-    if(Array.isArray(root.items)) return root.items;
-    if(Array.isArray(root.articles)) return root.articles;
-    if(root.yesterday_summary && Array.isArray(root.yesterday_summary.items)) return root.yesterday_summary.items;
-    return [];
-  }
-
-  function pickSummaryText(root){
     if(!root) return "";
-    if(typeof root.summary === "string" && root.summary) return root.summary;
-    if(root.yesterday_summary){
-      if(typeof root.yesterday_summary.text === "string" && root.yesterday_summary.text) return root.yesterday_summary.text;
-      if(Array.isArray(root.yesterday_summary.titles) && root.yesterday_summary.titles.length){
-        return "Yesterday titles:\n" + root.yesterday_summary.titles.slice(0, 30).map(function(t){return "- " + String(t);}).join("\n");
+    var v = root.as_of || root.date || root.generated_at || root.fetched_at || "";
+    if(!v) return "";
+    return String(v).slice(0, 10);
+  }
+
+  function pickSummaryText(sumRoot){
+    if(!sumRoot) return "";
+    if(sumRoot.yesterday_summary){
+      if(typeof sumRoot.yesterday_summary.text === "string" && sumRoot.yesterday_summary.text.trim()){
+        return sumRoot.yesterday_summary.text.trim();
+      }
+      if(Array.isArray(sumRoot.yesterday_summary.titles) && sumRoot.yesterday_summary.titles.length){
+        var lines = sumRoot.yesterday_summary.titles.slice(0, 30).map(function(t){
+          return "- " + safeText(t);
+        });
+        return "Yesterday titles:\n" + lines.join("\n");
       }
     }
+    if(typeof sumRoot.summary === "string" && sumRoot.summary.trim()) return sumRoot.summary.trim();
     return "";
   }
 
-  function sentimentLabel(a){
-    var s = (a && (a.sentiment || a.label || a.polarity || a.type)) ? String(a.sentiment || a.label || a.polarity || a.type) : "unknown";
-    s = s.toLowerCase();
-    if(s.indexOf("pos") >= 0) return "positive";
-    if(s.indexOf("neg") >= 0) return "negative";
-    if(s.indexOf("neu") >= 0) return "neutral";
-    if(s.indexOf("mix") >= 0) return "mixed";
+  function pickArticles(anyRoot){
+    if(!anyRoot) return [];
+    if(Array.isArray(anyRoot.items)) return anyRoot.items;
+    if(Array.isArray(anyRoot.articles)) return anyRoot.articles;
+    if(anyRoot.yesterday_summary && Array.isArray(anyRoot.yesterday_summary.items)) return anyRoot.yesterday_summary.items;
+    return [];
+  }
+
+  function normalizeArticle(a){
+    a = a || {};
+    var srcName = "";
+    try{
+      if(a.source){
+        if(typeof a.source === "string") srcName = a.source;
+        else if(typeof a.source.name === "string") srcName = a.source.name;
+        else if(typeof a.source.id === "string") srcName = a.source.id;
+      }
+    }catch(_e){}
+    return {
+      url: safeText(a.url),
+      title: safeText(a.title || a.headline || ""),
+      description: safeText(a.description || a.summary || a.excerpt || ""),
+      urlToImage: safeText(a.urlToImage || a.image || a.image_url || ""),
+      source: safeText(srcName || a.publisher || a.site || ""),
+      publishedAt: safeText(a.publishedAt || a.published_at || a.date || ""),
+      risk: (typeof a.risk === "number") ? a.risk : null,
+      positive: (typeof a.positive === "number") ? a.positive : null,
+      uncertainty: (typeof a.uncertainty === "number") ? a.uncertainty : null,
+      net: (typeof a.net === "number") ? a.net : null,
+      method: safeText(a.method || "")
+    };
+  }
+
+  function keyOf(a){
+    if(a.url) return a.url;
+    return (a.title || "") + "||" + (a.source || "");
+  }
+
+  function classify(a){
+    var u = (typeof a.uncertainty === "number") ? a.uncertainty : null;
+    if(u !== null && u >= 0.40) return "mixed";
+
+    var net = (typeof a.net === "number") ? a.net : null;
+    if(net !== null){
+      if(net >= 0.18) return "positive";
+      if(net <= -0.18) return "negative";
+      return "neutral";
+    }
+    var p = (typeof a.positive === "number") ? a.positive : null;
+    var r = (typeof a.risk === "number") ? a.risk : null;
+    if(p !== null || r !== null){
+      var pv = (p !== null) ? p : 0;
+      var rv = (r !== null) ? r : 0;
+      var d = pv - rv;
+      if(d >= 0.18) return "positive";
+      if(d <= -0.18) return "negative";
+      return "neutral";
+    }
     return "unknown";
   }
 
   function score(a){
-    var t = (a && (a.title || a.headline)) ? String(a.title || a.headline) : "";
-    var d = (a && (a.description || a.summary)) ? String(a.description || a.summary) : "";
-    var w = t.length * 2 + d.length;
-    if(a && a.urlToImage) w += 40;
-    if(a && (a.importance || a.rank)) w += Number(a.importance || a.rank) * 10;
-    return w;
+    var c = a._class || "unknown";
+    var base = 0;
+    if(c === "positive" || c === "negative") base += 1.0;
+    if(c === "mixed") base += 0.4;
+    if(c === "unknown") base -= 0.2;
+
+    var net = (typeof a.net === "number") ? Math.abs(a.net) : 0;
+    var risk = (typeof a.risk === "number") ? a.risk : 0;
+    var pos = (typeof a.positive === "number") ? a.positive : 0;
+
+    return base + net + (risk * 0.7) + (pos * 0.3);
+  }
+
+  function pct(n, total){
+    if(!total || total <= 0) return 0;
+    return Math.max(0, Math.min(100, Math.round((n / total) * 100)));
   }
 
   function renderBar(counts){
-    var total = counts.positive + counts.neutral + counts.negative + counts.mixed + counts.unknown;
-    function pct(n){ return total ? (n * 100 / total) : 0; }
-    el("bPos").style.width = pct(counts.positive) + "%";
-    el("bNeu").style.width = pct(counts.neutral) + "%";
-    el("bNeg").style.width = pct(counts.negative) + "%";
-    el("bMix").style.width = pct(counts.mixed) + "%";
-    el("bUnk").style.width = pct(counts.unknown) + "%";
-
-    /* No explicit colors (project rule). Using default currentColor via inline is avoided.
-       We'll rely on browser defaults; app.css likely styles progress. */
+    var total = counts.total || 0;
+    el("bPos").style.width = pct(counts.positive, total) + "%";
+    el("bNeg").style.width = pct(counts.negative, total) + "%";
+    el("bNeu").style.width = pct(counts.neutral, total) + "%";
+    el("bMix").style.width = pct(counts.mixed, total) + "%";
+    el("bUnk").style.width = pct(counts.unknown, total) + "%";
+    setText(el("balanceNote"),
+      "pos " + counts.positive + " / neg " + counts.negative + " / neu " + counts.neutral +
+      " / mix " + counts.mixed + " / unk " + counts.unknown
+    );
   }
 
   function renderList(items){
-    var q = String(el("q").value || "").toLowerCase();
-    var sort = el("sort").value;
-
-    var arr = items.slice();
-    arr = arr.filter(function(a){
-      var t = (a.title || a.headline || "");
-      var s = (a.source && (a.source.name || a.source)) ? (a.source.name || a.source) : "";
-      var hay = (String(t) + " " + String(s)).toLowerCase();
-      return !q || hay.indexOf(q) >= 0;
-    });
-
-    arr.sort(function(a,b){
-      var da = (a.publishedAt || a.published_at || a.date || "");
-      var db = (b.publishedAt || b.published_at || b.date || "");
-      if(sort === "old") return String(da).localeCompare(String(db));
-      return String(db).localeCompare(String(da));
-    });
-
-    var top = arr.slice(0, 20);
     var host = el("list");
     host.innerHTML = "";
-    if(!top.length){
-      el("listHint").textContent = "No items (safe)";
-      return;
-    }
-    el("listHint").textContent = "showing " + top.length + " / " + arr.length;
 
-    top.forEach(function(a){
+    items.forEach(function(a){
       var wrap = document.createElement("div");
-      wrap.className = "item";
+      wrap.className = "card";
 
       var th = document.createElement("div");
       th.className = "thumb";
       if(a.urlToImage){
         var img = document.createElement("img");
+        img.loading = "lazy";
         img.src = a.urlToImage;
         img.alt = "";
+        img.onerror = function(){
+          th.textContent = "no image";
+        };
         th.appendChild(img);
       }else{
-        var ph = document.createElement("div");
-        ph.className = "ph";
-        ph.textContent = "no image";
-        th.appendChild(ph);
+        th.textContent = "no image";
       }
 
       var body = document.createElement("div");
-      var h = document.createElement("p");
-      h.className = "title";
-      h.textContent = a.title || a.headline || "(no title)";
-      var d = document.createElement("p");
+
+      var t = document.createElement("div");
+      t.className = "title";
+      t.textContent = a.title || "(no title)";
+      body.appendChild(t);
+
+      var d = document.createElement("div");
       d.className = "desc";
-      d.textContent = a.description || a.summary || "";
-      var meta = document.createElement("div");
-      meta.className = "row";
-      meta.style.marginTop = "8px";
-
-      var lab = document.createElement("span");
-      lab.className = "pill";
-      lab.textContent = sentimentLabel(a);
-
-      var src = document.createElement("span");
-      src.className = "pill muted";
-      var sname = (a.source && (a.source.name || a.source)) ? (a.source.name || a.source) : "";
-      src.textContent = sname ? String(sname) : "source: --";
-
-      meta.appendChild(lab);
-      meta.appendChild(src);
-
-      body.appendChild(h);
+      d.textContent = a.description || "";
       body.appendChild(d);
+
+      var meta = document.createElement("div");
+      meta.className = "metaRow";
+
+      var cls = a._class || "unknown";
+      var tag1 = document.createElement("span");
+      tag1.className = "tag";
+      tag1.textContent = cls;
+      meta.appendChild(tag1);
+
+      var tag2 = document.createElement("span");
+      tag2.className = "tag";
+      tag2.textContent = a.source || "unknown";
+      meta.appendChild(tag2);
+
+      if(a.method){
+        var tag3 = document.createElement("span");
+        tag3.className = "tag";
+        tag3.innerHTML = "<small>method</small> " + a.method.replace(/</g,"&lt;").replace(/>/g,"&gt;");
+        meta.appendChild(tag3);
+      }
+
       body.appendChild(meta);
 
       wrap.appendChild(th);
@@ -284,81 +649,183 @@
     });
   }
 
+  function applyFilterAndRender(){
+    var q = (el("q").value || "").toLowerCase().trim();
+    var sf = el("sentFilter").value;
+    var sort = el("sort").value;
+
+    var items = (window.__digest_items || []).slice();
+
+    if(sf && sf !== "all"){
+      items = items.filter(function(a){ return (a._class || "unknown") === sf; });
+    }
+
+    if(q){
+      items = items.filter(function(a){
+        var s = (a.title + " " + a.source + " " + a.description).toLowerCase();
+        return s.indexOf(q) !== -1;
+      });
+    }
+
+    if(sort === "az"){
+      items.sort(function(a,b){ return (a.title || "").localeCompare(b.title || ""); });
+    }else if(sort === "newest"){
+      items.sort(function(a,b){
+        var da = a.publishedAt || "";
+        var db = b.publishedAt || "";
+        return db.localeCompare(da);
+      });
+    }else{
+      items.sort(function(a,b){ return (b._score || 0) - (a._score || 0); });
+    }
+
+    var show = items.slice(0, 48);
+    setText(el("listHint"), "showing " + show.length + " / " + items.length);
+    renderList(show);
+  }
+
+  function toggleSummary(){
+    var pre = el("sumText");
+    var btn = el("btnToggleSummary");
+    var collapsed = pre.getAttribute("data-collapsed") === "1";
+    if(!collapsed){
+      pre.setAttribute("data-collapsed", "1");
+      pre.style.maxHeight = "150px";
+      pre.style.overflow = "hidden";
+      setText(btn, "Expand summary");
+    }else{
+      pre.setAttribute("data-collapsed", "0");
+      pre.style.maxHeight = "";
+      pre.style.overflow = "";
+      setText(btn, "Collapse summary");
+    }
+  }
+
   function main(){
     var candSummary = [
       "/data/world_politics/analysis/daily_summary_latest.json",
-      "/data/world_politics/analysis/daily_news_latest.json",
+      "/data/world_politics/analysis/daily_news_latest.json"
+    ];
+    var candSentiment = [
       "/data/world_politics/analysis/sentiment_latest.json"
     ];
-    var candArticles = [
-      "/data/world_politics/analysis/sentiment_latest.json",
-      "/data/world_politics/analysis/daily_news_latest.json",
-      "/data/world_politics/analysis/daily_summary_latest.json"
-    ];
 
-    Promise.all([firstOk(candSummary), firstOk(candArticles)]).then(function(res){
-      var pickedSum = res[0];
-      var pickedArt = res[1];
+    Promise.all([firstOk(candSummary), firstOk(candSentiment)]).then(function(res){
+      var sumPick = res[0];
+      var senPick = res[1];
 
-      if(!pickedSum && !pickedArt){
-        setText(el("sumHint"), "sources not found (safe)");
-        setText(el("dbg"), safeJson({ tried_summary: candSummary, tried_articles: candArticles }));
-        return;
-      }
-
-      var asof = pickAsOf(pickedSum && pickedSum.json) || pickAsOf(pickedArt && pickedArt.json);
+      var asof = (sumPick.ok ? pickAsOf(sumPick.json) : "") || (senPick.ok ? pickAsOf(senPick.json) : "");
       setText(el("pillAsOf"), "as_of: " + (asof || "--"));
 
-      var src = (pickedSum && pickedSum.url) ? pickedSum.url : ((pickedArt && pickedArt.url) ? pickedArt.url : "");
-      setText(el("pillSrc"), "source: " + (src || "--"));
-      el("btnOpen").onclick = function(){ if(src) window.open(src, "_blank", "noopener,noreferrer"); };
+      var srcLabel = sumPick.ok ? sumPick.url : (senPick.ok ? senPick.url : "--");
+      setText(el("pillSource"), "source: " + srcLabel);
 
-      var summary = pickSummaryText(pickedSum && pickedSum.json) || pickSummaryText(pickedArt && pickedArt.json);
-      setText(el("sumText"), summary || "No summary text (safe)");
-      setText(el("sumHint"), summary ? "" : "No summary text (safe)");
+      var openUrl = sumPick.ok ? sumPick.url : (senPick.ok ? senPick.url : "#");
+      el("btnOpenJson").setAttribute("href", openUrl);
 
-      var items = pickArticles(pickedArt && pickedArt.json);
-      setText(el("pillItems"), "items: " + (items ? items.length : 0));
+      var sumText = sumPick.ok ? pickSummaryText(sumPick.json) : "";
+      if(!sumText){
+        setText(el("sumHint"), "No summary text (safe)");
+        setText(el("sumText"), "No summary text (safe)");
+      }else{
+        setText(el("sumHint"), "OK");
+        setText(el("sumText"), sumText);
+      }
 
-      var counts = {positive:0, negative:0, neutral:0, mixed:0, unknown:0};
-      (items || []).forEach(function(a){
-        var s = sentimentLabel(a);
-        if(counts.hasOwnProperty(s)) counts[s] += 1;
-        else counts.unknown += 1;
+      var baseItems = [];
+      var sumItems = sumPick.ok ? pickArticles(sumPick.json) : [];
+      var senItems = senPick.ok ? pickArticles(senPick.json) : [];
+
+      var sumNorm = sumItems.map(normalizeArticle);
+      var senNorm = senItems.map(normalizeArticle);
+
+      var senMap = {};
+      senNorm.forEach(function(a){
+        var k = keyOf(a);
+        if(k) senMap[k] = a;
       });
 
-      setText(el("kAll"), (items || []).length);
+      if(sumNorm.length){
+        baseItems = sumNorm.map(function(a){
+          var k = keyOf(a);
+          var s = senMap[k];
+          if(s){
+            if(a.urlToImage && !s.urlToImage) s.urlToImage = a.urlToImage;
+            if(!a.urlToImage && s.urlToImage) a.urlToImage = s.urlToImage;
+            a.risk = (typeof s.risk === "number") ? s.risk : a.risk;
+            a.positive = (typeof s.positive === "number") ? s.positive : a.positive;
+            a.uncertainty = (typeof s.uncertainty === "number") ? s.uncertainty : a.uncertainty;
+            a.net = (typeof s.net === "number") ? s.net : a.net;
+            a.method = s.method || a.method;
+          }
+          return a;
+        });
+      }else{
+        baseItems = senNorm.slice();
+      }
+
+      var counts = { total:0, positive:0, negative:0, neutral:0, mixed:0, unknown:0 };
+      baseItems.forEach(function(a){
+        a._class = classify(a);
+        a._score = score(a);
+        counts.total += 1;
+        counts[a._class] += 1;
+      });
+
+      setText(el("pillItems"), "items: " + counts.total);
+
+      setText(el("kTotal"), counts.total);
       setText(el("kPos"), counts.positive);
       setText(el("kNeg"), counts.negative);
       setText(el("kNeu"), counts.neutral);
       setText(el("kMix"), counts.mixed);
       setText(el("kUnk"), counts.unknown);
+
+      setText(el("kpiHint"), counts.total ? "OK" : "No items (safe)");
       renderBar(counts);
 
-      // choose top by heuristic score
-      var ranked = (items || []).slice().sort(function(a,b){ return score(b) - score(a); });
+      var ranked = baseItems.slice().sort(function(a,b){ return (b._score || 0) - (a._score || 0); });
       window.__digest_items = ranked;
 
-      renderList(ranked);
-
-      el("q").addEventListener("input", function(){ renderList(window.__digest_items || []); });
-      el("sort").addEventListener("change", function(){ renderList(window.__digest_items || []); });
+      var metaParts = [];
+      if(sumPick.ok){
+        if(typeof sumPick.json.n_events === "number") metaParts.push("n_events=" + sumPick.json.n_events);
+        if(sumPick.json.fetched_at) metaParts.push("fetched_at=" + String(sumPick.json.fetched_at));
+      }
+      if(senPick.ok){
+        if(Array.isArray(senPick.json.items)) metaParts.push("sentiment_items=" + senPick.json.items.length);
+        if(senPick.json.generated_at) metaParts.push("generated_at=" + String(senPick.json.generated_at));
+      }
+      setText(el("sumMeta"), metaParts.length ? metaParts.join(" / ") : "--");
 
       setText(el("dbg"), safeJson({
-        picked_summary: pickedSum ? pickedSum.url : "",
-        picked_articles: pickedArt ? pickedArt.url : "",
-        as_of: asof,
-        items: (items || []).length,
-        counts: counts
+        picked_summary: sumPick.ok ? sumPick.url : null,
+        picked_sentiment: senPick.ok ? senPick.url : null,
+        as_of: asof || null,
+        items_count: counts.total,
+        counts: counts,
+        tried_summary: sumPick.tried,
+        tried_sentiment: senPick.tried
       }));
+
+      applyFilterAndRender();
+
     }).catch(function(e){
       setText(el("sumHint"), "error (safe)");
+      setText(el("sumText"), "error (safe)");
+      setText(el("kpiHint"), "error");
       setText(el("dbg"), safeJson({ error: String(e && e.message ? e.message : e) }));
     });
+
+    el("q").addEventListener("input", function(){ applyFilterAndRender(); });
+    el("sentFilter").addEventListener("change", function(){ applyFilterAndRender(); });
+    el("sort").addEventListener("change", function(){ applyFilterAndRender(); });
+    el("btnToggleSummary").addEventListener("click", function(){ toggleSummary(); });
   }
 
   main();
 })();
 </script>
+
 </body>
 </html>
