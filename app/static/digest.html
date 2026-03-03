@@ -710,9 +710,42 @@
       "/data/world_politics/analysis/sentiment_latest.json"
     ];
 
-    Promise.all([firstOk(candSummary), firstOk(candSentiment)]).then(function(res){
+    
+    var candNews = [
+      "/data/world_politics/analysis/daily_news_latest.json",
+      "/analysis/world_politics/analysis/daily_news_latest.json",
+      "/data/digest/daily_news_latest.json",
+      "/analysis/digest/daily_news_latest.json"
+    ];
+
+    function keyUrl(u){
+      try{
+        var s = String(u || "").trim();
+        // normalize a bit: drop trailing slash
+        if(s.length > 1 && s.endsWith("/")) s = s.slice(0, -1);
+        return s;
+      }catch(e){ return ""; }
+    }
+
+    function buildImageMap(newsRoot){
+      var m = {};
+      if(!newsRoot) return m;
+      var arr = null;
+      if(Array.isArray(newsRoot.articles)) arr = newsRoot.articles;
+      else if(Array.isArray(newsRoot.items)) arr = newsRoot.items;
+      if(!arr) return m;
+      for(var i=0;i<arr.length;i++){
+        var a = arr[i] || {};
+        var u = keyUrl(a.url);
+        var img = a.urlToImage || a.image || a.image_url || a.thumbnail;
+        if(u && img && !m[u]) m[u] = String(img);
+      }
+      return m;
+    }
+Promise.all([firstOk(candSummary), firstOk(candSentiment), firstOk(candNews)]).then(function(res){
       var sumPick = res[0];
       var senPick = res[1];
+      var newsPick = res[2];
 
       var asof = (sumPick.ok ? pickAsOf(sumPick.json) : "") || (senPick.ok ? pickAsOf(senPick.json) : "");
       setText(el("pillAsOf"), "as_of: " + (asof || "--"));
@@ -764,7 +797,20 @@
         baseItems = senNorm.slice();
       }
 
-      var counts = { total:0, positive:0, negative:0, neutral:0, mixed:0, unknown:0 };
+      
+      // Attach thumbnails from daily_news (NewsAPI-like {articles:[]}) if available.
+      var imgMap = buildImageMap(newsPick && newsPick.json ? newsPick.json : null);
+      if(imgMap && baseItems && baseItems.length){
+        for(var ii=0; ii<baseItems.length; ii++){
+          var it = baseItems[ii] || {};
+          var u2 = keyUrl(it.url);
+          if(u2 && imgMap[u2] && !it.urlToImage && !it.image && !it.image_url && !it.thumbnail){
+            it.urlToImage = imgMap[u2];
+          }
+        }
+      }
+
+var counts = { total:0, positive:0, negative:0, neutral:0, mixed:0, unknown:0 };
       baseItems.forEach(function(a){
         a._class = classify(a);
         a._score = score(a);
