@@ -8,6 +8,488 @@
   <script src="/static/_shared_nav.js?v=20260303v2"></script>
 </head>
 <body>
+<main>
+<div class="container">
+    <h1>Home</h1>
+    <p class="lead">Today snapshot / Daily summary / Sentiment / Data health をまとめて表示します。</p>
+
+    <section class="grid-top">
+      <div class="card">
+        <div class="card-title">Events (today)</div>
+        <div class="kpi">
+          <strong id="eventsCount">—</strong>
+          <div class="sub mono">source: <span id="srcVM">—</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Sentiment</div>
+        <div class="kpi">
+          <strong id="sentimentOk">—</strong>
+          <div class="sub mono">risk <span id="riskV">—</span> / pos <span id="posV">—</span> / unc <span id="uncV">—</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>Data Health</span>
+          <span class="mono small muted2" title="health_latest.json の summary.total">total: <span id="healthTotal">—</span></span>
+        </div>
+
+        <div class="kpi" style="align-items:flex-start">
+          <div class="mono">
+            <span class="badge ok">OK: <span id="okN">—</span></span>
+            <span class="mono small"> / </span>
+            <span class="badge warn">WARN: <span id="warnN">—</span></span>
+            <span class="mono small"> / </span>
+            <span class="badge ng">NG: <span id="ngN">—</span></span>
+            <span id="healthMissing" class="badge dim" style="display:none;margin-left:8px">missing</span>
+          </div>
+          <div class="sub mono">source: <span id="srcHealth">—</span></div>
+        </div>
+
+        <details id="healthDetails">
+          <summary><span class="caret"></span><span class="mono">checks (details)</span><span class="mono muted2" id="healthMeta" style="margin-left:auto">—</span></summary>
+          <div class="hr"></div>
+          <table class="health-table" id="healthTable"></table>
+        </details>
+      </div>
+    </section>
+
+    <section class="grid-mid">
+      <div class="card">
+        <div class="card-title">
+          <span>Daily Summary</span>
+          <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <a class="pill ghost" id="btnOpenDaily" href="/analysis/daily_summary_latest.json" target="_blank" rel="noopener">Open JSON</a>
+            <span class="mono small muted2">source: <span id="srcDaily">—</span></span>
+          </span>
+        </div>
+
+        <div class="daily-wrap">
+          <div id="dailyItems" class="daily-items"></div>
+
+          <details id="dailyRawDetails" style="margin-top:10px">
+            <summary><span class="caret"></span><span class="mono">raw (debug)</span><span class="mono muted2" id="dailyMeta" style="margin-left:auto">—</span></summary>
+            <div class="hr"></div>
+            <div class="rawbox"><pre id="dailyRaw" class="mono small">—</pre></div>
+          </details>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Today Snapshot</div>
+        <div class="mono small"><span class="muted2">as_of:</span> <span id="asOfLocal" class="mono">—</span></div>
+        <div class="mono small muted2" style="margin-top:10px">
+          loaded: <span id="loadedList" class="mono">—</span>
+          <span id="missingListWrap" class="mono"></span>
+        </div>
+        <div class="kv">
+          <a class="pill ghost" href="/analysis/health_latest.json" target="_blank" rel="noopener">Open health_latest.json</a>
+          <a class="pill ghost" href="/analysis/sentiment_latest.json" target="_blank" rel="noopener">Open sentiment_latest.json</a>
+        </div>
+      </div>
+    </section>
+
+    <div id="errBox" class="error-box">
+      <h3>Loading failed</h3>
+      <div class="mono small muted2">Tip: hard reload (Ctrl+F5) or open a Private Window to avoid cache.</div>
+      <pre id="errText" class="mono small" style="margin-top:10px"></pre>
+    </div>
+
+    <div class="footer-note mono small">GenesisPrediction v2 • Home (sentiment baseline header) • phase2</div>
+  </div>
+
+<script>
+(() => {
+  const q = (id) => document.getElementById(id);
+
+  const setText = (id, v) => {
+    const el = q(id);
+    if (!el) return;
+    el.textContent = (v ?? "—");
+  };
+
+  const setDot = (id, level) => {
+    const el = q(id);
+    if (!el) return;
+    el.classList.remove("warn","err");
+    if (level === "WARN") el.classList.add("warn");
+    if (level === "NG") el.classList.add("err");
+  };
+
+  const showError = (msg) => {
+    const eb = q("errBox");
+    if (eb) eb.style.display = "block";
+    setText("errText", msg);
+    setDot("statusDot", "NG");
+    setText("statusText", "Error");
+  };
+
+  const setReady = () => {
+    setDot("statusDot", "OK");
+    setText("statusText", "Ready");
+  };
+
+  async function fetchFirstJson(urls){
+    const tried = [];
+    for (const url of urls){
+      tried.push(url);
+      try{
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) continue;
+        const data = await res.json();
+        return { ok:true, url, data, tried };
+      }catch(e){
+        // ignore
+      }
+    }
+    return { ok:false, url:null, data:null, tried };
+  }
+
+  const fmt2 = (x) => {
+    if (x === null || x === undefined || x === "") return "—";
+    const n = Number(x);
+    if (Number.isFinite(n)) return n.toFixed(2);
+    return String(x);
+  };
+
+  const vmURLs = [
+    "/analysis/view_model_latest.json",
+    "/analysis/world_politics/view_model_latest.json",
+    "/data/world_politics/analysis/view_model_latest.json",
+    "/data/digest/view_model_latest.json",
+    "/data/digest/view/view_model_latest.json"
+  ];
+  const dailyURLs = [
+    "/analysis/daily_summary_latest.json",
+    "/analysis/world_politics/daily_summary_latest.json",
+    "/data/world_politics/analysis/daily_summary_latest.json"
+  ];
+  const sentURLs = [
+    "/analysis/sentiment_latest.json",
+    "/analysis/world_politics/sentiment_latest.json",
+    "/data/world_politics/analysis/sentiment_latest.json"
+  ];
+  const healthURLs = [
+    "/analysis/health_latest.json"
+  ];
+
+  const healthLevel = (sum) => {
+    const ok = Number(sum?.ok ?? 0);
+    const warn = Number(sum?.warn ?? 0);
+    const ng = Number(sum?.ng ?? 0);
+    if (ng > 0) return "NG";
+    if (warn > 0) return "WARN";
+    if (ok > 0) return "OK";
+    return "--";
+  };
+
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  const buildHealthTable = (checks) => {
+    const t = q("healthTable");
+    if (!t) return;
+    t.innerHTML = "";
+    if (!Array.isArray(checks) || checks.length === 0){
+      t.innerHTML = "<tr class='health-row'><td class='mono'>checks</td><td class='mono muted2'>—</td></tr>";
+      return;
+    }
+
+    // sort: NG -> WARN -> OK, then required true, then name
+    const rank = (s) => (s === "NG" ? 0 : s === "WARN" ? 1 : 2);
+    const rows = [...checks].sort((a,b) => {
+      const ra = rank(a?.status), rb = rank(b?.status);
+      if (ra !== rb) return ra - rb;
+      const reqA = a?.required ? 0 : 1;
+      const reqB = b?.required ? 0 : 1;
+      if (reqA !== reqB) return reqA - reqB;
+      return String(a?.name ?? "").localeCompare(String(b?.name ?? ""));
+    });
+
+    for (const c of rows){
+      const name = esc(c?.name ?? "");
+      const st = String(c?.status ?? "--");
+      const fr = String(c?.freshness ?? "");
+      const kind = esc(c?.kind ?? "");
+      const path = esc(c?.path ?? "");
+      const age = (c?.age_hours !== undefined && c?.age_hours !== null) ? `${Number(c.age_hours).toFixed(3)}h` : "";
+      const detail = esc(c?.detail ?? "");
+
+      const chipClass = st === "OK" ? "ok" : st === "WARN" ? "warn" : st === "NG" ? "ng" : "";
+      const reqChip = c?.required ? "<span class='chip' title='required'>req</span>" : "<span class='chip' style='opacity:.6' title='optional'>opt</span>";
+      const freshChip = fr ? `<span class="chip ${fr==='OK'?'ok':(fr==='WARN'?'warn':'')}" title="freshness">${esc(fr)}</span>` : "";
+
+      const left = `
+        <div class="mono" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="chip ${chipClass}" title="status">${esc(st)}</span>
+          ${reqChip}
+          ${freshChip}
+        </div>
+        <div class="mono" style="margin-top:6px">${name}</div>
+        <div class="mono muted2" style="margin-top:2px">${kind}${kind&&path?" • ":""}${path}</div>
+      `;
+
+      const right = `
+        <div class="mono muted2">${age ? "age: " + esc(age) : ""}</div>
+        <div class="mono muted2" style="margin-top:6px">${detail}</div>
+      `;
+
+      const tr = document.createElement("tr");
+      tr.className = "health-row";
+      tr.innerHTML = `<td>${left}</td><td>${right}</td>`;
+      t.appendChild(tr);
+    }
+  };
+
+  // Daily Summary: robust extraction without forcing raw JSON on screen
+  const pickText = (obj) => {
+    if (!obj) return "";
+    const keys = ["text","summary","message","overview","body","content"];
+    for (const k of keys){
+      if (typeof obj[k] === "string" && obj[k].trim()) return obj[k].trim();
+    }
+    return "";
+  };
+
+  const normalizeItem = (it) => {
+    if (it === null || it === undefined) return null;
+    if (typeof it === "string") {
+      const s = it.trim();
+      if (!s) return null;
+      return { tag: "note", text: s, meta: "" };
+    }
+    if (typeof it === "object") {
+      const tag = (it.tag ?? it.key ?? it.id ?? it.type ?? "item").toString();
+      const text = (it.text ?? it.summary ?? it.message ?? it.title ?? "").toString().trim();
+      const meta = (it.source ?? it.from ?? it.provider ?? it.score ?? it.rank ?? "").toString().trim();
+      const fallback = text || pickText(it) || "";
+      if (!fallback) return null;
+      return { tag, text: fallback, meta };
+    }
+    return null;
+  };
+
+  const extractItems = (d) => {
+    if (!d || typeof d !== "object") return [];
+    const candidates = [];
+    const pushArr = (a) => { if (Array.isArray(a)) candidates.push(...a); };
+
+    // common arrays
+    pushArr(d.items);
+    pushArr(d.highlights);
+    pushArr(d.bullets);
+    pushArr(d.lines);
+    pushArr(d.points);
+    pushArr(d.topics);
+    pushArr(d.notes);
+
+    // sections: [{title, items|bullets|lines|text}]
+    if (Array.isArray(d.sections)){
+      for (const s of d.sections){
+        if (!s) continue;
+        const title = (s.title ?? s.name ?? "").toString().trim();
+        const inner = [];
+        if (title) inner.push({ tag: title, text: pickText(s) || title, meta: "section" });
+        pushArr(s.items);
+        pushArr(s.bullets);
+        pushArr(s.lines);
+        if (Array.isArray(s.items)) candidates.push(...s.items.map(x => ({...x, tag: title || x.tag || x.key || x.id || "item"})));
+        if (Array.isArray(s.bullets)) candidates.push(...s.bullets.map(x => (typeof x === "string" ? {tag:title||"bullet", text:x, meta:""} : {...x, tag:title||x.tag||"bullet"})));
+        if (Array.isArray(s.lines)) candidates.push(...s.lines.map(x => (typeof x === "string" ? {tag:title||"line", text:x, meta:""} : {...x, tag:title||x.tag||"line"})));
+        const t = pickText(s);
+        if (t) candidates.push({ tag: title || "section", text: t, meta: "section" });
+      }
+    }
+
+    // if nothing, try summary text as one item
+    if (!candidates.length){
+      const t = pickText(d);
+      if (t) candidates.push({ tag:"summary", text:t, meta:"text" });
+    }
+
+    const out = [];
+    for (const c of candidates){
+      const n = normalizeItem(c);
+      if (n) out.push(n);
+    }
+    return out;
+  };
+
+  const buildDailySummary = (d, srcUrl) => {
+    setText("srcDaily", srcUrl ?? "—");
+    const itemsEl = q("dailyItems");
+    if (!itemsEl) return;
+    itemsEl.innerHTML = "";
+
+    const asof = d?.as_of ?? d?.asOf ?? d?.date ?? null;
+    const items = extractItems(d);
+    const keys = (d && typeof d === "object") ? Object.keys(d).slice(0, 18) : [];
+    setText("dailyMeta", `items=${items.length}  date=${d?.date ?? "--"}  as_of=${asof ?? "--"}`);
+
+    if (items.length){
+      const show = items.slice(0, 10);
+      for (const it of show){
+        const div = document.createElement("div");
+        div.className = "daily-item";
+        div.innerHTML = `
+          <div class="daily-head">
+            <div class="tagpill">${esc(it.tag || "item")}</div>
+            <div class="daily-meta mono">${esc(it.meta || "")}</div>
+          </div>
+          <div class="daily-text">${esc(it.text || "—")}</div>
+        `;
+        itemsEl.appendChild(div);
+      }
+      if (items.length > show.length){
+        const more = document.createElement("div");
+        more.className = "daily-empty mono";
+        more.textContent = `…and ${items.length - show.length} more (raw から確認できます)`;
+        itemsEl.appendChild(more);
+      }
+      return;
+    }
+
+    // empty: show gentle hint + keys (not raw JSON dump)
+    const empty = document.createElement("div");
+    empty.className = "daily-empty mono";
+    empty.textContent = "Daily Summary: 表示できる items / text が見つかりませんでした。";
+    itemsEl.appendChild(empty);
+
+    const kv = document.createElement("div");
+    kv.className = "kv";
+    kv.innerHTML = `
+      <span class="chip" title="keys">keys</span>
+      <span class="mono small muted2">${esc(keys.join(", ") || "—")}</span>
+    `;
+    itemsEl.appendChild(kv);
+  };
+
+  (async () => {
+    setReady();
+
+    const loaded = [];
+    const missing = [];
+
+    const [vm, daily, sent, health] = await Promise.all([
+      fetchFirstJson(vmURLs),
+      fetchFirstJson(dailyURLs),
+      fetchFirstJson(sentURLs),
+      fetchFirstJson(healthURLs),
+    ]);
+
+    // view_model
+    if (vm.ok){
+      loaded.push("view_model");
+      setText("srcVM", vm.url);
+      const d = vm.data || {};
+      const n =
+        d.events_today ??
+        d.eventsToday ??
+        d.events_count_today ??
+        d.eventsCountToday ??
+        (Array.isArray(d.events) ? d.events.length : null) ??
+        d.events_count ??
+        d.eventsCount ??
+        "—";
+      setText("eventsCount", n);
+      const asof = d.as_of ?? d.asOf ?? d.date ?? null;
+      if (asof) { setText("asOfTop", asof); setText("asOfLocal", asof); }
+    }else{
+      missing.push("view_model");
+    }
+
+    // daily summary (cleanup UI)
+    if (daily.ok){
+      loaded.push("daily_summary");
+      const d = daily.data || {};
+      buildDailySummary(d, daily.url);
+      q("dailyRaw").textContent = JSON.stringify(d, null, 2);
+      const asof = d.as_of ?? d.asOf ?? d.date ?? null;
+      if (asof && q("asOfLocal")?.textContent === "—") { setText("asOfTop", asof); setText("asOfLocal", asof); }
+    }else{
+      missing.push("daily_summary");
+      buildDailySummary({}, "—");
+      q("dailyRaw").textContent = "—";
+    }
+
+    // sentiment
+    if (sent.ok){
+      loaded.push("sentiment");
+      const d = sent.data || {};
+      const risk = d.risk ?? d.risk_avg ?? d.riskMean ?? d.summary?.risk ?? null;
+      const pos  = d.pos ?? d.positive ?? d.pos_avg ?? d.positive_avg ?? d.summary?.positive ?? null;
+      const unc  = d.unc ?? d.uncertainty ?? d.unc_avg ?? d.uncertainty_avg ?? d.summary?.uncertainty ?? null;
+
+      setText("riskV", fmt2(risk));
+      setText("posV", fmt2(pos));
+      setText("uncV", fmt2(unc));
+      setText("sentimentOk", d.status ?? d.overall ?? "OK");
+      const asof = d.as_of ?? d.asOf ?? d.date ?? null;
+      if (asof && q("asOfLocal")?.textContent === "—") { setText("asOfTop", asof); setText("asOfLocal", asof); }
+    }else{
+      missing.push("sentiment");
+    }
+
+    // health
+    if (health.ok){
+      loaded.push("health");
+      setText("srcHealth", health.url);
+      q("healthMissing").style.display = "none";
+      const d = health.data || {};
+      const sum = d.summary || d.counts || d;
+      setText("okN", sum.ok ?? sum.OK ?? "—");
+      setText("warnN", sum.warn ?? sum.WARN ?? "—");
+      setText("ngN", sum.ng ?? sum.NG ?? "—");
+      setText("healthTotal", sum.total ?? sum.TOTAL ?? "—");
+
+      const lvl = healthLevel(sum);
+      setText("healthTop", lvl);
+      setDot("healthDot", lvl);
+      setText("healthMeta", `date=${d.date ?? "--"} total=${sum.total ?? "--"}`);
+
+      const asof = d.generated_at ?? d.generatedAt ?? d.as_of ?? d.asOf ?? d.date ?? null;
+      if (asof && q("asOfLocal")?.textContent === "—") { setText("asOfTop", d.date ?? asof); setText("asOfLocal", d.date ?? asof); }
+
+      buildHealthTable(d.checks || []);
+      q("healthDetails").style.display = "";
+    }else{
+      missing.push("health");
+      q("healthMissing").style.display = "";
+      setText("srcHealth", "—");
+      setText("okN", "—"); setText("warnN", "—"); setText("ngN", "—"); setText("healthTotal", "—");
+      setText("healthTop", "--");
+      setDot("healthDot", "WARN");
+      setText("healthMeta", "missing");
+      q("healthDetails").style.display = "none";
+    }
+
+    setText("loadedList", loaded.join(", ") || "—");
+    if (missing.length){
+      q("missingListWrap").textContent = "  (missing: " + missing.join(", ") + ")";
+    } else {
+      q("missingListWrap").textContent = "";
+    }
+
+    // if ALL failed, show details
+    if (!vm.ok && !daily.ok && !sent.ok && !health.ok){
+      const msg = [
+        "All sources failed.",
+        "",
+        "Tried URLs:",
+        ...vm.tried.map(u => "• " + u),
+        ...daily.tried.map(u => "• " + u),
+        ...sent.tried.map(u => "• " + u),
+        ...health.tried.map(u => "• " + u),
+      ].join("
+");
+      showError(msg);
+    }
+  })().catch(e => showError(String(e)));
+})();
+</script>
+</main>
+
   <div class="page">
     <h1>Home</h1>
     <p>Unified layout (header injected by JS).</p>

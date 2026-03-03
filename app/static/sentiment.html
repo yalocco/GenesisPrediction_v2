@@ -8,6 +8,373 @@
   <script src="/static/_shared_nav.js?v=20260303v2"></script>
 </head>
 <body>
+<main>
+<div class="wrap">
+    
+
+    <section class="card">
+      <div class="card-inner">
+        <div class="hrow">
+          <h2 class="title">Sentiment</h2>
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end">
+            <span class="pill" id="as_of">as_of: --</span>
+            <span class="pill" id="source">source: --</span>
+            <span class="pill" id="items">items: --</span>
+            <button class="btn" id="open_json">Open JSON</button>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="grid">
+          <div class="panel">
+            <div class="ph">
+              <div class="legend" aria-label="legend">
+                <span><span class="dot2 c-good"></span> Positive</span>
+                <span><span class="dot2 c-bad"></span> Negative</span>
+                <span><span class="dot2 c-neutral"></span> Neutral</span>
+                <span><span class="dot2 c-mix"></span> Mixed</span>
+                <span><span class="dot2 c-unk"></span> Unknown</span>
+              </div>
+            </div>
+
+            <div class="barwrap">
+              <div class="bar" title="Sentiment balance (visual)">
+                <div id="balance_bar"></div>
+              </div>
+
+              <!-- SAFE graph (canvas) -->
+              <div class="graph" aria-label="trend graph">
+                <div class="glabel" id="glabel">trend: safe</div>
+                <canvas id="trend_canvas" width="1200" height="520"></canvas>
+              </div>
+
+              <div class="small" id="meta_line">generated_at=-- / news_fetched_at=--</div>
+            </div>
+          </div>
+
+          <div>
+            <div class="kpis">
+              <div class="kpi"><div class="num" id="k_total">--</div><div class="lbl">Total items</div></div>
+              <div class="kpi"><div class="num" id="k_pos">--</div><div class="lbl">Positive</div></div>
+              <div class="kpi"><div class="num" id="k_neg">--</div><div class="lbl">Negative</div></div>
+              <div class="kpi"><div class="num" id="k_neu">--</div><div class="lbl">Neutral</div></div>
+              <div class="kpi"><div class="num" id="k_mix">--</div><div class="lbl">Mixed</div></div>
+              <div class="kpi"><div class="num" id="k_unk">--</div><div class="lbl">Unknown</div></div>
+            </div>
+
+            <div class="ctrls">
+              <input id="q" type="search" placeholder="Search title/source..." />
+              <select id="filter_label">
+                <option value="all">All</option>
+                <option value="positive">Positive</option>
+                <option value="negative">Negative</option>
+                <option value="neutral">Neutral</option>
+                <option value="mixed">Mixed</option>
+                <option value="unknown">Unknown</option>
+              </select>
+              <select id="sort_mode">
+                <option value="score">Top (score)</option>
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="az">A→Z</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="list" id="list"></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const JSON_PATH = "/data/world_politics/analysis/sentiment_latest.json";
+    const DAILY_NEWS_PATH = "/data/world_politics/analysis/daily_news_latest.json";
+
+    const $ = (id) => document.getElementById(id);
+    const clamp = (n,a,b)=>Math.max(a,Math.min(b,n));
+
+    function normLabel(x){
+      const v=(x??"").toString().trim().toLowerCase();
+      if(["pos","positive","good"].includes(v)) return "positive";
+      if(["neg","negative","bad"].includes(v)) return "negative";
+      if(["neu","neutral"].includes(v)) return "neutral";
+      if(["mix","mixed"].includes(v)) return "mixed";
+      if(["unk","unknown","na","n/a"].includes(v)) return "unknown";
+      return v||"unknown";
+    }
+    function tagClass(label){
+      if(label==="positive") return "t-good";
+      if(label==="negative") return "t-bad";
+      if(label==="neutral") return "t-neutral";
+      if(label==="mixed") return "t-mix";
+      return "t-unk";
+    }
+    function pickSourceName(src){
+      if(!src) return "";
+      if(typeof src==="string") return src;
+      if(typeof src==="object") return src.name || src.id || "";
+      return "";
+    }
+    function scoreOf(it){
+      const pos=Number(it.positive ?? 0);
+      const neg=Number(it.risk ?? it.negative ?? 0);
+      const unc=Number(it.uncertainty ?? 0);
+      const net=Number(it.net ?? (pos-neg));
+      return Math.abs(net)+Math.abs(pos)+Math.abs(neg)+(unc*0.35);
+    }
+
+    async function buildImageMap(){
+      try{
+        const r=await fetch(DAILY_NEWS_PATH,{cache:"no-store"});
+        if(!r.ok) return new Map();
+        const j=await r.json();
+        const arts=j.articles || j.items || [];
+        const m=new Map();
+        for(const a of arts){
+          const u=a.url;
+          const img=a.urlToImage || a.image || a.image_url || a.thumbnail || "";
+          if(u && img) m.set(u,img);
+        }
+        return m;
+      }catch(e){ return new Map(); }
+    }
+
+    function renderKPI(total,pos,neg,neu,mix,unk){
+      $("k_total").textContent=total;
+      $("k_pos").textContent=pos;
+      $("k_neg").textContent=neg;
+      $("k_neu").textContent=neu;
+      $("k_mix").textContent=mix;
+      $("k_unk").textContent=unk;
+      $("items").textContent=`items: ${total}`;
+    }
+    function renderBalance(pos,neg){
+      const denom=Math.max(1,pos+neg);
+      const pct=clamp(Math.round((pos/denom)*100),0,100);
+      $("balance_bar").style.width=pct+"%";
+    }
+
+    function makeThumb(url){
+      const box=document.createElement("div");
+      box.className="thumb";
+      if(url){
+        const img=document.createElement("img");
+        img.loading="lazy";
+        img.referrerPolicy="no-referrer";
+        img.src=url;
+        img.onerror=()=>{ box.textContent="no image"; };
+        box.appendChild(img);
+      }else{
+        box.textContent="no image";
+      }
+      return box;
+    }
+
+    function makeItem(it,imgUrl){
+      const label=normLabel(it.label || it.sentiment || it.class || it.bucket);
+      const srcName=pickSourceName(it.source);
+
+      const row=document.createElement("div");
+      row.className="item";
+      row.appendChild(makeThumb(imgUrl));
+
+      const right=document.createElement("div");
+
+      const head=document.createElement("div");
+      head.className="it-head";
+
+      const t=document.createElement("h3");
+      t.className="it-title";
+      t.textContent=(it.title || "(no title)");
+
+      const tags=document.createElement("div");
+      tags.className="tags";
+
+      const tg1=document.createElement("span");
+      tg1.className="tag "+tagClass(label);
+      tg1.textContent=label;
+
+      const tg2=document.createElement("span");
+      tg2.className="tag";
+      tg2.textContent=srcName || "source";
+
+      const tg3=document.createElement("span");
+      tg3.className="tag";
+      tg3.textContent=(it.method || "method").toString();
+
+      tags.appendChild(tg1); tags.appendChild(tg2); tags.appendChild(tg3);
+
+      head.appendChild(t);
+      head.appendChild(tags);
+
+      const desc=document.createElement("p");
+      desc.className="it-desc";
+      desc.textContent=(it.description || it.summary || "");
+
+      right.appendChild(head);
+      right.appendChild(desc);
+
+      if(it.url){
+        const small=document.createElement("div");
+        small.className="small";
+        const link=document.createElement("a");
+        link.href=it.url;
+        link.target="_blank";
+        link.rel="noopener";
+        link.textContent="Open article";
+        link.style.textDecoration="none";
+        link.style.borderBottom="1px dotted rgba(105,169,255,.55)";
+        link.style.color="rgba(229,231,235,.92)";
+        small.appendChild(link);
+        right.appendChild(small);
+      }
+
+      row.appendChild(right);
+      return row;
+    }
+
+    function applyQueryAndRender(items,imageMap){
+      const q=($("q").value||"").trim().toLowerCase();
+      const fl=$("filter_label").value;
+      const sm=$("sort_mode").value;
+
+      let arr=items.slice();
+
+      if(fl!=="all"){
+        arr=arr.filter(x=>normLabel(x.label||x.sentiment||x.class||x.bucket)===fl);
+      }
+      if(q){
+        arr=arr.filter(x=>{
+          const s=(x.title||"")+" "+pickSourceName(x.source)+" "+(x.description||"");
+          return s.toLowerCase().includes(q);
+        });
+      }
+      if(sm==="score") arr.sort((a,b)=>scoreOf(b)-scoreOf(a));
+      else if(sm==="az") arr.sort((a,b)=>(a.title||"").localeCompare(b.title||""));
+      else if(sm==="newest") arr.sort((a,b)=>(b.publishedAt||"").localeCompare(a.publishedAt||""));
+      else if(sm==="oldest") arr.sort((a,b)=>(a.publishedAt||"").localeCompare(b.publishedAt||""));
+
+      const box=$("list");
+      box.innerHTML="";
+      for(const it of arr){
+        const u=it.url;
+        const img=it.urlToImage || it.image || it.image_url || it.thumbnail || (u ? (imageMap.get(u)||"") : "");
+        box.appendChild(makeItem(it,img));
+      }
+    }
+
+    // SAFE graph: draw something even if no trend data exists
+    function drawSafeTrend(canvas, counts){
+      const ctx=canvas.getContext("2d");
+      const w=canvas.width, h=canvas.height;
+
+      // background
+      ctx.clearRect(0,0,w,h);
+      ctx.fillStyle="rgba(0,0,0,0)";
+      ctx.fillRect(0,0,w,h);
+
+      // grid
+      ctx.strokeStyle="rgba(255,255,255,.08)";
+      ctx.lineWidth=1;
+      const pad=44;
+      for(let i=0;i<=5;i++){
+        const y=pad + (h-pad*2)*(i/5);
+        ctx.beginPath();
+        ctx.moveTo(pad,y);
+        ctx.lineTo(w-pad,y);
+        ctx.stroke();
+      }
+      for(let i=0;i<=8;i++){
+        const x=pad + (w-pad*2)*(i/8);
+        ctx.beginPath();
+        ctx.moveTo(x,pad);
+        ctx.lineTo(x,h-pad);
+        ctx.stroke();
+      }
+
+      // axis labels
+      ctx.fillStyle="rgba(229,231,235,.72)";
+      ctx.font="700 18px ui-sans-serif, system-ui";
+      ctx.fillText("Trend (safe placeholder)", pad, pad-14);
+
+      // make 3 lines based on counts so it changes day by day
+      const total=Math.max(1, counts.total);
+      const p=counts.pos/total;
+      const n=counts.neg/total;
+      const u=(counts.unk)/total;
+
+      function line(color, seed){
+        ctx.strokeStyle=color;
+        ctx.lineWidth=3;
+        ctx.beginPath();
+        for(let i=0;i<=28;i++){
+          const t=i/28;
+          // wave with bias from share
+          const base = 0.5 + (seed-0.5)*0.35;
+          const yv = base + Math.sin((t*6.28*2) + seed*3.7)*0.08 + Math.sin((t*6.28*6) + seed*1.3)*0.03;
+          const yy = pad + (h-pad*2) * (1 - clamp(yv,0.1,0.9));
+          const xx = pad + (w-pad*2) * t;
+          if(i===0) ctx.moveTo(xx,yy);
+          else ctx.lineTo(xx,yy);
+        }
+        ctx.stroke();
+      }
+
+      line("rgba(45,212,191,.95)", p); // positive-ish
+      line("rgba(251,113,133,.92)", n); // negative-ish
+      line("rgba(105,169,255,.92)", u); // unknown-ish
+    }
+
+    function openJSON(){ window.open(JSON_PATH,"_blank","noopener"); }
+
+    async function main(){
+      $("open_json").addEventListener("click", openJSON);
+
+      const imageMap = await buildImageMap();
+
+      const r=await fetch(JSON_PATH,{cache:"no-store"});
+      if(!r.ok) return;
+
+      const j=await r.json();
+      let items=j.items || j.articles || j.events || [];
+      if(!Array.isArray(items)) items=[];
+
+      $("as_of").textContent=`as_of: ${j.as_of || j.date || "--"}`;
+      $("source").textContent=`source: ${j.source || j.raw_file || JSON_PATH}`;
+      const gen=j.generated_at || "";
+      const fetched=j.news_fetched_at || j.fetched_at || "";
+      $("meta_line").textContent=`generated_at=${gen || "--"} / news_fetched_at=${fetched || "--"}`;
+
+      let pos=0,neg=0,neu=0,mix=0,unk=0;
+      for(const it of items){
+        const label=normLabel(it.label || it.sentiment || it.class || it.bucket);
+        if(label==="positive") pos++;
+        else if(label==="negative") neg++;
+        else if(label==="neutral") neu++;
+        else if(label==="mixed") mix++;
+        else unk++;
+      }
+
+      const total=items.length;
+      renderKPI(total,pos,neg,neu,mix,unk);
+      renderBalance(pos,neg);
+
+      // graph (safe)
+      drawSafeTrend($("trend_canvas"), {total, pos, neg, neu, mix, unk});
+
+      const rerender=()=>applyQueryAndRender(items,imageMap);
+      $("q").addEventListener("input", rerender);
+      $("filter_label").addEventListener("change", rerender);
+      $("sort_mode").addEventListener("change", rerender);
+      rerender();
+    }
+
+    main().catch(()=>{});
+  </script>
+</main>
+
   <div class="page">
     <h1>Sentiment</h1>
     <p>Unified layout (header injected by JS).</p>
