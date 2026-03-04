@@ -1,5 +1,5 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="ja">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -8,210 +8,159 @@
   <script src="/static/_shared_nav.js?v=20260303v2"></script>
 </head>
 <body>
-<main class="page">
-  <h1>Overlay</h1>
-  <div class="muted2 small" style="margin-top:-6px">FX Overlay / Decision UI (safe mode).</div>
+<main class="gp-main">
+  <div class="page gp-page gp-page--sentiment">
+    <section class="panel">
+      <div class="h1">Overlay</div>
+      <p class="sub">FX Overlay / Decision UI (safe mode).</p>
 
-  <section class="card" style="margin-top:14px">
-    <div class="card-title" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <span class="mono small muted2">Pair</span>
-        <select id="pairSel" class="pill" style="min-width:160px">
-          <option value="auto">auto</option>
-          <option value="jpythb" selected>JPYTHB</option>
-          <option value="usdjpy">USDJPY</option>
-          <option value="usdthb">USDTHB</option>
-          <option value="multi">MULTI</option>
-        </select>
+      <div class="grid2" style="margin-top:12px;">
+        <div class="card">
+          <div class="sectionTitle">
+            <h2>Controls</h2>
+            <span id="statePill" class="hint">loading…</span>
+          </div>
+
+          <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:10px;">
+            <div style="min-width:240px;">
+              <div class="hint" style="margin-bottom:6px;">Pair</div>
+              <select id="pair" class="select" style="width:240px;">
+                <option value="JPYTHB">JPYTHB</option>
+                <option value="USDJPY">USDJPY</option>
+                <option value="USDTHB">USDTHB</option>
+                <option value="MULTI">MULTI</option>
+              </select>
+            </div>
+
+            <div class="pillrow" style="margin-top:18px;">
+              <a id="btnOpenDecision" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open decision JSON</a>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;">
+            <div class="hint">Decision</div>
+            <div id="decision" class="mono">—</div>
+          </div>
+
+          <div style="margin-top:10px;">
+            <div class="hint">Reason</div>
+            <div id="reason" class="mono small">—</div>
+          </div>
+
+          <div class="pillrow" style="margin-top:12px;">
+            <span id="srcDecision" class="pill">source: --</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="sectionTitle">
+            <h2>FX overlay</h2>
+            <span class="hint">image preview</span>
+          </div>
+
+          <div class="pillrow" style="margin-top:10px;">
+            <a id="btnOpenImage" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open image</a>
+            <span id="srcImage" class="pill">source: --</span>
+          </div>
+
+          <div class="imgFrame" style="margin-top:10px;">
+            <img id="img" alt="FX overlay" />
+          </div>
+        </div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <a id="btnOpenDecision" class="pill ghost" target="_blank" rel="noopener">Open decision JSON</a>
-      </div>
-    </div>
 
-    <div class="kv" style="margin-top:10px">
-      <div class="mono small muted2">Decision</div>
-      <div id="decisionText" class="mono">—</div>
-      <div class="mono small muted2" style="margin-top:10px">Reason</div>
-      <div id="reasonText" class="mono">—</div>
-    </div>
-
-    <div class="kv" style="margin-top:14px">
-      <div class="mono small muted2">FX overlay</div>
-      <div id="imgMsg" class="mono">loading…</div>
-      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <a id="btnOpenImage" class="pill ghost" target="_blank" rel="noopener" style="display:none">Open image</a>
-      </div>
-      <div style="margin-top:10px">
-        <img id="overlayImg" alt="FX overlay" style="max-width:100%;border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.35);display:none" />
-      </div>
-    </div>
-
-    <details style="margin-top:14px">
-      <summary class="mono small">raw (debug)</summary>
-      <pre id="dbg" class="mono small" style="white-space:pre-wrap;word-break:break-word;margin-top:10px"></pre>
-    </details>
-
-    <div class="mono small muted2" style="margin-top:12px">
-      Notes: Unified layout (header injected by JS). If something is missing, check that FX artifacts are published under <span class="mono">/data/fx/</span>.
-    </div>
-  </section>
+    </section>
+  </div>
 </main>
 
 <script>
-(() => {
-  const q = (id) => document.getElementById(id);
+(function(){
+  "use strict";
 
-  // --- safe setters (never throw) ---
-  const setText = (id, txt) => { const el = q(id); if (el) el.textContent = (txt ?? ""); };
-  const setHtml = (id, html) => { const el = q(id); if (el) el.innerHTML = (html ?? ""); };
+  function safeText(x){ return (x==null) ? "" : String(x); }
+  function setText(id, v){ var el=document.getElementById(id); if(el) el.textContent = safeText(v); }
+  function setHref(id, v){ var el=document.getElementById(id); if(el) el.href = v || "#"; }
+  function setImg(id, v){ var el=document.getElementById(id); if(el) el.src = v || ""; }
 
-  const pairSel = q("pairSel");
-  const img = q("overlayImg");
-  const imgMsg = q("imgMsg");
-  const btnOpenImage = q("btnOpenImage");
-  const btnOpenDecision = q("btnOpenDecision");
-  const dbg = q("dbg");
+  async function fetchJson(url){
+    const r = await fetch(url, {cache:"no-store"});
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    return await r.json();
+  }
 
-  // decision JSON candidates (prefer your current pipeline path)
-  const decisionURLs = [
-    "/data/fx/fx_decision_latest.json",
-    "/data/fx/fx_decision_latest_jpythb.json",
-    "/data/fx/fx_decision_latest_usdjpy.json",
-    "/data/fx/fx_decision_latest_usdthb.json",
-    "/analysis/fx/fx_decision_latest.json" // legacy fallback (ok if 404)
-  ];
-
-  // overlay image candidates per pair (ordered by "most likely to exist")
-  const overlayCandidates = {
-  "auto": [
-    "/data/fx/fx_overlay_latest_jpythb.png",
-    "/data/fx/fx_overlay_latest_usdjpy.png",
-    "/data/fx/fx_overlay_latest_usdthb.png",
-    "/data/fx/fx_overlay_multi_latest.png",
-    "/data/fx/fx_overlay_latest.png",
-    "/analysis/fx/fx_overlay_latest.png"
-  ],
-    "multi": [
-      "/data/fx/fx_overlay_multi_latest.png",
-      "/data/fx/fx_multi_overlay.png",
-      "/data/fx/fx_multi_overlay_latest.png",
-      "/analysis/fx/fx_overlay_multi_latest.png"
-    ],
-    "jpythb": [
-      "/data/fx/fx_overlay_latest_jpythb.png",
-      "/data/fx/fx_jpy_thb_overlay.png",
-      "/data/fx/jpy_thb_remittance_overlay.png",
-      "/analysis/fx/fx_overlay_latest_jpythb.png"
-    ],
-    "usdjpy": [
-      "/data/fx/fx_overlay_latest_usdjpy.png",
-      "/data/fx/fx_jpy_usd_overlay.png",
-      "/analysis/fx/fx_overlay_latest_usdjpy.png"
-    ],
-    "usdthb": [
-      "/data/fx/fx_overlay_latest_usdthb.png",
-      "/data/fx/fx_multi_usd_thb_overlay.png",
-      "/analysis/fx/fx_overlay_latest_usdthb.png"
-    ],
-    "auto": [
-      "/data/fx/fx_overlay_multi_latest.png",
-      "/data/fx/fx_multi_overlay.png",
-      "/data/fx/fx_overlay_latest_jpythb.png",
-      "/data/fx/fx_jpy_thb_overlay.png",
-      "/data/fx/fx_overlay_latest_usdjpy.png",
-      "/data/fx/fx_jpy_usd_overlay.png",
-      "/data/fx/fx_overlay_latest_usdthb.png",
-      "/data/fx/fx_multi_usd_thb_overlay.png",
-      "/analysis/fx/fx_overlay_multi_latest.png"
-    ]
+  const MAP = {
+    JPYTHB: {
+      img: "/data/fx/fx_overlay_latest_jpythb.png",
+      decision: ["/data/fx/fx_decision_latest_jpythb.json", "/data/fx/fx_overlay_latest.json"]
+    },
+    USDJPY: {
+      img: "/data/fx/fx_overlay_latest_usdjpy.png",
+      decision: ["/data/fx/fx_decision_latest_usdjpy.json", "/data/fx/fx_overlay_latest.json"]
+    },
+    USDTHB: {
+      img: "/data/fx/fx_overlay_latest_usdthb.png",
+      decision: ["/data/fx/fx_decision_latest_usdthb.json", "/data/fx/fx_overlay_latest.json"]
+    },
+    MULTI: {
+      img: "/data/fx/fx_overlay_multi_latest.png",
+      decision: ["/data/fx/fx_decision_latest_multi.json", "/data/fx/fx_overlay_latest.json"]
+    }
   };
 
-  const headOK = async (url) => {
-    try {
-      const r = await fetch(url, { method: "HEAD", cache: "no-store" });
-      return r && r.ok;
-    } catch (e) { return false; }
-  };
-
-  const firstOK = async (urls) => {
-    for (const u of urls) {
-      // allow legacy fallbacks without spamming red: skip obvious 404 roots
-      const ok = await headOK(u);
-      if (ok) return u;
+  async function pickFirstOk(urls){
+    for(const u of urls){
+      try{
+        const j = await fetchJson(u);
+        return {url:u, json:j};
+      }catch(_e){}
     }
     return null;
-  };
+  }
 
-  const loadDecision = async () => {
-    const u = await firstOK(decisionURLs);
-    if (!u) {
-      setText("decisionText", "—");
-      setText("reasonText", "—");
-      if (btnOpenDecision) btnOpenDecision.style.display = "none";
-      return { ok:false, url:null, data:null };
+  function extractDecision(obj){
+    if(!obj) return {decision:"—", reason:"—"};
+    // いろんな形式に耐える
+    const d = obj.decision || obj.action || obj.status || obj.recommendation || "—";
+    const r = obj.reason || obj.rationale || obj.message || obj.note || "";
+    return {decision: safeText(d), reason: safeText(r) || "—"};
+  }
+
+  async function loadPair(pair){
+    const conf = MAP[pair] || MAP.JPYTHB;
+
+    // image
+    const imgUrl = conf.img + "?t=" + Date.now();
+    setImg("img", imgUrl);
+    setHref("btnOpenImage", imgUrl);
+    setText("srcImage", "source: " + conf.img);
+
+    // decision
+    const picked = await pickFirstOk(conf.decision);
+    if(picked){
+      const ex = extractDecision(picked.json);
+      setText("decision", ex.decision);
+      setText("reason", ex.reason);
+      setHref("btnOpenDecision", picked.url);
+      setText("srcDecision", "source: " + picked.url);
+      setText("statePill", "OK");
+    }else{
+      setText("decision", "—");
+      setText("reason", "—");
+      setHref("btnOpenDecision", "#");
+      setText("srcDecision", "source: missing");
+      setText("statePill", "missing");
     }
-    try {
-      const r = await fetch(u, { cache:"no-store" });
-      const d = await r.json();
-      const decision = d.decision ?? d.action ?? d.status ?? "—";
-      const reason = d.reason ?? d.note ?? d.message ?? "—";
-      setText("decisionText", decision);
-      setText("reasonText", reason);
-      if (btnOpenDecision) { btnOpenDecision.href = u; btnOpenDecision.style.display = ""; }
-      return { ok:true, url:u, data:d };
-    } catch (e) {
-      setText("decisionText", "ERROR (safe): decision json parse failed");
-      setText("reasonText", String(e));
-      if (btnOpenDecision) btnOpenDecision.style.display = "none";
-      return { ok:false, url:u, data:null };
-    }
-  };
+  }
 
-  const loadOverlay = async () => {
-    const key = pairSel ? pairSel.value : "auto";
-    const urls = overlayCandidates[key] || overlayCandidates["auto"];
-    const u = await firstOK(urls);
-    if (!u) {
-      if (img) img.style.display = "none";
-      if (btnOpenImage) btnOpenImage.style.display = "none";
-      if (imgMsg) imgMsg.textContent = "ERROR (safe): overlay image not found";
-      return { ok:false, url:null };
-    }
+  const sel = document.getElementById("pair");
+  if(sel){
+    sel.addEventListener("change", function(){
+      loadPair(sel.value);
+    });
+  }
 
-    // show
-    if (imgMsg) imgMsg.textContent = "";
-    if (img) {
-      img.onerror = () => {
-        img.style.display = "none";
-        if (btnOpenImage) btnOpenImage.style.display = "none";
-        if (imgMsg) imgMsg.textContent = "ERROR (safe): overlay image load failed";
-      };
-      img.onload = () => { img.style.display = ""; };
-      img.src = u + (u.includes("?") ? "&" : "?") + "t=" + Date.now();
-    }
-    if (btnOpenImage) { btnOpenImage.href = u; btnOpenImage.style.display = ""; }
-    return { ok:true, url:u };
-  };
+  loadPair("JPYTHB");
 
-  const renderDebug = (decisionRes, overlayRes) => {
-    const lines = [];
-    lines.push("pair=" + (pairSel ? pairSel.value : "(null)"));
-    lines.push("decision_url=" + (decisionRes?.url ?? "null"));
-    lines.push("overlay_url=" + (overlayRes?.url ?? "null"));
-    lines.push("");
-    if (decisionRes?.data) lines.push(JSON.stringify(decisionRes.data, null, 2));
-    setText("dbg", lines.join("\n"));
-  };
-
-  const refresh = async () => {
-    const d = await loadDecision();
-    const o = await loadOverlay();
-    renderDebug(d, o);
-  };
-
-  if (pairSel) pairSel.addEventListener("change", refresh);
-  refresh();
 })();
 </script>
 </body>

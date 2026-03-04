@@ -1,16 +1,15 @@
-﻿
-<!DOCTYPE html>
-<html>
+﻿<!DOCTYPE html>
+<html lang="ja">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Digest - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260303v2">
+  <link rel="stylesheet" href="/static/app.css?v=20260303v2" />
   <script src="/static/_shared_nav.js?v=20260303v2"></script>
 </head>
 <body>
-<main>
-<div class="page">
-
+<main class="gp-main">
+  <div class="page gp-page gp-page--sentiment">
     <section class="panel">
       <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
         <div>
@@ -25,18 +24,18 @@
         </div>
       </div>
 
-      <div class="row" style="margin-top: 12px;">
-        <div class="summaryBox">
+      <div class="grid2" style="margin-top:12px;">
+        <div class="card">
           <div class="sectionTitle">
             <h2>Summary</h2>
-            <p id="sumHint" class="hint">loading窶ｦ</p>
+            <span id="sumHint" class="hint">loading…</span>
           </div>
 
-          <pre id="sumText" class="summaryText">loading窶ｦ</pre>
+          <pre id="sumText" class="summaryText">loading…</pre>
 
           <div class="toolbar">
             <div class="tool-left">
-              <input id="q" class="search" type="search" placeholder="Search title/source窶ｦ" />
+              <input id="q" class="search" type="search" placeholder="Search title/source…" />
               <select id="sentFilter" class="select">
                 <option value="all">All</option>
                 <option value="positive">Positive</option>
@@ -45,149 +44,81 @@
                 <option value="mixed">Mixed</option>
                 <option value="unknown">Unknown</option>
               </select>
-            </div>
-
-            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-              <select id="sort" class="select">
+              <select id="sortKey" class="select">
                 <option value="score">Top (score)</option>
-                <option value="newest">Newest (as_of)</option>
-                <option value="az">Title (A竊短)</option>
+                <option value="risk">Risk</option>
+                <option value="positive">Positive</option>
+                <option value="uncertainty">Uncertainty</option>
+                <option value="net">Net</option>
               </select>
-
-              <button id="btnToggleSummary" class="btn" type="button">Collapse summary</button>
+              <button id="btnCollapse" class="btn" type="button">Collapse summary</button>
             </div>
-          </div>
-
-          <div class="summaryActions">
-            <span id="sumMeta" class="muted">--</span>
           </div>
         </div>
 
-        <div class="summaryBox">
+        <div class="card">
           <div class="sectionTitle">
             <h2>KPIs</h2>
-            <p id="kpiHint" class="hint">loading窶ｦ</p>
+            <span id="kpiHint" class="hint">loading…</span>
           </div>
-
-          <div class="kpis">
-            <div class="kpi">
-              <div id="kTotal" class="n">--</div>
-              <div class="l">Total articles</div>
-            </div>
-            <div class="kpi">
-              <div id="kPos" class="n">--</div>
-              <div class="l">Positive</div>
-            </div>
-            <div class="kpi">
-              <div id="kNeg" class="n">--</div>
-              <div class="l">Negative</div>
-            </div>
-            <div class="kpi">
-              <div id="kNeu" class="n">--</div>
-              <div class="l">Neutral</div>
-            </div>
-            <div class="kpi">
-              <div id="kMix" class="n">--</div>
-              <div class="l">Mixed</div>
-            </div>
-            <div class="kpi">
-              <div id="kUnk" class="n">--</div>
-              <div class="l">Unknown</div>
-            </div>
-          </div>
-
-          <div class="balance">
-            <p class="label">Sentiment balance</p>
-            <div class="bar">
-              <div style="display:flex; width:100%;">
-                <div id="bPos" class="seg-pos" style="width:0%"></div>
-                <div id="bNeg" class="seg-neg" style="width:0%"></div>
-                <div id="bNeu" class="seg-neu" style="width:0%"></div>
-                <div id="bMix" class="seg-mix" style="width:0%"></div>
-                <div id="bUnk" class="seg-unk" style="width:0%"></div>
-              </div>
-            </div>
-            <p id="balanceNote" class="muted" style="margin:8px 0 0 0;">--</p>
-          </div>
+          <div id="kpis" class="mono small">loading…</div>
         </div>
       </div>
-    </section>
 
-    <section class="panel">
-      <div class="sectionTitle">
-        <h2>Top highlights</h2>
-        <p id="listHint" class="hint">--</p>
+      <div class="card" style="margin-top:12px;">
+        <div class="sectionTitle">
+          <h2>Top highlights</h2>
+          <span id="listHint" class="hint">loading…</span>
+        </div>
+        <div id="list" class="digestList">loading…</div>
       </div>
 
-      <div id="list" class="list"></div>
-
-      <details style="margin-top:12px;">
-        <summary class="btn" style="display:inline-flex;">raw (debug)</summary>
-        <pre id="dbg" class="debug">{}</pre>
-      </details>
     </section>
-
   </div>
+</main>
 
 <script>
 (function(){
   "use strict";
 
-  function el(id){ return document.getElementById(id); }
+  function safeText(x){ return (x==null) ? "" : String(x); }
+  function escHtml(s){
+    s = safeText(s);
+    return s.replace(/[&<>"']/g, function(ch){
+      return ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" })[ch];
+    });
+  }
 
-  function safeText(x){
-    try{
-      if(x === null || x === undefined) return "";
-      if(typeof x === "string") return x;
-      return String(x);
-    }catch(_e){
-      return "";
+  async function fetchJson(url){
+    const r = await fetch(url, {cache:"no-store"});
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    return await r.json();
+  }
+
+  async function pickFirstOk(urls){
+    for(const u of urls){
+      try{
+        const j = await fetchJson(u);
+        return {url:u, json:j};
+      }catch(_e){}
     }
+    return null;
   }
 
-  function safeJson(obj){
-    try{
-      return JSON.stringify(obj, null, 2);
-    }catch(_e){
-      return "{}";
-    }
-  }
+  const SUM_CANDIDATES = [
+    "/data/world_politics/analysis/daily_summary_latest.json",
+    "/data/digest/daily_summary_latest.json"
+  ];
 
-  function setText(node, txt){
-    if(!node) return;
-    node.textContent = (txt === null || txt === undefined) ? "" : String(txt);
-  }
+  const NEWS_CANDIDATES = [
+    "/data/world_politics/analysis/daily_news_latest.json",
+    "/data/digest/daily_news_latest.json"
+  ];
 
-  function fetchJson(url){
-    return fetch(url, { cache: "no-store" })
-      .then(function(r){
-        if(!r.ok) throw new Error("HTTP " + r.status);
-        return r.json();
-      });
-  }
-
-  function firstOk(urls){
-    var tried = [];
-    var i = 0;
-    function step(){
-      if(i >= urls.length) return Promise.resolve({ ok:false, tried: tried });
-      var u = urls[i++];
-      tried.push(u);
-      return fetchJson(u).then(function(j){
-        return { ok:true, url:u, json:j, tried: tried };
-      }).catch(function(){
-        return step();
-      });
-    }
-    return step();
-  }
-
-  function pickAsOf(root){
-    if(!root) return "";
-    var v = root.as_of || root.date || root.generated_at || root.fetched_at || "";
-    if(!v) return "";
-    return String(v).slice(0, 10);
-  }
+  const SEN_CANDIDATES = [
+    "/data/world_politics/analysis/sentiment_latest.json",
+    "/data/digest/sentiment_latest.json"
+  ];
 
   function pickSummaryText(sumRoot){
     if(!sumRoot) return "";
@@ -199,7 +130,7 @@
         var lines = sumRoot.yesterday_summary.titles.slice(0, 30).map(function(t){
           return "- " + safeText(t);
         });
-        return "Yesterday titles:\\n" + lines.join("\n");
+        return "Yesterday titles:\\n" + lines.join("\\n");
       }
     }
     if(typeof sumRoot.summary === "string" && sumRoot.summary.trim()) return sumRoot.summary.trim();
@@ -224,381 +155,230 @@
         else if(typeof a.source.id === "string") srcName = a.source.id;
       }
     }catch(_e){}
+    var title = safeText(a.title || a.headline || "");
+    var url = safeText(a.url || "");
+    var desc = safeText(a.description || a.summary || "");
     return {
-      url: safeText(a.url),
-      title: safeText(a.title || a.headline || ""),
-      description: safeText(a.description || a.summary || a.excerpt || ""),
-      urlToImage: safeText(a.urlToImage || a.image || a.image_url || ""),
-      source: safeText(srcName || a.publisher || a.site || ""),
-      publishedAt: safeText(a.publishedAt || a.published_at || a.date || ""),
-      risk: (typeof a.risk === "number") ? a.risk : null,
-      positive: (typeof a.positive === "number") ? a.positive : null,
-      uncertainty: (typeof a.uncertainty === "number") ? a.uncertainty : null,
-      net: (typeof a.net === "number") ? a.net : null,
-      method: safeText(a.method || "")
+      title: title,
+      url: url,
+      source: srcName || safeText(a.publisher || a.site || ""),
+      score: (typeof a.score==="number") ? a.score : (typeof a.importance==="number" ? a.importance : 0),
+      risk: (typeof a.risk==="number") ? a.risk : null,
+      positive: (typeof a.positive==="number") ? a.positive : null,
+      uncertainty: (typeof a.uncertainty==="number") ? a.uncertainty : null,
+      net: (typeof a.net==="number") ? a.net : null,
+      sentiment: safeText(a.sentiment || a.label || ""),
+      description: desc
     };
   }
 
-  function keyOf(a){
-    if(a.url) return a.url;
-    return (a.title || "") + "||" + (a.source || "");
-  }
-
-  function classify(a){
-    var u = (typeof a.uncertainty === "number") ? a.uncertainty : null;
-    if(u !== null && u >= 0.40) return "mixed";
-
-    var net = (typeof a.net === "number") ? a.net : null;
-    if(net !== null){
-      if(net >= 0.18) return "positive";
-      if(net <= -0.18) return "negative";
-      return "neutral";
+  function metricPill(val, kind){
+    if(typeof val !== "number") return "<span class='mp mp--na'>--</span>";
+    var cls = "mp";
+    if(kind==="risk"){
+      cls += (val>=0.35) ? " mp--riskHi" : (val>=0.15) ? " mp--riskMd" : " mp--riskLo";
+    }else if(kind==="positive"){
+      cls += (val>=0.20) ? " mp--posHi" : (val>=0.05) ? " mp--posMd" : " mp--posLo";
+    }else if(kind==="uncertainty"){
+      cls += (val>=0.30) ? " mp--uncHi" : (val>=0.18) ? " mp--uncMd" : " mp--uncLo";
+    }else if(kind==="net"){
+      cls += (val<=-0.20) ? " mp--netNeg" : (val>=0.20) ? " mp--netPos" : " mp--netMid";
     }
-    var p = (typeof a.positive === "number") ? a.positive : null;
-    var r = (typeof a.risk === "number") ? a.risk : null;
-    if(p !== null || r !== null){
-      var pv = (p !== null) ? p : 0;
-      var rv = (r !== null) ? r : 0;
-      var d = pv - rv;
-      if(d >= 0.18) return "positive";
-      if(d <= -0.18) return "negative";
-      return "neutral";
+    return "<span class='"+cls+"'>" + val.toFixed(3) + "</span>";
+  }
+
+  function computeKpis(items){
+    var total = items.length;
+    var pos=0, neg=0, neu=0, mix=0, unk=0;
+    var netSum=0, netN=0;
+    for(const it of items){
+      var s = (it.sentiment||"").toLowerCase();
+      if(s==="positive") pos++;
+      else if(s==="negative") neg++;
+      else if(s==="neutral") neu++;
+      else if(s==="mixed") mix++;
+      else unk++;
+      if(typeof it.net==="number"){ netSum += it.net; netN++; }
     }
-    return "unknown";
+    var avgNet = netN ? (netSum/netN) : 0;
+    return {
+      total: total,
+      pos: pos, neg: neg, neu: neu, mix: mix, unk: unk,
+      avgNet: avgNet
+    };
   }
 
-  function score(a){
-    var c = a._class || "unknown";
-    var base = 0;
-    if(c === "positive" || c === "negative") base += 1.0;
-    if(c === "mixed") base += 0.4;
-    if(c === "unknown") base -= 0.2;
-
-    var net = (typeof a.net === "number") ? Math.abs(a.net) : 0;
-    var risk = (typeof a.risk === "number") ? a.risk : 0;
-    var pos = (typeof a.positive === "number") ? a.positive : 0;
-
-    return base + net + (risk * 0.7) + (pos * 0.3);
+  function renderKpis(k){
+    return [
+      "total_articles",
+      k.total,
+      "",
+      "Positive", k.pos,
+      "Negative", k.neg,
+      "Neutral",  k.neu,
+      "Mixed",    k.mix,
+      "Unknown",  k.unk,
+      "",
+      "Sentiment balance",
+      "pos=" + k.pos + " / neg=" + k.neg + " / neu=" + k.neu + " / mix=" + k.mix + " / unk=" + k.unk,
+      "avg_net=" + k.avgNet.toFixed(3)
+    ].join("\\n");
   }
 
-  function pct(n, total){
-    if(!total || total <= 0) return 0;
-    return Math.max(0, Math.min(100, Math.round((n / total) * 100)));
+  function applyFilters(list, q, sent){
+    q = (q||"").trim().toLowerCase();
+    sent = (sent||"all").toLowerCase();
+    return list.filter(function(it){
+      if(q){
+        var hay = (it.title + " " + it.source).toLowerCase();
+        if(hay.indexOf(q)===-1) return false;
+      }
+      if(sent!=="all"){
+        if((it.sentiment||"").toLowerCase() !== sent) return false;
+      }
+      return true;
+    });
   }
 
-  function renderBar(counts){
-    var total = counts.total || 0;
-    el("bPos").style.width = pct(counts.positive, total) + "%";
-    el("bNeg").style.width = pct(counts.negative, total) + "%";
-    el("bNeu").style.width = pct(counts.neutral, total) + "%";
-    el("bMix").style.width = pct(counts.mixed, total) + "%";
-    el("bUnk").style.width = pct(counts.unknown, total) + "%";
-    setText(el("balanceNote"),
-      "pos " + counts.positive + " / neg " + counts.negative + " / neu " + counts.neutral +
-      " / mix " + counts.mixed + " / unk " + counts.unknown
-    );
+  function sortItems(list, key){
+    key = key || "score";
+    var arr = list.slice();
+    arr.sort(function(a,b){
+      function num(x){ return (typeof x==="number") ? x : -999999; }
+      if(key==="risk") return num(b.risk)-num(a.risk);
+      if(key==="positive") return num(b.positive)-num(a.positive);
+      if(key==="uncertainty") return num(b.uncertainty)-num(a.uncertainty);
+      if(key==="net") return num(b.net)-num(a.net);
+      return num(b.score)-num(a.score);
+    });
+    return arr;
   }
 
   function renderList(items){
-    var host = el("list");
-    host.innerHTML = "";
-
-    items.forEach(function(a){
-      var wrap = document.createElement("div");
-      wrap.className = "card";
-
-      var th = document.createElement("div");
-      th.className = "thumb";
-      if(a.urlToImage){
-        var img = document.createElement("img");
-        img.loading = "lazy";
-        img.src = a.urlToImage;
-        img.alt = "";
-        img.onerror = function(){
-          th.textContent = "no image";
-        };
-        th.appendChild(img);
-      }else{
-        th.textContent = "no image";
-      }
-
-      var body = document.createElement("div");
-
-      var t = document.createElement("div");
-      t.className = "title";
-      t.textContent = a.title || "(no title)";
-      body.appendChild(t);
-
-      var d = document.createElement("div");
-      d.className = "desc";
-      d.textContent = a.description || "";
-      body.appendChild(d);
-
-      var meta = document.createElement("div");
-      meta.className = "metaRow";
-
-      var cls = a._class || "unknown";
-      var tag1 = document.createElement("span");
-      tag1.className = "tag";
-      tag1.textContent = cls;
-      meta.appendChild(tag1);
-
-      var tag2 = document.createElement("span");
-      tag2.className = "tag";
-      tag2.textContent = a.source || "unknown";
-      meta.appendChild(tag2);
-
-      if(a.method){
-        var tag3 = document.createElement("span");
-        tag3.className = "tag";
-        tag3.innerHTML = "<small>method</small> " + a.method.replace(/</g,"&lt;").replace(/>/g,"&gt;");
-        meta.appendChild(tag3);
-      }
-
-      body.appendChild(meta);
-
-      wrap.appendChild(th);
-      wrap.appendChild(body);
-
-      wrap.addEventListener("click", function(){
-        if(a.url) window.open(a.url, "_blank", "noopener,noreferrer");
-      });
-
-      host.appendChild(wrap);
-    });
+    if(!items.length) return "<div class='hint'>no items</div>";
+    return items.slice(0, 60).map(function(it){
+      var title = escHtml(it.title || "(no title)");
+      var url = escHtml(it.url || "#");
+      var src = escHtml(it.source || "");
+      var desc = escHtml(it.description || "");
+      return (
+        "<div class='digestRow'>" +
+          "<div class='digestMain'>" +
+            "<div class='digestTitle'><a class='a-soft' href='"+url+"' target='_blank' rel='noopener noreferrer'>"+title+"</a></div>" +
+            "<div class='digestMeta mono small'>" + src + "</div>" +
+            (desc ? ("<div class='digestDesc'>" + desc + "</div>") : "") +
+          "</div>" +
+          "<div class='digestMetrics'>" +
+            metricPill(it.risk, "risk") +
+            metricPill(it.positive, "positive") +
+            metricPill(it.uncertainty, "uncertainty") +
+            metricPill(it.net, "net") +
+          "</div>" +
+        "</div>"
+      );
+    }).join("");
   }
 
-  function applyFilterAndRender(){
-    var q = (el("q").value || "").toLowerCase().trim();
-    var sf = el("sentFilter").value;
-    var sort = el("sort").value;
+  function setText(id,v){ var el=document.getElementById(id); if(el) el.textContent = safeText(v); }
+  function setHtml(id,v){ var el=document.getElementById(id); if(el) el.innerHTML = v; }
 
-    var items = (window.__digest_items || []).slice();
+  var allItems = [];
+  var collapsed = false;
 
-    if(sf && sf !== "all"){
-      items = items.filter(function(a){ return (a._class || "unknown") === sf; });
+  async function load(){
+    setText("sumHint","loading…");
+    setText("kpiHint","loading…");
+    setText("listHint","loading…");
+
+    const sumPick = await pickFirstOk(SUM_CANDIDATES);
+    const newsPick = await pickFirstOk(NEWS_CANDIDATES);
+    const senPick = await pickFirstOk(SEN_CANDIDATES);
+
+    const src = (sumPick ? sumPick.url : (newsPick?newsPick.url:"--"));
+    const asOf = (sumPick && sumPick.json) ? (sumPick.json.date || sumPick.json.as_of || "--") : "--";
+
+    setText("pillAsOf", "as_of: " + asOf);
+    setText("pillSource", "source: " + src);
+    document.getElementById("btnOpenJson").href = (sumPick ? sumPick.url : "#");
+
+    // summary text
+    var sumText = "";
+    if(sumPick && sumPick.json) sumText = pickSummaryText(sumPick.json);
+    if(!sumText && newsPick && newsPick.json){
+      // daily_news しかない時の fallback
+      var tmp = pickArticles(newsPick.json).slice(0, 30).map(function(a){
+        return "- " + safeText(a.title || "");
+      }).join("\\n");
+      sumText = tmp ? ("Today titles:\\n" + tmp) : "";
     }
+    if(!sumText) sumText = "OK";
+    document.getElementById("sumText").textContent = sumText;
+    setText("sumHint", "OK");
 
-    if(q){
-      items = items.filter(function(a){
-        var s = (a.title + " " + a.source + " " + a.description).toLowerCase();
-        return s.indexOf(q) !== -1;
-      });
-    }
-
-    if(sort === "az"){
-      items.sort(function(a,b){ return (a.title || "").localeCompare(b.title || ""); });
-    }else if(sort === "newest"){
-      items.sort(function(a,b){
-        var da = a.publishedAt || "";
-        var db = b.publishedAt || "";
-        return db.localeCompare(da);
-      });
-    }else{
-      items.sort(function(a,b){ return (b._score || 0) - (a._score || 0); });
-    }
-
-    var show = items.slice(0, 48);
-    setText(el("listHint"), "showing " + show.length + " / " + items.length);
-    renderList(show);
-  }
-
-  function toggleSummary(){
-    var pre = el("sumText");
-    var btn = el("btnToggleSummary");
-    var collapsed = pre.getAttribute("data-collapsed") === "1";
-    if(!collapsed){
-      pre.setAttribute("data-collapsed", "1");
-      pre.style.maxHeight = "150px";
-      pre.style.overflow = "hidden";
-      setText(btn, "Expand summary");
-    }else{
-      pre.setAttribute("data-collapsed", "0");
-      pre.style.maxHeight = "";
-      pre.style.overflow = "";
-      setText(btn, "Collapse summary");
-    }
-  }
-
-  function main(){
-    var candSummary = [
-      "/data/world_politics/analysis/daily_summary_latest.json",
-      "/data/world_politics/analysis/daily_news_latest.json"
-    ];
-    var candSentiment = [
-      "/data/world_politics/analysis/sentiment_latest.json"
-    ];
-
-    
-    var candNews = [
-      "/data/world_politics/analysis/daily_news_latest.json",
-      "/data/world_politics/analysis/daily_news_latest.json",
-      "/data/digest/daily_news_latest.json",
-      "/data/world_politics/analysis/daily_news_latest.json"
-    ];
-
-    function keyUrl(u){
-      try{
-        var s = String(u || "").trim();
-        // normalize a bit: drop trailing slash
-        if(s.length > 1 && s.endsWith("/")) s = s.slice(0, -1);
-        return s;
-      }catch(e){ return ""; }
-    }
-
-    function buildImageMap(newsRoot){
-      var m = {};
-      if(!newsRoot) return m;
-      var arr = null;
-      if(Array.isArray(newsRoot.articles)) arr = newsRoot.articles;
-      else if(Array.isArray(newsRoot.items)) arr = newsRoot.items;
-      if(!arr) return m;
-      for(var i=0;i<arr.length;i++){
-        var a = arr[i] || {};
-        var u = keyUrl(a.url);
-        var img = a.urlToImage || a.image || a.image_url || a.thumbnail;
-        if(u && img && !m[u]) m[u] = String(img);
+    // items：news + sentiment を “なるべく寄せる”
+    var base = [];
+    if(newsPick && newsPick.json) base = pickArticles(newsPick.json).map(normalizeArticle);
+    // sentiment 側の risk/pos/unc/net を news の url に寄せて補完
+    if(senPick && senPick.json && Array.isArray(senPick.json.items) && base.length){
+      var map = new Map();
+      for(const s of senPick.json.items){
+        if(s && s.url) map.set(String(s.url), s);
       }
-      return m;
-    }
-Promise.all([firstOk(candSummary), firstOk(candSentiment), firstOk(candNews)]).then(function(res){
-      var sumPick = res[0];
-      var senPick = res[1];
-      var newsPick = res[2];
-
-      var asof = (sumPick.ok ? pickAsOf(sumPick.json) : "") || (senPick.ok ? pickAsOf(senPick.json) : "");
-      setText(el("pillAsOf"), "as_of: " + (asof || "--"));
-
-      var srcLabel = sumPick.ok ? sumPick.url : (senPick.ok ? senPick.url : "--");
-      setText(el("pillSource"), "source: " + srcLabel);
-
-      var openUrl = sumPick.ok ? sumPick.url : (senPick.ok ? senPick.url : "#");
-      el("btnOpenJson").setAttribute("href", openUrl);
-
-      var sumText = sumPick.ok ? pickSummaryText(sumPick.json) : "";
-      if(!sumText){
-        setText(el("sumHint"), "No summary text (safe)");
-        setText(el("sumText"), "No summary text (safe)");
-      }else{
-        setText(el("sumHint"), "OK");
-        setText(el("sumText"), sumText);
-      }
-
-      var baseItems = [];
-      var sumItems = sumPick.ok ? pickArticles(sumPick.json) : [];
-      var senItems = senPick.ok ? pickArticles(senPick.json) : [];
-
-      var sumNorm = sumItems.map(normalizeArticle);
-      var senNorm = senItems.map(normalizeArticle);
-
-      var senMap = {};
-      senNorm.forEach(function(a){
-        var k = keyOf(a);
-        if(k) senMap[k] = a;
-      });
-
-      if(sumNorm.length){
-        baseItems = sumNorm.map(function(a){
-          var k = keyOf(a);
-          var s = senMap[k];
-          if(s){
-            if(a.urlToImage && !s.urlToImage) s.urlToImage = a.urlToImage;
-            if(!a.urlToImage && s.urlToImage) a.urlToImage = s.urlToImage;
-            a.risk = (typeof s.risk === "number") ? s.risk : a.risk;
-            a.positive = (typeof s.positive === "number") ? s.positive : a.positive;
-            a.uncertainty = (typeof s.uncertainty === "number") ? s.uncertainty : a.uncertainty;
-            a.net = (typeof s.net === "number") ? s.net : a.net;
-            a.method = s.method || a.method;
-          }
-          return a;
-        });
-      }else{
-        baseItems = senNorm.slice();
-      }
-
-      
-      // Attach thumbnails from daily_news (NewsAPI-like {articles:[]}) if available.
-      var imgMap = buildImageMap(newsPick && newsPick.json ? newsPick.json : null);
-      if(imgMap && baseItems && baseItems.length){
-        for(var ii=0; ii<baseItems.length; ii++){
-          var it = baseItems[ii] || {};
-          var u2 = keyUrl(it.url);
-          if(u2 && imgMap[u2] && !it.urlToImage && !it.image && !it.image_url && !it.thumbnail){
-            it.urlToImage = imgMap[u2];
-          }
+      for(const b of base){
+        const s = map.get(String(b.url));
+        if(s){
+          if(typeof s.risk==="number") b.risk = s.risk;
+          if(typeof s.positive==="number") b.positive = s.positive;
+          if(typeof s.uncertainty==="number") b.uncertainty = s.uncertainty;
+          if(typeof s.net==="number") b.net = s.net;
+          if(typeof s.sentiment==="string") b.sentiment = s.sentiment;
         }
       }
+    }
 
-var counts = { total:0, positive:0, negative:0, neutral:0, mixed:0, unknown:0 };
-      baseItems.forEach(function(a){
-        a._class = classify(a);
-        a._score = score(a);
-        counts.total += 1;
-        counts[a._class] += 1;
-      });
+    allItems = base;
+    setText("pillItems", "items: " + allItems.length);
 
-      setText(el("pillItems"), "items: " + counts.total);
+    // KPIs
+    const k = computeKpis(allItems);
+    document.getElementById("kpis").textContent = renderKpis(k);
+    setText("kpiHint","OK");
 
-      setText(el("kTotal"), counts.total);
-      setText(el("kPos"), counts.positive);
-      setText(el("kNeg"), counts.negative);
-      setText(el("kNeu"), counts.neutral);
-      setText(el("kMix"), counts.mixed);
-      setText(el("kUnk"), counts.unknown);
-
-      setText(el("kpiHint"), counts.total ? "OK" : "No items (safe)");
-      renderBar(counts);
-
-      var ranked = baseItems.slice().sort(function(a,b){ return (b._score || 0) - (a._score || 0); });
-      window.__digest_items = ranked;
-
-      var metaParts = [];
-      if(sumPick.ok){
-        if(typeof sumPick.json.n_events === "number") metaParts.push("n_events=" + sumPick.json.n_events);
-        if(sumPick.json.fetched_at) metaParts.push("fetched_at=" + String(sumPick.json.fetched_at));
-      }
-      if(senPick.ok){
-        if(Array.isArray(senPick.json.items)) metaParts.push("sentiment_items=" + senPick.json.items.length);
-        if(senPick.json.generated_at) metaParts.push("generated_at=" + String(senPick.json.generated_at));
-      }
-      setText(el("sumMeta"), metaParts.length ? metaParts.join(" / ") : "--");
-
-      setText(el("dbg"), safeJson({
-        picked_summary: sumPick.ok ? sumPick.url : null,
-        picked_sentiment: senPick.ok ? senPick.url : null,
-        as_of: asof || null,
-        items_count: counts.total,
-        counts: counts,
-        tried_summary: sumPick.tried,
-        tried_sentiment: senPick.tried
-      }));
-
-      applyFilterAndRender();
-
-    }).catch(function(e){
-      setText(el("sumHint"), "error (safe)");
-      setText(el("sumText"), "error (safe)");
-      setText(el("kpiHint"), "error");
-      setText(el("dbg"), safeJson({ error: String(e && e.message ? e.message : e) }));
-    });
-
-    el("q").addEventListener("input", function(){ applyFilterAndRender(); });
-    el("sentFilter").addEventListener("change", function(){ applyFilterAndRender(); });
-    el("sort").addEventListener("change", function(){ applyFilterAndRender(); });
-    el("btnToggleSummary").addEventListener("click", function(){ toggleSummary(); });
+    // list
+    rerender();
+    setText("listHint","OK");
   }
 
-  main();
+  function rerender(){
+    const q = document.getElementById("q").value;
+    const sent = document.getElementById("sentFilter").value;
+    const sortKey = document.getElementById("sortKey").value;
+
+    const filtered = applyFilters(allItems, q, sent);
+    const sorted = sortItems(filtered, sortKey);
+
+    setHtml("list", renderList(sorted));
+  }
+
+  document.getElementById("q").addEventListener("input", rerender);
+  document.getElementById("sentFilter").addEventListener("change", rerender);
+  document.getElementById("sortKey").addEventListener("change", rerender);
+
+  document.getElementById("btnCollapse").addEventListener("click", function(){
+    collapsed = !collapsed;
+    document.getElementById("sumText").style.maxHeight = collapsed ? "120px" : "";
+    document.getElementById("sumText").style.overflow = collapsed ? "auto" : "";
+    document.getElementById("btnCollapse").textContent = collapsed ? "Expand summary" : "Collapse summary";
+  });
+
+  load().catch(function(e){
+    console.warn(e);
+    setText("sumHint","error");
+    setText("kpiHint","error");
+    setText("listHint","error");
+  });
+
 })();
 </script>
-</main>
-
-  <div class="page">
-    <h1>Digest</h1>
-    <p>Unified layout (header injected by JS).</p>
-  </div>
 </body>
 </html>
-
-
-
