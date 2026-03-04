@@ -61,7 +61,7 @@
         <div class="card-title">
           <span>Daily Summary</span>
           <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <a class="pill ghost" id="btnOpenDaily" href="/analysis/daily_summary_latest.json" target="_blank" rel="noopener">Open JSON</a>
+            <a class="pill ghost" id="btnOpenDaily" href="/data/digest/daily_summary_latest.json" target="_blank" rel="noopener">Open JSON</a>
             <span class="mono small muted2">source: <span id="srcDaily">—</span></span>
           </span>
         </div>
@@ -85,8 +85,8 @@
           <span id="missingListWrap" class="mono"></span>
         </div>
         <div class="kv">
-          <a class="pill ghost" href="/analysis/health_latest.json" target="_blank" rel="noopener">Open health_latest.json</a>
-          <a class="pill ghost" href="/analysis/sentiment_latest.json" target="_blank" rel="noopener">Open sentiment_latest.json</a>
+          <a class="pill ghost" href="/data/digest/health_latest.json" target="_blank" rel="noopener">Open health_latest.json</a>
+          <a class="pill ghost" href="/data/digest/sentiment_latest.json" target="_blank" rel="noopener">Open sentiment_latest.json</a>
         </div>
       </div>
     </section>
@@ -96,8 +96,6 @@
       <div class="mono small muted2">Tip: hard reload (Ctrl+F5) or open a Private Window to avoid cache.</div>
       <pre id="errText" class="mono small" style="margin-top:10px"></pre>
     </div>
-
-    <div class="footer-note mono small">GenesisPrediction v2 • Home (sentiment baseline header) • phase2</div>
   </div>
 
 <script>
@@ -155,25 +153,22 @@
   };
 
   const vmURLs = [
-    "/analysis/view_model_latest.json",
-    "/analysis/world_politics/view_model_latest.json",
-    "/data/world_politics/analysis/view_model_latest.json",
-    "/data/digest/view_model_latest.json",
-    "/data/digest/view/view_model_latest.json"
-  ];
+  "/data/digest/view_model_latest.json",
+  "/data/world_politics/analysis/view_model_latest.json",
+  "/data/digest/view/view_model_latest.json"
+];
   const dailyURLs = [
-    "/analysis/daily_summary_latest.json",
-    "/analysis/world_politics/daily_summary_latest.json",
-    "/data/world_politics/analysis/daily_summary_latest.json"
-  ];
+  "/data/digest/daily_summary_latest.json",
+  "/data/world_politics/analysis/daily_summary_latest.json"
+];
   const sentURLs = [
-    "/analysis/sentiment_latest.json",
-    "/analysis/world_politics/sentiment_latest.json",
-    "/data/world_politics/analysis/sentiment_latest.json"
-  ];
+  "/data/digest/sentiment_latest.json",
+  "/data/world_politics/analysis/sentiment_latest.json"
+];
   const healthURLs = [
-    "/analysis/health_latest.json"
-  ];
+  "/data/digest/health_latest.json",
+  "/data/world_politics/analysis/health_latest.json"
+];
 
   const healthLevel = (sum) => {
     const ok = Number(sum?.ok ?? 0);
@@ -481,18 +476,17 @@
         ...daily.tried.map(u => "• " + u),
         ...sent.tried.map(u => "• " + u),
         ...health.tried.map(u => "• " + u),
-      ].join("
-");
+      ].join("\n");
       showError(msg);
     }
   })().catch(e => showError(String(e)));
 })();
 </script>
 </main>
-
-  <div class="page">
-    <h1>Home</h1>
-    <p>Unified layout (header injected by JS).</p>
-  </div>
 </body>
 </html>
+
+
+
+
+
