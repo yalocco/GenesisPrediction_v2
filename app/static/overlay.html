@@ -1,402 +1,218 @@
-
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Overlay - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260303v2">
+  <link rel="stylesheet" href="/static/app.css?v=20260303v2" />
   <script src="/static/_shared_nav.js?v=20260303v2"></script>
 </head>
 <body>
-<main>
-<div class="container">
-    <div class="topbar">
-      <div class="brand">
-        <div class="dot" aria-hidden="true"></div>
-        <div>
-          <div class="t1">GenesisPrediction v2</div>
-          <div class="t2">FX Overlay / Decision UI</div>
-        </div>
+<main class="page">
+  <h1>Overlay</h1>
+  <div class="muted2 small" style="margin-top:-6px">FX Overlay / Decision UI (safe mode).</div>
+
+  <section class="card" style="margin-top:14px">
+    <div class="card-title" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <span class="mono small muted2">Pair</span>
+        <select id="pairSel" class="pill" style="min-width:160px">
+          <option value="auto">auto</option>
+          <option value="jpythb" selected>JPYTHB</option>
+          <option value="usdjpy">USDJPY</option>
+          <option value="usdthb">USDTHB</option>
+          <option value="multi">MULTI</option>
+        </select>
       </div>
-
-      
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <a id="btnOpenDecision" class="pill ghost" target="_blank" rel="noopener">Open decision JSON</a>
+      </div>
     </div>
 
-    <div class="grid">
-      <section class="card" id="card-main">
-        
-
-        <div class="body">
-          <div class="kvs">
-            <div class="kv">
-              <div class="k">Decision</div>
-              <div class="v">
-                <span class="badge na" id="decision-badge" title="analysis のFX判断（ON/WARN/OFF）">
-                  <span class="led" aria-hidden="true"></span>
-                  <span id="decision-text">--</span>
-                </span>
-              </div>
-            </div>
-
-            <div class="kv">
-              <div class="k">Reason</div>
-              <div class="v" id="decision-reason">--</div>
-            </div>
-
-            <div class="kv">
-              <div class="k">Pair</div>
-              <div class="v" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                <span id="pair-text">--</span>
-                <span class="select-wrap" title="Select pair (updates ?base=... and reload)">
-                  <select id="pair-select" class="select" aria-label="Select FX pair">
-                    <option value="">auto</option>
-                    <option value="jpythb">jpythb</option>
-                    <option value="usdjpy">usdjpy</option>
-                    <option value="usdthb">usdthb</option>
-                  </select>
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div class="imgwrap">
-            <!-- A-2: 画像右上の Decision バッジ -->
-            <div class="badge na corner" id="corner-badge" aria-hidden="true">
-              <span class="led" aria-hidden="true"></span>
-              <span id="corner-text">--</span>
-            </div>
-
-            <img id="overlay-img" alt="FX overlay" loading="eager" />
-          </div>
-
-          <div class="msg" id="status-msg">
-            loading...
-          </div>
-
-          <details>
-            <summary>raw (debug)</summary>
-            <pre id="debug-pre">{}</pre>
-          </details>
-        </div>
-      </section>
+    <div class="kv" style="margin-top:10px">
+      <div class="mono small muted2">Decision</div>
+      <div id="decisionText" class="mono">—</div>
+      <div class="mono small muted2" style="margin-top:10px">Reason</div>
+      <div id="reasonText" class="mono">—</div>
     </div>
-  </div>
 
-<script>
-(function(){
-  const $ = (id) => document.getElementById(id);
+    <div class="kv" style="margin-top:14px">
+      <div class="mono small muted2">FX overlay</div>
+      <div id="imgMsg" class="mono">loading…</div>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <a id="btnOpenImage" class="pill ghost" target="_blank" rel="noopener" style="display:none">Open image</a>
+      </div>
+      <div style="margin-top:10px">
+        <img id="overlayImg" alt="FX overlay" style="max-width:100%;border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.35);display:none" />
+      </div>
+    </div>
 
-  const elAsOf = $("asof");
-  const elBase = $("basepill");
-  const elImg = $("overlay-img");
-  const elMsg = $("status-msg");
-  const elDbg = $("debug-pre");
+    <details style="margin-top:14px">
+      <summary class="mono small">raw (debug)</summary>
+      <pre id="dbg" class="mono small" style="white-space:pre-wrap;word-break:break-word;margin-top:10px"></pre>
+    </details>
 
-  const elDecisionBadge = $("decision-badge");
-  const elDecisionText = $("decision-text");
-  const elDecisionReason = $("decision-reason");
-  const elPairText = $("pair-text");
-
-  // A-2 corner
-  const elCornerBadge = $("corner-badge");
-  const elCornerText = $("corner-text");
-
-  const selPair = $("pair-select");
-
-  const btnOpenImage = $("open-image");
-  const btnOpenJson = $("open-json");
-
-  function getQueryParam(name){
-    const u = new URL(window.location.href);
-    return u.searchParams.get(name);
-  }
-
-  function setQueryParam(name, value){
-    const u = new URL(window.location.href);
-    if(value == null || String(value).trim() === ""){
-      u.searchParams.delete(name);
-    }else{
-      u.searchParams.set(name, String(value));
-    }
-    window.location.replace(u.toString());
-  }
-
-  function setPillText(el, text){ el.textContent = text; }
-
-  function safeJsonStringify(obj){
-    try { return JSON.stringify(obj, null, 2); } catch(e) { return String(obj); }
-  }
-
-  function applyBadgeClass(el, stateUpper){
-    el.classList.remove("ok","warn","off","na");
-    if(stateUpper === "ON" || stateUpper === "OK"){
-      el.classList.add("ok");
-    }else if(stateUpper === "WARN" || stateUpper === "WARNING"){
-      el.classList.add("warn");
-    }else if(stateUpper === "OFF" || stateUpper === "STOP"){
-      el.classList.add("off");
-    }else{
-      el.classList.add("na");
-    }
-  }
-
-  function setBadge(state){
-    const s = (state || "--").toString().toUpperCase();
-    elDecisionText.textContent = (s === "" ? "--" : s);
-    applyBadgeClass(elDecisionBadge, s);
-  }
-
-  // A-2: corner badge（--の時は隠す）
-  function setCorner(state){
-    const s = (state || "--").toString().toUpperCase();
-    elCornerText.textContent = (s === "" ? "--" : s);
-    applyBadgeClass(elCornerBadge, s);
-
-    if(s === "--" || s === "" || s === "NA"){
-      elCornerBadge.style.display = "none";
-    }else{
-      elCornerBadge.style.display = "inline-flex";
-    }
-  }
-
-  async function probeImage(url){
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => resolve(true);
-      img.onerror = () => resolve(false);
-      img.src = url + (url.includes("?") ? "&" : "?") + "v=" + Date.now();
-    });
-  }
-
-  async function fetchJson(url){
-    const res = await fetch(url, {cache: "no-store"});
-    if(!res.ok) throw new Error("HTTP " + res.status + " for " + url);
-    return await res.json();
-  }
-
-  const candidates = {
-    images: [
-      "/analysis/fx/fx_overlay_latest_jpythb.png",
-      "/analysis/fx/fx_overlay_latest_usdjpy.png",
-      "/analysis/fx/fx_overlay_latest_usdthb.png",
-      "/analysis/fx/fx_overlay_latest.png",
-      "/analysis/fx/fx_overlay_multi_latest.png",
-      "/analysis/fx/overlay_latest.png",
-      "/analysis/fx/fx_overlay.png"
-    ],
-    decisions: [
-      "/analysis/fx/fx_decision_latest_jpythb.json",
-      "/analysis/fx/fx_decision_latest_usdjpy.json",
-      "/analysis/fx/fx_decision_latest_usdthb.json",
-      "/analysis/fx/fx_decision_latest.json",
-      "/analysis/fx/remittance_today_latest.json",
-      "/analysis/fx/fx_overlay_latest.json",
-      "/analysis/fx/dashboard_latest.json"
-    ],
-  };
-
-  function applyBase(base){
-    if(!base) return;
-    const b = base.toLowerCase().trim();
-    if(!b) return;
-
-    setPillText(elBase, "base: " + b);
-
-    const baseImages = [
-      `/analysis/fx/fx_overlay_latest_${b}.png`,
-      `/analysis/fx/${b}/fx_overlay_latest.png`,
-      `/analysis/fx/${b}/overlay_latest.png`,
-      `/analysis/fx/${b}_fx_overlay_latest.png`,
-      `/analysis/fx/fx_overlay_${b}_latest.png`,
-      `/analysis/fx/fx_overlay_${b}.png`
-    ];
-    candidates.images = [...baseImages, ...candidates.images];
-
-    const baseDecisions = [
-      `/analysis/fx/fx_decision_latest_${b}.json`,
-      `/analysis/fx/${b}/fx_decision_latest.json`,
-      `/analysis/fx/fx_decision_${b}_latest.json`
-    ];
-    candidates.decisions = [...baseDecisions, ...candidates.decisions];
-
-    elPairText.textContent = b;
-  }
-
-  async function pickFirstWorkingImage(){
-    for(const url of candidates.images){
-      const ok = await probeImage(url);
-      if(ok) return url;
-    }
-    return null;
-  }
-
-  function extractDecisionFields(obj){
-    const has = (o,k) => o && Object.prototype.hasOwnProperty.call(o,k) && o[k] != null;
-    const getAny = (o, keys) => {
-      for(const k of keys){
-        if(has(o,k)) return o[k];
-      }
-      return null;
-    };
-
-    const flat = obj || {};
-    const nested = (typeof flat.decision === "object" && flat.decision) ||
-                   (typeof flat.signal === "object" && flat.signal) ||
-                   (typeof flat.fx === "object" && flat.fx) ||
-                   (typeof flat.overlay === "object" && flat.overlay) ||
-                   {};
-
-    const state =
-      getAny(flat, ["state","status","action","signal","decision","remittance_action","mode"]) ??
-      getAny(nested, ["state","status","action","signal","decision"]);
-
-    const reason =
-      getAny(flat, ["reason","why","note","message","comment","summary"]) ??
-      getAny(nested, ["reason","why","note","message","comment"]);
-
-    const as_of =
-      getAny(flat, ["as_of","asof","date","day","today","generated_at","updated_at"]) ??
-      getAny(nested, ["as_of","asof","date","day","today","generated_at","updated_at"]);
-
-    const pair =
-      getAny(flat, ["pair","symbol","base","fx_pair"]) ??
-      getAny(nested, ["pair","symbol","base","fx_pair"]);
-
-    const source =
-      getAny(flat, ["source","src","input","from"]) ??
-      getAny(nested, ["source","src","input","from"]);
-
-    return { state, reason, as_of, pair, source };
-  }
-
-  async function pickFirstWorkingDecisionJson(){
-    for(const url of candidates.decisions){
-      try{
-        const j = await fetchJson(url);
-        return { url, json: j };
-      }catch(e){
-        // ignore
-      }
-    }
-    return null;
-  }
-
-  function inferPairFromImgUrl(imgUrl){
-    if(!imgUrl) return null;
-    const m = imgUrl.match(/fx_overlay_latest_([a-z0-9_]+)\.png$/i);
-    return (m && m[1]) ? m[1].toLowerCase() : null;
-  }
-
-  function syncPairSelect(baseParam, inferredPair){
-    const val = (baseParam && baseParam.trim() !== "") ? baseParam.toLowerCase().trim()
-              : (inferredPair ? inferredPair : "");
-    selPair.value = val;
-  }
-
-  async function main(){
-    try{
-      setBadge("--");
-      setCorner("--");
-      elDecisionReason.textContent = "--";
-      elPairText.textContent = "--";
-      setPillText(elAsOf, "as_of: --");
-
-      const base = getQueryParam("base");
-      if(base) applyBase(base);
-
-      selPair.addEventListener("change", () => {
-        setQueryParam("base", selPair.value);
-      });
-
-      // 1) image
-      elMsg.textContent = "loading overlay image...";
-      const imgUrl = await pickFirstWorkingImage();
-      let inferred = null;
-
-      if(!imgUrl){
-        elMsg.textContent = "overlay image not found in analysis/fx (safe fallback: showing empty).";
-        elImg.removeAttribute("src");
-        btnOpenImage.onclick = () => alert("overlay image not found (safe)");
-        syncPairSelect(base || "", null);
-        setCorner("--"); // hide
-      }else{
-        elImg.src = imgUrl + (imgUrl.includes("?") ? "&" : "?") + "v=" + Date.now();
-        btnOpenImage.onclick = () => window.open(imgUrl, "_blank", "noopener,noreferrer");
-        elMsg.textContent = "overlay image: " + imgUrl;
-
-        inferred = inferPairFromImgUrl(imgUrl);
-        if(!base && inferred){
-          elPairText.textContent = inferred;
-          setPillText(elBase, "base: auto→" + inferred);
-        }else if(base){
-          elPairText.textContent = base.toLowerCase().trim();
-        }
-
-        syncPairSelect(base || "", inferred);
-      }
-
-      // 2) decision JSON
-      elMsg.textContent += " / loading decision...";
-      const picked = await pickFirstWorkingDecisionJson();
-      if(!picked){
-        setBadge("--");
-        setCorner("--");
-        elDecisionReason.textContent = "--";
-        elDbg.textContent = safeJsonStringify({ note: "decision json not found (safe)", tried: candidates.decisions });
-        btnOpenJson.onclick = () => alert("decision json not found (safe)");
-        return;
-      }
-
-      const { url, json } = picked;
-      const fields = extractDecisionFields(json);
-
-      const state = fields.state ? String(fields.state).toUpperCase() : "--";
-      setBadge(state);
-      setCorner(state);
-
-      const reason = (fields.reason != null && String(fields.reason).trim() !== "") ? String(fields.reason).trim() : "--";
-      const src = (fields.source != null && String(fields.source).trim() !== "") ? String(fields.source).trim() : "";
-      elDecisionReason.textContent = src ? (reason + " / " + src) : reason;
-
-      if(fields.pair != null && String(fields.pair).trim() !== ""){
-        elPairText.textContent = String(fields.pair);
-      }else if(base){
-        elPairText.textContent = base.toLowerCase().trim();
-      }else if(inferred){
-        elPairText.textContent = inferred;
-      }
-
-      if(fields.as_of != null && String(fields.as_of).trim() !== ""){
-        setPillText(elAsOf, "as_of: " + String(fields.as_of));
-      }
-
-      btnOpenJson.onclick = () => window.open(url, "_blank", "noopener,noreferrer");
-      elDbg.textContent = safeJsonStringify({ picked_json: url, fields, raw: json });
-
-      elMsg.textContent = (imgUrl ? ("OK: " + imgUrl) : "WARN: no image") + " / JSON: " + url;
-
-    }catch(e){
-      elMsg.textContent = "ERROR (safe): " + (e && e.message ? e.message : String(e));
-      elDbg.textContent = safeJsonStringify({ error: String(e) });
-      setBadge("--");
-      setCorner("--");
-      elDecisionReason.textContent = "--";
-    }
-  }
-
-  btnOpenImage.onclick = () => {
-    if(elImg && elImg.src) window.open(elImg.src, "_blank", "noopener,noreferrer");
-  };
-  btnOpenJson.onclick = () => alert("loading...");
-
-  main();
-})();
-</script>
+    <div class="mono small muted2" style="margin-top:12px">
+      Notes: Unified layout (header injected by JS). If something is missing, check that FX artifacts are published under <span class="mono">/data/fx/</span>.
+    </div>
+  </section>
 </main>
 
-  <div class="page">
-    <h1>Overlay</h1>
-    <p>Unified layout (header injected by JS).</p>
-  </div>
+<script>
+(() => {
+  const q = (id) => document.getElementById(id);
+
+  // --- safe setters (never throw) ---
+  const setText = (id, txt) => { const el = q(id); if (el) el.textContent = (txt ?? ""); };
+  const setHtml = (id, html) => { const el = q(id); if (el) el.innerHTML = (html ?? ""); };
+
+  const pairSel = q("pairSel");
+  const img = q("overlayImg");
+  const imgMsg = q("imgMsg");
+  const btnOpenImage = q("btnOpenImage");
+  const btnOpenDecision = q("btnOpenDecision");
+  const dbg = q("dbg");
+
+  // decision JSON candidates (prefer your current pipeline path)
+  const decisionURLs = [
+    "/data/fx/fx_decision_latest.json",
+    "/data/fx/fx_decision_latest_jpythb.json",
+    "/data/fx/fx_decision_latest_usdjpy.json",
+    "/data/fx/fx_decision_latest_usdthb.json",
+    "/analysis/fx/fx_decision_latest.json" // legacy fallback (ok if 404)
+  ];
+
+  // overlay image candidates per pair (ordered by "most likely to exist")
+  const overlayCandidates = {
+  "auto": [
+    "/data/fx/fx_overlay_latest_jpythb.png",
+    "/data/fx/fx_overlay_latest_usdjpy.png",
+    "/data/fx/fx_overlay_latest_usdthb.png",
+    "/data/fx/fx_overlay_multi_latest.png",
+    "/data/fx/fx_overlay_latest.png",
+    "/analysis/fx/fx_overlay_latest.png"
+  ],
+    "multi": [
+      "/data/fx/fx_overlay_multi_latest.png",
+      "/data/fx/fx_multi_overlay.png",
+      "/data/fx/fx_multi_overlay_latest.png",
+      "/analysis/fx/fx_overlay_multi_latest.png"
+    ],
+    "jpythb": [
+      "/data/fx/fx_overlay_latest_jpythb.png",
+      "/data/fx/fx_jpy_thb_overlay.png",
+      "/data/fx/jpy_thb_remittance_overlay.png",
+      "/analysis/fx/fx_overlay_latest_jpythb.png"
+    ],
+    "usdjpy": [
+      "/data/fx/fx_overlay_latest_usdjpy.png",
+      "/data/fx/fx_jpy_usd_overlay.png",
+      "/analysis/fx/fx_overlay_latest_usdjpy.png"
+    ],
+    "usdthb": [
+      "/data/fx/fx_overlay_latest_usdthb.png",
+      "/data/fx/fx_multi_usd_thb_overlay.png",
+      "/analysis/fx/fx_overlay_latest_usdthb.png"
+    ],
+    "auto": [
+      "/data/fx/fx_overlay_multi_latest.png",
+      "/data/fx/fx_multi_overlay.png",
+      "/data/fx/fx_overlay_latest_jpythb.png",
+      "/data/fx/fx_jpy_thb_overlay.png",
+      "/data/fx/fx_overlay_latest_usdjpy.png",
+      "/data/fx/fx_jpy_usd_overlay.png",
+      "/data/fx/fx_overlay_latest_usdthb.png",
+      "/data/fx/fx_multi_usd_thb_overlay.png",
+      "/analysis/fx/fx_overlay_multi_latest.png"
+    ]
+  };
+
+  const headOK = async (url) => {
+    try {
+      const r = await fetch(url, { method: "HEAD", cache: "no-store" });
+      return r && r.ok;
+    } catch (e) { return false; }
+  };
+
+  const firstOK = async (urls) => {
+    for (const u of urls) {
+      // allow legacy fallbacks without spamming red: skip obvious 404 roots
+      const ok = await headOK(u);
+      if (ok) return u;
+    }
+    return null;
+  };
+
+  const loadDecision = async () => {
+    const u = await firstOK(decisionURLs);
+    if (!u) {
+      setText("decisionText", "—");
+      setText("reasonText", "—");
+      if (btnOpenDecision) btnOpenDecision.style.display = "none";
+      return { ok:false, url:null, data:null };
+    }
+    try {
+      const r = await fetch(u, { cache:"no-store" });
+      const d = await r.json();
+      const decision = d.decision ?? d.action ?? d.status ?? "—";
+      const reason = d.reason ?? d.note ?? d.message ?? "—";
+      setText("decisionText", decision);
+      setText("reasonText", reason);
+      if (btnOpenDecision) { btnOpenDecision.href = u; btnOpenDecision.style.display = ""; }
+      return { ok:true, url:u, data:d };
+    } catch (e) {
+      setText("decisionText", "ERROR (safe): decision json parse failed");
+      setText("reasonText", String(e));
+      if (btnOpenDecision) btnOpenDecision.style.display = "none";
+      return { ok:false, url:u, data:null };
+    }
+  };
+
+  const loadOverlay = async () => {
+    const key = pairSel ? pairSel.value : "auto";
+    const urls = overlayCandidates[key] || overlayCandidates["auto"];
+    const u = await firstOK(urls);
+    if (!u) {
+      if (img) img.style.display = "none";
+      if (btnOpenImage) btnOpenImage.style.display = "none";
+      if (imgMsg) imgMsg.textContent = "ERROR (safe): overlay image not found";
+      return { ok:false, url:null };
+    }
+
+    // show
+    if (imgMsg) imgMsg.textContent = "";
+    if (img) {
+      img.onerror = () => {
+        img.style.display = "none";
+        if (btnOpenImage) btnOpenImage.style.display = "none";
+        if (imgMsg) imgMsg.textContent = "ERROR (safe): overlay image load failed";
+      };
+      img.onload = () => { img.style.display = ""; };
+      img.src = u + (u.includes("?") ? "&" : "?") + "t=" + Date.now();
+    }
+    if (btnOpenImage) { btnOpenImage.href = u; btnOpenImage.style.display = ""; }
+    return { ok:true, url:u };
+  };
+
+  const renderDebug = (decisionRes, overlayRes) => {
+    const lines = [];
+    lines.push("pair=" + (pairSel ? pairSel.value : "(null)"));
+    lines.push("decision_url=" + (decisionRes?.url ?? "null"));
+    lines.push("overlay_url=" + (overlayRes?.url ?? "null"));
+    lines.push("");
+    if (decisionRes?.data) lines.push(JSON.stringify(decisionRes.data, null, 2));
+    setText("dbg", lines.join("\n"));
+  };
+
+  const refresh = async () => {
+    const d = await loadDecision();
+    const o = await loadOverlay();
+    renderDebug(d, o);
+  };
+
+  if (pairSel) pairSel.addEventListener("change", refresh);
+  refresh();
+})();
+</script>
 </body>
 </html>
