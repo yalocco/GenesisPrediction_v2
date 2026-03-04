@@ -1,4 +1,4 @@
-
+﻿
 <!DOCTYPE html>
 <html>
 <head>
@@ -29,14 +29,14 @@
         <div class="summaryBox">
           <div class="sectionTitle">
             <h2>Summary</h2>
-            <p id="sumHint" class="hint">loading…</p>
+            <p id="sumHint" class="hint">loading窶ｦ</p>
           </div>
 
-          <pre id="sumText" class="summaryText">loading…</pre>
+          <pre id="sumText" class="summaryText">loading窶ｦ</pre>
 
           <div class="toolbar">
             <div class="tool-left">
-              <input id="q" class="search" type="search" placeholder="Search title/source…" />
+              <input id="q" class="search" type="search" placeholder="Search title/source窶ｦ" />
               <select id="sentFilter" class="select">
                 <option value="all">All</option>
                 <option value="positive">Positive</option>
@@ -51,7 +51,7 @@
               <select id="sort" class="select">
                 <option value="score">Top (score)</option>
                 <option value="newest">Newest (as_of)</option>
-                <option value="az">Title (A→Z)</option>
+                <option value="az">Title (A竊短)</option>
               </select>
 
               <button id="btnToggleSummary" class="btn" type="button">Collapse summary</button>
@@ -66,7 +66,7 @@
         <div class="summaryBox">
           <div class="sectionTitle">
             <h2>KPIs</h2>
-            <p id="kpiHint" class="hint">loading…</p>
+            <p id="kpiHint" class="hint">loading窶ｦ</p>
           </div>
 
           <div class="kpis">
@@ -199,9 +199,7 @@
         var lines = sumRoot.yesterday_summary.titles.slice(0, 30).map(function(t){
           return "- " + safeText(t);
         });
-        return "Yesterday titles:
-" + lines.join("
-");
+        return "Yesterday titles:\\n" + lines.join("\n");
       }
     }
     if(typeof sumRoot.summary === "string" && sumRoot.summary.trim()) return sumRoot.summary.trim();
@@ -434,9 +432,9 @@
     
     var candNews = [
       "/data/world_politics/analysis/daily_news_latest.json",
-      "/analysis/world_politics/analysis/daily_news_latest.json",
+      "/data/world_politics/analysis/daily_news_latest.json",
       "/data/digest/daily_news_latest.json",
-      "/analysis/digest/daily_news_latest.json"
+      "/data/world_politics/analysis/daily_news_latest.json"
     ];
 
     function keyUrl(u){
@@ -601,3 +599,6 @@ var counts = { total:0, positive:0, negative:0, neutral:0, mixed:0, unknown:0 };
   </div>
 </body>
 </html>
+
+
+
