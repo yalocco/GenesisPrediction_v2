@@ -67,6 +67,30 @@
       .digestGrid{ grid-template-columns: 1fr; }
       .barTrack{ width:140px; }
     }
+/* Digest UI additions */
+.digestGrid{margin-top:14px}
+.card{padding:14px 16px}
+.yTitles{margin-top:10px; border-radius:16px; padding:10px 12px; background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.06)}
+.yTitles > summary{cursor:pointer; user-select:none; display:flex; align-items:center; gap:10px; list-style:none}
+.yTitles > summary::-webkit-details-marker{display:none}
+.yTitleLabel{font-weight:700}
+.titleChips{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px}
+.chip{display:inline-flex; align-items:center; gap:6px; padding:5px 9px; border-radius:999px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); font-size:12px; max-width:100%}
+.chip .t{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:520px}
+.chip .n{opacity:.7; font-variant-numeric:tabular-nums}
+.kpiRow{display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px}
+.kpiCard{border-radius:16px; padding:10px 12px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06)}
+.kpiCard .k{font-size:12px; opacity:.8}
+.kpiCard .v{font-size:20px; font-weight:800; margin-top:4px; font-variant-numeric:tabular-nums}
+
+  </style>
+
+
+  <style>
+    /* Digest: Top highlights controls */
+    .topCtl{display:flex;gap:8px;align-items:center;margin-left:auto}
+    .btn.small{padding:6px 10px;font-size:12px;border-radius:999px}
+    .btn.ghost{background:transparent}
   </style>
 
 </head>
@@ -124,13 +148,18 @@
             <h2>KPIs</h2>
             <span id="kpiHint" class="hint">loading…</span>
           </div>
-          <div id="kpis" class="mono small">loading…</div>
+          <div id="kpiRow" class="kpiRow">loading…</div>
+          <pre id="kpis" class="mono small" style="display:none"></pre>
         </div>
       </div>
 
       <div class="card" style="margin-top:12px;">
         <div class="sectionTitle">
           <h2>Top highlights</h2>
+          <div class="topCtl">
+            <button id="listToggleAll" class="btn small">Show all</button>
+            <button id="listToggleTop" class="btn small ghost" style="display:none">Top 10</button>
+          </div>
           <span id="listHint" class="hint">loading…</span>
         </div>
         <div id="list" class="digestList">loading…</div>
@@ -161,6 +190,51 @@ function escHtml(s){
       return ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" })[ch];
     });
   }
+function renderChips(lines){
+  var uniq = [];
+  var seen = {};
+  for(var i=0;i<lines.length;i++){
+    var t = safeText(lines[i]).trim();
+    if(!t) continue;
+    var key = t.toLowerCase();
+    if(seen[key]) continue;
+    seen[key]=true;
+    uniq.push(t);
+    if(uniq.length>=120) break;
+  }
+  return uniq.map(function(t,i){
+    return '<span class="chip" title="'+escHtml(t)+'"><span class="n">'+(i+1)+'</span><span class="t">'+escHtml(t)+'</span></span>';
+  }).join("");
+}
+
+function renderKpiRow(k){
+  if(!k) return "";
+  var pairs = [
+    ["articles", k.total],
+    ["positive", k.pos],
+    ["negative", k.neg],
+    ["neutral",  k.neu],
+    ["mixed",    k.mix],
+    ["unknown",  k.unk],
+    ["avg_net",  (typeof k.avgNet === "number") ? k.avgNet.toFixed(3) : k.avgNet]
+  ];
+  return pairs.map(function(p){
+    return '<div class="kpiCard"><div class="k">'+escHtml(String(p[0]))+'</div><div class="v">'+escHtml(String(p[1]))+'</div></div>';
+  }).join("");
+}
+
+function splitYesterdayTitles(text){
+  text = normNL(text||"");
+  var key = "Yesterday titles:";
+  var idx = text.indexOf(key);
+  if(idx < 0) return {main:text.trim(), titles:[]};
+  var before = text.slice(0, idx).trim();
+  var after = text.slice(idx + key.length);
+  var lines = normNL(after).split("\n").map(function(x){ return safeText(x).replace(/^\s*[-•]\s*/, "").trim(); }).filter(Boolean);
+  return {main:before, titles:lines};
+}
+
+
 
   async function fetchJson(url){
     const r = await fetch(url, {cache:"no-store"});
@@ -346,7 +420,7 @@ function escHtml(s){
 
   function renderList(items){
     if(!items.length) return "<div class='hint'>no items</div>";
-    var top = items.slice(0, 60);
+    var top = showAll ? items : items.slice(0, topN);
     var html = "<div class='digestGrid'>";
     for(var i=0;i<top.length;i++){
       var it = top[i] || {};
@@ -381,8 +455,36 @@ function escHtml(s){
 
   var allItems = [];
   var collapsed = false;
+  var topN = 10;
+  var showAll = false;
 
-  async function load(){
+  function updateTopButtons(){
+    var btnAll = document.getElementById("listToggleAll");
+    var btnTop = document.getElementById("listToggleTop");
+    if(!btnAll || !btnTop) return;
+    if(showAll){
+      btnAll.style.display = "none";
+      btnTop.style.display = "";
+    }else{
+      btnAll.style.display = "";
+      btnTop.style.display = "none";
+    }
+  }
+
+  function updateList(){
+    var el = document.getElementById("list");
+    if(el) el.innerHTML = renderList(allItems);
+    var shown = showAll ? allItems.length : Math.min(topN, allItems.length);
+    setText("listHint", showAll ? ("showing: all ("+shown+")") : ("showing: top "+shown+"/"+allItems.length));
+    updateTopButtons();
+  }
+
+async function load(){
+    // Top highlights: show only top N by default
+    var btnAll = document.getElementById("listToggleAll");
+    var btnTop = document.getElementById("listToggleTop");
+    if(btnAll) btnAll.onclick = function(){ showAll = true; updateList(); };
+    if(btnTop) btnTop.onclick = function(){ showAll = false; updateList(); };
     setText("sumHint","loading…");
     setText("kpiHint","loading…");
     setText("listHint","loading…");
@@ -409,7 +511,14 @@ function escHtml(s){
       sumText = tmp ? ("Today titles:\\n" + tmp) : "";
     }
     if(!sumText) sumText = "OK";
-    document.getElementById("sumText").textContent = normNL(sumText);
+    var sp = splitYesterdayTitles(sumText);
+    document.getElementById("sumText").textContent = sp.main ? normNL(sp.main) : "(summary missing)";
+    var yBox = document.getElementById("yTitlesBox");
+    var yEl = document.getElementById("yTitles");
+    var yCt = document.getElementById("yTitlesCount");
+    if(yEl) yEl.innerHTML = renderChips(sp.titles);
+    if(yCt) yCt.textContent = sp.titles.length ? ("("+sp.titles.length+")") : "";
+    if(yBox) yBox.open = false;
     setText("sumHint", "OK");
 
     // items：news + sentiment を “なるべく寄せる”
@@ -438,6 +547,8 @@ function escHtml(s){
 
     // KPIs
     const k = computeKpis(allItems);
+    var kRow = document.getElementById("kpiRow");
+    if(kRow) kRow.innerHTML = renderKpiRow(k);
     document.getElementById("kpis").textContent = normNL(renderKpis(k));
     setText("kpiHint","OK");
 
