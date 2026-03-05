@@ -133,7 +133,7 @@
               </select>
               <select id="sortKey" class="select">
                 <option value="score">Top (score)</option>
-                <option value="risk">Risk</option>
+                <option value="risk"selected>Risk</option>
                 <option value="positive">Positive</option>
                 <option value="uncertainty">Uncertainty</option>
                 <option value="net">Net</option>
@@ -337,27 +337,71 @@ function splitYesterdayTitles(text){
   }
 
   function computeKpis(items){
-    var total = items.length;
-    var pos=0, neg=0, neu=0, mix=0, unk=0;
-    var netSum=0, netN=0;
-    for(const it of items){
-      var s = (it.sentiment||"").toLowerCase();
-      if(s==="positive") pos++;
-      else if(s==="negative") neg++;
-      else if(s==="neutral") neu++;
-      else if(s==="mixed") mix++;
-      else unk++;
-      if(typeof it.net==="number"){ netSum += it.net; netN++; }
-    }
-    var avgNet = netN ? (netSum/netN) : 0;
-    return {
-      total: total,
-      pos: pos, neg: neg, neu: neu, mix: mix, unk: unk,
-      avgNet: avgNet
-    };
-  }
+      const total = Array.isArray(items) ? items.length : 0;
 
-  function renderKpis(k){
+      let pos = 0, neg = 0, neu = 0, mix = 0, unk = 0;
+      let sumNet = 0, netCount = 0;
+
+      for(const it of (items||[])){
+        const label = pickLabel(it);
+        if(label === 'positive') pos++;
+        else if(label === 'negative') neg++;
+        else if(label === 'neutral') neu++;
+        else if(label === 'mixed') mix++;
+        else unk++;
+
+        const net = (typeof it?.net === 'number') ? it.net
+                  : (typeof it?.avg_net === 'number') ? it.avg_net
+                  : null;
+
+        if(typeof net === 'number' && Number.isFinite(net)){
+          sumNet += net;
+          netCount++;
+        }
+      }
+
+      const avg_net = netCount ? (sumNet / netCount) : null;
+
+      // If everything is unknown but we do have avg_net, classify all by net direction.
+      if((pos + neg + neu + mix) === 0 && unk > 0 && typeof avg_net === 'number' && Number.isFinite(avg_net)){
+        const cls = classifyFromNet(avg_net);
+        if(cls === 'positive') { pos = unk; unk = 0; }
+        else if(cls === 'negative') { neg = unk; unk = 0; }
+        else { neu = unk; unk = 0; }
+      }
+
+      return { total, pos, neg, neu, mix, unk, avg_net };
+    }
+
+    function pickLabel(it){
+      const raw = it?.sentiment_label ?? it?.label ?? it?.sentiment ?? it?.class ?? it?.polarity ?? null;
+      if(typeof raw === 'string'){
+        const s = raw.toLowerCase().trim();
+        if(s.startsWith('pos')) return 'positive';
+        if(s.startsWith('neg')) return 'negative';
+        if(s.startsWith('neu')) return 'neutral';
+        if(s.startsWith('mix')) return 'mixed';
+        if(s.startsWith('unk')) return 'unknown';
+      }
+      const net = (typeof it?.net === 'number') ? it.net
+                : (typeof it?.avg_net === 'number') ? it.avg_net
+                : null;
+      if(typeof net === 'number' && Number.isFinite(net)){
+        return classifyFromNet(net);
+      }
+      return 'unknown';
+    }
+
+    function classifyFromNet(net){
+      if(typeof net !== 'number' || !Number.isFinite(net)) return 'neutral';
+      if(net > 0.05) return 'positive';
+      if(net < -0.05) return 'negative';
+      return 'neutral';
+    }
+
+    
+
+function renderKpis(k){
     return [
       "total_articles",
       k.total,
