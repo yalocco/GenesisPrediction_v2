@@ -9,7 +9,11 @@
     /* Keep sentiment page styling minimal so it matches app.css (Home/Overlay/Digest). */
     body{ margin:0; }
 
-    .page{ max-width: 1200px; margin: 0 auto; padding: 18px; }
+    .page{ max-width: 1200px; margin: 0 auto; padding: 28px 24px 64px; }
+    /* Align first heading with other pages */
+    .page > h1{ font-size: 44px; font-weight: 800; letter-spacing: .2px; margin: 24px 0 10px; }
+    .page > p.lead{ margin: 0 0 14px; opacity: .78; }
+
 
     /* sentiment-specific UI parts */
     .grid{display:grid; grid-template-columns: 1.15fr .85fr; gap:18px; margin-top:14px;}
