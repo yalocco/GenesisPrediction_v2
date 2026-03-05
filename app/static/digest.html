@@ -1,636 +1,759 @@
-<!DOCTYPE html>
-<html lang="ja">
+<!doctype html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Digest - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260303v2" />
-  <script src="/static/_shared_nav.js?v=20260303v2"></script>
+
+  <!-- shared CSS -->
+  <link rel="stylesheet" href="/static/app.css?v=20260305" />
 
   <style>
-    /* Digest: render newline sequences as actual line breaks */
-    #sumText, #kpis { white-space: pre-wrap; }
-
-    /* Digest: card list with thumbnails */
-    .digestList{ display:block; }
-    .digestGrid{
-      display:grid;
-      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
-      gap:12px;
+    :root{
+      --bg0: #070b12;
+      --bg1: #0a1020;
+      --panel: rgba(255,255,255,.04);
+      --panel2: rgba(255,255,255,.06);
+      --line: rgba(255,255,255,.10);
+      --text: rgba(255,255,255,.90);
+      --muted: rgba(255,255,255,.65);
+      --faint: rgba(255,255,255,.45);
+      --accent: rgba(105,169,255,.95);
+      --good: rgba(80, 200, 140, .95);
+      --warn: rgba(240, 196, 72, .95);
+      --bad: rgba(255, 95, 95, .95);
+      --shadow: 0 14px 50px rgba(0,0,0,.45);
+      --radius: 18px;
     }
-    .digestCard{
+
+    body{
+      margin:0;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 700px at 25% 25%, rgba(105,169,255,.10), transparent 60%),
+        radial-gradient(900px 600px at 70% 55%, rgba(80,200,140,.06), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      min-height:100vh;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+
+    /* topbar (match other pages vibe) */
+    .topbar{
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(14px);
+      background: linear-gradient(180deg, rgba(0,0,0,.65), rgba(0,0,0,.20));
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .topbar-inner{
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 10px 16px;
       display:flex;
-      gap:12px;
-      padding:12px;
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:16px;
+      align-items:center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .brand{
+      display:flex;align-items:center;gap:10px;white-space:nowrap;
+      font-weight:700;font-size:14px;color:rgba(255,255,255,.92);
+    }
+    .dot{width:8px;height:8px;border-radius:999px;background:var(--accent);box-shadow:0 0 0 3px rgba(105,169,255,.18);}
+    nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+    .nav-link{
+      display:inline-flex;align-items:center;gap:8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.02);
+      color: rgba(255,255,255,.82);
+      text-decoration:none;
+      font-size: 12px;
+      transition: .15s ease;
+    }
+    .nav-link:hover{border-color: rgba(105,169,255,.45); color: rgba(255,255,255,.92);}
+    .nav-link.active{border-color: rgba(105,169,255,.85); box-shadow: 0 0 0 3px rgba(105,169,255,.14) inset;}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.02);
+      color: rgba(255,255,255,.78);
+      font-size:12px;
+      white-space:nowrap;
+    }
+    .pill .led{
+      width:8px;height:8px;border-radius:999px;background: rgba(255,255,255,.25);
+      box-shadow: 0 0 0 3px rgba(255,255,255,.08);
+    }
+    .pill.good .led{background: var(--good); box-shadow: 0 0 0 3px rgba(80,200,140,.18);}
+    .pill.warn .led{background: var(--warn); box-shadow: 0 0 0 3px rgba(240,196,72,.18);}
+    .pill.bad  .led{background: var(--bad);  box-shadow: 0 0 0 3px rgba(255,95,95,.18);}
+
+    /* layout */
+    .wrap{max-width: 1200px; margin: 0 auto; padding: 22px 16px 60px;}
+    .header{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap;
+      padding-top: 6px;
+    }
+    .hgroup h1{margin:0; font-size: 34px; letter-spacing:.2px;}
+    .hgroup .sub{margin-top:6px; color: var(--muted); font-size: 14px;}
+    .meta-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap; justify-content:flex-end;}
+    .meta-row a{color: var(--accent); text-decoration:none;}
+    .meta-row a:hover{text-decoration:underline;}
+
+    .section{margin-top: 18px;}
+    .panel{
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px 16px;
+    }
+    .section h2{
+      margin:0 0 10px 0;
+      font-size: 26px;
+      letter-spacing:.2px;
+    }
+
+    /* controls */
+    .controls{
+      display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+      margin-top: 10px;
+    }
+    input[type="text"], select, button{
       background: rgba(255,255,255,.03);
-      box-shadow: 0 8px 28px rgba(0,0,0,.25);
-      align-items:flex-start;
+      color: rgba(255,255,255,.86);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 12px;
+      outline: none;
     }
-    .digestThumb{
-      width:72px;
-      height:72px;
-      border-radius:14px;
-      overflow:hidden;
-      background: rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.08);
-      flex:0 0 auto;
+    input[type="text"]{min-width: 220px;}
+    button{cursor:pointer; transition:.12s ease;}
+    button:hover{border-color: rgba(105,169,255,.55);}
+    button.primary{
+      border-color: rgba(105,169,255,.75);
+      box-shadow: 0 0 0 3px rgba(105,169,255,.12) inset;
     }
-    .digestThumb img{
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      display:block;
+    .mini{
+      display:inline-flex;align-items:center;gap:10px;color: var(--muted);font-size:12px;
+      margin-top: 2px;
     }
-    .digestBody{ flex:1 1 auto; min-width:0; }
-    .digestTitle{ font-weight:700; line-height:1.2; }
-    .digestTitle a{ text-decoration:none; }
-    .digestDesc{ margin-top:6px; opacity:.9; font-size:13px; line-height:1.35; }
-    .digestRight{ flex:0 0 auto; display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
-    .bars{ display:flex; flex-direction:column; gap:6px; margin-top:8px; }
-    .barRow{ display:flex; align-items:center; gap:8px; }
-    .barLabel{ width:32px; font-size:12px; opacity:.85; }
-    .barTrack{
-      width:160px;
-      height:8px;
-      border-radius:999px;
-      background: rgba(255,255,255,.08);
-      overflow:hidden;
-      border:1px solid rgba(255,255,255,.07);
+    .statusline{color: var(--muted); font-size: 12px; margin-top: 2px;}
+    .statusline .tag{display:inline-flex;align-items:center;gap:6px;margin-right:8px}
+    .tag-dot{width:8px;height:8px;border-radius:999px;background: rgba(255,255,255,.25);}
+
+    /* KPI cards */
+    .kpi-row{
+      display:grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 10px;
     }
-    .barFill{ height:100%; border-radius:999px; background: rgba(105,169,255,.85); }
-    .barFill.pos{ background: rgba(92,255,198,.75); }
-    .barFill.risk{ background: rgba(255,92,92,.75); }
-    .barFill.unc{ background: rgba(255,214,102,.70); }
     @media (max-width: 980px){
-      .digestGrid{ grid-template-columns: 1fr; }
-      .barTrack{ width:140px; }
+      .kpi-row{grid-template-columns: repeat(3, minmax(0, 1fr));}
     }
-/* Digest UI additions */
-.digestGrid{margin-top:14px}
-.card{padding:14px 16px}
-.yTitles{margin-top:10px; border-radius:16px; padding:10px 12px; background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.06)}
-.yTitles > summary{cursor:pointer; user-select:none; display:flex; align-items:center; gap:10px; list-style:none}
-.yTitles > summary::-webkit-details-marker{display:none}
-.yTitleLabel{font-weight:700}
-.titleChips{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px}
-.chip{display:inline-flex; align-items:center; gap:6px; padding:5px 9px; border-radius:999px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); font-size:12px; max-width:100%}
-.chip .t{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:520px}
-.chip .n{opacity:.7; font-variant-numeric:tabular-nums}
-.kpiRow{display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px}
-.kpiCard{border-radius:16px; padding:10px 12px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06)}
-.kpiCard .k{font-size:12px; opacity:.8}
-.kpiCard .v{font-size:20px; font-weight:800; margin-top:4px; font-variant-numeric:tabular-nums}
+    @media (max-width: 560px){
+      .kpi-row{grid-template-columns: repeat(2, minmax(0, 1fr));}
+    }
+    .kpi{
+      background: rgba(0,0,0,.10);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 14px;
+      padding: 12px 12px;
+    }
+    .kpi .label{color: var(--faint); font-size: 12px;}
+    .kpi .value{font-size: 22px; margin-top: 6px; font-weight: 700;}
 
+    /* cards */
+    .cards{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+    @media (max-width: 900px){
+      .cards{grid-template-columns: 1fr;}
+    }
+    .card{
+      background: rgba(0,0,0,.16);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 16px;
+      overflow:hidden;
+      display:flex;
+      gap: 12px;
+      padding: 12px;
+      min-height: 112px;
+    }
+    .thumb{
+      width: 92px; height: 92px; border-radius: 12px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.10);
+      flex: 0 0 auto;
+      overflow:hidden;
+    }
+    .thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+    .card-main{flex: 1 1 auto; min-width: 0;}
+    .title{
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.2;
+      font-weight: 700;
+      color: rgba(105,169,255,.95);
+    }
+    .title a{color: inherit; text-decoration:none;}
+    .title a:hover{text-decoration:underline;}
+    .source{
+      margin-top: 4px;
+      color: rgba(255,255,255,.72);
+      font-size: 12px;
+    }
+    .desc{
+      margin-top: 8px;
+      color: rgba(255,255,255,.70);
+      font-size: 12px;
+      line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow:hidden;
+    }
+    .card-side{
+      flex: 0 0 auto;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      justify-content:space-between;
+      min-width: 86px;
+    }
+    .metric{
+      font-variant-numeric: tabular-nums;
+      color: rgba(255,255,255,.75);
+      font-size: 12px;
+    }
+    .metric b{color: rgba(255,255,255,.92);}
+    .badge{
+      display:inline-flex;align-items:center;gap:6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.03);
+      color: rgba(255,255,255,.78);
+      font-size: 11px;
+    }
+    .badge.good{border-color: rgba(80,200,140,.30); color: rgba(80,200,140,.95);}
+    .badge.bad {border-color: rgba(255,95,95,.30); color: rgba(255,95,95,.95);}
+    .badge.warn{border-color: rgba(240,196,72,.30); color: rgba(240,196,72,.95);}
+    .badge.neu {border-color: rgba(255,255,255,.16); color: rgba(255,255,255,.76);}
+
+    .empty{
+      margin-top: 8px;
+      color: rgba(255,255,255,.60);
+      font-size: 12px;
+    }
   </style>
-
-
-  <style>
-    /* Digest: Top highlights controls */
-    .topCtl{display:flex;gap:8px;align-items:center;margin-left:auto}
-    .btn.small{padding:6px 10px;font-size:12px;border-radius:999px}
-    .btn.ghost{background:transparent}
-  </style>
-
 </head>
+
 <body>
-<main class="gp-main">
-  <div class="page gp-page gp-page--digest">
-    <section class="panel">
-      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-        <div>
-          <div class="h1">Digest</div>
-          <p class="sub">Daily summary + top highlights (robust / safe).</p>
-        </div>
-        <div class="pillrow">
-          <span id="pillAsOf" class="pill">as_of: --</span>
-          <span id="pillSource" class="pill">source: --</span>
-          <span id="pillItems" class="pill">items: --</span>
-          <a id="btnOpenJson" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open JSON</a>
-        </div>
-      </div>
-
-      <div class="grid2" style="margin-top:12px;">
-        <div class="card">
-          <div class="sectionTitle">
-            <h2>Summary</h2>
-            <span id="sumHint" class="hint">loading…</span>
-          </div>
-
-          <pre id="sumText" class="summaryText">loading…</pre>
-
-          <div class="toolbar">
-            <div class="tool-left">
-              <input id="q" class="search" type="search" placeholder="Search title/source…" />
-              <select id="sentFilter" class="select">
-                <option value="all">All</option>
-                <option value="positive">Positive</option>
-                <option value="negative">Negative</option>
-                <option value="neutral">Neutral</option>
-                <option value="mixed">Mixed</option>
-                <option value="unknown">Unknown</option>
-              </select>
-              <select id="sortKey" class="select">
-                <option value="score">Top (score)</option>
-                <option value="risk"selected>Risk</option>
-                <option value="positive">Positive</option>
-                <option value="uncertainty">Uncertainty</option>
-                <option value="net">Net</option>
-              </select>
-              <button id="btnCollapse" class="btn" type="button">Collapse summary</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="sectionTitle">
-            <h2>KPIs</h2>
-            <span id="kpiHint" class="hint">loading…</span>
-          </div>
-          <div id="kpiRow" class="kpiRow">loading…</div>
-          <pre id="kpis" class="mono small" style="display:none"></pre>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top:12px;">
-        <div class="sectionTitle">
-          <h2>Top highlights</h2>
-          <div class="topCtl">
-            <button id="listToggleAll" class="btn small">Show all</button>
-            <button id="listToggleTop" class="btn small ghost" style="display:none">Top 10</button>
-          </div>
-          <span id="listHint" class="hint">loading…</span>
-        </div>
-        <div id="list" class="digestList">loading…</div>
-      </div>
-
-    </section>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><span class="dot"></span><span>GenesisPrediction v2</span></div>
+      <nav>
+        <a class="nav-link" href="/static/index.html">Home</a>
+        <a class="nav-link" href="/static/overlay.html">Overlay</a>
+        <a class="nav-link" href="/static/sentiment.html">Sentiment</a>
+        <a class="nav-link active" href="/static/digest.html">Digest</a>
+        <span class="pill good" id="pill-ready"><span class="led"></span>Ready</span>
+        <span class="pill" id="pill-health"><span class="led"></span>Health: --</span>
+        <span class="pill" id="pill-asof"><span class="led"></span>as_of: --</span>
+      </nav>
+    </div>
   </div>
-</main>
+
+  <div class="wrap">
+    <div class="header">
+      <div class="hgroup">
+        <h1>Digest</h1>
+        <div class="sub">Daily summary + top highlights (robust / safe).</div>
+      </div>
+      <div class="meta-row">
+        <span class="pill" id="meta-asof"><span class="led"></span>as_of: --</span>
+        <span class="pill" id="meta-source"><span class="led"></span>source: --</span>
+        <span class="pill" id="meta-items"><span class="led"></span>items: --</span>
+        <a href="#" id="open-json" target="_blank" rel="noopener">Open JSON</a>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="panel">
+        <h2>Summary</h2>
+        <div class="statusline" id="summary-status">loading...</div>
+        <div id="summary-text" style="margin-top:8px; white-space:pre-wrap; color:rgba(255,255,255,.78); font-size:13px;"></div>
+
+        <div class="controls">
+          <input id="q" type="text" placeholder="Search title/source..." />
+          <select id="filter-sent">
+            <option value="all">All</option>
+            <option value="positive">positive</option>
+            <option value="negative">negative</option>
+            <option value="neutral">neutral</option>
+            <option value="mixed">mixed</option>
+            <option value="unknown">unknown</option>
+          </select>
+
+          <select id="sortby">
+            <option value="risk">Risk</option>
+            <option value="score">Score</option>
+            <option value="newest">Newest</option>
+          </select>
+
+          <button id="toggle-show" class="primary">Show all</button>
+          <button id="toggle-summary">Collapse summary</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="panel">
+        <h2>KPIs</h2>
+        <div class="statusline" id="kpi-status">loading...</div>
+
+        <div class="kpi-row" style="margin-top:10px;">
+          <div class="kpi"><div class="label">articles</div><div class="value" id="kpi-articles">--</div></div>
+          <div class="kpi"><div class="label">positive</div><div class="value" id="kpi-pos">--</div></div>
+          <div class="kpi"><div class="label">negative</div><div class="value" id="kpi-neg">--</div></div>
+          <div class="kpi"><div class="label">neutral</div><div class="value" id="kpi-neu">--</div></div>
+          <div class="kpi"><div class="label">mixed</div><div class="value" id="kpi-mix">--</div></div>
+          <div class="kpi"><div class="label">unknown</div><div class="value" id="kpi-unk">--</div></div>
+          <div class="kpi"><div class="label">avg_net</div><div class="value" id="kpi-avg">--</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="panel">
+        <h2>Top highlights</h2>
+        <div class="statusline" id="hi-status">loading...</div>
+        <div class="mini" id="showing"></div>
+        <div id="cards" class="cards"></div>
+        <div id="empty" class="empty" style="display:none;">no items</div>
+      </div>
+    </div>
+  </div>
 
 <script>
-(function(){
+(() => {
   "use strict";
 
-  function safeText(x){ return (x==null) ? "" : String(x); }
-  
-  // Normalize newline markers that may appear as literal text in JSON (e.g., "\n" or "¥n" / "¥r¥n")
-  function normNL(s){
-    s = (s == null) ? "" : String(s);
-    // Backslash-n (two chars) -> newline
-    s = s.replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n");
-    // Yen sign used instead of backslash in some environments
-    s = s.replace(/¥r¥n/g, "\n").replace(/¥n/g, "\n");
-    return s;
+  // ---------------------------
+  // config
+  // ---------------------------
+  const URL_SUMMARY = "/data/world_politics/analysis/daily_summary_latest.json";
+  const URL_NEWS    = "/data/world_politics/analysis/daily_news_latest.json";
+  const LS_SHOW_ALL = "digest_show_all_v1";
+
+  // ---------------------------
+  // helpers
+  // ---------------------------
+  const $ = (id) => document.getElementById(id);
+
+  function safeText(x){
+    if (x === null || x === undefined) return "";
+    if (typeof x === "string") return x;
+    try { return JSON.stringify(x, null, 2); } catch { return String(x); }
   }
-function escHtml(s){
-    s = safeText(s);
-    return s.replace(/[&<>"']/g, function(ch){
-      return ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" })[ch];
-    });
+
+  function asNumber(x, def=0){
+    const n = Number(x);
+    return Number.isFinite(n) ? n : def;
   }
-function renderChips(lines){
-  var uniq = [];
-  var seen = {};
-  for(var i=0;i<lines.length;i++){
-    var t = safeText(lines[i]).trim();
-    if(!t) continue;
-    var key = t.toLowerCase();
-    if(seen[key]) continue;
-    seen[key]=true;
-    uniq.push(t);
-    if(uniq.length>=120) break;
+
+  function pick(obj, keys, def=null){
+    for (const k of keys){
+      if (obj && Object.prototype.hasOwnProperty.call(obj, k) && obj[k] !== null && obj[k] !== undefined) return obj[k];
+    }
+    return def;
   }
-  return uniq.map(function(t,i){
-    return '<span class="chip" title="'+escHtml(t)+'"><span class="n">'+(i+1)+'</span><span class="t">'+escHtml(t)+'</span></span>';
-  }).join("");
-}
 
-function renderKpiRow(k){
-  if(!k) return "";
-  var pairs = [
-    ["articles", k.total],
-    ["positive", k.pos],
-    ["negative", k.neg],
-    ["neutral",  k.neu],
-    ["mixed",    k.mix],
-    ["unknown",  k.unk],
-    ["avg_net",  (typeof k.avgNet === "number") ? k.avgNet.toFixed(3) : k.avgNet]
-  ];
-  return pairs.map(function(p){
-    return '<div class="kpiCard"><div class="k">'+escHtml(String(p[0]))+'</div><div class="v">'+escHtml(String(p[1]))+'</div></div>';
-  }).join("");
-}
+  function parseISOTime(x){
+    const t = Date.parse(x);
+    return Number.isFinite(t) ? t : 0;
+  }
 
-function splitYesterdayTitles(text){
-  text = normNL(text||"");
-  var key = "Yesterday titles:";
-  var idx = text.indexOf(key);
-  if(idx < 0) return {main:text.trim(), titles:[]};
-  var before = text.slice(0, idx).trim();
-  var after = text.slice(idx + key.length);
-  var lines = normNL(after).split("\n").map(function(x){ return safeText(x).replace(/^\s*[-•]\s*/, "").trim(); }).filter(Boolean);
-  return {main:before, titles:lines};
-}
+  function normalizeSentimentLabel(x){
+    const s = (x ?? "").toString().toLowerCase().trim();
+    if (!s) return "unknown";
+    if (s.includes("pos")) return "positive";
+    if (s.includes("neg")) return "negative";
+    if (s.includes("neu")) return "neutral";
+    if (s.includes("mix")) return "mixed";
+    return "unknown";
+  }
 
-
+  function badgeClass(label){
+    switch(label){
+      case "positive": return "good";
+      case "negative": return "bad";
+      case "neutral":  return "neu";
+      case "mixed":    return "warn";
+      default: return "neu";
+    }
+  }
 
   async function fetchJson(url){
-    const r = await fetch(url, {cache:"no-store"});
-    if(!r.ok) throw new Error("HTTP " + r.status);
+    const r = await fetch(url, { cache: "no-store" });
+    if (!r.ok) throw new Error(`HTTP ${r.status} for ${url}`);
     return await r.json();
   }
 
-  async function pickFirstOk(urls){
-    for(const u of urls){
-      try{
-        const j = await fetchJson(u);
-        return {url:u, json:j};
-      }catch(_e){}
+  // ---------------------------
+  // UI state
+  // ---------------------------
+  const state = {
+    sourceUrl: URL_SUMMARY,
+    asOf: "--",
+    items: [],
+    summaryText: "",
+    showAll: false,
+    lastError: null,
+  };
+
+  // ---------------------------
+  // render functions
+  // ---------------------------
+  function renderMeta(){
+    $("meta-asof").innerHTML = `<span class="led"></span>as_of: ${state.asOf}`;
+    $("meta-source").innerHTML = `<span class="led"></span>source: ${state.sourceUrl}`;
+    $("meta-items").innerHTML = `<span class="led"></span>items: ${state.items.length}`;
+    $("open-json").setAttribute("href", state.sourceUrl);
+
+    $("pill-asof").innerHTML = `<span class="led"></span>as_of: ${state.asOf}`;
+
+    // We don't have health here; keep placeholder.
+    $("pill-health").innerHTML = `<span class="led"></span>Health: --`;
+  }
+
+  function renderSummary(){
+    const s = state.summaryText?.trim();
+    if (!s){
+      $("summary-status").textContent = state.lastError ? "error" : "OK";
+      $("summary-text").textContent = "(summary missing)";
+      return;
     }
-    return null;
+    $("summary-status").textContent = "OK";
+    $("summary-text").textContent = s;
   }
 
-  const SUM_CANDIDATES = [
-    "/data/world_politics/analysis/daily_summary_latest.json",
-    "/data/digest/daily_summary_latest.json"
-  ];
+  function computeKPIs(items){
+    let pos=0, neg=0, neu=0, mix=0, unk=0;
+    let sumNet = 0, nNet = 0;
 
-  const NEWS_CANDIDATES = [
-    "/data/world_politics/analysis/daily_news_latest.json",
-    "/data/digest/daily_news_latest.json"
-  ];
+    for (const it of items){
+      const lab = normalizeSentimentLabel(pick(it, ["sentiment", "sentiment_label", "label"], ""));
+      if (lab === "positive") pos++;
+      else if (lab === "negative") neg++;
+      else if (lab === "neutral") neu++;
+      else if (lab === "mixed") mix++;
+      else unk++;
 
-  const SEN_CANDIDATES = [
-    "/data/world_politics/analysis/sentiment_latest.json",
-    "/data/digest/sentiment_latest.json"
-  ];
-
-  function pickSummaryText(sumRoot){
-    if(!sumRoot) return "";
-    if(sumRoot.yesterday_summary){
-      if(typeof sumRoot.yesterday_summary.text === "string" && sumRoot.yesterday_summary.text.trim()){
-        return sumRoot.yesterday_summary.text.trim();
-      }
-      if(Array.isArray(sumRoot.yesterday_summary.titles) && sumRoot.yesterday_summary.titles.length){
-        var lines = sumRoot.yesterday_summary.titles.slice(0, 30).map(function(t){
-          return "- " + safeText(t);
-        });
-        return "Yesterday titles:\\n" + lines.join("\\n");
+      const net = pick(it, ["net", "net_score", "avg_net", "sentiment_net"], null);
+      const netNum = Number(net);
+      if (Number.isFinite(netNum)){
+        sumNet += netNum;
+        nNet++;
       }
     }
-    if(typeof sumRoot.summary === "string" && sumRoot.summary.trim()) return sumRoot.summary.trim();
-    return "";
+
+    const avg = nNet ? (sumNet / nNet) : null;
+    return { articles: items.length, pos, neg, neu, mix, unk, avg };
   }
 
-  function pickArticles(anyRoot){
-    if(!anyRoot) return [];
-    if(Array.isArray(anyRoot.items)) return anyRoot.items;
-    if(Array.isArray(anyRoot.articles)) return anyRoot.articles;
-    if(anyRoot.yesterday_summary && Array.isArray(anyRoot.yesterday_summary.items)) return anyRoot.yesterday_summary.items;
-    return [];
+  function renderKPIs(){
+    const k = computeKPIs(state.items);
+    $("kpi-articles").textContent = String(k.articles);
+    $("kpi-pos").textContent = String(k.pos);
+    $("kpi-neg").textContent = String(k.neg);
+    $("kpi-neu").textContent = String(k.neu);
+    $("kpi-mix").textContent = String(k.mix);
+    $("kpi-unk").textContent = String(k.unk);
+    $("kpi-avg").textContent = (k.avg === null) ? "—" : k.avg.toFixed(3);
+
+    $("kpi-status").textContent = state.lastError ? "error" : "OK";
   }
 
-  function normalizeArticle(a){
-    a = a || {};
-    var srcName = "";
+  function getFilteredSortedItems(){
+    const q = $("q").value.trim().toLowerCase();
+    const sent = $("filter-sent").value;
+    const sortby = $("sortby").value;
+
+    let list = state.items.slice();
+
+    if (q){
+      list = list.filter(it => {
+        const title = safeText(pick(it, ["title", "headline"], "")).toLowerCase();
+        const source = safeText(pick(it, ["source", "source_name", "publisher"], "")).toLowerCase();
+        return title.includes(q) || source.includes(q);
+      });
+    }
+
+    if (sent !== "all"){
+      list = list.filter(it => normalizeSentimentLabel(pick(it, ["sentiment", "sentiment_label", "label"], "")) === sent);
+    }
+
+    if (sortby === "risk"){
+      list.sort((a,b) => {
+        const ar = asNumber(pick(a, ["risk","risk_score","severity","danger"], 0), 0);
+        const br = asNumber(pick(b, ["risk","risk_score","severity","danger"], 0), 0);
+        if (br !== ar) return br - ar;
+        const as = asNumber(pick(a, ["score","rank_score","importance"], 0), 0);
+        const bs = asNumber(pick(b, ["score","rank_score","importance"], 0), 0);
+        return bs - as;
+      });
+    } else if (sortby === "score"){
+      list.sort((a,b) => {
+        const as = asNumber(pick(a, ["score","rank_score","importance"], 0), 0);
+        const bs = asNumber(pick(b, ["score","rank_score","importance"], 0), 0);
+        if (bs !== as) return bs - as;
+        const ar = asNumber(pick(a, ["risk","risk_score","severity","danger"], 0), 0);
+        const br = asNumber(pick(b, ["risk","risk_score","severity","danger"], 0), 0);
+        return br - ar;
+      });
+    } else {
+      list.sort((a,b) => parseISOTime(pick(b, ["publishedAt","published_at","time","date"], "")) - parseISOTime(pick(a, ["publishedAt","published_at","time","date"], "")));
+    }
+
+    return list;
+  }
+
+  function renderCards(){
+    const list = getFilteredSortedItems();
+    const showAll = state.showAll;
+
+    const shown = showAll ? list : list.slice(0, 10);
+    $("cards").innerHTML = "";
+    $("empty").style.display = shown.length ? "none" : "block";
+
+    $("showing").textContent = showAll
+      ? `showing: all (${list.length})`
+      : `showing: top ${Math.min(10, list.length)}/${list.length}`;
+
+    if (state.lastError){
+      $("hi-status").textContent = "error";
+    } else {
+      $("hi-status").textContent = shown.length ? "OK" : "OK";
+    }
+
+    for (const it of shown){
+      const title = safeText(pick(it, ["title","headline"], "(no title)"));
+      const url = pick(it, ["url","link"], "#");
+      const source = safeText(pick(it, ["source","source_name","publisher"], "unknown"));
+      const desc = safeText(pick(it, ["description","summary","snippet"], ""));
+      const img = pick(it, ["image","urlToImage","thumbnail"], null);
+
+      const risk = asNumber(pick(it, ["risk","risk_score","severity","danger"], 0), 0);
+      const score = asNumber(pick(it, ["score","rank_score","importance"], 0), 0);
+
+      const lab = normalizeSentimentLabel(pick(it, ["sentiment","sentiment_label","label"], ""));
+      const bcls = badgeClass(lab);
+
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const thumb = document.createElement("div");
+      thumb.className = "thumb";
+      if (img){
+        const im = document.createElement("img");
+        im.src = img;
+        im.loading = "lazy";
+        im.referrerPolicy = "no-referrer";
+        thumb.appendChild(im);
+      }
+      card.appendChild(thumb);
+
+      const main = document.createElement("div");
+      main.className = "card-main";
+      main.innerHTML = `
+        <p class="title"><a href="${url}" target="_blank" rel="noopener">${escapeHtml(title)}</a></p>
+        <div class="source">${escapeHtml(source)}</div>
+        <div class="desc">${escapeHtml(desc)}</div>
+      `;
+      card.appendChild(main);
+
+      const side = document.createElement("div");
+      side.className = "card-side";
+      side.innerHTML = `
+        <div class="metric">risk <b>${risk.toFixed(3)}</b></div>
+        <div class="metric">score <b>${score.toFixed(3)}</b></div>
+        <div class="badge ${bcls}">${escapeHtml(lab)}</div>
+      `;
+      card.appendChild(side);
+
+      $("cards").appendChild(card);
+    }
+  }
+
+  function escapeHtml(s){
+    return String(s)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  // ---------------------------
+  // data normalization
+  // ---------------------------
+  function normalizeFromDailySummary(obj){
+    // Expected: obj.items[] exists (new format)
+    const items = Array.isArray(obj?.items) ? obj.items : [];
+    const asOf = pick(obj, ["date","as_of","asOf"], "--");
+    const summaryText =
+      pick(obj, ["summary", "text_summary", "daily_summary"], "") ||
+      pick(obj, ["yesterday_summary_text"], "") ||
+      "";
+
+    return { asOf, summaryText, items };
+  }
+
+  function normalizeFromDailyNews(obj){
+    // Try common shapes:
+    // - obj.items[]
+    // - obj.articles[]
+    // - obj.events[] (if your analyzer uses events naming)
+    const raw = Array.isArray(obj?.items) ? obj.items
+              : Array.isArray(obj?.articles) ? obj.articles
+              : Array.isArray(obj?.events) ? obj.events
+              : [];
+
+    const asOf = pick(obj, ["date","as_of","asOf"], "--");
+
+    // Build item objects compatible with renderer
+    const items = raw.map((a) => {
+      const sourceName =
+        (typeof a?.source === "string") ? a.source :
+        (typeof a?.source?.name === "string") ? a.source.name :
+        pick(a, ["source_name","publisher"], "unknown");
+
+      return {
+        title: pick(a, ["title","headline"], "(no title)"),
+        url: pick(a, ["url","link"], "#"),
+        source: sourceName,
+        description: pick(a, ["description","summary","snippet"], ""),
+        image: pick(a, ["urlToImage","image","thumbnail"], null),
+        publishedAt: pick(a, ["publishedAt","published_at","time","date"], ""),
+        // Scores may not exist in daily_news; keep 0 (still works)
+        risk: asNumber(pick(a, ["risk","risk_score","severity","danger"], 0), 0),
+        score: asNumber(pick(a, ["score","rank_score","importance"], 0), 0),
+        sentiment: pick(a, ["sentiment","sentiment_label","label"], "unknown"),
+        net: pick(a, ["net","net_score","avg_net","sentiment_net"], null),
+      };
+    });
+
+    return { asOf, summaryText: "", items };
+  }
+
+  // ---------------------------
+  // main load with fallback
+  // ---------------------------
+  async function load(){
+    state.lastError = null;
+    $("summary-status").textContent = "loading...";
+    $("kpi-status").textContent = "loading...";
+    $("hi-status").textContent = "loading...";
+    $("summary-text").textContent = "";
+    $("cards").innerHTML = "";
+    $("empty").style.display = "none";
+    $("showing").textContent = "";
+
+    // showAll persisted
+    const saved = localStorage.getItem(LS_SHOW_ALL);
+    state.showAll = (saved === null) ? true : (saved === "1");
+    $("toggle-show").textContent = state.showAll ? "Top 10" : "Show all";
+    $("toggle-show").classList.toggle("primary", !state.showAll);
+
+    // 1) try daily_summary_latest.json
     try{
-      if(a.source){
-        if(typeof a.source === "string") srcName = a.source;
-        else if(typeof a.source.name === "string") srcName = a.source.name;
-        else if(typeof a.source.id === "string") srcName = a.source.id;
-      }
-    }catch(_e){}
-    var title = safeText(a.title || a.headline || "");
-    var url = safeText(a.url || "");
-    var desc = safeText(a.description || a.summary || "");
-    var img = safeText(a.urlToImage || a.image || a.image_url || a.thumbnail || "");
-    return {
-      title: title,
-      url: url,
-      source: srcName || safeText(a.publisher || a.site || ""),
-      score: (typeof a.score==="number") ? a.score : (typeof a.importance==="number" ? a.importance : 0),
-      risk: (typeof a.risk==="number") ? a.risk : null,
-      positive: (typeof a.positive==="number") ? a.positive : null,
-      uncertainty: (typeof a.uncertainty==="number") ? a.uncertainty : null,
-      net: (typeof a.net==="number") ? a.net : null,
-      sentiment: safeText(a.sentiment || a.label || ""),
-      description: desc,
-      image: img
-    };
-  }
+      const s = await fetchJson(URL_SUMMARY);
+      const ns = normalizeFromDailySummary(s);
 
-  function metricPill(val, kind){
-    if(typeof val !== "number") return "<span class='mp mp--na'>--</span>";
-    var cls = "mp";
-    if(kind==="risk"){
-      cls += (val>=0.35) ? " mp--riskHi" : (val>=0.15) ? " mp--riskMd" : " mp--riskLo";
-    }else if(kind==="positive"){
-      cls += (val>=0.20) ? " mp--posHi" : (val>=0.05) ? " mp--posMd" : " mp--posLo";
-    }else if(kind==="uncertainty"){
-      cls += (val>=0.30) ? " mp--uncHi" : (val>=0.18) ? " mp--uncMd" : " mp--uncLo";
-    }else if(kind==="net"){
-      cls += (val<=-0.20) ? " mp--netNeg" : (val>=0.20) ? " mp--netPos" : " mp--netMid";
-    }
-    return "<span class='"+cls+"'>" + val.toFixed(3) + "</span>";
-  }
-
-  function computeKpis(items){
-      const total = Array.isArray(items) ? items.length : 0;
-
-      let pos = 0, neg = 0, neu = 0, mix = 0, unk = 0;
-      let sumNet = 0, netCount = 0;
-
-      for(const it of (items||[])){
-        const label = pickLabel(it);
-        if(label === 'positive') pos++;
-        else if(label === 'negative') neg++;
-        else if(label === 'neutral') neu++;
-        else if(label === 'mixed') mix++;
-        else unk++;
-
-        const net = (typeof it?.net === 'number') ? it.net
-                  : (typeof it?.avg_net === 'number') ? it.avg_net
-                  : null;
-
-        if(typeof net === 'number' && Number.isFinite(net)){
-          sumNet += net;
-          netCount++;
-        }
+      // if items exist, use them
+      if (Array.isArray(ns.items) && ns.items.length > 0){
+        state.sourceUrl = URL_SUMMARY;
+        state.asOf = ns.asOf || "--";
+        state.summaryText = ns.summaryText || "";
+        state.items = ns.items;
+        renderMeta();
+        renderSummary();
+        renderKPIs();
+        renderCards();
+        return;
       }
 
-      const avg_net = netCount ? (sumNet / netCount) : null;
-
-      // If everything is unknown but we do have avg_net, classify all by net direction.
-      if((pos + neg + neu + mix) === 0 && unk > 0 && typeof avg_net === 'number' && Number.isFinite(avg_net)){
-        const cls = classifyFromNet(avg_net);
-        if(cls === 'positive') { pos = unk; unk = 0; }
-        else if(cls === 'negative') { neg = unk; unk = 0; }
-        else { neu = unk; unk = 0; }
-      }
-
-      return { total, pos, neg, neu, mix, unk, avg_net };
+      // items absent -> fallback to daily_news_latest.json
+      // keep date from summary if available (nice UX)
+      state.asOf = ns.asOf || "--";
+      state.summaryText = ns.summaryText || "";
+    } catch (e){
+      state.lastError = e;
     }
 
-    function pickLabel(it){
-      const raw = it?.sentiment_label ?? it?.label ?? it?.sentiment ?? it?.class ?? it?.polarity ?? null;
-      if(typeof raw === 'string'){
-        const s = raw.toLowerCase().trim();
-        if(s.startsWith('pos')) return 'positive';
-        if(s.startsWith('neg')) return 'negative';
-        if(s.startsWith('neu')) return 'neutral';
-        if(s.startsWith('mix')) return 'mixed';
-        if(s.startsWith('unk')) return 'unknown';
-      }
-      const net = (typeof it?.net === 'number') ? it.net
-                : (typeof it?.avg_net === 'number') ? it.avg_net
-                : null;
-      if(typeof net === 'number' && Number.isFinite(net)){
-        return classifyFromNet(net);
-      }
-      return 'unknown';
-    }
+    // 2) fallback: daily_news_latest.json
+    try{
+      const n = await fetchJson(URL_NEWS);
+      const nn = normalizeFromDailyNews(n);
 
-    function classifyFromNet(net){
-      if(typeof net !== 'number' || !Number.isFinite(net)) return 'neutral';
-      if(net > 0.05) return 'positive';
-      if(net < -0.05) return 'negative';
-      return 'neutral';
-    }
-
-    
-
-function renderKpis(k){
-    return [
-      "total_articles",
-      k.total,
-      "",
-      "Positive", k.pos,
-      "Negative", k.neg,
-      "Neutral",  k.neu,
-      "Mixed",    k.mix,
-      "Unknown",  k.unk,
-      "",
-      "Sentiment balance",
-      "pos=" + k.pos + " / neg=" + k.neg + " / neu=" + k.neu + " / mix=" + k.mix + " / unk=" + k.unk,
-      "avg_net=" + k.avgNet.toFixed(3)
-    ].join("\\n");
-  }
-
-  function applyFilters(list, q, sent){
-    q = (q||"").trim().toLowerCase();
-    sent = (sent||"all").toLowerCase();
-    return list.filter(function(it){
-      if(q){
-        var hay = (it.title + " " + it.source).toLowerCase();
-        if(hay.indexOf(q)===-1) return false;
-      }
-      if(sent!=="all"){
-        if((it.sentiment||"").toLowerCase() !== sent) return false;
-      }
-      return true;
-    });
-  }
-
-  function sortItems(list, key){
-    key = key || "score";
-    var arr = list.slice();
-    arr.sort(function(a,b){
-      function num(x){ return (typeof x==="number") ? x : -999999; }
-      if(key==="risk") return num(b.risk)-num(a.risk);
-      if(key==="positive") return num(b.positive)-num(a.positive);
-      if(key==="uncertainty") return num(b.uncertainty)-num(a.uncertainty);
-      if(key==="net") return num(b.net)-num(a.net);
-      return num(b.score)-num(a.score);
-    });
-    return arr;
-  }
-
-  function clamp01(x){ x = (typeof x==="number") ? x : 0; if(x<0) x=0; if(x>1) x=1; return x; }
-
-  function barHtml(val, cls){
-    if(typeof val !== "number") return "";
-    var w = Math.round(clamp01(val) * 100);
-    return "<div class='barTrack'><div class='barFill "+cls+"' style='width:"+w+"%'></div></div>";
-  }
-
-  function thumbHtml(it){
-    var img = safeText(it.image || "");
-    if(!img) return "<div class='digestThumb'></div>";
-    var u = escHtml(img);
-    return "<div class='digestThumb'><img src='"+u+"' alt='' loading='lazy' referrerpolicy='no-referrer' onerror='this.closest(\".digestThumb\").style.display=\"none\";'></div>";
-  }
-
-  function renderList(items){
-    if(!items.length) return "<div class='hint'>no items</div>";
-    var top = showAll ? items : items.slice(0, topN);
-    var html = "<div class='digestGrid'>";
-    for(var i=0;i<top.length;i++){
-      var it = top[i] || {};
-      var title = escHtml(it.title || "(no title)");
-      var url = escHtml(it.url || "#");
-      var src = escHtml(it.source || "");
-      var desc = escHtml(it.description || "");
-      html +=
-        "<div class='digestCard'>" +
-          thumbHtml(it) +
-          "<div class='digestBody'>" +
-            "<div class='digestTitle'><a class='a-soft' href='"+url+"' target='_blank' rel='noopener noreferrer'>"+title+"</a></div>" +
-            "<div class='digestMeta mono small'>"+src+"</div>" +
-            (desc ? ("<div class='digestDesc'>"+desc+"</div>") : "") +
-            "<div class='bars'>" +
-              "<div class='barRow'><div class='barLabel mono'>risk</div>"+ barHtml(it.risk,"risk") + metricPill(it.risk,"risk") + "</div>" +
-              "<div class='barRow'><div class='barLabel mono'>pos</div>"+  barHtml(it.positive,"pos") + metricPill(it.positive,"positive") + "</div>" +
-              "<div class='barRow'><div class='barLabel mono'>unc</div>"+  barHtml(it.uncertainty,"unc") + metricPill(it.uncertainty,"uncertainty") + "</div>" +
-            "</div>" +
-          "</div>" +
-          "<div class='digestRight'>" +
-            metricPill(it.net,"net") +
-          "</div>" +
-        "</div>";
-    }
-    html += "</div>";
-    return html;
-  }
-
-  function setText(id,v){ var el=document.getElementById(id); if(el) el.textContent = safeText(v); }
-  function setHtml(id,v){ var el=document.getElementById(id); if(el) el.innerHTML = v; }
-
-  var allItems = [];
-  var collapsed = false;
-  var topN = 10;
-  var showAll = false;
-
-  function updateTopButtons(){
-    var btnAll = document.getElementById("listToggleAll");
-    var btnTop = document.getElementById("listToggleTop");
-    if(!btnAll || !btnTop) return;
-    if(showAll){
-      btnAll.style.display = "none";
-      btnTop.style.display = "";
-    }else{
-      btnAll.style.display = "";
-      btnTop.style.display = "none";
+      state.sourceUrl = URL_NEWS;
+      state.asOf = state.asOf !== "--" ? state.asOf : (nn.asOf || "--");
+      state.items = nn.items;
+      // keep summaryText from summary file if we had it; else blank
+      renderMeta();
+      renderSummary();
+      renderKPIs();
+      renderCards();
+    } catch (e){
+      state.lastError = e;
+      state.sourceUrl = URL_SUMMARY;
+      state.items = [];
+      renderMeta();
+      renderSummary();
+      renderKPIs();
+      renderCards();
+      $("summary-status").textContent = "error";
+      $("kpi-status").textContent = "error";
+      $("hi-status").textContent = "error";
     }
   }
 
-  function updateList(){
-    var el = document.getElementById("list");
-    if(el) el.innerHTML = renderList(allItems);
-    var shown = showAll ? allItems.length : Math.min(topN, allItems.length);
-    setText("listHint", showAll ? ("showing: all ("+shown+")") : ("showing: top "+shown+"/"+allItems.length));
-    updateTopButtons();
-  }
+  // ---------------------------
+  // events
+  // ---------------------------
+  $("q").addEventListener("input", () => renderCards());
+  $("filter-sent").addEventListener("change", () => renderCards());
+  $("sortby").addEventListener("change", () => renderCards());
 
-async function load(){
-    // Top highlights: show only top N by default
-    var btnAll = document.getElementById("listToggleAll");
-    var btnTop = document.getElementById("listToggleTop");
-    if(btnAll) btnAll.onclick = function(){ showAll = true; updateList(); };
-    if(btnTop) btnTop.onclick = function(){ showAll = false; updateList(); };
-    setText("sumHint","loading…");
-    setText("kpiHint","loading…");
-    setText("listHint","loading…");
-
-    const sumPick = await pickFirstOk(SUM_CANDIDATES);
-    const newsPick = await pickFirstOk(NEWS_CANDIDATES);
-    const senPick = await pickFirstOk(SEN_CANDIDATES);
-
-    const src = (sumPick ? sumPick.url : (newsPick?newsPick.url:"--"));
-    const asOf = (sumPick && sumPick.json) ? (sumPick.json.date || sumPick.json.as_of || "--") : "--";
-
-    setText("pillAsOf", "as_of: " + asOf);
-    setText("pillSource", "source: " + src);
-    document.getElementById("btnOpenJson").href = (sumPick ? sumPick.url : "#");
-
-    // summary text
-    var sumText = "";
-    if(sumPick && sumPick.json) sumText = pickSummaryText(sumPick.json);
-    if(!sumText && newsPick && newsPick.json){
-      // daily_news しかない時の fallback
-      var tmp = pickArticles(newsPick.json).slice(0, 30).map(function(a){
-        return "- " + safeText(a.title || "");
-      }).join("\\n");
-      sumText = tmp ? ("Today titles:\\n" + tmp) : "";
-    }
-    if(!sumText) sumText = "OK";
-    var sp = splitYesterdayTitles(sumText);
-    document.getElementById("sumText").textContent = sp.main ? normNL(sp.main) : "(summary missing)";
-    var yBox = document.getElementById("yTitlesBox");
-    var yEl = document.getElementById("yTitles");
-    var yCt = document.getElementById("yTitlesCount");
-    if(yEl) yEl.innerHTML = renderChips(sp.titles);
-    if(yCt) yCt.textContent = sp.titles.length ? ("("+sp.titles.length+")") : "";
-    if(yBox) yBox.open = false;
-    setText("sumHint", "OK");
-
-    // items：news + sentiment を “なるべく寄せる”
-    var base = [];
-    if(newsPick && newsPick.json) base = pickArticles(newsPick.json).map(normalizeArticle);
-    // sentiment 側の risk/pos/unc/net を news の url に寄せて補完
-    if(senPick && senPick.json && Array.isArray(senPick.json.items) && base.length){
-      var map = new Map();
-      for(const s of senPick.json.items){
-        if(s && s.url) map.set(String(s.url), s);
-      }
-      for(const b of base){
-        const s = map.get(String(b.url));
-        if(s){
-          if(typeof s.risk==="number") b.risk = s.risk;
-          if(typeof s.positive==="number") b.positive = s.positive;
-          if(typeof s.uncertainty==="number") b.uncertainty = s.uncertainty;
-          if(typeof s.net==="number") b.net = s.net;
-          if(typeof s.sentiment==="string") b.sentiment = s.sentiment;
-        }
-      }
-    }
-
-    allItems = base;
-    setText("pillItems", "items: " + allItems.length);
-
-    // KPIs
-    const k = computeKpis(allItems);
-    var kRow = document.getElementById("kpiRow");
-    if(kRow) kRow.innerHTML = renderKpiRow(k);
-    document.getElementById("kpis").textContent = normNL(renderKpis(k));
-    setText("kpiHint","OK");
-
-    // list
-    rerender();
-    setText("listHint","OK");
-  }
-
-  function rerender(){
-    const q = document.getElementById("q").value;
-    const sent = document.getElementById("sentFilter").value;
-    const sortKey = document.getElementById("sortKey").value;
-
-    const filtered = applyFilters(allItems, q, sent);
-    const sorted = sortItems(filtered, sortKey);
-
-    setHtml("list", renderList(sorted));
-  }
-
-  document.getElementById("q").addEventListener("input", rerender);
-  document.getElementById("sentFilter").addEventListener("change", rerender);
-  document.getElementById("sortKey").addEventListener("change", rerender);
-
-  document.getElementById("btnCollapse").addEventListener("click", function(){
-    collapsed = !collapsed;
-    document.getElementById("sumText").style.maxHeight = collapsed ? "120px" : "";
-    document.getElementById("sumText").style.overflow = collapsed ? "auto" : "";
-    document.getElementById("btnCollapse").textContent = collapsed ? "Expand summary" : "Collapse summary";
+  $("toggle-show").addEventListener("click", () => {
+    state.showAll = !state.showAll;
+    localStorage.setItem(LS_SHOW_ALL, state.showAll ? "1" : "0");
+    $("toggle-show").textContent = state.showAll ? "Top 10" : "Show all";
+    $("toggle-show").classList.toggle("primary", !state.showAll);
+    renderCards();
   });
 
-  load().catch(function(e){
-    console.warn(e);
-    setText("sumHint","error");
-    setText("kpiHint","error");
-    setText("listHint","error");
+  let summaryCollapsed = false;
+  $("toggle-summary").addEventListener("click", () => {
+    summaryCollapsed = !summaryCollapsed;
+    $("summary-text").style.display = summaryCollapsed ? "none" : "block";
+    $("toggle-summary").textContent = summaryCollapsed ? "Expand summary" : "Collapse summary";
   });
 
+  // init
+  load();
 })();
 </script>
+
 </body>
 </html>
