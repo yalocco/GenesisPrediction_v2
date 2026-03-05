@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
@@ -6,6 +6,69 @@
   <title>Digest - GenesisPrediction v2</title>
   <link rel="stylesheet" href="/static/app.css?v=20260303v2" />
   <script src="/static/_shared_nav.js?v=20260303v2"></script>
+
+  <style>
+    /* Digest: render newline sequences as actual line breaks */
+    #sumText, #kpis { white-space: pre-wrap; }
+
+    /* Digest: card list with thumbnails */
+    .digestList{ display:block; }
+    .digestGrid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap:12px;
+    }
+    .digestCard{
+      display:flex;
+      gap:12px;
+      padding:12px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:16px;
+      background: rgba(255,255,255,.03);
+      box-shadow: 0 8px 28px rgba(0,0,0,.25);
+      align-items:flex-start;
+    }
+    .digestThumb{
+      width:72px;
+      height:72px;
+      border-radius:14px;
+      overflow:hidden;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.08);
+      flex:0 0 auto;
+    }
+    .digestThumb img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+    .digestBody{ flex:1 1 auto; min-width:0; }
+    .digestTitle{ font-weight:700; line-height:1.2; }
+    .digestTitle a{ text-decoration:none; }
+    .digestDesc{ margin-top:6px; opacity:.9; font-size:13px; line-height:1.35; }
+    .digestRight{ flex:0 0 auto; display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
+    .bars{ display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+    .barRow{ display:flex; align-items:center; gap:8px; }
+    .barLabel{ width:32px; font-size:12px; opacity:.85; }
+    .barTrack{
+      width:160px;
+      height:8px;
+      border-radius:999px;
+      background: rgba(255,255,255,.08);
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.07);
+    }
+    .barFill{ height:100%; border-radius:999px; background: rgba(105,169,255,.85); }
+    .barFill.pos{ background: rgba(92,255,198,.75); }
+    .barFill.risk{ background: rgba(255,92,92,.75); }
+    .barFill.unc{ background: rgba(255,214,102,.70); }
+    @media (max-width: 980px){
+      .digestGrid{ grid-template-columns: 1fr; }
+      .barTrack{ width:140px; }
+    }
+  </style>
+
 </head>
 <body>
 <main class="gp-main">
@@ -82,7 +145,17 @@
   "use strict";
 
   function safeText(x){ return (x==null) ? "" : String(x); }
-  function escHtml(s){
+  
+  // Normalize newline markers that may appear as literal text in JSON (e.g., "\n" or "¥n" / "¥r¥n")
+  function normNL(s){
+    s = (s == null) ? "" : String(s);
+    // Backslash-n (two chars) -> newline
+    s = s.replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n");
+    // Yen sign used instead of backslash in some environments
+    s = s.replace(/¥r¥n/g, "\n").replace(/¥n/g, "\n");
+    return s;
+  }
+function escHtml(s){
     s = safeText(s);
     return s.replace(/[&<>"']/g, function(ch){
       return ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" })[ch];
@@ -158,6 +231,7 @@
     var title = safeText(a.title || a.headline || "");
     var url = safeText(a.url || "");
     var desc = safeText(a.description || a.summary || "");
+    var img = safeText(a.urlToImage || a.image || a.image_url || a.thumbnail || "");
     return {
       title: title,
       url: url,
@@ -168,7 +242,8 @@
       uncertainty: (typeof a.uncertainty==="number") ? a.uncertainty : null,
       net: (typeof a.net==="number") ? a.net : null,
       sentiment: safeText(a.sentiment || a.label || ""),
-      description: desc
+      description: desc,
+      image: img
     };
   }
 
@@ -254,29 +329,51 @@
     return arr;
   }
 
+  function clamp01(x){ x = (typeof x==="number") ? x : 0; if(x<0) x=0; if(x>1) x=1; return x; }
+
+  function barHtml(val, cls){
+    if(typeof val !== "number") return "";
+    var w = Math.round(clamp01(val) * 100);
+    return "<div class='barTrack'><div class='barFill "+cls+"' style='width:"+w+"%'></div></div>";
+  }
+
+  function thumbHtml(it){
+    var img = safeText(it.image || "");
+    if(!img) return "<div class='digestThumb'></div>";
+    var u = escHtml(img);
+    return "<div class='digestThumb'><img src='"+u+"' alt='' loading='lazy' referrerpolicy='no-referrer' onerror='this.closest(\".digestThumb\").style.display=\"none\";'></div>";
+  }
+
   function renderList(items){
     if(!items.length) return "<div class='hint'>no items</div>";
-    return items.slice(0, 60).map(function(it){
+    var top = items.slice(0, 60);
+    var html = "<div class='digestGrid'>";
+    for(var i=0;i<top.length;i++){
+      var it = top[i] || {};
       var title = escHtml(it.title || "(no title)");
       var url = escHtml(it.url || "#");
       var src = escHtml(it.source || "");
       var desc = escHtml(it.description || "");
-      return (
-        "<div class='digestRow'>" +
-          "<div class='digestMain'>" +
+      html +=
+        "<div class='digestCard'>" +
+          thumbHtml(it) +
+          "<div class='digestBody'>" +
             "<div class='digestTitle'><a class='a-soft' href='"+url+"' target='_blank' rel='noopener noreferrer'>"+title+"</a></div>" +
-            "<div class='digestMeta mono small'>" + src + "</div>" +
-            (desc ? ("<div class='digestDesc'>" + desc + "</div>") : "") +
+            "<div class='digestMeta mono small'>"+src+"</div>" +
+            (desc ? ("<div class='digestDesc'>"+desc+"</div>") : "") +
+            "<div class='bars'>" +
+              "<div class='barRow'><div class='barLabel mono'>risk</div>"+ barHtml(it.risk,"risk") + metricPill(it.risk,"risk") + "</div>" +
+              "<div class='barRow'><div class='barLabel mono'>pos</div>"+  barHtml(it.positive,"pos") + metricPill(it.positive,"positive") + "</div>" +
+              "<div class='barRow'><div class='barLabel mono'>unc</div>"+  barHtml(it.uncertainty,"unc") + metricPill(it.uncertainty,"uncertainty") + "</div>" +
+            "</div>" +
           "</div>" +
-          "<div class='digestMetrics'>" +
-            metricPill(it.risk, "risk") +
-            metricPill(it.positive, "positive") +
-            metricPill(it.uncertainty, "uncertainty") +
-            metricPill(it.net, "net") +
+          "<div class='digestRight'>" +
+            metricPill(it.net,"net") +
           "</div>" +
-        "</div>"
-      );
-    }).join("");
+        "</div>";
+    }
+    html += "</div>";
+    return html;
   }
 
   function setText(id,v){ var el=document.getElementById(id); if(el) el.textContent = safeText(v); }
@@ -312,7 +409,7 @@
       sumText = tmp ? ("Today titles:\\n" + tmp) : "";
     }
     if(!sumText) sumText = "OK";
-    document.getElementById("sumText").textContent = sumText;
+    document.getElementById("sumText").textContent = normNL(sumText);
     setText("sumHint", "OK");
 
     // items：news + sentiment を “なるべく寄せる”
@@ -341,7 +438,7 @@
 
     // KPIs
     const k = computeKpis(allItems);
-    document.getElementById("kpis").textContent = renderKpis(k);
+    document.getElementById("kpis").textContent = normNL(renderKpis(k));
     setText("kpiHint","OK");
 
     // list
