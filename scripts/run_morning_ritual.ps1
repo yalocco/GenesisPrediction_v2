@@ -2,24 +2,23 @@
 # Morning Ritual (single entrypoint)
 #
 # Goal:
-#   One command to converge analysis health to OK (OK=10/WARN=0/NG=0) with minimal, reproducible steps.
+#   One command to converge analysis health to OK with minimal, reproducible steps.
 #
 # Key policy (2026-03):
-#   World/news artifacts are currently materialized on WORLD DATE (= local date in current operation),
-#   so when -Date is omitted, we default to LOCAL/WORLD DATE rather than UTC yesterday.
+#   When -Date is omitted, default to LOCAL yesterday for world/news pipeline consistency.
 #
 # Design:
 #   - WorldDate is the ritual's single truth (yyyy-MM-dd).
-#   - UTC YESTER is still logged for diagnostics.
-#   - Some FX steps may effectively operate on local date; this runner reconciles artifacts so Health is evaluated on WorldDate.
+#   - LOCAL YESTER is used as the default when -Date is omitted.
+#   - UTC NOW / UTC YESTER / LOCAL DATE are still logged for diagnostics.
+#   - LocalDate is used for FX artifact reconciliation only.
+#   - Observation Memory and Sentiment Trend are built after health/update steps.
 
 [CmdletBinding()]
 param(
-  # WorldDate in yyyy-MM-dd. If omitted, defaults to LOCAL/WORLD DATE.
   [Parameter(Mandatory = $false)]
   [string]$Date,
 
-  # If specified, pass -RunGuard to run_daily_with_publish.ps1
   [switch]$RunGuard
 )
 
@@ -54,12 +53,14 @@ $repoRoot = (Resolve-Path ".").Path
 
 $utcNow = (Get-Date).ToUniversalTime()
 $utcYesterday = $utcNow.AddDays(-1)
+$utcYesterdayStr = $utcYesterday.ToString("yyyy-MM-dd")
 
-# WORLD DATE = current local date (current stable operational rule)
-$localDate = (Get-Date).ToString("yyyy-MM-dd")
+$localNow = Get-Date
+$localDate = $localNow.ToString("yyyy-MM-dd")
+$localYesterday = $localNow.AddDays(-1).ToString("yyyy-MM-dd")
 
 if ([string]::IsNullOrWhiteSpace($Date)) {
-  $WorldDate = $localDate
+  $WorldDate = $localYesterday
 }
 else {
   $WorldDate = $Date.Trim()
@@ -69,10 +70,11 @@ $LocalDate = $localDate
 
 Log "Morning Ritual (single entrypoint)"
 Write-Host ("ROOT : {0}" -f $repoRoot)
-Write-Host ("UTC NOW     : {0}" -f $utcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"))
-Write-Host ("UTC YESTER  : {0}" -f $utcYesterday.ToString("yyyy-MM-dd"))
-Write-Host ("WORLD DATE  : {0}" -f $WorldDate)
-Write-Host ("LOCAL DATE  : {0}" -f $LocalDate)
+Write-Host ("UTC NOW       : {0}" -f $utcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"))
+Write-Host ("UTC YESTER    : {0}" -f $utcYesterdayStr)
+Write-Host ("LOCAL DATE    : {0}" -f $LocalDate)
+Write-Host ("LOCAL YESTER  : {0}" -f $localYesterday)
+Write-Host ("WORLD DATE    : {0}" -f $WorldDate)
 
 # Common paths
 $py = Join-Path $repoRoot ".venv\Scripts\python.exe"
@@ -92,7 +94,7 @@ Run "1) run_daily_with_publish" {
   }
 }
 
-# --- 1-1) Publish daily_summary_latest (explicit) ---
+# --- 1-1) Publish daily_summary_latest ---
 Run "1-1) Publish daily_summary_latest" {
   Log "=== 1-1) Publish daily_summary_latest ==="
   $cmd = "`"$py`" `"$repoRoot\scripts\publish_daily_summary_latest.py`" --date $WorldDate"
@@ -148,7 +150,6 @@ Run "2-4) Publish FX overlay legacy (converge)" {
   $srcWorld = Join-Path $analysisDir ("fx_jpy_thb_overlay_{0}.png" -f $WorldDate)
   $srcLocal = Join-Path $analysisDir ("fx_jpy_thb_overlay_{0}.png" -f $LocalDate)
 
-  # If WorldDate source is missing but LocalDate exists, copy LocalDate -> WorldDate
   if (-not (Test-Path $srcWorld)) {
     if (Test-Path $srcLocal) {
       Log ("[WARN] missing {0} ; copying from local-dated {1}" -f (Split-Path $srcWorld -Leaf), (Split-Path $srcLocal -Leaf))
@@ -160,13 +161,12 @@ Run "2-4) Publish FX overlay legacy (converge)" {
     }
   }
 
-  # Publish legacy for WorldDate (creates fx_overlay_YYYY-MM-DD.png)
   $cmd = "`"$py`" `"$repoRoot\scripts\publish_fx_overlay_legacy.py`" --date $WorldDate"
   Log "CMD: $cmd"
   & $py "$repoRoot\scripts\publish_fx_overlay_legacy.py" --date $WorldDate
 }
 
-# --- 3) Observation artifacts (keep health clean) ---
+# --- 3) Observation artifacts ---
 Run "3) Build observation artifacts" {
   Log "=== 3) Build observation artifacts ==="
   $script = Join-Path $repoRoot "scripts\build_observation_artifacts.py"
@@ -180,12 +180,28 @@ Run "3) Build observation artifacts" {
   }
 }
 
-# --- 4) Data Health update (must be WorldDate) ---
+# --- 4) Data Health update ---
 Run "4) Data Health update" {
   Log "=== 4) Data Health update ==="
   $cmd = "`"$py`" `"$repoRoot\scripts\build_data_health.py`" --date $WorldDate"
   Log "CMD: $cmd"
   & $py "$repoRoot\scripts\build_data_health.py" --date $WorldDate
+}
+
+# --- 5) Save observation memory ---
+Run "5) Save observation memory" {
+  Log "=== 5) Save observation memory ==="
+  $cmd = "powershell -ExecutionPolicy Bypass -File `"$repoRoot\scripts\run_save_observation_memory.ps1`" -Date $WorldDate"
+  Log "CMD: $cmd"
+  powershell -ExecutionPolicy Bypass -File "$repoRoot\scripts\run_save_observation_memory.ps1" -Date $WorldDate
+}
+
+# --- 6) Build sentiment trend ---
+Run "6) Build sentiment trend" {
+  Log "=== 6) Build sentiment trend ==="
+  $cmd = "powershell -ExecutionPolicy Bypass -File `"$repoRoot\scripts\run_build_sentiment_trend.ps1`" -AsOf $WorldDate"
+  Log "CMD: $cmd"
+  powershell -ExecutionPolicy Bypass -File "$repoRoot\scripts\run_build_sentiment_trend.ps1" -AsOf $WorldDate
 }
 
 Log "DONE (Morning Ritual)"
