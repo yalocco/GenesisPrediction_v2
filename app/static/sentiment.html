@@ -377,6 +377,44 @@
 (function(){
   function $(id){ return document.getElementById(id); }
 
+  function safeSetText(id, value){
+    var el = $(id);
+    if(el) el.textContent = value;
+  }
+
+  function safeSetHref(id, href){
+    var el = $(id);
+    if(el) el.setAttribute('href', href);
+  }
+
+  function setPillState(id, mode, text){
+    var el = $(id);
+    if(!el) return;
+    el.classList.remove('good','warn','bad');
+    if(mode === 'good' || mode === 'warn' || mode === 'bad') el.classList.add(mode);
+    el.textContent = text;
+  }
+
+  function parseHealth(obj){
+    obj = obj || {};
+    var summary = (obj.summary && typeof obj.summary === 'object') ? obj.summary : {};
+    var status = safeText(obj.status || obj.overall_status || obj.overall || obj.health || obj.state).toUpperCase();
+    var okCount = Number(obj.ok || obj.ok_count || summary.ok || summary.ok_count || 0) || 0;
+    var warnCount = Number(obj.warn || obj.warn_count || obj.warning_count || summary.warn || summary.warn_count || summary.warning_count || 0) || 0;
+    var ngCount = Number(obj.ng || obj.ng_count || obj.error_count || obj.bad_count || summary.ng || summary.ng_count || summary.error_count || summary.bad_count || 0) || 0;
+
+    if(status.indexOf('NG') >= 0 || status.indexOf('ERROR') >= 0 || ngCount > 0){
+      return { level:'bad', label:'NG' };
+    }
+    if(status.indexOf('WARN') >= 0 || warnCount > 0){
+      return { level:'warn', label:'WARN' };
+    }
+    if(status.indexOf('OK') >= 0 || okCount > 0 || (okCount===0 && warnCount===0 && ngCount===0)){
+      return { level:'good', label:'OK' };
+    }
+    return { level:'', label:'--' };
+  }
+
   function safeText(x){
     if(x === null || x === undefined) return '';
     return String(x);
@@ -667,6 +705,7 @@
     $('pillItems').textContent = 'items: ' + String(items.length);
     $('pillRendered').textContent = 'rendered: ' + String(arr.length) + '/' + String(items.length);
     $('pillTrend').textContent = 'trend_points: ' + String(state.series ? state.series.length : 0);
+    updateHeaderPills();
 
     // rows
     var tbody = $('rows');
@@ -753,11 +792,19 @@
     '/data/world_politics/analysis/sentiment_timeseries.csv'
   ];
 
+  var HEALTH_CAND = [
+    '/analysis/world_politics/analysis/health_latest.json',
+    '/data/world_politics/analysis/health_latest.json',
+    '/analysis/health_latest.json'
+  ];
+
   var state = {
     sentPath: '-',
     tsPath: '-',
     items: [],
-    series: []
+    series: [],
+    asOf: '-',
+    health: { level:'', label:'--' }
   };
 
   function setHow(ok){
@@ -770,9 +817,30 @@
     $('dbg').textContent = text;
   }
 
+  function updateHeaderPills(){
+    var readyMode = (state.items && state.items.length) ? 'good' : '';
+    var asofMode = (state.asOf && state.asOf !== '-') ? 'good' : '';
+    setPillState('pill-ready', readyMode, 'Ready');
+    setPillState('pill-health', state.health.level, 'Health: ' + state.health.label);
+    setPillState('pill-asof', asofMode, 'as_of: ' + (state.asOf || '-'));
+    setPillState('pillAsOf', asofMode, 'as_of: ' + (state.asOf || '-'));
+    setPillState('pillItems', readyMode, 'items: ' + String(state.items ? state.items.length : 0));
+    var renderedEl = $('renderedN');
+    var renderedTxt = renderedEl ? renderedEl.textContent : '--';
+    setPillState('pillRendered', readyMode, 'rendered: ' + renderedTxt);
+    setPillState('pillTrend', (state.series && state.series.length) ? 'good' : '', 'trend_points: ' + String(state.series ? state.series.length : 0));
+  }
+
   function loadAll(){
     setHow(false);
     updateDebug('loading...');
+    fetchJsonFirst(HEALTH_CAND).then(function(res){
+      state.health = parseHealth(res.json);
+      updateHeaderPills();
+    }).catch(function(){
+      state.health = { level:'', label:'--' };
+      updateHeaderPills();
+    });
 
     return fetchJsonFirst(SENT_JSON_CAND).then(function(res){
       state.sentPath = res.path;
@@ -787,8 +855,8 @@
         var d = items.map(function(x){return (x.publishedAt||'').slice(0,10);}).filter(Boolean).sort().pop();
         asof = d || '-';
       }
-      $('kAsOf').textContent = asof || '-';
-      $('pillAsOf').textContent = 'as_of: ' + (asof || '-');
+      state.asOf = asof || '-';
+      safeSetText('kAsOf', state.asOf);
 
       var avgRisk = 0, avgPos = 0, avgUnc = 0;
       if(items.length){
@@ -799,25 +867,24 @@
       $('kPos').textContent = fmt3(avgPos);
       $('kUnc').textContent = fmt3(avgUnc);
 
-      $('kSrc').textContent = state.sentPath;
-      $('kSrcInline').textContent = state.sentPath;
-      $('sentItemsN').textContent = String(items.length);
+      safeSetText('kSrc', state.sentPath);
+      safeSetText('kSrcInline', state.sentPath);
 
       // open buttons
-      $('btnOpenSent').onclick = function(){ window.open(state.sentPath, '_blank', 'noopener'); };
-      $('btnOpenSentTop').onclick = function(){ window.open(state.sentPath, '_blank', 'noopener'); };
+      safeSetHref('btnOpenSent', state.sentPath);
+      safeSetHref('btnOpenSentTop', state.sentPath);
 
       return fetchTextFirst(TS_CAND).then(function(ts){
         state.tsPath = ts.path;
-        $('kTrend').textContent = 'trend: ' + state.tsPath;
-        $('kTrendInline').textContent = state.tsPath;
-        $('btnOpenTS').onclick = function(){ window.open(state.tsPath, '_blank', 'noopener'); };
-        $('btnOpenTSTop').onclick = function(){ window.open(state.tsPath, '_blank', 'noopener'); };
+        safeSetText('kTrend', 'trend: ' + state.tsPath);
+        safeSetText('kTrendInline', state.tsPath);
+        safeSetHref('btnOpenTS', state.tsPath);
+        safeSetHref('btnOpenTSTop', state.tsPath);
 
         var series = parseTimeseriesCsv(ts.text);
         if(!series.length) series = aggregateFromItems(items);
         state.series = series;
-        $('trendN').textContent = String(series.length);
+        safeSetText('trendN', String(series.length));
 
         // draw
         drawLine($('cvRisk'), series, function(x){return x.risk;}, $('maxRisk'));
@@ -825,6 +892,7 @@
         drawLine($('cvUnc'),  series, function(x){return x.unc;},  $('maxUnc'));
 
         render(items);
+        updateHeaderPills();
 
         setHow(true);
         updateDebug(
@@ -836,20 +904,21 @@
       }).catch(function(_e){
         // no timeseries -> fallback
         state.tsPath = '(missing)';
-        $('kTrend').textContent = 'trend: (missing)';
-        $('kTrendInline').textContent = '(missing)';
-        $('btnOpenTS').onclick = function(){ alert('timeseries missing'); };
-        $('btnOpenTSTop').onclick = function(){ alert('timeseries missing'); };
+        safeSetText('kTrend', 'trend: (missing)');
+        safeSetText('kTrendInline', '(missing)');
+        safeSetHref('btnOpenTS', '#');
+        safeSetHref('btnOpenTSTop', '#');
 
         var series2 = aggregateFromItems(items);
         state.series = series2;
-        $('trendN').textContent = String(series2.length);
+        safeSetText('trendN', String(series2.length));
 
         drawLine($('cvRisk'), series2, function(x){return x.risk;}, $('maxRisk'));
         drawLine($('cvPos'),  series2, function(x){return x.pos;},  $('maxPos'));
         drawLine($('cvUnc'),  series2, function(x){return x.unc;},  $('maxUnc'));
 
         render(items);
+        updateHeaderPills();
 
         setHow(true);
         updateDebug(
@@ -861,15 +930,20 @@
       });
 
     }).catch(function(e){
+      state.items = [];
+      state.series = [];
+      state.asOf = '-';
       setHow(false);
       updateDebug('failed to load sentiment: ' + safeText(e && e.message));
-      $('howStatus').textContent = '● error';
+      safeSetText('howStatus', '● error');
+      updateHeaderPills();
     });
   }
 
   function wire(){
-    $('btnReload').addEventListener('click', function(){ loadAll(); });
-    $('btnReset').addEventListener('click', function(){
+    $('btnReload').addEventListener('click', function(ev){ ev.preventDefault(); loadAll(); });
+    $('btnReset').addEventListener('click', function(ev){
+      ev.preventDefault();
       $('q').value = '';
       $('fSent').value = 'all';
       $('sort').value = 'risk';
@@ -891,6 +965,7 @@
     });
   }
 
+  updateHeaderPills();
   wire();
   loadAll();
 })();
