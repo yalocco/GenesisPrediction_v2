@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Digest - GenesisPrediction v2</title>
 
-  <link rel="stylesheet" href="/static/app.css?v=20260305" />
+  <link rel="stylesheet" href="/static/app.css?v=20260306v100" />
 
   <style>
     :root{
@@ -81,14 +81,27 @@
       color: rgba(255,255,255,.78);
       font-size:12px;
       white-space:nowrap;
+      transition: .15s ease;
     }
     .pill .led{
       width:8px;height:8px;border-radius:999px;background: rgba(255,255,255,.25);
       box-shadow: 0 0 0 3px rgba(255,255,255,.08);
     }
+    .pill.good{
+      border-color: rgba(80,200,140,.28);
+      color: rgba(255,255,255,.90);
+    }
     .pill.good .led{background: var(--good); box-shadow: 0 0 0 3px rgba(80,200,140,.18);}
+    .pill.warn{
+      border-color: rgba(240,196,72,.28);
+      color: rgba(255,255,255,.90);
+    }
     .pill.warn .led{background: var(--warn); box-shadow: 0 0 0 3px rgba(240,196,72,.18);}
-    .pill.bad  .led{background: var(--bad);  box-shadow: 0 0 0 3px rgba(255,95,95,.18);}
+    .pill.bad{
+      border-color: rgba(255,95,95,.28);
+      color: rgba(255,255,255,.90);
+    }
+    .pill.bad .led{background: var(--bad); box-shadow: 0 0 0 3px rgba(255,95,95,.18);}
 
     .wrap{max-width: 1200px; margin: 0 auto; padding: 22px 16px 60px;}
     .header{
@@ -198,7 +211,7 @@
         <a class="nav-link" href="/static/overlay.html">Overlay</a>
         <a class="nav-link" href="/static/sentiment.html">Sentiment</a>
         <a class="nav-link active" href="/static/digest.html">Digest</a>
-        <span class="pill good" id="pill-ready"><span class="led"></span>Ready</span>
+        <span class="pill" id="pill-ready"><span class="led"></span>Ready</span>
         <span class="pill" id="pill-health"><span class="led"></span>Health: --</span>
         <span class="pill" id="pill-asof"><span class="led"></span>as_of: --</span>
       </nav>
@@ -279,6 +292,7 @@
   const URL_DIGEST  = "/data/digest/view_model_latest.json";
   const URL_SUMMARY = "/data/world_politics/analysis/daily_summary_latest.json";
   const URL_NEWS    = "/data/world_politics/analysis/daily_news_latest.json";
+  const URL_HEALTH  = "/data/world_politics/analysis/health_latest.json";
   const LS_SHOW_ALL = "digest_show_all_v1";
 
   const $ = (id) => document.getElementById(id);
@@ -349,6 +363,54 @@
     return (it && typeof it.sentiment === "object" && it.sentiment !== null) ? it.sentiment : it;
   }
 
+  function setPillState(el, mode, text){
+    if (!el) return;
+    el.classList.remove("good", "warn", "bad");
+    if (mode === "good" || mode === "warn" || mode === "bad") el.classList.add(mode);
+    if (text !== undefined) el.innerHTML = `<span class="led"></span>${text}`;
+  }
+
+  function parseHealth(obj){
+    const topStatus = String(
+      pick(obj, ["status", "overall_status", "overall", "health", "state"], "")
+    ).toUpperCase();
+
+    const rootOk   = asNumber(pick(obj, ["ok", "ok_count"], 0), 0);
+    const rootWarn = asNumber(pick(obj, ["warn", "warn_count", "warning_count"], 0), 0);
+    const rootNg   = asNumber(pick(obj, ["ng", "ng_count", "error_count", "bad_count"], 0), 0);
+
+    const summary = (obj && typeof obj.summary === "object" && obj.summary !== null) ? obj.summary : {};
+    const sumOk   = asNumber(pick(summary, ["ok", "ok_count"], 0), 0);
+    const sumWarn = asNumber(pick(summary, ["warn", "warn_count", "warning_count"], 0), 0);
+    const sumNg   = asNumber(pick(summary, ["ng", "ng_count", "error_count", "bad_count"], 0), 0);
+
+    const okCount   = Math.max(rootOk, sumOk);
+    const warnCount = Math.max(rootWarn, sumWarn);
+    const ngCount   = Math.max(rootNg, sumNg);
+
+    let level = "neutral";
+    let label = "--";
+
+    if (topStatus.includes("NG") || topStatus.includes("ERROR") || ngCount > 0){
+      level = "bad";
+      label = "NG";
+    } else if (topStatus.includes("WARN") || warnCount > 0){
+      level = "warn";
+      label = "WARN";
+    } else if (topStatus.includes("OK") || okCount > 0 || (okCount === 0 && warnCount === 0 && ngCount === 0)){
+      level = "good";
+      label = "OK";
+    }
+
+    return {
+      level,
+      label,
+      okCount,
+      warnCount,
+      ngCount,
+    };
+  }
+
   async function fetchJson(url){
     const r = await fetch(url, { cache: "no-store" });
     if (!r.ok) throw new Error(`HTTP ${r.status} for ${url}`);
@@ -363,15 +425,31 @@
     showAll: false,
     lastError: null,
     sentimentSummary: null,
+    isReady: false,
+    health: {
+      level: "neutral",
+      label: "--",
+      okCount: 0,
+      warnCount: 0,
+      ngCount: 0,
+    },
   };
 
   function renderMeta(){
+    const asOfOk = !!(state.asOf && state.asOf !== "--");
+
     $("meta-asof").innerHTML = `<span class="led"></span>as_of: ${state.asOf}`;
     $("meta-source").innerHTML = `<span class="led"></span>source: ${state.sourceUrl}`;
     $("meta-items").innerHTML = `<span class="led"></span>items: ${state.items.length}`;
     $("open-json").setAttribute("href", state.sourceUrl);
-    $("pill-asof").innerHTML = `<span class="led"></span>as_of: ${state.asOf}`;
-    $("pill-health").innerHTML = `<span class="led"></span>Health: --`;
+
+    setPillState($("pill-ready"), state.isReady ? "good" : "bad", `Ready`);
+    setPillState($("pill-health"), state.health.level, `Health: ${state.health.label}`);
+    setPillState($("pill-asof"), asOfOk ? "good" : "", `as_of: ${state.asOf}`);
+
+    setPillState($("meta-asof"), asOfOk ? "good" : "", `as_of: ${state.asOf}`);
+    setPillState($("meta-source"), state.isReady ? "good" : "", `source: ${state.sourceUrl}`);
+    setPillState($("meta-items"), state.items.length > 0 ? "good" : "", `items: ${state.items.length}`);
   }
 
   function renderSummary(){
@@ -617,8 +695,24 @@
     return { asOf, summaryText: "", items };
   }
 
+  async function loadHealth(){
+    try{
+      const h = await fetchJson(URL_HEALTH);
+      state.health = parseHealth(h);
+    } catch {
+      state.health = {
+        level: "neutral",
+        label: "--",
+        okCount: 0,
+        warnCount: 0,
+        ngCount: 0,
+      };
+    }
+  }
+
   async function load(){
     state.lastError = null;
+    state.isReady = false;
     $("summary-status").textContent = "loading...";
     $("kpi-status").textContent = "loading...";
     $("hi-status").textContent = "loading...";
@@ -632,6 +726,8 @@
     $("toggle-show").textContent = state.showAll ? "Top 10" : "Show all";
     $("toggle-show").classList.toggle("primary", !state.showAll);
 
+    await loadHealth();
+
     try{
       const d = await fetchJson(URL_DIGEST);
       const nd = normalizeFromDigestViewModel(d);
@@ -641,6 +737,7 @@
         state.summaryText = nd.summaryText || "";
         state.items = nd.items;
         state.sentimentSummary = nd.sentimentSummary || null;
+        state.isReady = true;
         renderMeta();
         renderSummary();
         renderKPIs();
@@ -660,6 +757,7 @@
         state.summaryText = ns.summaryText || "";
         state.items = ns.items;
         state.sentimentSummary = null;
+        state.isReady = true;
         renderMeta();
         renderSummary();
         renderKPIs();
@@ -679,6 +777,7 @@
       state.asOf = state.asOf !== "--" ? state.asOf : (nn.asOf || "--");
       state.items = nn.items;
       state.sentimentSummary = null;
+      state.isReady = true;
       renderMeta();
       renderSummary();
       renderKPIs();
@@ -688,6 +787,7 @@
       state.sourceUrl = URL_DIGEST;
       state.items = [];
       state.sentimentSummary = null;
+      state.isReady = false;
       renderMeta();
       renderSummary();
       renderKPIs();
