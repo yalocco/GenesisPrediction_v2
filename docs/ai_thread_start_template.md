@@ -1,17 +1,20 @@
-相棒、今の **Repository Memory の増加**を全部整理して
-**最新版の `ai_thread_start_template.md`（新スレ開始テンプレ）**を作りました。
+了解です、相棒 👍
+では **新スレ用 `ai_thread_start_template.md` の最新版**を出します。
 
-あなたが挙げてくれた `.md` は **全部 Repository Memory に入れるのが正しい設計**です。
-理由は、これらはすべて **設計・運用・デバッグの基盤知識**だからです。
-（例：朝の儀式手順は `runbook_morning.md` に固定されています） 
+今回は増えた分として、少なくとも次を反映します。
+
+* `docs/analysis_data_schema.md`
+* `docs/prediction_architecture.md`
+* `docs/genesis_prediction_roadmap.md`
+
+`labos_business_model.md` は前に話した通り **必須情報源ではない**ので、
+今回は **通常テンプレからは外し、必要時のみ読む Optional 扱い** にしておくのが一番安全です。
 
 ---
 
-# 新スレ用
+# docs/ai_thread_start_template.md（完全版）
 
-# docs/ai_thread_start_template.md（最新版）
-
-これを **丸ごとコピーして新スレ1投稿目**に貼ってください。
+これで **丸ごと上書き**してください。
 
 ```md
 # GenesisPrediction v2 — AI Thread Start
@@ -31,6 +34,9 @@ docs/repo_map.md
 docs/pipeline_system.md  
 docs/ui_system.md  
 docs/ui_data_dependencies.md  
+docs/analysis_data_schema.md  
+docs/prediction_architecture.md  
+docs/genesis_prediction_roadmap.md  
 
 ---
 
@@ -70,6 +76,14 @@ docs/project_status.md
 
 docs/system_history.md  
 docs/decision_log.md  
+
+---
+
+## Optional (LABOS / Business)
+
+必要時のみ参照
+
+docs/labos_business_model.md  
 
 ---
 
