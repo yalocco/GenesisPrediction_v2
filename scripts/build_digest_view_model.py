@@ -94,6 +94,63 @@ def to_float(v: Any, default: float = 0.0) -> float:
         return default
 
 
+# ---------------------------
+# Daily summary text enrichment
+# ---------------------------
+
+def daily_summary_path(repo: Path, date: str) -> Path:
+    p = repo / "data" / "world_politics" / "analysis" / f"daily_summary_{date}.json"
+    if p.exists():
+        return p
+    return repo / "data" / "world_politics" / "analysis" / "daily_summary_latest.json"
+
+
+def build_summary_text(repo: Path, date: str) -> str:
+    p = daily_summary_path(repo, date)
+    if not p.exists():
+        return ""
+
+    try:
+        obj = read_json_safe(p)
+    except Exception:
+        return ""
+
+    candidates: List[Any] = []
+    if isinstance(obj, dict):
+        candidates.extend([
+            obj.get("summary"),
+            obj.get("text_summary"),
+            obj.get("daily_summary"),
+            obj.get("yesterday_summary_text"),
+            obj.get("headline"),
+            obj.get("title"),
+        ])
+
+        # common nested containers
+        for key in ("today", "payload", "result"):
+            v = obj.get(key)
+            if isinstance(v, dict):
+                candidates.extend([
+                    v.get("summary"),
+                    v.get("text_summary"),
+                    v.get("daily_summary"),
+                    v.get("yesterday_summary_text"),
+                    v.get("headline"),
+                    v.get("title"),
+                ])
+
+        bullets = obj.get("bullets") or obj.get("highlights") or obj.get("summary_bullets")
+        if isinstance(bullets, list) and bullets:
+            bullet_text = "\n".join(f"- {norm_space(str(x))}" for x in bullets[:8] if norm_space(str(x)))
+            if bullet_text:
+                candidates.append(bullet_text)
+
+    for c in candidates:
+        text = norm_space(str(c)) if c is not None else ""
+        if text:
+            return text
+    return ""
+
 
 # ---------------------------
 # News image enrichment
@@ -182,6 +239,7 @@ def attach_images(repo: Path, date: str, cards: List["Card"]) -> None:
         if isinstance(img, str) and img.strip():
             c.image = img.strip()
 
+
 # ---------------------------
 # Sentiment merge / summary
 # ---------------------------
@@ -231,45 +289,34 @@ def build_sentiment_index(sent_obj: Any) -> Tuple[Dict[str, Dict[str, Any]], Dic
     return by_url, by_key
 
 
+def _empty_sentiment_summary() -> Dict[str, Any]:
+    return {
+        "articles": 0,
+        "risk": 0.0,
+        "positive": 0.0,
+        "uncertainty": 0.0,
+        "net": 0.0,
+        "score": 0.0,
+        "riskScore": 0.0,
+        "posScore": 0.0,
+        "uncScore": 0.0,
+        "positive_count": 0,
+        "negative_count": 0,
+        "neutral_count": 0,
+        "mixed_count": 0,
+        "unknown_count": 0,
+    }
+
+
 def build_sentiment_summary(repo: Path, date: str) -> Dict[str, Any]:
     p = sentiment_path(repo, date)
     if not p.exists():
-        return {
-            "articles": 0,
-            "risk": 0.0,
-            "positive": 0.0,
-            "uncertainty": 0.0,
-            "net": 0.0,
-            "score": 0.0,
-            "riskScore": 0.0,
-            "posScore": 0.0,
-            "uncScore": 0.0,
-            "positive_count": 0,
-            "negative_count": 0,
-            "neutral_count": 0,
-            "mixed_count": 0,
-            "unknown_count": 0,
-        }
+        return _empty_sentiment_summary()
 
     try:
         sent = read_json_safe(p)
     except Exception:
-        return {
-            "articles": 0,
-            "risk": 0.0,
-            "positive": 0.0,
-            "uncertainty": 0.0,
-            "net": 0.0,
-            "score": 0.0,
-            "riskScore": 0.0,
-            "posScore": 0.0,
-            "uncScore": 0.0,
-            "positive_count": 0,
-            "negative_count": 0,
-            "neutral_count": 0,
-            "mixed_count": 0,
-            "unknown_count": 0,
-        }
+        return _empty_sentiment_summary()
 
     today = sent.get("today") if isinstance(sent, dict) else {}
     summary = sent.get("summary") if isinstance(sent, dict) else {}
@@ -484,7 +531,7 @@ class DigestCardHTMLParser(HTMLParser):
         a = dict(attrs)
         cls = (a.get("class") or "").lower()
 
-        def start_new_card():
+        def start_new_card() -> None:
             self.ctx = _CardCtx(depth=self.stack_depth)
 
         if self.ctx is None:
@@ -772,9 +819,12 @@ def main() -> int:
         sections = [build_world_politics_section(repo, date=date, max_cards=args.max_cards)]
 
     sentiment_summary = build_sentiment_summary(repo, date)
+    summary_text = build_summary_text(repo, date)
+
     view_model: Dict[str, Any] = {
         "version": VERSION,
         "date": date,
+        "summary": summary_text,
         "sections": [s.to_dict() for s in sections],
         "meta": {
             "generated_at": iso_now_local(),
@@ -783,6 +833,7 @@ def main() -> int:
         },
         "sentiment_summary": sentiment_summary,
         "today": {
+            "summary": summary_text,
             "sentiment": sentiment_summary,
             "sentiment_summary": sentiment_summary,
         },
@@ -799,6 +850,10 @@ def main() -> int:
     print(f"[OK] wrote dated : {out_path.as_posix()}")
     for latest_path in latest_output_paths(repo):
         print(f"[OK] wrote latest: {latest_path.as_posix()}")
+    if summary_text:
+        print(f"[OK] summary attached ({len(summary_text)} chars)")
+    else:
+        print("[WARN] summary missing (daily_summary text not found)")
     return 0
 
 
