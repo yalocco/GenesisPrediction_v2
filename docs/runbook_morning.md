@@ -1,8 +1,17 @@
+了解しました。
+**追記済みの完全版 `runbook_morning.md`** をそのまま使える形で出します。
+（既存内容は一切削らず、**2.5 日付ルール（WorldDate）** を追加しています）
+
+---
+
+# runbook_morning.md（完全版）
+
+```markdown
 # GenesisPrediction v2
 # Morning Runbook（朝の儀式・完全版）
-Version: 1.2
+Version: 1.3
 Status: Active
-Last Updated: 2026-02-19
+Last Updated: 2026-03-06
 
 ---
 
@@ -21,7 +30,7 @@ Last Updated: 2026-02-19
 
 朝の儀式は「GenesisPredictionの心拍」である。
 
-途中改造は禁止。
+途中改造は禁止。  
 完走が最優先。
 
 ---
@@ -47,7 +56,122 @@ Last Updated: 2026-02-19
 役割：最終確認・deploy専用
 
 原則：
+
 deployは自宅PCのみで実行する。
+
+---
+
+# 2.5 日付ルール（WorldDate）
+
+GenesisPrediction の朝の儀式では  
+**WorldDate（処理対象日付）を必ず1つに統一する。**
+
+現在の運用ルール：
+
+```
+
+WorldDate = LOCAL DATE
+
+```
+
+つまり、朝の儀式は次のコマンドで実行する。
+
+```
+
+powershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual.ps1
+
+```
+
+この場合、内部では
+
+```
+
+-Date (Get-Date -Format "yyyy-MM-dd")
+
+```
+
+が自動的に使用される。
+
+---
+
+### なぜこのルールになったか
+
+ニュース raw データは次の形式で保存される。
+
+```
+
+data/world_politics/YYYY-MM-DD.json
+
+```
+
+旧仕様では
+
+```
+
+WorldDate = UTC yesterday
+
+```
+
+を使用していたが、  
+ローカル朝の実行時に
+
+```
+
+missing raw news
+
+```
+
+エラーが発生することがあった。
+
+原因：
+
+UTC昨日とローカル日付のズレ。
+
+そのため現在は
+
+```
+
+WorldDate = LOCAL DATE
+
+```
+
+を正式仕様とする。
+
+---
+
+### 重要原則
+
+朝の儀式の **唯一のエントリーポイント** は
+
+```
+
+scripts/run_morning_ritual.ps1
+
+```
+
+である。
+
+以下を **単独実行してはいけない**
+
+```
+
+run_daily_with_publish.ps1
+run_daily_fx_rates.ps1
+run_daily_fx_inputs.ps1
+run_daily_fx_overlay.ps1
+build_data_health.py
+
+```
+
+必ず
+
+```
+
+run_morning_ritual.ps1
+
+```
+
+から実行すること。
 
 ---
 
@@ -57,8 +181,11 @@ deployは自宅PCのみで実行する。
 
 ## Step 1：最新取得
 
+```
+
 git pull
 
+```
 
 確認：
 
@@ -69,8 +196,11 @@ git pull
 
 ## Step 2：メインパイプライン
 
+```
+
 powershell -ExecutionPolicy Bypass -File scripts/run_daily_with_publish.ps1
 
+```
 
 生成内容：
 
@@ -90,10 +220,13 @@ powershell -ExecutionPolicy Bypass -File scripts/run_daily_with_publish.ps1
 
 ## Step 3：FX更新
 
+```
+
 powershell -ExecutionPolicy Bypass -File scripts/run_daily_fx_rates.ps1
 powershell -ExecutionPolicy Bypass -File scripts/run_daily_fx_inputs.ps1
 powershell -ExecutionPolicy Bypass -File scripts/run_daily_fx_overlay.ps1
 
+```
 
 確認：
 
@@ -104,8 +237,11 @@ powershell -ExecutionPolicy Bypass -File scripts/run_daily_fx_overlay.ps1
 
 ## Step 4：Data Health生成
 
-.\.venv\Scripts\python.exe scripts\build_data_health.py --date (Get-Date -Format "yyyy-MM-dd")
+```
 
+..venv\Scripts\python.exe scripts\build_data_health.py --date (Get-Date -Format "yyyy-MM-dd")
+
+```
 
 確認：
 
@@ -116,8 +252,11 @@ powershell -ExecutionPolicy Bypass -File scripts/run_daily_fx_overlay.ps1
 
 ## Step 5：研究ログ永続化（Prediction Freeze）
 
+```
+
 powershell -ExecutionPolicy Bypass -File scripts/run_save_prediction_log.ps1
 
+```
 
 目的：
 
@@ -153,20 +292,29 @@ powershell -ExecutionPolicy Bypass -File scripts/run_save_prediction_log.ps1
 
 ## Step 7：Git状態確認
 
+```
+
 git status
 
+```
 
 理想状態：
 
+```
+
 nothing to commit, working tree clean
 
+```
 
 必要なら：
+
+```
 
 git add
 git commit
 git push
 
+```
 
 ---
 
@@ -256,14 +404,15 @@ Deployは必須ではない。
 
 GenesisPredictionは
 
-「思想を持った再現可能システム」
+**「思想を持った再現可能システム」**
 
 である。
 
-速度より再現性。
-拡張より安定。
+速度より再現性。  
+拡張より安定。  
 便利さより構造。
 
 ---
 
 END OF DOCUMENT
+```
