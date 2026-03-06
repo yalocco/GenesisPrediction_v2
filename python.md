@@ -110,21 +110,4 @@ Digest KPI を正常化
 ----------------------------------------
 ----------------------------------------
 
-【GenesisPrediction スレ起動テンプレ】
-
-AIは Repository Memory を前提に作業する。
-
-docs/ai_bootstrap_prompt.md
-docs/repo_map.md
-docs/repo_architecture.md
-docs/project_status.md
-docs/pipeline_system.md
-docs/ui_system.md
-docs/genesis_brain.md
-docs/chat_operating_rules.md
-
-ルール
-
-1ターン1作業
-差分禁止
-完全ファイル提示
+docs/ui_data_dependencies.md を更新してください

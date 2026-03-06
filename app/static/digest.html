@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Digest - GenesisPrediction v2</title>
 
-  <!-- shared CSS -->
   <link rel="stylesheet" href="/static/app.css?v=20260305" />
 
   <style>
@@ -37,7 +36,6 @@
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
     }
 
-    /* topbar (match other pages vibe) */
     .topbar{
       position: sticky;
       top: 0;
@@ -92,7 +90,6 @@
     .pill.warn .led{background: var(--warn); box-shadow: 0 0 0 3px rgba(240,196,72,.18);}
     .pill.bad  .led{background: var(--bad);  box-shadow: 0 0 0 3px rgba(255,95,95,.18);}
 
-    /* layout */
     .wrap{max-width: 1200px; margin: 0 auto; padding: 22px 16px 60px;}
     .header{
       display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap;
@@ -112,17 +109,9 @@
       box-shadow: var(--shadow);
       padding: 16px 16px;
     }
-    .section h2{
-      margin:0 0 10px 0;
-      font-size: 26px;
-      letter-spacing:.2px;
-    }
+    .section h2{margin:0 0 10px 0; font-size: 26px; letter-spacing:.2px;}
 
-    /* controls */
-    .controls{
-      display:flex;gap:10px;align-items:center;flex-wrap:wrap;
-      margin-top: 10px;
-    }
+    .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap; margin-top: 10px;}
     input[type="text"], select, button{
       background: rgba(255,255,255,.03);
       color: rgba(255,255,255,.86);
@@ -135,49 +124,19 @@
     input[type="text"]{min-width: 220px;}
     button{cursor:pointer; transition:.12s ease;}
     button:hover{border-color: rgba(105,169,255,.55);}
-    button.primary{
-      border-color: rgba(105,169,255,.75);
-      box-shadow: 0 0 0 3px rgba(105,169,255,.12) inset;
-    }
-    .mini{
-      display:inline-flex;align-items:center;gap:10px;color: var(--muted);font-size:12px;
-      margin-top: 2px;
-    }
+    button.primary{border-color: rgba(105,169,255,.75); box-shadow: 0 0 0 3px rgba(105,169,255,.12) inset;}
+    .mini{display:inline-flex;align-items:center;gap:10px;color: var(--muted);font-size:12px; margin-top: 2px;}
     .statusline{color: var(--muted); font-size: 12px; margin-top: 2px;}
-    .statusline .tag{display:inline-flex;align-items:center;gap:6px;margin-right:8px}
-    .tag-dot{width:8px;height:8px;border-radius:999px;background: rgba(255,255,255,.25);}
 
-    /* KPI cards */
-    .kpi-row{
-      display:grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
-      gap: 10px;
-    }
-    @media (max-width: 980px){
-      .kpi-row{grid-template-columns: repeat(3, minmax(0, 1fr));}
-    }
-    @media (max-width: 560px){
-      .kpi-row{grid-template-columns: repeat(2, minmax(0, 1fr));}
-    }
-    .kpi{
-      background: rgba(0,0,0,.10);
-      border: 1px solid rgba(255,255,255,.10);
-      border-radius: 14px;
-      padding: 12px 12px;
-    }
+    .kpi-row{display:grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px;}
+    @media (max-width: 980px){ .kpi-row{grid-template-columns: repeat(3, minmax(0, 1fr));} }
+    @media (max-width: 560px){ .kpi-row{grid-template-columns: repeat(2, minmax(0, 1fr));} }
+    .kpi{background: rgba(0,0,0,.10); border: 1px solid rgba(255,255,255,.10); border-radius: 14px; padding: 12px 12px;}
     .kpi .label{color: var(--faint); font-size: 12px;}
     .kpi .value{font-size: 22px; margin-top: 6px; font-weight: 700;}
 
-    /* cards */
-    .cards{
-      display:grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 10px;
-    }
-    @media (max-width: 900px){
-      .cards{grid-template-columns: 1fr;}
-    }
+    .cards{display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 10px;}
+    @media (max-width: 900px){ .cards{grid-template-columns: 1fr;} }
     .card{
       background: rgba(0,0,0,.16);
       border: 1px solid rgba(255,255,255,.10);
@@ -189,74 +148,47 @@
       min-height: 112px;
     }
     .thumb{
-      width: 92px; height: 92px; border-radius: 12px;
+      width: 112px; height: 112px; border-radius: 12px;
       background: rgba(255,255,255,.05);
       border: 1px solid rgba(255,255,255,.10);
       flex: 0 0 auto;
       overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
     }
     .thumb img{width:100%;height:100%;object-fit:cover;display:block;}
-    .card-main{flex: 1 1 auto; min-width: 0;}
-    .title{
-      margin: 0;
-      font-size: 15px;
-      line-height: 1.2;
+    .thumb-fallback{
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color: rgba(255,255,255,.78);
+      font-size: 22px;
       font-weight: 700;
-      color: rgba(105,169,255,.95);
     }
+    .card-main{flex: 1 1 auto; min-width: 0;}
+    .title{margin: 0; font-size: 15px; line-height: 1.2; font-weight: 700; color: rgba(105,169,255,.95);}
     .title a{color: inherit; text-decoration:none;}
     .title a:hover{text-decoration:underline;}
-    .source{
-      margin-top: 4px;
-      color: rgba(255,255,255,.72);
-      font-size: 12px;
-    }
-    .desc{
-      margin-top: 8px;
-      color: rgba(255,255,255,.70);
-      font-size: 12px;
-      line-height: 1.35;
-      display: -webkit-box;
-      -webkit-line-clamp: 4;
-      -webkit-box-orient: vertical;
-      overflow:hidden;
-    }
-    .card-side{
-      flex: 0 0 auto;
-      display:flex;
-      flex-direction:column;
-      align-items:flex-end;
-      justify-content:space-between;
-      min-width: 86px;
-    }
-    .metric{
-      font-variant-numeric: tabular-nums;
-      color: rgba(255,255,255,.75);
-      font-size: 12px;
-    }
+    .source{margin-top: 4px; color: rgba(255,255,255,.72); font-size: 12px;}
+    .desc{margin-top: 8px; color: rgba(255,255,255,.70); font-size: 12px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow:hidden;}
+    .card-side{flex: 0 0 auto; display:flex; flex-direction:column; align-items:flex-end; justify-content:space-between; min-width: 86px;}
+    .metric{font-variant-numeric: tabular-nums; color: rgba(255,255,255,.75); font-size: 12px;}
     .metric b{color: rgba(255,255,255,.92);}
-    .badge{
-      display:inline-flex;align-items:center;gap:6px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.03);
-      color: rgba(255,255,255,.78);
-      font-size: 11px;
-    }
+    .badge{display:inline-flex;align-items:center;gap:6px; padding: 4px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.03); color: rgba(255,255,255,.78); font-size: 11px;}
     .badge.good{border-color: rgba(80,200,140,.30); color: rgba(80,200,140,.95);}
     .badge.bad {border-color: rgba(255,95,95,.30); color: rgba(255,95,95,.95);}
     .badge.warn{border-color: rgba(240,196,72,.30); color: rgba(240,196,72,.95);}
     .badge.neu {border-color: rgba(255,255,255,.16); color: rgba(255,255,255,.76);}
-
-    .empty{
-      margin-top: 8px;
-      color: rgba(255,255,255,.60);
-      font-size: 12px;
-    }
+    .empty{margin-top: 8px; color: rgba(255,255,255,.60); font-size: 12px;}
   </style>
 </head>
-
 <body>
   <div class="topbar">
     <div class="topbar-inner">
@@ -292,7 +224,6 @@
         <h2>Summary</h2>
         <div class="statusline" id="summary-status">loading...</div>
         <div id="summary-text" style="margin-top:8px; white-space:pre-wrap; color:rgba(255,255,255,.78); font-size:13px;"></div>
-
         <div class="controls">
           <input id="q" type="text" placeholder="Search title/source..." />
           <select id="filter-sent">
@@ -303,13 +234,11 @@
             <option value="mixed">mixed</option>
             <option value="unknown">unknown</option>
           </select>
-
           <select id="sortby">
             <option value="risk">Risk</option>
             <option value="score">Score</option>
             <option value="newest">Newest</option>
           </select>
-
           <button id="toggle-show" class="primary">Show all</button>
           <button id="toggle-summary">Collapse summary</button>
         </div>
@@ -320,7 +249,6 @@
       <div class="panel">
         <h2>KPIs</h2>
         <div class="statusline" id="kpi-status">loading...</div>
-
         <div class="kpi-row" style="margin-top:10px;">
           <div class="kpi"><div class="label">articles</div><div class="value" id="kpi-articles">--</div></div>
           <div class="kpi"><div class="label">positive</div><div class="value" id="kpi-pos">--</div></div>
@@ -348,16 +276,11 @@
 (() => {
   "use strict";
 
-  // ---------------------------
-  // config
-  // ---------------------------
+  const URL_DIGEST  = "/data/digest/view_model_latest.json";
   const URL_SUMMARY = "/data/world_politics/analysis/daily_summary_latest.json";
   const URL_NEWS    = "/data/world_politics/analysis/daily_news_latest.json";
   const LS_SHOW_ALL = "digest_show_all_v1";
 
-  // ---------------------------
-  // helpers
-  // ---------------------------
   const $ = (id) => document.getElementById(id);
 
   function safeText(x){
@@ -403,36 +326,51 @@
     }
   }
 
+  function hostFromUrl(url){
+    try{
+      return new URL(url).hostname || "";
+    }catch{
+      return "";
+    }
+  }
+
+  function firstLetter(source, title){
+    const s = (safeText(source) || safeText(title) || "?").trim();
+    return s ? s[0].toUpperCase() : "?";
+  }
+
+  function faviconUrl(url, source){
+    const host = hostFromUrl(url) || String(source || "").replace(/^https?:\/\//, "").split("/")[0];
+    if (!host) return null;
+    return `https://www.google.com/s2/favicons?sz=128&domain_url=${encodeURIComponent("https://" + host)}`;
+  }
+
+  function sentimentObject(it){
+    return (it && typeof it.sentiment === "object" && it.sentiment !== null) ? it.sentiment : it;
+  }
+
   async function fetchJson(url){
     const r = await fetch(url, { cache: "no-store" });
     if (!r.ok) throw new Error(`HTTP ${r.status} for ${url}`);
     return await r.json();
   }
 
-  // ---------------------------
-  // UI state
-  // ---------------------------
   const state = {
-    sourceUrl: URL_SUMMARY,
+    sourceUrl: URL_DIGEST,
     asOf: "--",
     items: [],
     summaryText: "",
     showAll: false,
     lastError: null,
+    sentimentSummary: null,
   };
 
-  // ---------------------------
-  // render functions
-  // ---------------------------
   function renderMeta(){
     $("meta-asof").innerHTML = `<span class="led"></span>as_of: ${state.asOf}`;
     $("meta-source").innerHTML = `<span class="led"></span>source: ${state.sourceUrl}`;
     $("meta-items").innerHTML = `<span class="led"></span>items: ${state.items.length}`;
     $("open-json").setAttribute("href", state.sourceUrl);
-
     $("pill-asof").innerHTML = `<span class="led"></span>as_of: ${state.asOf}`;
-
-    // We don't have health here; keep placeholder.
     $("pill-health").innerHTML = `<span class="led"></span>Health: --`;
   }
 
@@ -447,19 +385,34 @@
     $("summary-text").textContent = s;
   }
 
-  function computeKPIs(items){
+  function computeKPIs(items, summary=null){
+    if (summary && typeof summary === "object"){
+      const avgRaw = pick(summary, ["score", "net", "avg_net"], null);
+      const avgNum = Number(avgRaw);
+      return {
+        articles: asNumber(pick(summary, ["articles"], items.length), items.length),
+        pos: asNumber(pick(summary, ["positive_count", "positiveCount"], 0), 0),
+        neg: asNumber(pick(summary, ["negative_count", "negativeCount"], 0), 0),
+        neu: asNumber(pick(summary, ["neutral_count", "neutralCount"], 0), 0),
+        mix: asNumber(pick(summary, ["mixed_count", "mixedCount"], 0), 0),
+        unk: asNumber(pick(summary, ["unknown_count", "unknownCount"], 0), 0),
+        avg: Number.isFinite(avgNum) ? avgNum : null,
+      };
+    }
+
     let pos=0, neg=0, neu=0, mix=0, unk=0;
     let sumNet = 0, nNet = 0;
 
     for (const it of items){
-      const lab = normalizeSentimentLabel(pick(it, ["sentiment", "sentiment_label", "label"], ""));
+      const sObj = sentimentObject(it);
+      const lab = normalizeSentimentLabel(pick(sObj, ["sentiment_label", "sentiment", "label"], ""));
       if (lab === "positive") pos++;
       else if (lab === "negative") neg++;
       else if (lab === "neutral") neu++;
       else if (lab === "mixed") mix++;
       else unk++;
 
-      const net = pick(it, ["net", "net_score", "avg_net", "sentiment_net"], null);
+      const net = pick(sObj, ["net", "net_score", "avg_net", "sentiment_net", "score"], null);
       const netNum = Number(net);
       if (Number.isFinite(netNum)){
         sumNet += netNum;
@@ -472,7 +425,7 @@
   }
 
   function renderKPIs(){
-    const k = computeKPIs(state.items);
+    const k = computeKPIs(state.items, state.sentimentSummary);
     $("kpi-articles").textContent = String(k.articles);
     $("kpi-pos").textContent = String(k.pos);
     $("kpi-neg").textContent = String(k.neg);
@@ -480,7 +433,6 @@
     $("kpi-mix").textContent = String(k.mix);
     $("kpi-unk").textContent = String(k.unk);
     $("kpi-avg").textContent = (k.avg === null) ? "—" : k.avg.toFixed(3);
-
     $("kpi-status").textContent = state.lastError ? "error" : "OK";
   }
 
@@ -500,25 +452,28 @@
     }
 
     if (sent !== "all"){
-      list = list.filter(it => normalizeSentimentLabel(pick(it, ["sentiment", "sentiment_label", "label"], "")) === sent);
+      list = list.filter(it => {
+        const sObj = sentimentObject(it);
+        return normalizeSentimentLabel(pick(sObj, ["sentiment_label", "sentiment", "label"], "")) === sent;
+      });
     }
 
     if (sortby === "risk"){
       list.sort((a,b) => {
-        const ar = asNumber(pick(a, ["risk","risk_score","severity","danger"], 0), 0);
-        const br = asNumber(pick(b, ["risk","risk_score","severity","danger"], 0), 0);
+        const ar = asNumber(pick(sentimentObject(a), ["risk","risk_score","severity","danger"], 0), 0);
+        const br = asNumber(pick(sentimentObject(b), ["risk","risk_score","severity","danger"], 0), 0);
         if (br !== ar) return br - ar;
-        const as = asNumber(pick(a, ["score","rank_score","importance"], 0), 0);
-        const bs = asNumber(pick(b, ["score","rank_score","importance"], 0), 0);
+        const as = asNumber(pick(sentimentObject(a), ["score","rank_score","importance", "net"], 0), 0);
+        const bs = asNumber(pick(sentimentObject(b), ["score","rank_score","importance", "net"], 0), 0);
         return bs - as;
       });
     } else if (sortby === "score"){
       list.sort((a,b) => {
-        const as = asNumber(pick(a, ["score","rank_score","importance"], 0), 0);
-        const bs = asNumber(pick(b, ["score","rank_score","importance"], 0), 0);
+        const as = asNumber(pick(sentimentObject(a), ["score","rank_score","importance", "net"], 0), 0);
+        const bs = asNumber(pick(sentimentObject(b), ["score","rank_score","importance", "net"], 0), 0);
         if (bs !== as) return bs - as;
-        const ar = asNumber(pick(a, ["risk","risk_score","severity","danger"], 0), 0);
-        const br = asNumber(pick(b, ["risk","risk_score","severity","danger"], 0), 0);
+        const ar = asNumber(pick(sentimentObject(a), ["risk","risk_score","severity","danger"], 0), 0);
+        const br = asNumber(pick(sentimentObject(b), ["risk","risk_score","severity","danger"], 0), 0);
         return br - ar;
       });
     } else {
@@ -528,35 +483,62 @@
     return list;
   }
 
-  function renderCards(){
-    const list = getFilteredSortedItems();
-    const showAll = state.showAll;
+  function attachThumb(thumb, img, url, source, title){
+    thumb.innerHTML = "";
 
-    const shown = showAll ? list : list.slice(0, 10);
-    $("cards").innerHTML = "";
-    $("empty").style.display = shown.length ? "none" : "block";
+    const fallbackNode = () => {
+      const box = document.createElement("div");
+      box.className = "thumb-fallback";
+      box.textContent = firstLetter(source, title);
+      thumb.appendChild(box);
+    };
 
-    $("showing").textContent = showAll
-      ? `showing: all (${list.length})`
-      : `showing: top ${Math.min(10, list.length)}/${list.length}`;
+    const favicon = faviconUrl(url, source);
+    const preferred = img || favicon;
 
-    if (state.lastError){
-      $("hi-status").textContent = "error";
-    } else {
-      $("hi-status").textContent = shown.length ? "OK" : "OK";
+    if (!preferred){
+      fallbackNode();
+      return;
     }
 
+    const im = document.createElement("img");
+    im.loading = "lazy";
+    im.referrerPolicy = "no-referrer";
+    im.src = preferred;
+
+    let triedFavicon = false;
+    im.onerror = () => {
+      if (!triedFavicon && favicon && preferred !== favicon){
+        triedFavicon = true;
+        im.src = favicon;
+        return;
+      }
+      thumb.innerHTML = "";
+      fallbackNode();
+    };
+
+    thumb.appendChild(im);
+  }
+
+  function renderCards(){
+    const list = getFilteredSortedItems();
+    const shown = state.showAll ? list : list.slice(0, 10);
+
+    $("cards").innerHTML = "";
+    $("empty").style.display = shown.length ? "none" : "block";
+    $("showing").textContent = state.showAll ? `showing: all (${list.length})` : `showing: top ${Math.min(10, list.length)}/${list.length}`;
+    $("hi-status").textContent = state.lastError ? "error" : "OK";
+
     for (const it of shown){
+      const sObj = sentimentObject(it);
       const title = safeText(pick(it, ["title","headline"], "(no title)"));
       const url = pick(it, ["url","link"], "#");
       const source = safeText(pick(it, ["source","source_name","publisher"], "unknown"));
       const desc = safeText(pick(it, ["description","summary","snippet"], ""));
       const img = pick(it, ["image","urlToImage","thumbnail"], null);
-
-      const risk = asNumber(pick(it, ["risk","risk_score","severity","danger"], 0), 0);
-      const score = asNumber(pick(it, ["score","rank_score","importance"], 0), 0);
-
-      const lab = normalizeSentimentLabel(pick(it, ["sentiment","sentiment_label","label"], ""));
+      const risk = asNumber(pick(sObj, ["risk","risk_score","severity","danger"], 0), 0);
+      const score = asNumber(pick(sObj, ["score","rank_score","importance", "net"], 0), 0);
+      const lab = normalizeSentimentLabel(pick(sObj, ["sentiment_label","sentiment","label"], ""));
       const bcls = badgeClass(lab);
 
       const card = document.createElement("div");
@@ -564,13 +546,7 @@
 
       const thumb = document.createElement("div");
       thumb.className = "thumb";
-      if (img){
-        const im = document.createElement("img");
-        im.src = img;
-        im.loading = "lazy";
-        im.referrerPolicy = "no-referrer";
-        thumb.appendChild(im);
-      }
+      attachThumb(thumb, img, url, source, title);
       card.appendChild(thumb);
 
       const main = document.createElement("div");
@@ -604,40 +580,27 @@
       .replaceAll("'", "&#039;");
   }
 
-  // ---------------------------
-  // data normalization
-  // ---------------------------
+  function normalizeFromDigestViewModel(obj){
+    const asOf = pick(obj, ["date", "as_of", "asOf"], "--");
+    const section = Array.isArray(obj?.sections) ? (obj.sections.find(s => s && s.id === "world_politics") || obj.sections[0]) : null;
+    const items = Array.isArray(section?.cards) ? section.cards : [];
+    const summaryText = pick(obj, ["summary", "text_summary", "daily_summary"], "") || "";
+    const sentimentSummary = pick(obj, ["sentiment_summary"], null) || pick(obj?.today, ["sentiment_summary", "sentiment"], null);
+    return { asOf, summaryText, items, sentimentSummary };
+  }
+
   function normalizeFromDailySummary(obj){
-    // Expected: obj.items[] exists (new format)
     const items = Array.isArray(obj?.items) ? obj.items : [];
     const asOf = pick(obj, ["date","as_of","asOf"], "--");
-    const summaryText =
-      pick(obj, ["summary", "text_summary", "daily_summary"], "") ||
-      pick(obj, ["yesterday_summary_text"], "") ||
-      "";
-
+    const summaryText = pick(obj, ["summary", "text_summary", "daily_summary"], "") || pick(obj, ["yesterday_summary_text"], "") || "";
     return { asOf, summaryText, items };
   }
 
   function normalizeFromDailyNews(obj){
-    // Try common shapes:
-    // - obj.items[]
-    // - obj.articles[]
-    // - obj.events[] (if your analyzer uses events naming)
-    const raw = Array.isArray(obj?.items) ? obj.items
-              : Array.isArray(obj?.articles) ? obj.articles
-              : Array.isArray(obj?.events) ? obj.events
-              : [];
-
+    const raw = Array.isArray(obj?.items) ? obj.items : Array.isArray(obj?.articles) ? obj.articles : Array.isArray(obj?.events) ? obj.events : [];
     const asOf = pick(obj, ["date","as_of","asOf"], "--");
-
-    // Build item objects compatible with renderer
     const items = raw.map((a) => {
-      const sourceName =
-        (typeof a?.source === "string") ? a.source :
-        (typeof a?.source?.name === "string") ? a.source.name :
-        pick(a, ["source_name","publisher"], "unknown");
-
+      const sourceName = (typeof a?.source === "string") ? a.source : (typeof a?.source?.name === "string") ? a.source.name : pick(a, ["source_name","publisher"], "unknown");
       return {
         title: pick(a, ["title","headline"], "(no title)"),
         url: pick(a, ["url","link"], "#"),
@@ -645,20 +608,15 @@
         description: pick(a, ["description","summary","snippet"], ""),
         image: pick(a, ["urlToImage","image","thumbnail"], null),
         publishedAt: pick(a, ["publishedAt","published_at","time","date"], ""),
-        // Scores may not exist in daily_news; keep 0 (still works)
         risk: asNumber(pick(a, ["risk","risk_score","severity","danger"], 0), 0),
         score: asNumber(pick(a, ["score","rank_score","importance"], 0), 0),
         sentiment: pick(a, ["sentiment","sentiment_label","label"], "unknown"),
         net: pick(a, ["net","net_score","avg_net","sentiment_net"], null),
       };
     });
-
     return { asOf, summaryText: "", items };
   }
 
-  // ---------------------------
-  // main load with fallback
-  // ---------------------------
   async function load(){
     state.lastError = null;
     $("summary-status").textContent = "loading...";
@@ -669,55 +627,67 @@
     $("empty").style.display = "none";
     $("showing").textContent = "";
 
-    // showAll persisted
     const saved = localStorage.getItem(LS_SHOW_ALL);
     state.showAll = (saved === null) ? true : (saved === "1");
     $("toggle-show").textContent = state.showAll ? "Top 10" : "Show all";
     $("toggle-show").classList.toggle("primary", !state.showAll);
 
-    // 1) try daily_summary_latest.json
     try{
-      const s = await fetchJson(URL_SUMMARY);
-      const ns = normalizeFromDailySummary(s);
-
-      // if items exist, use them
-      if (Array.isArray(ns.items) && ns.items.length > 0){
-        state.sourceUrl = URL_SUMMARY;
-        state.asOf = ns.asOf || "--";
-        state.summaryText = ns.summaryText || "";
-        state.items = ns.items;
+      const d = await fetchJson(URL_DIGEST);
+      const nd = normalizeFromDigestViewModel(d);
+      if (Array.isArray(nd.items) && nd.items.length > 0){
+        state.sourceUrl = URL_DIGEST;
+        state.asOf = nd.asOf || "--";
+        state.summaryText = nd.summaryText || "";
+        state.items = nd.items;
+        state.sentimentSummary = nd.sentimentSummary || null;
         renderMeta();
         renderSummary();
         renderKPIs();
         renderCards();
         return;
       }
+    } catch (e){
+      state.lastError = e;
+    }
 
-      // items absent -> fallback to daily_news_latest.json
-      // keep date from summary if available (nice UX)
+    try{
+      const s = await fetchJson(URL_SUMMARY);
+      const ns = normalizeFromDailySummary(s);
+      if (Array.isArray(ns.items) && ns.items.length > 0){
+        state.sourceUrl = URL_SUMMARY;
+        state.asOf = ns.asOf || "--";
+        state.summaryText = ns.summaryText || "";
+        state.items = ns.items;
+        state.sentimentSummary = null;
+        renderMeta();
+        renderSummary();
+        renderKPIs();
+        renderCards();
+        return;
+      }
       state.asOf = ns.asOf || "--";
       state.summaryText = ns.summaryText || "";
     } catch (e){
       state.lastError = e;
     }
 
-    // 2) fallback: daily_news_latest.json
     try{
       const n = await fetchJson(URL_NEWS);
       const nn = normalizeFromDailyNews(n);
-
       state.sourceUrl = URL_NEWS;
       state.asOf = state.asOf !== "--" ? state.asOf : (nn.asOf || "--");
       state.items = nn.items;
-      // keep summaryText from summary file if we had it; else blank
+      state.sentimentSummary = null;
       renderMeta();
       renderSummary();
       renderKPIs();
       renderCards();
     } catch (e){
       state.lastError = e;
-      state.sourceUrl = URL_SUMMARY;
+      state.sourceUrl = URL_DIGEST;
       state.items = [];
+      state.sentimentSummary = null;
       renderMeta();
       renderSummary();
       renderKPIs();
@@ -728,9 +698,6 @@
     }
   }
 
-  // ---------------------------
-  // events
-  // ---------------------------
   $("q").addEventListener("input", () => renderCards());
   $("filter-sent").addEventListener("change", () => renderCards());
   $("sortby").addEventListener("change", () => renderCards());
@@ -750,10 +717,8 @@
     $("toggle-summary").textContent = summaryCollapsed ? "Expand summary" : "Collapse summary";
   });
 
-  // init
   load();
 })();
 </script>
-
 </body>
 </html>

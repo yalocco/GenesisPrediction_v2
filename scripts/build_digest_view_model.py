@@ -85,20 +85,130 @@ def norm_space(s: str) -> str:
     return re.sub(r"\s+", " ", (s or "")).strip()
 
 
+def to_float(v: Any, default: float = 0.0) -> float:
+    try:
+        if v is None or v == "":
+            return default
+        return float(v)
+    except Exception:
+        return default
+
+
+
 # ---------------------------
-# Sentiment merge
+# News image enrichment
+# ---------------------------
+
+def daily_news_path(repo: Path, date: str) -> Path:
+    p = repo / "data" / "world_politics" / "analysis" / f"daily_news_{date}.json"
+    if p.exists():
+        return p
+    return repo / "data" / "world_politics" / "analysis" / "daily_news_latest.json"
+
+
+def _news_item_key(it: Dict[str, Any]) -> Optional[str]:
+    title = norm_space(str(it.get("title") or it.get("headline") or it.get("name") or "")).lower()
+    source = it.get("source")
+    source_name = ""
+    if isinstance(source, dict):
+        source_name = norm_space(str(source.get("name") or source.get("id") or "")).lower()
+    elif isinstance(source, str):
+        source_name = norm_space(source).lower()
+    if title and source_name:
+        return f"{source_name}::{title}"
+    if title:
+        return title
+    return None
+
+
+def build_news_image_index(news_obj: Any) -> Tuple[Dict[str, str], Dict[str, str]]:
+    by_url: Dict[str, str] = {}
+    by_key: Dict[str, str] = {}
+
+    items: List[Dict[str, Any]] = []
+    if isinstance(news_obj, dict):
+        for key in ("articles", "items", "news", "rows", "data"):
+            v = news_obj.get(key)
+            if isinstance(v, list):
+                items = [x for x in v if isinstance(x, dict)]
+                break
+    elif isinstance(news_obj, list):
+        items = [x for x in news_obj if isinstance(x, dict)]
+
+    for it in items:
+        image = it.get("urlToImage") or it.get("image") or it.get("thumbnail")
+        if not isinstance(image, str) or not image.strip():
+            continue
+        image = image.strip()
+
+        url = it.get("url") or it.get("link")
+        if isinstance(url, str) and url.strip():
+            by_url[url.strip()] = image
+
+        key = _news_item_key(it)
+        if key:
+            by_key[key] = image
+
+    return by_url, by_key
+
+
+def attach_images(repo: Path, date: str, cards: List["Card"]) -> None:
+    p = daily_news_path(repo, date)
+    if not p.exists():
+        return
+
+    try:
+        news = read_json_safe(p)
+        by_url, by_key = build_news_image_index(news)
+    except Exception:
+        return
+
+    for c in cards:
+        if isinstance(c.image, str) and c.image.strip():
+            continue
+
+        img: Optional[str] = None
+        if c.url and c.url in by_url:
+            img = by_url.get(c.url)
+
+        if img is None:
+            title_key = norm_space((c.title or "")).lower()
+            source_key = norm_space((c.source or "")).lower()
+            if title_key and source_key:
+                img = by_key.get(f"{source_key}::{title_key}")
+            if img is None and title_key:
+                img = by_key.get(title_key)
+
+        if isinstance(img, str) and img.strip():
+            c.image = img.strip()
+
+# ---------------------------
+# Sentiment merge / summary
 # ---------------------------
 
 def sentiment_path(repo: Path, date: str) -> Path:
-    return repo / "data" / "world_politics" / "analysis" / f"sentiment_{date}.json"
+    p = repo / "data" / "world_politics" / "analysis" / f"sentiment_{date}.json"
+    if p.exists():
+        return p
+    return repo / "data" / "world_politics" / "analysis" / "sentiment_latest.json"
+
+
+def _sentiment_item_key(it: Dict[str, Any]) -> Optional[str]:
+    title = norm_space(str(it.get("title") or "")).lower()
+    source = it.get("source")
+    source_name = ""
+    if isinstance(source, dict):
+        source_name = norm_space(str(source.get("name") or source.get("id") or "")).lower()
+    elif isinstance(source, str):
+        source_name = norm_space(source).lower()
+    if title and source_name:
+        return f"{source_name}::{title}"
+    if title:
+        return title
+    return None
 
 
 def build_sentiment_index(sent_obj: Any) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]]]:
-    """
-    Returns:
-      - by_url[url] = item
-      - by_key[key] = item
-    """
     by_url: Dict[str, Dict[str, Any]] = {}
     by_key: Dict[str, Dict[str, Any]] = {}
 
@@ -113,12 +223,87 @@ def build_sentiment_index(sent_obj: Any) -> Tuple[Dict[str, Dict[str, Any]], Dic
         if not isinstance(it, dict):
             continue
         url = it.get("url")
-        key = it.get("key")
+        key = it.get("key") or _sentiment_item_key(it)
         if isinstance(url, str) and url.strip():
             by_url[url.strip()] = it
         if isinstance(key, str) and key.strip():
             by_key[key.strip()] = it
     return by_url, by_key
+
+
+def build_sentiment_summary(repo: Path, date: str) -> Dict[str, Any]:
+    p = sentiment_path(repo, date)
+    if not p.exists():
+        return {
+            "articles": 0,
+            "risk": 0.0,
+            "positive": 0.0,
+            "uncertainty": 0.0,
+            "net": 0.0,
+            "score": 0.0,
+            "riskScore": 0.0,
+            "posScore": 0.0,
+            "uncScore": 0.0,
+            "positive_count": 0,
+            "negative_count": 0,
+            "neutral_count": 0,
+            "mixed_count": 0,
+            "unknown_count": 0,
+        }
+
+    try:
+        sent = read_json_safe(p)
+    except Exception:
+        return {
+            "articles": 0,
+            "risk": 0.0,
+            "positive": 0.0,
+            "uncertainty": 0.0,
+            "net": 0.0,
+            "score": 0.0,
+            "riskScore": 0.0,
+            "posScore": 0.0,
+            "uncScore": 0.0,
+            "positive_count": 0,
+            "negative_count": 0,
+            "neutral_count": 0,
+            "mixed_count": 0,
+            "unknown_count": 0,
+        }
+
+    today = sent.get("today") if isinstance(sent, dict) else {}
+    summary = sent.get("summary") if isinstance(sent, dict) else {}
+    if not isinstance(today, dict):
+        today = {}
+    if not isinstance(summary, dict):
+        summary = {}
+
+    label_counts = today.get("label_counts") if isinstance(today.get("label_counts"), dict) else {}
+    if not label_counts:
+        label_counts = {
+            "positive": int(summary.get("positive") or 0),
+            "negative": int(summary.get("negative") or 0),
+            "neutral": int(summary.get("neutral") or 0),
+            "mixed": int(summary.get("mixed") or 0),
+            "unknown": int(summary.get("unknown") or 0),
+        }
+
+    return {
+        "articles": int(today.get("articles") or 0),
+        "risk": to_float(today.get("risk")),
+        "positive": to_float(today.get("positive")),
+        "uncertainty": to_float(today.get("uncertainty")),
+        "net": to_float(today.get("net")),
+        "score": to_float(today.get("score", today.get("net"))),
+        "riskScore": to_float(today.get("risk", 0.0)),
+        "posScore": to_float(today.get("positive", 0.0)),
+        "uncScore": to_float(today.get("uncertainty", 0.0)),
+        "positive_count": int(label_counts.get("positive") or 0),
+        "negative_count": int(label_counts.get("negative") or 0),
+        "neutral_count": int(label_counts.get("neutral") or 0),
+        "mixed_count": int(label_counts.get("mixed") or 0),
+        "unknown_count": int(label_counts.get("unknown") or 0),
+    }
 
 
 def attach_sentiment(repo: Path, date: str, cards: List["Card"]) -> None:
@@ -136,27 +321,27 @@ def attach_sentiment(repo: Path, date: str, cards: List["Card"]) -> None:
         hit: Optional[Dict[str, Any]] = None
         if c.url and c.url in by_url:
             hit = by_url.get(c.url)
-        # fallback: if no url-hit, try a very soft key match (source + title) using existing key in sentiment items
-        # (we only use it if it exists, so "urlがない日"でも最低限つながる)
+
         if hit is None:
-            # brute: title contains (not perfect, but safer than nothing)
-            t = (c.title or "").strip().lower()
-            if t:
-                for it in by_key.values():
-                    tt = (it.get("title") or "").strip().lower()
-                    if tt and tt == t:
-                        hit = it
-                        break
+            title_key = norm_space((c.title or "")).lower()
+            source_key = norm_space((c.source or "")).lower()
+            if title_key and source_key:
+                hit = by_key.get(f"{source_key}::{title_key}")
+            if hit is None and title_key:
+                hit = by_key.get(title_key)
 
         if hit is None:
             continue
 
-        # Put compact sentiment on the card
+        label = str(hit.get("sentiment") or hit.get("sentiment_label") or "unknown").strip().lower()
         c.sentiment = {
-            "risk": float(hit.get("risk_score") or 0.0),
-            "positive": float(hit.get("positive_score") or 0.0),
-            "uncertainty": float(hit.get("uncertainty_score") or 0.0),
-            "net": float(hit.get("net") or 0.0),
+            "risk": to_float(hit.get("risk", hit.get("risk_score"))),
+            "positive": to_float(hit.get("positive", hit.get("positive_score"))),
+            "uncertainty": to_float(hit.get("uncertainty", hit.get("uncertainty_score"))),
+            "net": to_float(hit.get("net")),
+            "score": to_float(hit.get("score", hit.get("net"))),
+            "sentiment": label,
+            "sentiment_label": label,
         }
 
 
@@ -172,7 +357,7 @@ class Card:
     url: Optional[str] = None
     image: Optional[str] = None
     tags: Optional[List[str]] = None
-    sentiment: Optional[Dict[str, float]] = None  # <- add
+    sentiment: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         d = {
@@ -192,7 +377,7 @@ class Card:
 class Section:
     id: str
     title: str
-    status: str  # ok | na | error
+    status: str
     cards: List[Card]
     notes: Optional[str] = None
 
@@ -314,18 +499,14 @@ class DigestCardHTMLParser(HTMLParser):
                 if self.ctx.first_href is None and isinstance(href, str) and href.strip():
                     self.ctx.first_href = href.strip()
                 self.ctx._in_a = True
-
             elif tag.lower() in ("h1", "h2", "h3", "h4"):
                 self.ctx._in_h = True
-
             elif tag.lower() == "p":
                 self.ctx._in_p = True
-
             elif tag.lower() == "img":
                 src = a.get("src")
                 if self.ctx.first_img is None and isinstance(src, str) and src.strip():
                     self.ctx.first_img = src.strip()
-
             elif tag.lower() == "span":
                 self.ctx._span_class = (a.get("class") or "").lower()
 
@@ -465,8 +646,10 @@ def locate_world_politics_sources(repo: Path, date: str) -> Tuple[Optional[Path]
     html_candidates.sort(key=lambda p: (score_html(p), p.stat().st_mtime), reverse=True)
     json_candidates.sort(key=lambda p: (score_json(p), p.stat().st_mtime), reverse=True)
 
-    return (html_candidates[0] if html_candidates else None,
-            json_candidates[0] if json_candidates else None)
+    return (
+        html_candidates[0] if html_candidates else None,
+        json_candidates[0] if json_candidates else None,
+    )
 
 
 def build_world_politics_section(repo: Path, date: str, max_cards: int) -> Section:
@@ -487,8 +670,8 @@ def build_world_politics_section(repo: Path, date: str, max_cards: int) -> Secti
             obj = read_json_safe(json_src)
             cards = build_cards_from_json(obj, max_cards=max_cards)
 
-        # ⭐ sentiment attach here
         if cards:
+            attach_images(repo, date, cards)
             attach_sentiment(repo, date, cards)
 
         status = "ok" if cards else "na"
@@ -517,6 +700,13 @@ def build_world_politics_section(repo: Path, date: str, max_cards: int) -> Secti
 
 def view_output_path(repo: Path, date: str) -> Path:
     return repo / "data" / "digest" / "view" / f"{date}.json"
+
+
+def latest_output_paths(repo: Path) -> List[Path]:
+    return [
+        repo / "data" / "digest" / "view_model_latest.json",
+        repo / "data" / "digest" / "view" / "view_model_latest.json",
+    ]
 
 
 def detect_latest_date(repo: Path) -> Optional[str]:
@@ -549,7 +739,7 @@ def parse_args() -> argparse.Namespace:
         help="Section id to build. Default: world_politics",
         default=DEFAULT_SECTION_ID,
     )
-    ap.add_argument("--max-cards", type=int, default=12, help="Max cards per section (default: 12).")
+    ap.add_argument("--max-cards", type=int, default=24, help="Max cards per section (default: 24).")
     return ap.parse_args()
 
 
@@ -581,6 +771,7 @@ def main() -> int:
     else:
         sections = [build_world_politics_section(repo, date=date, max_cards=args.max_cards)]
 
+    sentiment_summary = build_sentiment_summary(repo, date)
     view_model: Dict[str, Any] = {
         "version": VERSION,
         "date": date,
@@ -590,12 +781,24 @@ def main() -> int:
             "generator": "digest",
             "source": "analyzer",
         },
+        "sentiment_summary": sentiment_summary,
+        "today": {
+            "sentiment": sentiment_summary,
+            "sentiment_summary": sentiment_summary,
+        },
     }
 
     out_path = view_output_path(repo, date)
     ensure_dir(out_path.parent)
     out_path.write_text(json.dumps(view_model, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"[OK] wrote: {out_path.as_posix()}")
+
+    for latest_path in latest_output_paths(repo):
+        ensure_dir(latest_path.parent)
+        latest_path.write_text(json.dumps(view_model, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    print(f"[OK] wrote dated : {out_path.as_posix()}")
+    for latest_path in latest_output_paths(repo):
+        print(f"[OK] wrote latest: {latest_path.as_posix()}")
     return 0
 
 
