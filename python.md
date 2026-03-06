@@ -43,35 +43,88 @@ http://127.0.0.1:8000/static/sentiment.html
 ---------------------------------------
 ---------------------------------------
 
+GenesisPrediction v2 作業スレ
+
 このプロジェクトでは
-docs/ui_system.md
+Chat Memory ではなく Repository Memory を優先します。
+
+AIはまず以下を前提知識として扱ってください。
+
+Repository Memory
+
+docs/ai_bootstrap_prompt.md
+
+docs/repo_map.md
+docs/repo_architecture.md
+docs/project_status.md
+
 docs/pipeline_system.md
-docs/chat_operating_rules.md
+docs/ui_system.md
+
 docs/genesis_brain.md
+docs/chat_operating_rules.md
 
-を Repository Memory として使用します。
--------------------------------------
--------------------------------------
+作業ルール
 
-このスレの「次の作業」＝Repository Memory を起動する手順
-1) “入口の順番”を固定（運用で迷わない）
+1ターン = 1作業
+差分修正禁止
+完全ファイル提示
 
-今後、スレの最初の投稿（引き継ぎ）で毎回これを貼る運用にします：
+GenesisPrediction v2 の構造
 
-docs/repo_map.md（SST定義・どこを直す判断） 
+scripts → analysis を生成
+analysis → Runtime SST
+UI → analysis を読む
 
-docs/runbook_morning.md（朝の儀式＝公式手順） 
+現在の状態
 
-docs/working_agreement.md（差分禁止・完全ファイル・1ターン1作業） 
+UI
 
-docs/gui_phase2_working_rules.md（GUIはダウンロード運用・freeze） 
+Home
+Overlay
+Sentiment
+Digest
 
-docs/ui_system.md（UI依存） 
+Pipeline
 
-docs/pipeline_system.md（生成フロー） 
+Morning Ritual
+↓
+Analyzer
+↓
+Sentiment
+↓
+Digest
+↓
+Overlay
+↓
+Health
 
-docs/chat_operating_rules.md（チャット短縮規約） 
+今回の作業
 
-docs/genesis_brain.md（思想） 
+Sentiment分類 有効化
+positive / negative / neutral / mixed
 
-これで「どれが正？」が永久に迷いません。
+unknown を減らす
+Digest KPI を正常化
+
+----------------------------------------
+----------------------------------------
+
+【GenesisPrediction スレ起動テンプレ】
+
+AIは Repository Memory を前提に作業する。
+
+docs/ai_bootstrap_prompt.md
+docs/repo_map.md
+docs/repo_architecture.md
+docs/project_status.md
+docs/pipeline_system.md
+docs/ui_system.md
+docs/genesis_brain.md
+docs/chat_operating_rules.md
+
+ルール
+
+1ターン1作業
+差分禁止
+完全ファイル提示
