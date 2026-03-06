@@ -39,3 +39,39 @@ http://127.0.0.1:8000/static/sentiment.html
 ・完全ファイルのみ更新
 ・1ターン = 1作業
 ・Working Tree Clean を維持する
+
+---------------------------------------
+---------------------------------------
+
+このプロジェクトでは
+docs/ui_system.md
+docs/pipeline_system.md
+docs/chat_operating_rules.md
+docs/genesis_brain.md
+
+を Repository Memory として使用します。
+-------------------------------------
+-------------------------------------
+
+このスレの「次の作業」＝Repository Memory を起動する手順
+1) “入口の順番”を固定（運用で迷わない）
+
+今後、スレの最初の投稿（引き継ぎ）で毎回これを貼る運用にします：
+
+docs/repo_map.md（SST定義・どこを直す判断） 
+
+docs/runbook_morning.md（朝の儀式＝公式手順） 
+
+docs/working_agreement.md（差分禁止・完全ファイル・1ターン1作業） 
+
+docs/gui_phase2_working_rules.md（GUIはダウンロード運用・freeze） 
+
+docs/ui_system.md（UI依存） 
+
+docs/pipeline_system.md（生成フロー） 
+
+docs/chat_operating_rules.md（チャット短縮規約） 
+
+docs/genesis_brain.md（思想） 
+
+これで「どれが正？」が永久に迷いません。
