@@ -4,17 +4,18 @@
 # Goal:
 #   One command to converge analysis health to OK (OK=10/WARN=0/NG=0) with minimal, reproducible steps.
 #
-# Key fix (2026-03):
-#   News "raw" for the current UTC date may not exist yet early in the local morning.
-#   Therefore, when -Date is omitted, we default to **UTC yesterday** as the ritual WorldDate.
+# Key policy (2026-03):
+#   World/news artifacts are currently materialized on WORLD DATE (= local date in current operation),
+#   so when -Date is omitted, we default to LOCAL/WORLD DATE rather than UTC yesterday.
 #
 # Design:
-#   - WorldDate is the ritual's single truth (UTC date yyyy-MM-dd).
+#   - WorldDate is the ritual's single truth (yyyy-MM-dd).
+#   - UTC YESTER is still logged for diagnostics.
 #   - Some FX steps may effectively operate on local date; this runner reconciles artifacts so Health is evaluated on WorldDate.
 
 [CmdletBinding()]
 param(
-  # WorldDate (UTC) in yyyy-MM-dd. If omitted, defaults to UTC yesterday.
+  # WorldDate in yyyy-MM-dd. If omitted, defaults to LOCAL/WORLD DATE.
   [Parameter(Mandatory = $false)]
   [string]$Date,
 
@@ -54,15 +55,17 @@ $repoRoot = (Resolve-Path ".").Path
 $utcNow = (Get-Date).ToUniversalTime()
 $utcYesterday = $utcNow.AddDays(-1)
 
+# WORLD DATE = current local date (current stable operational rule)
+$localDate = (Get-Date).ToString("yyyy-MM-dd")
+
 if ([string]::IsNullOrWhiteSpace($Date)) {
-  # Default to UTC yesterday (stable: raw news file exists)
-  $WorldDate = $utcYesterday.ToString("yyyy-MM-dd")
+  $WorldDate = $localDate
 }
 else {
   $WorldDate = $Date.Trim()
 }
 
-$LocalDate = (Get-Date).ToString("yyyy-MM-dd")
+$LocalDate = $localDate
 
 Log "Morning Ritual (single entrypoint)"
 Write-Host ("ROOT : {0}" -f $repoRoot)
