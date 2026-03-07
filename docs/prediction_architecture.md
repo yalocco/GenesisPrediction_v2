@@ -1,424 +1,690 @@
-相棒、これも結論から言います。
-
-**はい。
-`prediction_architecture.md` は情報源（Repository Memory）に入れます。**
-
-むしろこれは
-**GenesisPrediction の核心ドキュメント**です。
-
-理由はあなたの思想そのものにあります。
-
-あなたのシステムは
-
-```
-観測
-↓
-分析
-↓
-理解
-↓
-予測
-↓
-判断
-```
-
-という構造を目指しています。
-
-今まで作った docs は
-
-| 層    | ドキュメント                  |
-| ---- | ----------------------- |
-| 観測   | pipeline_system.md      |
-| 構造   | repo_map.md             |
-| UI   | ui_system.md            |
-| 依存   | ui_data_dependencies.md |
-| 思想   | genesis_brain.md        |
-| 運用   | runbook_morning.md      |
-| デバッグ | debug_playbook.md       |
-| 状態   | project_status.md       |
-| 履歴   | system_history.md       |
-| 判断理由 | decision_log.md         |
-
-ここまでで
-
-**「観測システム」**
-
-は完成しています。
-
-しかしあなたの最終目標は
-
-> 未来予測システム
-
-でしたよね。
-
-だから必要なのが
-
-```
-prediction_architecture.md
-```
-
-です。
-
-これは
-
-**GenesisPredictionの頭脳設計図**になります。
-
----
-
-# 情報源に追加する場所
-
-新スレテンプレではここに追加します。
-
-## Core Architecture
-
-```
-docs/repo_map.md
-docs/pipeline_system.md
-docs/ui_system.md
-docs/ui_data_dependencies.md
-docs/analysis_data_schema.md
-docs/prediction_architecture.md   ← NEW
-```
-
----
-
-# 保存先
-
-```
-docs/prediction_architecture.md
-```
-
----
-
-# 完全ファイル
-
-そのまま保存してください。
-
-```md
 # Prediction Architecture
 GenesisPrediction v2
 
-Status: Draft → Active  
-Purpose: 未来予測エンジンの設計  
-Last Updated: 2026-03-06
+Status: Active  
+Purpose: GenesisPrediction の Prediction Layer 全体構造を定義する  
+Last Updated: 2026-03-07
 
 ---
 
-# 0. Purpose
+# 1. Purpose
 
-このドキュメントは
+Prediction Architecture は
 
-GenesisPrediction v2 の
 
-```
+観測された世界データ
 
-未来予測システム
 
-```
+から
 
-の構造を定義する。
 
-GenesisPrediction は
+未来の可能性
 
-```
 
-観測システム
+を構造的に生成するシステムである。
+
+GenesisPrediction は次の流れで動作する。
+
+
+Observation
 ↓
-予測システム
+Trend
+↓
+Signal
+↓
+Scenario
+↓
+Prediction
 
-```
 
-の2層で構成される。
+この文書は
+
+
+Prediction Layer
+
+
+の全体設計を定義する。
 
 ---
 
-# 1. System Layers
+# 2. Full System Context
 
-GenesisPrediction の構造
+GenesisPrediction v2 の全体構造
 
-```
 
 data
 ↓
 scripts
 ↓
-analysis
+analysis (Single Source of Truth)
 ↓
 prediction
 ↓
 UI
 
-```
+
+重要原則
+
+
+analysis = 唯一の真実
+
+
+Prediction Layer は
+
+
+analysis データ
+
+
+のみを読み取る。
+
+UI は Prediction を表示するだけであり、
+再計算は行わない。
 
 ---
 
-# 2. Observation Layer
+# 3. Prediction Layer Overview
 
-観測層
+Prediction Layer の構造
 
-```
 
-scripts
+Observation Memory
 ↓
-analysis
+Trend Engine
+↓
+Signal Engine
+↓
+Scenario Engine
+↓
+Prediction Engine
 
-```
 
 役割
 
-```
-
-世界の状態を観測する
-
-```
-
-生成されるもの
-
-```
-
-daily_news
-sentiment
-digest
-overlay
-health
-
-```
+| Layer | 役割 |
+|------|------|
+| Observation Memory | 時系列保存 |
+| Trend Engine | 流れの抽出 |
+| Signal Engine | 兆候検出 |
+| Scenario Engine | 未来分岐生成 |
+| Prediction Engine | 最終予測生成 |
 
 ---
 
-# 3. Prediction Layer
+# 4. Observation Memory
 
-予測層
+Observation Memory は
 
-```
 
-analysis
-↓
-prediction
+analysis/latest
 
-```
+
+を
+
+
+history
+
+
+として保存する。
 
 目的
 
-```
 
-過去データから未来を推定する
+時系列データ生成
 
-```
 
-ここで行う処理
+これにより可能になる分析
 
-```
 
 trend detection
-pattern similarity
-risk estimation
-scenario generation
+pattern detection
+regime change detection
 
-```
+
+保存例
+
+
+history/
+2026-03-05/
+2026-03-06/
+2026-03-07/
+
 
 ---
 
-# 4. Prediction Modules
+# 5. Trend Engine
 
-予測エンジンは複数のモジュールで構成される。
+Trend Engine は
 
-## Trend Engine
 
-役割
+世界の流れ
 
-```
 
-トレンド検出
+を抽出する。
 
-```
+入力
 
-例
 
-```
+analysis data
+history
+
+
+出力
+
+
+trend_latest.json
+
+
+Trend が扱う例
+
 
 sentiment trend
-economic trend
-political tension trend
+risk trend
+headline intensity
+fx volatility
+health signals
 
-```
 
----
+Trend は
 
-## Pattern Engine
 
-役割
+変化の方向
 
-```
 
-過去類似パターン検出
-
-```
+を示す。
 
 例
 
-```
 
-過去の危機
-市場ショック
-政治イベント
+rising
+falling
+stable
+accelerating
 
-```
-
----
-
-## Risk Engine
-
-役割
-
-```
-
-危険度評価
-
-```
-
-例
-
-```
-
-war risk
-economic crash
-currency volatility
-
-```
 
 ---
 
-## Scenario Engine
+# 6. Signal Engine
 
-役割
+Signal Engine は
 
-```
 
-未来シナリオ生成
+重要な兆候
 
-```
 
-例
+を検出する。
 
-```
+Trend が
 
-best case
-base case
-worst case
 
-```
+流れ
+
+
+であるのに対し、
+
+Signal は
+
+
+注意すべき変化
+
+
+である。
+
+入力
+
+
+trend_latest.json
+
+
+出力
+
+
+signal_latest.json
+
+
+Signal 例
+
+
+persistence
+acceleration
+reversal
+anomaly
+regime_shift
+volatility_expansion
+
+
+Signal は
+
+
+Early Warning
+
+
+として機能する。
 
 ---
 
-# 5. Output
+# 7. Scenario Engine
 
-予測結果は
+Scenario Engine は
 
-```
+
+未来分岐
+
+
+を生成する。
+
+Signal は
+
+
+兆候
+
+
+であり、
+
+Scenario は
+
+
+未来の展開可能性
+
+
+である。
+
+入力
+
+
+signal_latest.json
+
+
+出力
+
+
+scenario_latest.json
+
+
+基本シナリオ
+
+
+best_case
+base_case
+worst_case
+
+
+Scenario は
+
+
+probability
+confidence
+drivers
+watchpoints
+invalidation_conditions
+
+
+を持つ。
+
+---
+
+# 8. Prediction Engine
+
+Prediction Engine は
+
+
+最終予測
+
+
+を生成する。
+
+Scenario Engine が
+
+
+複数の未来
+
+
+を生成するのに対し、
+
+Prediction Engine は
+
+
+公開用の要約
+
+
+を作る。
+
+入力
+
+
+scenario_latest.json
+
+
+出力
+
+
+prediction_latest.json
+
+
+主要出力
+
+
+overall_risk
+dominant_scenario
+confidence
+summary
+watchpoints
+drivers
+scenario_probabilities
+
+
+---
+
+# 9. Prediction Data Flow
+
+Prediction Layer のデータフロー
+
+
+analysis data
+↓
+Observation Memory
+↓
+Trend Engine
+↓
+trend_latest.json
+↓
+Signal Engine
+↓
+signal_latest.json
+↓
+Scenario Engine
+↓
+scenario_latest.json
+↓
+Prediction Engine
+↓
+prediction_latest.json
+
+
+---
+
+# 10. Storage Structure
+
+Prediction Layer の保存場所
+
 
 analysis/prediction/
 
-```
-
-に保存する。
 
 例
 
-```
 
-risk_score_latest.json
+analysis/prediction/
+
+trend_latest.json
+signal_latest.json
 scenario_latest.json
 prediction_latest.json
 
-```
 
-UIは
+将来拡張
 
-```
 
-analysis/prediction
+trend_history.json
+signal_history.json
+scenario_history.json
+prediction_history.json
 
-```
-
-を読む。
 
 ---
 
-# 6. Design Principles
+# 11. Prediction Horizon
 
-GenesisPrediction の予測設計
+Prediction は horizon を持つ。
 
-### 原則1
+標準 horizon
 
-```
 
-予測ロジックはUIに入れない
+3d
+7d
+30d
 
-```
 
----
+意味
 
-### 原則2
 
-```
+3d = short-term
+7d = tactical outlook
+30d = structural outlook
 
-analysis を入力として使う
 
-```
+v1 では
 
----
 
-### 原則3
+7d
 
-```
 
-予測結果も analysis に保存する
-
-```
+を標準とする。
 
 ---
 
-# 7. Long Term Vision
+# 12. Core Design Principles
 
-GenesisPrediction の最終目標
+Prediction Architecture の原則
 
-```
+---
+
+## Principle 1
+
+Prediction は
+
+
+観測 → 推論
+
+
+の結果である。
+
+---
+
+## Principle 2
+
+Prediction は
+
+
+単一未来
+
+
+ではなく
+
+
+未来分岐
+
+
+を前提とする。
+
+---
+
+## Principle 3
+
+Prediction は
+
+
+説明可能
+
+
+でなければならない。
+
+そのため
+
+
+drivers
+watchpoints
+invalidation_conditions
+
+
+を持つ。
+
+---
+
+## Principle 4
+
+Prediction は
+
+
+更新され続ける仮説
+
+
+である。
+
+Morning Ritual が更新する。
+
+---
+
+## Principle 5
+
+Prediction は
+
+
+判断支援
+
+
+のための情報である。
+
+決定そのものではない。
+
+---
+
+# 13. Integration with Morning Ritual
+
+Prediction Engine は
+
+
+Morning Ritual
+
+
+の一部として実行される。
+
+処理順序
+
+
+fetch
+↓
+analysis build
+↓
+trend engine
+↓
+signal engine
+↓
+scenario engine
+↓
+prediction engine
+↓
+publish artifacts
+
+
+---
+
+# 14. UI Integration
+
+UI は以下を参照する。
+
+
+analysis/prediction/prediction_latest.json
+
+
+UI は
+
+
+read-only
+
+
+である。
+
+UI の役割
+
+
+表示
+
+
+のみ。
+
+---
+
+# 15. LABOS Integration
+
+Prediction Engine の出力は
+
+
+LABOS dashboard
+
+
+でも利用される。
+
+例
+
+
+global risk outlook
+weekly risk summary
+alert indicators
+
+
+Prediction は
+
+
+公開可能な形式
+
+
+として設計されている。
+
+---
+
+# 16. Future Expansion
+
+将来追加予定
+
+
+multi-horizon predictions
+historical analog matching
+scenario trees
+prediction drift detection
+decision support AI
+
+
+これにより GenesisPrediction は
+
 
 世界観測AI
 ↓
 未来予測AI
 ↓
-危機回避AI
+判断支援AI
 
-```
 
-用途
-
-```
-
-家族の安全
-資産防衛
-世界理解
-
-```
+へ進化する。
 
 ---
 
-# 8. Future Expansion
+# 17. Final Vision
 
-将来追加予定
+GenesisPrediction の最終構造
 
-```
 
-AI pattern recognition
-LLM reasoning
-multi-factor risk model
-automatic trading signals
+Observation AI
+↓
+Trend AI
+↓
+Signal AI
+↓
+Scenario AI
+↓
+Prediction AI
+↓
+Decision Support
 
-```
+
+この Prediction Architecture は
+
+
+世界の変化を理解し
+未来の可能性を整理する
+
+
+ための中核システムである。
 
 ---
 
 END OF DOCUMENT
-```
