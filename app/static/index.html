@@ -4,69 +4,223 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Home - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260303v2" />
-  <script src="/static/_shared_nav.js?v=20260303v2"></script>
+  <link rel="stylesheet" href="/static/app.css?v=20260307v2" />
+  <script src="/static/_shared_nav.js?v=20260307v2"></script>
+  <style>
+    .hero{margin-top:18px;display:flex;flex-direction:column;gap:14px}
+    .hero-title{font-size:48px;line-height:1.02;font-weight:700;letter-spacing:-0.03em}
+    .hero-sub{font-size:20px;line-height:1.7;color:var(--muted,#a9b4c7);max-width:980px}
+    .meta-row{display:flex;flex-wrap:wrap;gap:12px}
+    .section-stack{display:flex;flex-direction:column;gap:18px;margin-top:18px}
+    .section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+    .section-copy{display:flex;flex-direction:column;gap:6px}
+    .section-kicker{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#92a1b8)}
+    .section-title-xl{font-size:22px;line-height:1.25;font-weight:650}
+    .section-note{font-size:13px;color:var(--muted,#8fa2bf)}
+    .status-dot{display:inline-block;width:10px;height:10px;border-radius:999px;background:#2bd576;box-shadow:0 0 0 4px rgba(43,213,118,.12)}
+    .status-dot.warn{background:#f5c542;box-shadow:0 0 0 4px rgba(245,197,66,.12)}
+    .status-dot.ng{background:#ff6b6b;box-shadow:0 0 0 4px rgba(255,107,107,.12)}
+    .kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+    .kpi-card{border:1px solid rgba(145,166,211,.16);border-radius:18px;padding:16px 18px;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01))}
+    .kpi-label{font-size:12px;color:var(--muted,#9ca9bd);margin-bottom:10px;text-transform:lowercase;letter-spacing:.06em}
+    .kpi-value{font-size:38px;line-height:1;font-weight:700;letter-spacing:-0.03em}
+    .kpi-sub{margin-top:8px;font-size:12px;color:var(--muted,#8ea0b8)}
+    .summary-text{font-size:15px;line-height:1.8;color:var(--fg,#eef4ff);white-space:pre-wrap}
+    .events-list{display:grid;grid-template-columns:1fr;gap:10px}
+    .event-item{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid rgba(145,166,211,.12);border-radius:16px;background:rgba(255,255,255,.015)}
+    .event-rank{flex:0 0 28px;height:28px;border-radius:999px;display:grid;place-items:center;font-size:12px;font-weight:700;border:1px solid rgba(105,169,255,.28);color:#b8d2ff;background:rgba(105,169,255,.08)}
+    .event-body{min-width:0;display:flex;flex-direction:column;gap:4px}
+    .event-title{font-size:15px;line-height:1.5;color:#dce8ff}
+    .event-meta{font-size:12px;color:var(--muted,#94a5bf)}
+    .health-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .health-box{border:1px solid rgba(145,166,211,.12);border-radius:16px;padding:14px 16px;background:rgba(255,255,255,.015)}
+    .health-name{font-size:12px;color:var(--muted,#95a5bc);text-transform:uppercase;letter-spacing:.08em}
+    .health-value{margin-top:8px;font-size:28px;line-height:1;font-weight:700}
+    .health-value.ok{color:#8df0b6}
+    .health-value.warn{color:#ffd768}
+    .health-value.ng{color:#ff9d9d}
+    .source-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+    .btn.ghost{background:transparent}
+    .mini-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    .mini-card{border:1px solid rgba(145,166,211,.12);border-radius:16px;padding:14px 16px;background:rgba(255,255,255,.015)}
+    .mini-label{font-size:12px;color:var(--muted,#95a5bc);margin-bottom:8px;text-transform:lowercase;letter-spacing:.06em}
+    .mini-value{font-size:22px;line-height:1.2;font-weight:650}
+    .mono-wrap{white-space:pre-wrap;word-break:break-word}
+    .empty-note{font-size:14px;color:var(--muted,#97a7bf)}
+    @media (max-width: 1100px){
+      .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .health-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+    }
+    @media (max-width: 760px){
+      .hero-title{font-size:38px}
+      .hero-sub{font-size:16px}
+      .kpi-grid,.health-grid,.mini-grid{grid-template-columns:1fr}
+      .section-head{flex-direction:column;align-items:flex-start}
+    }
+  </style>
 </head>
 <body>
 <main class="gp-main">
   <div class="page gp-page gp-page--sentiment">
     <section class="panel">
-      <div class="h1">Home</div>
-      <p class="sub">Today snapshot / Daily summary / Sentiment / Data health をまとめて表示します。</p>
-
-      <div class="grid2" style="margin-top:12px;">
-        <div class="card">
-          <div class="sectionTitle">
-            <h2>Events (today)</h2>
-            <span id="evHint" class="hint">loading…</span>
-          </div>
-          <div id="evBody" class="mono small">loading…</div>
-          <div class="pillrow" style="margin-top:10px;">
-            <span id="evSource" class="pill">source: --</span>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="sectionTitle">
-            <h2>Data Health</h2>
-            <span id="healthHint" class="hint">loading…</span>
-          </div>
-          <div id="healthBody" class="mono small">loading…</div>
-          <div class="pillrow" style="margin-top:10px;">
-            <a id="btnOpenHealth" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open JSON</a>
-            <span id="healthSource" class="pill">source: --</span>
-          </div>
+      <div class="hero">
+        <div class="hero-title">Home</div>
+        <div class="hero-sub">Today snapshot / Daily summary / Sentiment / Data health を、Sentiment / Digest と同じトーンで見やすくまとめます。</div>
+        <div class="meta-row">
+          <span id="pillAsOf" class="pill">as_of: --</span>
+          <span id="pillReady" class="pill">Ready</span>
+          <span id="pillHealth" class="pill">Health: --</span>
+          <span id="pillItems" class="pill">items: --</span>
         </div>
       </div>
 
-      <div class="grid2" style="margin-top:12px;">
+      <div class="section-stack">
         <div class="card">
-          <div class="sectionTitle">
-            <h2>Sentiment</h2>
-            <span id="senHint" class="hint">loading…</span>
+          <div class="section-head">
+            <div class="section-copy">
+              <div class="section-kicker">Snapshot</div>
+              <div class="section-title-xl">Today overview</div>
+              <div class="section-note">Digest / Sentiment / Health から主要数字を集約表示します。</div>
+            </div>
+            <span id="overviewHint" class="pill"><span class="status-dot"></span>&nbsp;loading</span>
           </div>
-          <div id="senBody" class="mono small">loading…</div>
-          <div class="pillrow" style="margin-top:10px;">
-            <span id="senSource" class="pill">source: --</span>
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-label">articles</div>
+              <div id="kpiArticles" class="kpi-value">--</div>
+              <div class="kpi-sub">digest sentiment summary</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">positive</div>
+              <div id="kpiPositive" class="kpi-value">--</div>
+              <div class="kpi-sub">classified articles</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">negative</div>
+              <div id="kpiNegative" class="kpi-value">--</div>
+              <div class="kpi-sub">classified articles</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">mixed</div>
+              <div id="kpiMixed" class="kpi-value">--</div>
+              <div class="kpi-sub">classified articles</div>
+            </div>
           </div>
         </div>
 
         <div class="card">
-          <div class="sectionTitle">
-            <h2>Daily Summary</h2>
-            <span id="sumHint" class="hint">loading…</span>
+          <div class="section-head">
+            <div class="section-copy">
+              <div class="section-kicker">Daily summary</div>
+              <div class="section-title-xl">Summary</div>
+              <div class="section-note">その日の要点を上段で読みやすく表示します。</div>
+            </div>
+            <span id="sumHint" class="pill"><span class="status-dot"></span>&nbsp;loading</span>
           </div>
-          <div id="sumBody" class="mono small">loading…</div>
-          <div class="pillrow" style="margin-top:10px;">
+          <div id="sumBody" class="summary-text">loading…</div>
+          <div class="source-row">
             <a id="btnOpenSummary" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open JSON</a>
             <span id="sumSource" class="pill">source: --</span>
           </div>
         </div>
-      </div>
 
-      <div class="pillrow" style="margin-top:14px;">
-        <span id="pillAsOf" class="pill">as_of: --</span>
-        <span id="pillReady" class="pill">Ready</span>
+        <div class="grid2">
+          <div class="card">
+            <div class="section-head">
+              <div class="section-copy">
+                <div class="section-kicker">Highlights</div>
+                <div class="section-title-xl">Events (today)</div>
+                <div class="section-note">Digest の top highlights から先頭数件を抜粋します。</div>
+              </div>
+              <span id="evHint" class="pill"><span class="status-dot"></span>&nbsp;loading</span>
+            </div>
+            <div id="evBody" class="events-list">
+              <div class="empty-note">loading…</div>
+            </div>
+            <div class="source-row">
+              <span id="evSource" class="pill">source: --</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-head">
+              <div class="section-copy">
+                <div class="section-kicker">Health</div>
+                <div class="section-title-xl">Data Health</div>
+                <div class="section-note">パイプライン状態を数字で一覧表示します。</div>
+              </div>
+              <span id="healthHint" class="pill"><span class="status-dot"></span>&nbsp;loading</span>
+            </div>
+            <div class="health-grid">
+              <div class="health-box">
+                <div class="health-name">OK</div>
+                <div id="healthOk" class="health-value ok">--</div>
+              </div>
+              <div class="health-box">
+                <div class="health-name">WARN</div>
+                <div id="healthWarn" class="health-value warn">--</div>
+              </div>
+              <div class="health-box">
+                <div class="health-name">NG</div>
+                <div id="healthNg" class="health-value ng">--</div>
+              </div>
+            </div>
+            <div class="mini-grid" style="margin-top:12px;">
+              <div class="mini-card">
+                <div class="mini-label">as_of</div>
+                <div id="healthDate" class="mini-value">--</div>
+              </div>
+              <div class="mini-card">
+                <div class="mini-label">total</div>
+                <div id="healthTotal" class="mini-value">--</div>
+              </div>
+            </div>
+            <div class="source-row">
+              <a id="btnOpenHealth" class="btn ghost" href="#" target="_blank" rel="noopener noreferrer">Open JSON</a>
+              <span id="healthSource" class="pill">source: --</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-head">
+            <div class="section-copy">
+              <div class="section-kicker">Sentiment</div>
+              <div class="section-title-xl">Sentiment snapshot</div>
+              <div class="section-note">Sentiment ページへ入る前の概要確認用です。</div>
+            </div>
+            <span id="senHint" class="pill"><span class="status-dot"></span>&nbsp;loading</span>
+          </div>
+          <div class="mini-grid">
+            <div class="mini-card">
+              <div class="mini-label">as_of</div>
+              <div id="senDate" class="mini-value">--</div>
+            </div>
+            <div class="mini-card">
+              <div class="mini-label">items</div>
+              <div id="senItems" class="mini-value">--</div>
+            </div>
+            <div class="mini-card">
+              <div class="mini-label">avg risk</div>
+              <div id="senRisk" class="mini-value">--</div>
+            </div>
+            <div class="mini-card">
+              <div class="mini-label">avg positive</div>
+              <div id="senPositive" class="mini-value">--</div>
+            </div>
+            <div class="mini-card">
+              <div class="mini-label">avg uncertainty</div>
+              <div id="senUncertainty" class="mini-value">--</div>
+            </div>
+            <div class="mini-card">
+              <div class="mini-label">source</div>
+              <div id="senSourceInline" class="mini-value mono-wrap" style="font-size:14px;font-weight:500;">--</div>
+            </div>
+          </div>
+          <div class="source-row">
+            <span id="senSource" class="pill">source: --</span>
+          </div>
+        </div>
       </div>
     </section>
   </div>
@@ -76,17 +230,17 @@
 (function(){
   "use strict";
 
-  function safeText(x){ return (x==null) ? "" : String(x); }
-  function setText(id, v){ var el=document.getElementById(id); if(el) el.textContent = safeText(v); }
-  function setHref(id, v){ var el=document.getElementById(id); if(el) el.href = v || "#"; }
+  function safeText(x){ return (x == null) ? "" : String(x); }
+  function setText(id, v){ var el = document.getElementById(id); if(el) el.textContent = safeText(v); }
+  function setHTML(id, v){ var el = document.getElementById(id); if(el) el.innerHTML = v || ""; }
+  function setHref(id, v){ var el = document.getElementById(id); if(el) el.href = v || "#"; }
 
   async function fetchJson(url){
-    const r = await fetch(url, {cache:"no-store"});
+    const r = await fetch(url, { cache: "no-store" });
     if(!r.ok) throw new Error("HTTP " + r.status);
     return await r.json();
   }
 
-  // Home は “digest の latest” を最優先で探す（Sentiment と同じ思想）
   const CANDIDATES = {
     viewModel: [
       "/data/digest/view_model_latest.json",
@@ -97,12 +251,12 @@
       "/data/world_politics/analysis/health_latest.json"
     ],
     summary: [
-      "/data/digest/daily_summary_latest.json",
-      "/data/world_politics/analysis/daily_summary_latest.json"
+      "/data/world_politics/analysis/daily_summary_latest.json",
+      "/data/digest/daily_summary_latest.json"
     ],
     sentiment: [
-      "/data/digest/sentiment_latest.json",
-      "/data/world_politics/analysis/sentiment_latest.json"
+      "/data/world_politics/analysis/sentiment_latest.json",
+      "/data/digest/sentiment_latest.json"
     ]
   };
 
@@ -110,129 +264,245 @@
     for(const u of urls){
       try{
         const j = await fetchJson(u);
-        return {url:u, json:j};
+        return { url: u, json: j };
       }catch(_e){}
     }
     return null;
   }
 
-  function renderKV(obj){
-    // シンプルに見やすく（Homeは“要点だけ”）
-    const lines = [];
-    for(const [k,v] of Object.entries(obj||{})){
-      if(v==null) continue;
-      if(typeof v === "object") continue;
-      lines.push(k + ": " + String(v));
+  function classifyPill(id, state){
+    var el = document.getElementById(id);
+    if(!el) return;
+    var klass = "status-dot";
+    if(state === "WARN") klass += " warn";
+    if(state === "NG") klass += " ng";
+    var label = state || "--";
+    el.innerHTML = '<span class="' + klass + '"></span>&nbsp;' + label;
+  }
+
+  function firstNonEmpty(){
+    for(var i=0;i<arguments.length;i++){
+      var v = arguments[i];
+      if(v == null) continue;
+      if(typeof v === "string" && !v.trim()) continue;
+      return v;
     }
-    return lines.join("\n");
+    return "";
   }
 
-  function renderHealth(h){
-    if(!h) return "—";
-    const date = h.date || h.as_of || "";
-    const total = (h.total!=null)? h.total : (Array.isArray(h.checks)? h.checks.length : "");
-    const ok = h.ok_count ?? h.OK ?? "";
-    const warn = h.warn_count ?? h.WARN ?? "";
-    const ng = h.ng_count ?? h.NG ?? "";
-    const parts = [];
-    if(date) parts.push("date=" + date);
-    if(total!=="") parts.push("total=" + total);
-    if(ok!=="") parts.push("OK=" + ok);
-    if(warn!=="") parts.push("WARN=" + warn);
-    if(ng!=="") parts.push("NG=" + ng);
-    return parts.join("  ");
+  function formatNum(x, digits){
+    return (typeof x === "number" && isFinite(x)) ? x.toFixed(digits == null ? 3 : digits) : "--";
   }
 
-  function renderSentiment(s){
-    if(!s) return "—";
-    const date = s.date || s.as_of || "";
-    const items = Array.isArray(s.items) ? s.items.length : (s.total_items ?? "");
-    let avgRisk = "", avgPos = "", avgUnc = "";
-    try{
-      if(Array.isArray(s.items) && s.items.length){
-        let r=0,p=0,u=0,n=0;
-        for(const it of s.items){
-          if(typeof it.risk==="number"){ r+=it.risk; n++; }
-          if(typeof it.positive==="number"){ p+=it.positive; }
-          if(typeof it.uncertainty==="number"){ u+=it.uncertainty; }
-        }
-        if(n){
-          avgRisk = (r/n).toFixed(2);
-          avgPos  = (p/n).toFixed(2);
-          avgUnc  = (u/n).toFixed(2);
+  function collectCards(vm){
+    if(!vm || !Array.isArray(vm.sections)) return [];
+    var cards = [];
+    for(const sec of vm.sections){
+      if(sec && Array.isArray(sec.cards)) cards = cards.concat(sec.cards);
+    }
+    return cards;
+  }
+
+  function escapeHtml(s){
+    return safeText(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function renderEvents(vm){
+    const cards = collectCards(vm).slice(0, 5);
+    if(!cards.length) return '<div class="empty-note">No highlight cards</div>';
+    return cards.map(function(card, idx){
+      var title = safeText(firstNonEmpty(card.title, card.headline, "(untitled)"));
+      var source = safeText(firstNonEmpty(card.source, card.domain, card.publisher, "—"));
+      var riskVal = firstNonEmpty(card.risk, card.sentiment && card.sentiment.risk, card.risk_score, null);
+      var label = safeText(firstNonEmpty(card.sentiment && (card.sentiment.sentiment_label || card.sentiment.sentiment), card.sentiment_label, card.sentiment, "—"));
+      var riskTxt = (typeof riskVal === "number") ? ('risk ' + riskVal.toFixed(3)) : label;
+      return [
+        '<div class="event-item">',
+          '<div class="event-rank">', (idx + 1), '</div>',
+          '<div class="event-body">',
+            '<div class="event-title">', escapeHtml(title), '</div>',
+            '<div class="event-meta">', escapeHtml(source), ' · ', escapeHtml(riskTxt), '</div>',
+          '</div>',
+        '</div>'
+      ].join('');
+    }).join('');
+  }
+
+  function getSentimentSummary(vm){
+    return firstNonEmpty(
+      vm && vm.sentiment_summary,
+      vm && vm.today && vm.today.sentiment_summary,
+      vm && vm.today && vm.today.sentiment,
+      {}
+    ) || {};
+  }
+
+  function renderSummaryText(sum, vmJson){
+    if(sum){
+      const direct = firstNonEmpty(
+        sum.summary,
+        sum.text_summary,
+        sum.daily_summary,
+        sum.yesterday_summary_text,
+        sum.headline,
+        sum.text,
+        sum.description,
+        sum.generated_summary,
+        ""
+      );
+      if(typeof direct === "string" && direct.trim()) return direct.trim();
+
+      if(sum.yesterday_summary){
+        const yText = firstNonEmpty(
+          sum.yesterday_summary.text,
+          sum.yesterday_summary.summary,
+          sum.yesterday_summary.headline,
+          ""
+        );
+        if(typeof yText === "string" && yText.trim()) return yText.trim();
+        if(Array.isArray(sum.yesterday_summary.titles) && sum.yesterday_summary.titles.length){
+          return sum.yesterday_summary.titles.slice(0, 8).map(function(x){ return '• ' + safeText(x); }).join('\n');
         }
       }
-    }catch(_e){}
-    const parts = [];
-    if(date) parts.push("date=" + date);
-    if(items!=="") parts.push("items=" + items);
-    if(avgRisk!=="") parts.push("risk=" + avgRisk + " / pos=" + avgPos + " / unc=" + avgUnc);
-    return parts.join("  ");
-  }
 
-  function renderSummary(sum){
-    if(!sum) return "—";
-    const text = (typeof sum.summary === "string" && sum.summary.trim()) ? sum.summary.trim() : "";
-    if(text) return text.split("\n").slice(0,6).join("\n");
-    // yesterday_summary 形式
-    if(sum.yesterday_summary){
-      if(typeof sum.yesterday_summary.text === "string" && sum.yesterday_summary.text.trim()){
-        return sum.yesterday_summary.text.trim().split("\n").slice(0,6).join("\n");
-      }
-      if(Array.isArray(sum.yesterday_summary.titles) && sum.yesterday_summary.titles.length){
-        return sum.yesterday_summary.titles.slice(0,8).map(t=>"• "+safeText(t)).join("\n");
+      if(Array.isArray(sum.highlights) && sum.highlights.length){
+        return sum.highlights.slice(0, 6).map(function(x){ return '• ' + safeText(x); }).join('\n');
       }
     }
-    return renderKV(sum);
+
+    if(vmJson){
+      const vmDirect = firstNonEmpty(
+        vmJson.summary,
+        vmJson.text_summary,
+        vmJson.daily_summary,
+        vmJson.headline,
+        vmJson.meta && vmJson.meta.summary,
+        vmJson.meta && vmJson.meta.headline,
+        vmJson.today && vmJson.today.summary,
+        vmJson.today && vmJson.today.headline,
+        ""
+      );
+      if(typeof vmDirect === "string" && vmDirect.trim()) return vmDirect.trim();
+
+      const cards = collectCards(vmJson).slice(0, 5);
+      if(cards.length){
+        return cards.map(function(card){
+          return '• ' + safeText(firstNonEmpty(card.title, card.headline, '(untitled)'));
+        }).join('\n');
+      }
+    }
+
+    return "Summary not found";
+  }
+
+  function sentimentStats(s){
+    const items = Array.isArray(s && s.items) ? s.items : [];
+    let r = 0, p = 0, u = 0, n = 0;
+    for(const it of items){
+      if(typeof it.risk === "number" && isFinite(it.risk)) r += it.risk;
+      if(typeof it.positive === "number" && isFinite(it.positive)) p += it.positive;
+      if(typeof it.uncertainty === "number" && isFinite(it.uncertainty)) u += it.uncertainty;
+      n += 1;
+    }
+    return {
+      items: items.length,
+      risk: n ? (r / n) : null,
+      positive: n ? (p / n) : null,
+      uncertainty: n ? (u / n) : null,
+      date: firstNonEmpty(s && s.date, s && s.as_of, "--")
+    };
   }
 
   (async function main(){
     try{
       const vm = await pickFirstOk(CANDIDATES.viewModel);
-      if(vm && vm.json){
-        setText("evHint", "OK");
-        setText("evBody", renderKV(vm.json).slice(0, 1200));
-        setText("evSource", "source: " + vm.url);
-        setText("pillAsOf", "as_of: " + (vm.json.date || vm.json.as_of || "--"));
-      }else{
-        setText("evHint", "missing");
-      }
-
       const h = await pickFirstOk(CANDIDATES.health);
-      if(h && h.json){
-        setText("healthHint", "OK");
-        setText("healthBody", renderHealth(h.json));
-        setText("healthSource", "source: " + h.url);
-        setHref("btnOpenHealth", h.url);
-      }else{
-        setText("healthHint", "missing");
-      }
-
       const s = await pickFirstOk(CANDIDATES.sentiment);
-      if(s && s.json){
-        setText("senHint", "OK");
-        setText("senBody", renderSentiment(s.json));
-        setText("senSource", "source: " + s.url);
+      const sum = await pickFirstOk(CANDIDATES.summary);
+
+      if(vm && vm.json){
+        classifyPill("overviewHint", "OK");
+        classifyPill("evHint", "OK");
+        setText("evSource", "source: " + vm.url);
+        setText("pillAsOf", "as_of: " + firstNonEmpty(vm.json.date, vm.json.as_of, "--"));
+        setHTML("evBody", renderEvents(vm.json));
+
+        const ss = getSentimentSummary(vm.json);
+        setText("kpiArticles", firstNonEmpty(ss.articles, "--"));
+        setText("kpiPositive", firstNonEmpty(ss.positive_count, "--"));
+        setText("kpiNegative", firstNonEmpty(ss.negative_count, "--"));
+        setText("kpiMixed", firstNonEmpty(ss.mixed_count, "--"));
+        setText("pillItems", "items: " + firstNonEmpty(ss.articles, collectCards(vm.json).length, "--"));
       }else{
-        setText("senHint", "missing");
+        classifyPill("overviewHint", "missing");
+        classifyPill("evHint", "missing");
       }
 
-      const sum = await pickFirstOk(CANDIDATES.summary);
       if(sum && sum.json){
-        setText("sumHint", "OK");
-        setText("sumBody", renderSummary(sum.json));
+        classifyPill("sumHint", "OK");
+        setText("sumBody", renderSummaryText(sum.json, vm && vm.json));
         setText("sumSource", "source: " + sum.url);
         setHref("btnOpenSummary", sum.url);
       }else{
-        setText("sumHint", "missing");
+        const fallbackSummary = renderSummaryText(null, vm && vm.json);
+        if(fallbackSummary && fallbackSummary !== "Summary not found"){
+          classifyPill("sumHint", "OK");
+          setText("sumBody", fallbackSummary);
+          setText("sumSource", "source: " + (vm ? vm.url + " (view_model fallback)" : "fallback"));
+          setHref("btnOpenSummary", vm ? vm.url : "#");
+        }else{
+          classifyPill("sumHint", "missing");
+          setText("sumBody", "Summary JSON not found");
+        }
       }
 
+      if(h && h.json){
+        const hs = h.json && h.json.summary ? h.json.summary : {};
+        const okVal = firstNonEmpty(hs.ok, h.json.ok, h.json.ok_count, h.json.OK, "--");
+        const warnVal = firstNonEmpty(hs.warn, h.json.warn, h.json.warn_count, h.json.WARN, "--");
+        const ngVal = firstNonEmpty(hs.ng, h.json.ng, h.json.ng_count, h.json.NG, "--");
+        const totalVal = firstNonEmpty(hs.total, h.json.total, Array.isArray(h.json.checks) ? h.json.checks.length : "--", "--");
+        const warn = Number(firstNonEmpty(hs.warn, h.json.warn, h.json.warn_count, h.json.WARN, 0));
+        const ng = Number(firstNonEmpty(hs.ng, h.json.ng, h.json.ng_count, h.json.NG, 0));
+        const overall = ng > 0 ? "NG" : (warn > 0 ? "WARN" : "OK");
+        classifyPill("healthHint", overall);
+        setText("healthOk", okVal);
+        setText("healthWarn", warnVal);
+        setText("healthNg", ngVal);
+        setText("healthDate", firstNonEmpty(vm && vm.json && (vm.json.date || vm.json.as_of), sum && sum.json && (sum.json.date || sum.json.as_of), s && s.json && (s.json.date || s.json.as_of), h.json.as_of, h.json.date, "--"));
+        setText("healthTotal", totalVal);
+        setText("healthSource", "source: " + h.url);
+        setHref("btnOpenHealth", h.url);
+        setText("pillHealth", "Health: " + overall);
+      }else{
+        classifyPill("healthHint", "missing");
+      }
+
+      if(s && s.json){
+        const stats = sentimentStats(s.json);
+        classifyPill("senHint", "OK");
+        setText("senDate", stats.date || "--");
+        setText("senItems", stats.items || "--");
+        setText("senRisk", formatNum(stats.risk, 3));
+        setText("senPositive", formatNum(stats.positive, 3));
+        setText("senUncertainty", formatNum(stats.uncertainty, 3));
+        setText("senSource", "source: " + s.url);
+        setText("senSourceInline", s.url);
+      }else{
+        classifyPill("senHint", "missing");
+      }
+
+      setText("pillReady", "Loaded");
     }catch(e){
       setText("pillReady", "Error");
       console.warn(e);
     }
   })();
-
 })();
 </script>
 </body>

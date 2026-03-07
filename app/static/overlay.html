@@ -4,24 +4,108 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Overlay - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260303v2" />
-  <script src="/static/_shared_nav.js?v=20260303v2"></script>
+  <link rel="stylesheet" href="/static/app.css?v=20260307c" />
+  <script src="/static/_shared_nav.js?v=20260307c"></script>
+  <style>
+    .overlay-hero{margin-bottom:14px;}
+    .overlay-pills{margin-top:10px;}
+    .overlay-card{min-width:0;}
+    .overlay-img-frame{
+      margin-top:12px;
+      width:100%;
+      overflow:hidden;
+      border-radius:18px;
+      border:1px solid rgba(120,160,220,.18);
+      background:rgba(9,16,30,.28);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+      padding:10px;
+    }
+    .overlay-img-frame img{
+      display:block;
+      width:100%;
+      max-width:100%;
+      height:auto;
+      max-height:72vh;
+      object-fit:contain;
+      border-radius:12px;
+      background:#0b1020;
+    }
+    .overlay-meta{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+      margin-top:14px;
+    }
+    .overlay-kpis{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:12px;
+      margin-top:12px;
+    }
+    .overlay-kpi{
+      border:1px solid rgba(120,160,220,.16);
+      border-radius:16px;
+      padding:14px 16px;
+      background:rgba(8,14,28,.18);
+      min-height:86px;
+    }
+    .overlay-kpi .hint{margin-bottom:6px;}
+    .overlay-kpi .value{
+      font-size:31px;
+      line-height:1.05;
+      letter-spacing:-0.02em;
+      font-weight:600;
+    }
+    .overlay-note{
+      margin-top:12px;
+      padding:12px 14px;
+      border:1px solid rgba(120,160,220,.14);
+      border-radius:14px;
+      background:rgba(8,14,28,.18);
+    }
+    @media (max-width: 900px){
+      .overlay-meta{grid-template-columns:1fr;}
+      .overlay-kpis{grid-template-columns:1fr;}
+    }
+  </style>
 </head>
 <body>
 <main class="gp-main">
   <div class="page gp-page gp-page--sentiment">
     <section class="panel">
-      <div class="h1">Overlay</div>
-      <p class="sub">FX Overlay / Decision UI (safe mode).</p>
+      <div class="overlay-hero">
+        <div class="h1">Overlay</div>
+        <p class="sub">FX decision + remittance overlay.</p>
+
+        <div class="pillrow overlay-pills">
+          <span id="pairPill" class="pill">pair: JPYTHB</span>
+          <span id="statePill" class="pill">loading…</span>
+          <span id="sourcePill" class="pill">source: --</span>
+        </div>
+      </div>
+
+      <div class="overlay-kpis">
+        <div class="overlay-kpi">
+          <div class="hint">Decision</div>
+          <div id="decisionKpi" class="value">—</div>
+        </div>
+        <div class="overlay-kpi">
+          <div class="hint">Image</div>
+          <div id="imageStateKpi" class="value">—</div>
+        </div>
+        <div class="overlay-kpi">
+          <div class="hint">Decision JSON</div>
+          <div id="jsonStateKpi" class="value">—</div>
+        </div>
+      </div>
 
       <div class="grid2" style="margin-top:12px;">
-        <div class="card">
+        <div class="card overlay-card">
           <div class="sectionTitle">
             <h2>Controls</h2>
-            <span id="statePill" class="hint">loading…</span>
           </div>
 
-          <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:10px;">
+          <div style="display:flex; gap:12px; align-items:end; flex-wrap:wrap; margin-top:10px;">
             <div style="min-width:240px;">
               <div class="hint" style="margin-bottom:6px;">Pair</div>
               <select id="pair" class="select" style="width:240px;">
@@ -32,29 +116,33 @@
               </select>
             </div>
 
-            <div class="pillrow" style="margin-top:18px;">
+            <div class="pillrow">
               <a id="btnOpenDecision" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open decision JSON</a>
             </div>
           </div>
 
-          <div style="margin-top:12px;">
-            <div class="hint">Decision</div>
-            <div id="decision" class="mono">—</div>
-          </div>
+          <div class="overlay-meta">
+            <div>
+              <div class="hint">Decision</div>
+              <div id="decision" class="mono">—</div>
+            </div>
 
-          <div style="margin-top:10px;">
-            <div class="hint">Reason</div>
-            <div id="reason" class="mono small">—</div>
+            <div>
+              <div class="hint">Reason</div>
+              <div id="reason" class="mono small">—</div>
+            </div>
           </div>
 
           <div class="pillrow" style="margin-top:12px;">
             <span id="srcDecision" class="pill">source: --</span>
           </div>
+
+          <div id="pairNote" class="overlay-note mono small">Loading pair status…</div>
         </div>
 
-        <div class="card">
+        <div class="card overlay-card">
           <div class="sectionTitle">
-            <h2>FX overlay</h2>
+            <h2>FX Overlay</h2>
             <span class="hint">image preview</span>
           </div>
 
@@ -63,7 +151,7 @@
             <span id="srcImage" class="pill">source: --</span>
           </div>
 
-          <div class="imgFrame" style="margin-top:10px;">
+          <div class="overlay-img-frame">
             <img id="img" alt="FX overlay" />
           </div>
         </div>
@@ -88,67 +176,131 @@
     return await r.json();
   }
 
+  async function urlExists(url){
+    try{
+      const r = await fetch(url + (url.indexOf("?")>=0 ? "&" : "?") + "_t=" + Date.now(), {
+        method: "HEAD",
+        cache: "no-store"
+      });
+      return r.ok;
+    }catch(_e){
+      return false;
+    }
+  }
+
   const MAP = {
     JPYTHB: {
-      img: "/data/fx/fx_overlay_latest_jpythb.png",
-      decision: ["/data/fx/fx_decision_latest_jpythb.json", "/data/fx/fx_overlay_latest.json"]
+      pairLabel: "JPYTHB",
+      imgCandidates: [
+        "/data/fx/fx_overlay_latest_jpythb.png",
+        "/data/fx/jpy_thb_remittance_overlay.png",
+        "/data/fx/fx_jpy_thb_overlay.png"
+      ],
+      decisionCandidates: [
+        "/data/fx/fx_decision_latest_jpythb.json",
+        "/data/fx/fx_decision_latest.json"
+      ],
+      note: "Primary files exist in current FX lane. Remittance overlay should usually render."
     },
     USDJPY: {
-      img: "/data/fx/fx_overlay_latest_usdjpy.png",
-      decision: ["/data/fx/fx_decision_latest_usdjpy.json", "/data/fx/fx_overlay_latest.json"]
+      pairLabel: "USDJPY",
+      imgCandidates: [
+        "/data/fx/fx_overlay_latest_usdjpy.png",
+        "/data/fx/fx_jpy_usd_overlay.png"
+      ],
+      decisionCandidates: [
+        "/data/fx/fx_decision_latest_usdjpy.json",
+        "/data/fx/fx_decision_latest.json"
+      ],
+      note: "USDJPY uses existing latest overlay image. Pair-specific decision may fall back to global decision JSON."
     },
     USDTHB: {
-      img: "/data/fx/fx_overlay_latest_usdthb.png",
-      decision: ["/data/fx/fx_decision_latest_usdthb.json", "/data/fx/fx_overlay_latest.json"]
+      pairLabel: "USDTHB",
+      imgCandidates: [
+        "/data/fx/fx_overlay_latest_usdthb.png",
+        "/data/fx/fx_multi_usd_thb_overlay.png"
+      ],
+      decisionCandidates: [
+        "/data/fx/fx_decision_latest_usdthb.json",
+        "/data/fx/fx_decision_latest.json"
+      ],
+      note: "USDTHB pair-specific latest files are not present yet. This page falls back to existing multi overlay image and global decision JSON when available."
     },
     MULTI: {
-      img: "/data/fx/fx_overlay_multi_latest.png",
-      decision: ["/data/fx/fx_decision_latest_multi.json", "/data/fx/fx_overlay_latest.json"]
+      pairLabel: "MULTI",
+      imgCandidates: [
+        "/data/fx/fx_overlay_multi_latest.png",
+        "/data/fx/fx_multi_overlay.png"
+      ],
+      decisionCandidates: [
+        "/data/fx/fx_decision_latest_multi.json",
+        "/data/fx/fx_decision_latest.json"
+      ],
+      note: "Multi overlay uses shared aggregate image. Pair-specific decision may not exist."
     }
   };
 
-  async function pickFirstOk(urls){
+  async function pickFirstExisting(urls, kind){
     for(const u of urls){
       try{
-        const j = await fetchJson(u);
-        return {url:u, json:j};
+        if(kind === "json"){
+          const j = await fetchJson(u);
+          return {url:u, data:j};
+        }
+        const ok = await urlExists(u);
+        if(ok) return {url:u};
       }catch(_e){}
     }
     return null;
   }
 
   function extractDecision(obj){
-    if(!obj) return {decision:"—", reason:"—"};
-    // いろんな形式に耐える
+    if(!obj) return {decision:"—", reason:"Decision JSON not available."};
     const d = obj.decision || obj.action || obj.status || obj.recommendation || "—";
     const r = obj.reason || obj.rationale || obj.message || obj.note || "";
-    return {decision: safeText(d), reason: safeText(r) || "—"};
+    return {decision: safeText(d), reason: safeText(r) || "Decision JSON loaded, but no reason field was found."};
   }
 
   async function loadPair(pair){
     const conf = MAP[pair] || MAP.JPYTHB;
 
-    // image
-    const imgUrl = conf.img + "?t=" + Date.now();
-    setImg("img", imgUrl);
-    setHref("btnOpenImage", imgUrl);
-    setText("srcImage", "source: " + conf.img);
+    setText("pairPill", "pair: " + conf.pairLabel);
+    setText("pairNote", conf.note);
 
-    // decision
-    const picked = await pickFirstOk(conf.decision);
-    if(picked){
-      const ex = extractDecision(picked.json);
+    const imagePicked = await pickFirstExisting(conf.imgCandidates, "img");
+    if(imagePicked){
+      const imgUrl = imagePicked.url + "?t=" + Date.now();
+      setImg("img", imgUrl);
+      setHref("btnOpenImage", imgUrl);
+      setText("srcImage", "source: " + imagePicked.url);
+      setText("imageStateKpi", "OK");
+    }else{
+      setImg("img", "");
+      setHref("btnOpenImage", "#");
+      setText("srcImage", "source: missing");
+      setText("imageStateKpi", "MISS");
+    }
+
+    const jsonPicked = await pickFirstExisting(conf.decisionCandidates, "json");
+    if(jsonPicked){
+      const ex = extractDecision(jsonPicked.data);
       setText("decision", ex.decision);
       setText("reason", ex.reason);
-      setHref("btnOpenDecision", picked.url);
-      setText("srcDecision", "source: " + picked.url);
+      setText("decisionKpi", ex.decision);
+      setHref("btnOpenDecision", jsonPicked.url);
+      setText("srcDecision", "source: " + jsonPicked.url);
+      setText("jsonStateKpi", "OK");
       setText("statePill", "OK");
+      setText("sourcePill", conf.pairLabel + " fallback-ready");
     }else{
       setText("decision", "—");
-      setText("reason", "—");
+      setText("reason", "Decision JSON not found.");
+      setText("decisionKpi", "—");
       setHref("btnOpenDecision", "#");
       setText("srcDecision", "source: missing");
-      setText("statePill", "missing");
+      setText("jsonStateKpi", "MISS");
+      setText("statePill", imagePicked ? "partial" : "missing");
+      setText("sourcePill", conf.pairLabel + " files missing");
     }
   }
 
@@ -160,7 +312,6 @@
   }
 
   loadPair("JPYTHB");
-
 })();
 </script>
 </body>
