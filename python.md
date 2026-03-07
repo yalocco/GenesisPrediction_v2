@@ -19,5 +19,14 @@ powershell -ExecutionPolicy Bypass -File scripts/run_labos_publish.ps1
 powershell -ExecutionPolicy Bypass -File scripts/build_labos_deploy_payload.ps1
 powershell -ExecutionPolicy Bypass -File scripts/run_deploy_labos.ps1
 
-
+--------------------------------------------------------------
 docs/ui_data_dependencies.md を更新しますか？
+
+--------------------------------------------------------------
+新スレ立ち上げ時
+AI bootstrap
+docs/ai_bootstrap.md を読み込んでください。
+
+Thread Task:
+（今回の作業内容）
+--------------------------------------------------------------
