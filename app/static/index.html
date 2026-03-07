@@ -4,25 +4,103 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Home - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260307-gsb1" />
-  <script src="/static/_shared_nav.js?v=20260307-gsb1"></script>
+  <link rel="stylesheet" href="/static/app.css?v=20260307-gsb2" />
+  <script src="/static/_shared_nav.js?v=20260307-gsb2"></script>
   <style>
     .home-hero{margin-bottom:14px;}
-    .status-shell{margin-top:14px;padding:14px 16px;border-radius:18px;border:1px solid rgba(120,160,220,.18);background:linear-gradient(180deg, rgba(10,16,30,.66), rgba(7,12,24,.48));box-shadow:0 12px 30px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.04);}
-    .status-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
-    .status-title{font-size:12px;letter-spacing:.18em;text-transform:uppercase;opacity:.82;}
-    .status-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;}
-    .status-item{min-width:0;border:1px solid rgba(120,160,220,.12);border-radius:14px;padding:12px 12px 10px;background:rgba(8,14,28,.22);}
-    .status-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.72;margin-bottom:6px;}
-    .status-value{font-size:24px;line-height:1.05;font-weight:700;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .status-sub{margin-top:4px;font-size:12px;opacity:.72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .home-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px;}
-    .home-kpi{border:1px solid rgba(120,160,220,.16);border-radius:16px;padding:14px 16px;background:rgba(8,14,28,.18);min-height:86px;}
+    .status-shell{
+      margin-top:14px;
+      padding:14px 16px;
+      border-radius:18px;
+      border:1px solid rgba(120,160,220,.18);
+      background:linear-gradient(180deg, rgba(10,16,30,.66), rgba(7,12,24,.48));
+      box-shadow:0 12px 30px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    .status-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .status-title{
+      font-size:12px;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      opacity:.82;
+    }
+    .status-grid{
+      display:grid;
+      grid-template-columns:repeat(5,minmax(0,1fr));
+      gap:12px;
+    }
+    .status-item{
+      min-width:0;
+      border:1px solid rgba(120,160,220,.12);
+      border-radius:14px;
+      padding:12px 12px 10px;
+      background:rgba(8,14,28,.22);
+    }
+    .status-label{
+      font-size:11px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      opacity:.72;
+      margin-bottom:6px;
+    }
+    .status-value{
+      font-size:24px;
+      line-height:1.05;
+      font-weight:700;
+      letter-spacing:-.02em;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      color:#eef4ff;
+      transition:color .18s ease, text-shadow .18s ease;
+    }
+    .status-sub{
+      margin-top:4px;
+      font-size:12px;
+      opacity:.72;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .risk-low{color:#7eb6ff;text-shadow:0 0 18px rgba(126,182,255,.14);}
+    .risk-medium{color:#ffc36d;text-shadow:0 0 18px rgba(255,195,109,.12);}
+    .risk-high{color:#ff7d7d;text-shadow:0 0 18px rgba(255,125,125,.14);}
+    .risk-missing{color:#d7ddeb;}
+    .home-kpis{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:12px;
+      margin-top:14px;
+    }
+    .home-kpi{
+      border:1px solid rgba(120,160,220,.16);
+      border-radius:16px;
+      padding:14px 16px;
+      background:rgba(8,14,28,.18);
+      min-height:86px;
+    }
     .home-kpi .hint{margin-bottom:6px;}
-    .home-kpi .value{font-size:31px;line-height:1.05;letter-spacing:-0.02em;font-weight:600;}
+    .home-kpi .value{
+      font-size:31px;
+      line-height:1.05;
+      letter-spacing:-0.02em;
+      font-weight:600;
+    }
     .home-pre{white-space:pre-wrap;word-break:break-word;}
-    @media (max-width: 1100px){.status-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.home-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}}
-    @media (max-width: 700px){.status-grid{grid-template-columns:1fr;}.home-kpis{grid-template-columns:1fr;}}
+    @media (max-width: 1100px){
+      .status-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+      .home-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}
+    }
+    @media (max-width: 700px){
+      .status-grid{grid-template-columns:1fr;}
+      .home-kpis{grid-template-columns:1fr;}
+    }
   </style>
 </head>
 <body>
@@ -45,7 +123,7 @@
           <div class="status-grid">
             <div class="status-item">
               <div class="status-label">Global Risk</div>
-              <div id="gsRisk" class="status-value">—</div>
+              <div id="gsRisk" class="status-value risk-missing">—</div>
               <div id="gsRiskSub" class="status-sub">daily summary / sentiment</div>
             </div>
             <div class="status-item">
@@ -152,9 +230,19 @@
   function setText(id, v){ var el=document.getElementById(id); if(el) el.textContent = safeText(v); }
   function setHref(id, v){ var el=document.getElementById(id); if(el) el.href = v || "#"; }
 
+  function setRiskClass(id, level){
+    var el = document.getElementById(id);
+    if(!el) return;
+    el.classList.remove("risk-low","risk-medium","risk-high","risk-missing");
+    if(level === "LOW") el.classList.add("risk-low");
+    else if(level === "MEDIUM") el.classList.add("risk-medium");
+    else if(level === "HIGH") el.classList.add("risk-high");
+    else el.classList.add("risk-missing");
+  }
+
   async function fetchJson(url){
-    const r = await fetch(url, {cache:"no-store"});
-    if(!r.ok) throw new Error("HTTP " + r.status);
+    const r=await fetch(url,{cache:"no-store"});
+    if(!r.ok) throw new Error("HTTP "+r.status);
     return await r.json();
   }
 
@@ -209,16 +297,27 @@
 
   function normalizeSentimentBalance(sentiment){
     if(!sentiment) return {label:"—", detail:"sentiment missing"};
+
     const s = sentiment.summary || sentiment.today || sentiment.sentiment_summary || sentiment;
+
     const pos = firstNumber(s && s.positive_count, s && s.positive, s && s.pos_count);
     const neg = firstNumber(s && s.negative_count, s && s.negative, s && s.neg_count);
     const neu = firstNumber(s && s.neutral_count, s && s.neutral);
     const mix = firstNumber(s && s.mixed_count, s && s.mixed);
 
     if(pos != null || neg != null || neu != null || mix != null){
-      const pairs = [["POS", pos || 0], ["NEG", neg || 0], ["NEU", neu || 0], ["MIX", mix || 0]].sort(function(a,b){ return b[1] - a[1]; });
+      const pairs = [
+        ["POS", pos || 0],
+        ["NEG", neg || 0],
+        ["NEU", neu || 0],
+        ["MIX", mix || 0]
+      ].sort(function(a,b){ return b[1] - a[1]; });
+
       const top = pairs[0];
-      return {label: top[0], detail: "pos " + (pos||0) + " / neg " + (neg||0) + " / neu " + (neu||0) + " / mix " + (mix||0)};
+      return {
+        label: top[0],
+        detail: "pos " + (pos||0) + " / neg " + (neg||0) + " / neu " + (neu||0) + " / mix " + (mix||0)
+      };
     }
 
     const items = Array.isArray(sentiment.items) ? sentiment.items : [];
@@ -230,7 +329,10 @@
         else counts.unknown += 1;
       });
       const top = Object.entries(counts).sort(function(a,b){ return b[1] - a[1]; })[0];
-      return {label: top ? top[0].toUpperCase() : "—", detail: "items " + items.length};
+      return {
+        label: top ? top[0].toUpperCase() : "—",
+        detail: "items " + items.length
+      };
     }
 
     return {label:"—", detail:"no sentiment stats"};
@@ -245,9 +347,11 @@
 
   function normalizeArticles(vm, sentiment){
     if(vm){
-      const sectionCards = Array.isArray(vm.sections)
-        ? vm.sections.reduce(function(n, sec){ return n + (Array.isArray(sec.cards) ? sec.cards.length : 0); }, 0)
-        : null;
+      const sectionCards =
+        Array.isArray(vm.sections) ?
+          vm.sections.reduce(function(n, sec){
+            return n + (Array.isArray(sec.cards) ? sec.cards.length : 0);
+          }, 0) : null;
 
       const articles = firstNumber(
         vm && vm.meta && vm.meta.items,
@@ -257,16 +361,21 @@
       );
       if(articles != null) return articles;
     }
+
     if(sentiment && Array.isArray(sentiment.items)) return sentiment.items.length;
     return null;
   }
 
   function normalizeUpdated(vm, summary, sentiment, health){
     return firstString(
-      vm && vm.date, vm && vm.as_of,
-      summary && summary.date, summary && summary.as_of,
-      sentiment && sentiment.date, sentiment && sentiment.as_of,
-      health && health.date, health && health.as_of
+      vm && vm.date,
+      vm && vm.as_of,
+      summary && summary.date,
+      summary && summary.as_of,
+      sentiment && sentiment.date,
+      sentiment && sentiment.as_of,
+      health && health.date,
+      health && health.as_of
     ) || "--";
   }
 
@@ -317,7 +426,12 @@
 
   function renderSummary(sum){
     if(!sum) return "—";
-    const text = firstString(sum.summary, sum.text_summary, sum.daily_summary, sum.yesterday_summary_text);
+    const text = firstString(
+      sum.summary,
+      sum.text_summary,
+      sum.daily_summary,
+      sum.yesterday_summary_text
+    );
     if(text) return text.split("\n").slice(0,6).join("\n");
     if(sum.yesterday_summary){
       if(typeof sum.yesterday_summary.text === "string" && sum.yesterday_summary.text.trim()){
@@ -393,6 +507,7 @@
       setText("pillReady", "Ready");
 
       setText("gsRisk", riskLevel);
+      setRiskClass("gsRisk", riskLevel);
       setText("gsRiskSub", riskScore != null ? ("risk score " + Number(riskScore).toFixed(2)) : "daily summary fallback");
 
       setText("gsSentiment", sentimentBalance.label);
