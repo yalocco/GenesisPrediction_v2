@@ -110,4 +110,4 @@ Digest KPI を正常化
 ----------------------------------------
 ----------------------------------------
 
-docs/ui_data_dependencies.md を更新してください
+docs/ui_data_dependencies.md を更新しますか？

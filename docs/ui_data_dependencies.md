@@ -1,16 +1,11 @@
-はい。
-**`docs/ui_data_dependencies.md` 完全更新版** をそのまま置き換え用で出します。
-今回の Digest の正式依存先が `data/digest/view_model_latest.json` に変わった点と、KPI が `sentiment_summary` を優先する点を反映しています。旧案の方向性は合っていましたが、今回の実動作に合わせて整理し直しました。 
-
-````md
 # UI Data Dependencies
 
 GenesisPrediction v2
 
-Version: 1.2
+Version: 1.3
 Status: Active
 Purpose: UI がどのデータを読むか、どの field に依存するか、fallback をどう扱うかを固定する
-Last Updated: 2026-03-06
+Last Updated: 2026-03-07
 
 ---
 
@@ -32,7 +27,7 @@ scripts → analysis を生成
 analysis → Runtime SST
 UI → analysis を読む
 UI は再計算しない
-````
+```
 
 つまり
 
@@ -84,16 +79,21 @@ Home はプロジェクトの入口ページであり、
 主に以下の latest 系を参照する想定:
 
 ```text
-data/world_politics/analysis/view_model_latest.json
+data/digest/view_model_latest.json
 data/world_politics/analysis/daily_summary_latest.json
-data/world_politics/analysis/health_latest.json
+data/digest/health_latest.json
+data/world_politics/analysis/sentiment_latest.json
 ```
 
 ## Notes
 
-* Home は集約表示ページ
-* 詳細分析は Sentiment / Digest / Overlay 側で行う
-* latest alias の鮮度が重要
+- Home は集約表示ページ
+- Summary は `daily_summary_latest.json` を優先参照する
+- Events(today) は `data/digest/view_model_latest.json` の highlights / cards を使う
+- Data Health は `health_latest.json.summary.ok / warn / ng / total` を使う
+- Sentiment snapshot は Sentiment ページと揃えるため `data/world_politics/analysis/sentiment_latest.json` を優先参照する
+- 詳細分析は Sentiment / Digest / Overlay 側で行う
+- latest alias の鮮度が重要
 
 ---
 
@@ -109,37 +109,154 @@ app/static/overlay.html
 
 FX / overlay の判断結果を表示する。
 
-## Main Dependencies
+## Current Runtime Model
 
-代表的な依存先:
+Overlay は pair selector に応じて
+**pair ごとの image candidates / decision JSON candidates** を順に探索し、
+最初に取得できたものを表示する。
+
+UI はこの fallback を使って表示を継続するが、
+これは表示継続のための read-only fallback であり、
+正式なデータ生成責務は scripts / FX lane 側にある。
+
+## Image Sources
+
+### JPYTHB
+
+画像は以下の順で探索する。
 
 ```text
-data/fx/fx_overlay_latest.json
-data/fx/fx_overlay_multi_latest.json
-data/world_politics/analysis/view_model_latest.json
+/data/fx/fx_overlay_latest_jpythb.png
+/data/fx/jpy_thb_remittance_overlay.png
+/data/fx/fx_jpy_thb_overlay.png
 ```
 
-## Overlay Fields
+### USDJPY
 
-UI が参照する代表 field:
+画像は以下の順で探索する。
 
 ```text
-date
+/data/fx/fx_overlay_latest_usdjpy.png
+/data/fx/fx_jpy_usd_overlay.png
+```
+
+### USDTHB
+
+画像は以下の順で探索する。
+
+```text
+/data/fx/fx_overlay_latest_usdthb.png
+/data/fx/fx_multi_usd_thb_overlay.png
+```
+
+補足:
+
+- 現在の repo では `fx_overlay_latest_usdthb.png` が存在しない場合がある
+- その場合 Overlay UI は `fx_multi_usd_thb_overlay.png` を fallback として使う
+
+### MULTI
+
+画像は以下の順で探索する。
+
+```text
+/data/fx/fx_overlay_multi_latest.png
+/data/fx/fx_multi_overlay.png
+```
+
+## Decision JSON Sources
+
+Overlay decision JSON は以下の順で探索する。
+
+### JPYTHB
+
+```text
+/data/fx/fx_decision_latest_jpythb.json
+/data/fx/fx_decision_latest.json
+```
+
+### USDJPY
+
+```text
+/data/fx/fx_decision_latest_usdjpy.json
+/data/fx/fx_decision_latest.json
+```
+
+### USDTHB
+
+```text
+/data/fx/fx_decision_latest_usdthb.json
+/data/fx/fx_decision_latest.json
+```
+
+補足:
+
+- 現在の repo では `fx_decision_latest_usdthb.json` が存在しない場合がある
+- その場合 Overlay UI は `fx_decision_latest.json` を fallback として使う
+
+### MULTI
+
+```text
+/data/fx/fx_decision_latest_multi.json
+/data/fx/fx_decision_latest.json
+```
+
+## Decision Field Handling
+
+Overlay UI が decision JSON から参照する代表 field:
+
+```text
+decision
+action
+status
+recommendation
+reason
+rationale
+message
+note
+```
+
+取得優先順:
+
+### decision value
+
+```text
+decision
+action
+status
+recommendation
+```
+
+### reason value
+
+```text
+reason
+rationale
+message
+note
+```
+
+## Overlay UI Fields
+
+現在の Overlay UI は表示用に以下を保持する。
+
+```text
 pair
-rate
-regime
-signal
-score
 decision
 reason
 image
+image_state
+json_state
+source
+pair_note
 ```
 
 ## Notes
 
-* Overlay は FX 判断系の表示ページ
-* sentiment の補助利用はあり得るが、主 source は FX 系 latest
-* 詳細仕様は docs/ui_system.md と docs/pipeline_system.md に従う
+- Overlay は FX 判断系の表示ページ
+- 主 source は `data/fx/`
+- UI は fallback を行うが、正式な latest 命名・pair 別成果物の整備は scripts 側責務
+- `USDTHB` は現状 fallback 表示で動作するが、将来的には pair-specific latest の生成が望ましい
+- 詳細仕様は docs/ui_system.md と docs/pipeline_system.md に従う
 
 ---
 
@@ -250,9 +367,9 @@ data/world_politics/analysis/sentiment_timeseries.csv
 
 ## Notes
 
-* Sentiment page は per-article sentiment 表示が主目的
-* score / net / risk / positive / uncertainty の表示は UI 側で再計算しない
-* label の判定は scripts/build_daily_sentiment.py 側を正とする
+- Sentiment page は per-article sentiment 表示が主目的
+- score / net / risk / positive / uncertainty の表示は UI 側で再計算しない
+- label の判定は scripts/build_daily_sentiment.py 側を正とする
 
 ---
 
@@ -409,8 +526,8 @@ items != sentiment_summary.articles
 
 理由:
 
-* `cards[]` は Top highlights 用の抽出結果
-* `sentiment_summary.articles` は全 article 件数
+- `cards[]` は Top highlights 用の抽出結果
+- `sentiment_summary.articles` は全 article 件数
 
 この違いは仕様であり、異常ではない。
 
@@ -446,9 +563,9 @@ newest
 
 重要原則:
 
-* risk / score は card.sentiment 側の値を利用
-* UI は再計算しない
-* 並び替えは表示順の変更のみ
+- risk / score は card.sentiment 側の値を利用
+- UI は再計算しない
+- 並び替えは表示順の変更のみ
 
 ## Sentiment Label Handling
 
@@ -464,10 +581,10 @@ card 直下に同名 field が存在する旧 schema にも、可能な限り後
 
 ## Notes
 
-* Digest の正式 source は `view_model_latest.json`
-* `daily_news_latest.json` は fallback 用
-* `unknown` が大量発生する場合は、まず `view_model_latest.json` の `cards[].sentiment` を確認する
-* KPI が cards 件数と一致しない場合、`sentiment_summary` を見て仕様通りか判断する
+- Digest の正式 source は `view_model_latest.json`
+- `daily_news_latest.json` は fallback 用
+- `unknown` が大量発生する場合は、まず `view_model_latest.json` の `cards[].sentiment` を確認する
+- KPI が cards 件数と一致しない場合、`sentiment_summary` を見て仕様通りか判断する
 
 ---
 
@@ -501,6 +618,20 @@ sentiment_latest.json
 app/static/sentiment.html
 ```
 
+Overlay の現行表示フロー:
+
+```text
+data/fx/*overlay*.png
++
+data/fx/fx_decision_latest_<pair>.json
+↓
+fallback
+↓
+data/fx/fx_decision_latest.json
+↓
+app/static/overlay.html
+```
+
 ---
 
 # Fallback Rules
@@ -525,6 +656,34 @@ fallback は UI 表示継続のための保険であり、
 2. data/world_politics/analysis/daily_news_latest.json
 ```
 
+## Overlay Image Fallback Priority
+
+```text
+JPYTHB:
+1. /data/fx/fx_overlay_latest_jpythb.png
+2. /data/fx/jpy_thb_remittance_overlay.png
+3. /data/fx/fx_jpy_thb_overlay.png
+
+USDJPY:
+1. /data/fx/fx_overlay_latest_usdjpy.png
+2. /data/fx/fx_jpy_usd_overlay.png
+
+USDTHB:
+1. /data/fx/fx_overlay_latest_usdthb.png
+2. /data/fx/fx_multi_usd_thb_overlay.png
+
+MULTI:
+1. /data/fx/fx_overlay_multi_latest.png
+2. /data/fx/fx_multi_overlay.png
+```
+
+## Overlay Decision Fallback Priority
+
+```text
+1. /data/fx/fx_decision_latest_<pair>.json
+2. /data/fx/fx_decision_latest.json
+```
+
 ## Thumbnail Fallback Priority
 
 ```text
@@ -542,7 +701,7 @@ fallback は UI 表示継続のための保険であり、
 UI データ依存の原則:
 
 ```text
-UI は analysis / digest latest を読む
+UI は analysis / digest latest / fx latest を読む
 scripts は UI を知らない
 data は壊れても再生成できる
 UI は再計算しない
@@ -553,6 +712,7 @@ UI は再計算しない
 ```text
 analysis = SST
 digest view_model = Digest UI 用の正規化済み表示レイヤ
+overlay fallback = 表示継続のための read-only 補助
 ```
 
 ---
@@ -561,8 +721,8 @@ digest view_model = Digest UI 用の正規化済み表示レイヤ
 
 UI 変更時は必ず確認すること:
 
-1. 参照 JSON は何か
-2. その JSON の root structure は何か
+1. 参照 JSON / PNG は何か
+2. その root structure は何か
 3. 必要 field は何か
 4. fallback はどこまで許すか
 5. docs/ui_data_dependencies.md を更新したか
@@ -575,6 +735,16 @@ build_daily_sentiment.py
 build_digest_view_model.py
 data/digest/view_model_latest.json
 app/static/digest.html
+```
+
+特に Overlay を変更する場合は、
+以下の整合を必ず確認する:
+
+```text
+data/fx/
+pair-specific latest files
+fx_decision_latest.json
+app/static/overlay.html
 ```
 
 ---
@@ -613,6 +783,28 @@ sentiment_summary.articles は全件
 3. UI fallback が favicon に落ちていないか
 ```
 
+## Symptom: Overlay で USDTHB が出ない
+
+確認順:
+
+```text
+1. /data/fx/fx_overlay_latest_usdthb.png が存在するか
+2. 無ければ /data/fx/fx_multi_usd_thb_overlay.png が存在するか
+3. /data/fx/fx_decision_latest_usdthb.json が存在するか
+4. 無ければ /data/fx/fx_decision_latest.json を fallback しているか
+5. ブラウザキャッシュを疑う
+```
+
+## Symptom: Data Health で OK/WARN/NG が -- になる
+
+確認順:
+
+```text
+1. health_latest.json に summary があるか
+2. summary.ok / warn / ng / total があるか
+3. Home が health.summary.* を読んでいるか
+```
+
 ---
 
 # Future Expansion
@@ -627,6 +819,7 @@ prediction
 risk_score
 regime
 observation
+overlay_related_news
 ```
 
 これらが UI に追加された場合、
@@ -635,5 +828,3 @@ observation
 ---
 
 END OF DOCUMENT
-
-````
