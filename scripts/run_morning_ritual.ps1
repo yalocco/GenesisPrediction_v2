@@ -13,6 +13,7 @@
 #   - UTC NOW / UTC YESTER / LOCAL DATE are still logged for diagnostics.
 #   - LocalDate is used for FX artifact reconciliation only.
 #   - Observation Memory and Sentiment Trend are built after health/update steps.
+#   - Prediction Runtime is built after observation/trend steps and before finish.
 
 [CmdletBinding()]
 param(
@@ -202,6 +203,20 @@ Run "6) Build sentiment trend" {
   $cmd = "powershell -ExecutionPolicy Bypass -File `"$repoRoot\scripts\run_build_sentiment_trend.ps1`" -AsOf $WorldDate"
   Log "CMD: $cmd"
   powershell -ExecutionPolicy Bypass -File "$repoRoot\scripts\run_build_sentiment_trend.ps1" -AsOf $WorldDate
+}
+
+# --- 7) Prediction Runtime ---
+Run "7) Prediction Runtime" {
+  Log "=== 7) Prediction Runtime ==="
+  $script = Join-Path $repoRoot "scripts\run_prediction_pipeline.py"
+  if (Test-Path $script) {
+    $cmd = "`"$py`" `"$script`" --date $WorldDate --write-history"
+    Log "CMD: $cmd"
+    & $py $script --date $WorldDate --write-history
+  }
+  else {
+    Log "[WARN] scripts\run_prediction_pipeline.py not found; skipping"
+  }
 }
 
 Log "DONE (Morning Ritual)"
