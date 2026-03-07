@@ -1,25 +1,3 @@
-了解です 👍
-では **GenesisPrediction AI 起動プロトコル** を固定します。
-
-これは
-
-* 新しいスレ
-* 新しいAI
-* 新しいPC
-* Open-WebUI / ChatGPT / ローカルLLM
-
-で **同じ起動手順**を使えるようにするための文書です。
-
-作るファイルはこれです。
-
-```text
-docs/ai_startup_protocol.md
-```
-
-そのまま **完全ファイル**で保存してください。
-
----
-
 # docs/ai_startup_protocol.md
 
 ````md
