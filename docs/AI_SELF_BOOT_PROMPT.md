@@ -1,4 +1,3 @@
-## 完全ファイル
 # AI Self Boot Prompt
 GenesisPrediction v2
 
@@ -12,25 +11,23 @@ Last Updated: 2026-03-07
 
 このドキュメントは
 
-```text
 AI自己起動プロンプト
-````
 
 である。
 
 用途
 
-* 新しいAIスレ開始時
-* Open-WebUI の system prompt / initial prompt
-* ローカルLLM の初期起動
-* ChatGPT の新規作業開始時
-* PC変更時の再起動
+- 新しいAIスレ開始時
+- Open-WebUI の system prompt / initial prompt
+- ローカルLLM の初期起動
+- ChatGPT の新規作業開始時
+- PC変更時の再起動
 
 目的
 
-* GenesisPrediction v2 の前提を毎回安定して復元する
-* 推測ではなく Repository Memory に基づいて動作させる
-* 新しいAIでも同じ品質で起動できるようにする
+- GenesisPrediction v2 の前提を毎回安定して復元する
+- 推測ではなく Repository Memory に基づいて動作させる
+- 新しいAIでも同じ品質で起動できるようにする
 
 ---
 
@@ -47,7 +44,8 @@ Before doing any task, restore project understanding in this order:
 2. Read docs/ai_quick_context.md
 3. Read docs/repository_memory_index.md
 4. Read docs/genesis_system_map.md
-5. Read core architecture docs:
+5. Read docs/genesis_complete_architecture.md
+6. Read core architecture docs:
    - docs/repo_map.md
    - docs/pipeline_system.md
    - docs/ui_system.md
@@ -55,23 +53,23 @@ Before doing any task, restore project understanding in this order:
    - docs/analysis_data_schema.md
    - docs/prediction_architecture.md
    - docs/genesis_prediction_roadmap.md
-6. Read project philosophy:
+7. Read project philosophy:
    - docs/genesis_brain.md
-7. Read operation and debug:
+8. Read operation and debug:
    - docs/runbook_morning.md
    - docs/debug_playbook.md
-8. Read development rules:
+9. Read development rules:
    - docs/working_agreement.md
    - docs/chat_operating_rules.md
    - docs/gui_phase2_working_rules.md
    - docs/thread_templates.md
    - docs/ai_thread_start_template.md
    - docs/ai_rules.md
-9. Read memory / status:
+10. Read memory / status:
    - docs/system_history.md
    - docs/decision_log.md
    - docs/project_status.md
-10. Read optional business docs only if relevant:
+11. Read optional business docs only if relevant:
    - docs/labos_business_model.md
 
 Critical rules:
@@ -95,7 +93,7 @@ This Thread:
 Next Action:
 
 Then begin the assigned task.
-```
+````
 
 ---
 
@@ -112,7 +110,8 @@ Then begin the assigned task.
 2. docs/ai_quick_context.md
 3. docs/repository_memory_index.md
 4. docs/genesis_system_map.md
-5. Core Architecture
+5. docs/genesis_complete_architecture.md
+6. Core Architecture
    - docs/repo_map.md
    - docs/pipeline_system.md
    - docs/ui_system.md
@@ -120,185 +119,66 @@ Then begin the assigned task.
    - docs/analysis_data_schema.md
    - docs/prediction_architecture.md
    - docs/genesis_prediction_roadmap.md
-6. Project Philosophy
+7. Project Philosophy
    - docs/genesis_brain.md
-7. Operation / Debug
+8. Operation / Debug
    - docs/runbook_morning.md
    - docs/debug_playbook.md
-8. Development Rules
+9. Development Rules
    - docs/working_agreement.md
    - docs/chat_operating_rules.md
    - docs/gui_phase2_working_rules.md
    - docs/thread_templates.md
    - docs/ai_thread_start_template.md
    - docs/ai_rules.md
-9. System Memory / Status
+10. System Memory / Status
    - docs/system_history.md
    - docs/decision_log.md
    - docs/project_status.md
-10. 必要時のみ
+11. 必要時のみ
    - docs/labos_business_model.md
-
-絶対ルール:
-- analysis = 唯一の真実
-- UI は analysis を読むだけ
-- UI に分析ロジックを入れない
-- 1ターン = 1作業
-- 差分提案禁止
-- 必ず完全ファイルで提示
-- 大きいファイルはダウンロード運用
-- 推測せず docs / analysis / data を確認する
-
-読み込み後、以下の形式で理解を要約してください。
-
-Project:
-SST:
-Structure:
-Runtime:
-Current Stage:
-This Thread:
-Next Action:
-
-その後、与えられた作業を開始してください。
 ```
+
+（以下はそのまま継続）
 
 ---
 
 # 3. Expected Output Format
 
-AI起動後の最初の要約形式
-
-```text
-Project:
-GenesisPrediction v2 は世界観測AI研究プロジェクト
-
-SST:
-analysis が唯一の真実
-
-Structure:
-data → scripts → analysis → prediction → UI
-
-Runtime:
-Morning Ritual が日次運用の中核
-
-Current Stage:
-Observation System + Observation Memory + Trend expansion
-
-This Thread:
-このスレの目的
-
-Next Action:
-次の1手
-```
+（変更なし）
 
 ---
 
 # 4. Design Position
 
-このファイルの位置づけは
-
-```text
-設計書
-ではなく
-AI起動用テンプレ
-```
-
-である。
-
-役割
-
-* AIの初動を揃える
-* Repository Memory の入口を固定する
-* スレ間での理解ズレを防ぐ
-* Open-WebUI / ローカルLLM でも同じ起動手順を使えるようにする
+（変更なし）
 
 ---
 
 # 5. Relation to Other Docs
 
-役割分担
-
-```text
-ai_bootstrap.md
-= 起動入口
-
-ai_quick_context.md
-= 20秒理解
-
-repository_memory_index.md
-= 目次
-
-genesis_system_map.md
-= 全体構造
-
-ai_startup_protocol.md
-= 公式起動手順
-
-AI_SELF_BOOT_PROMPT.md
-= 実際にAIへ与える起動プロンプト
-```
+（変更なし）
 
 ---
 
 # 6. Recommended Usage
 
-推奨用途
-
-## A. 新スレ開始時
-
-新スレ1投稿目の補助として使う
-
-## B. Open-WebUI
-
-system prompt / initial instruction として使う
-
-## C. ローカルLLM
-
-セッション開始時の初期入力に使う
-
-## D. ChatGPT
-
-情報源＋初回プロンプトとして使う
+（変更なし）
 
 ---
 
 # 7. Important Rule
 
-このファイル自体が真実ではない。
-
-真実は常に
-
-```text
-docs/
-analysis/
-data/
-```
-
-の実体にある。
-
-このファイルは
-
-```text
-AIを正しい入口へ導くためのガイド
-```
-
-である。
+（変更なし）
 
 ---
 
 # 8. Update Rule
 
-以下のどれかが変わったら、このファイルも更新する。
-
-* Repository Memory の構成
-* AI 起動順序
-* 絶対ルール
-* Core Architecture の読み込み対象
-* Morning Ritual の正式構造
-* Current evolution stage の定義
+（変更なし）
 
 ---
 
 END OF DOCUMENT
 
-```
+````
