@@ -4,8 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Home - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260307-gsb2" />
-  <script src="/static/_shared_nav.js?v=20260307-gsb2"></script>
+  <link rel="stylesheet" href="/static/app.css?v=20260307-gsb3" />
+  <script src="/static/_shared_nav.js?v=20260307-gsb3"></script>
+  <script src="/static/common/global_status.js?v=20260307-gsb3"></script>
   <style>
     .home-hero{margin-bottom:14px;}
     .status-shell{
@@ -92,7 +93,10 @@
       letter-spacing:-0.02em;
       font-weight:600;
     }
-    .home-pre{white-space:pre-wrap;word-break:break-word;}
+    .home-pre{
+      white-space:pre-wrap;
+      word-break:break-word;
+    }
     @media (max-width: 1100px){
       .status-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
       .home-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}
@@ -226,47 +230,23 @@
 (function(){
   "use strict";
 
-  function safeText(x){ return (x==null) ? "" : String(x); }
-  function setText(id, v){ var el=document.getElementById(id); if(el) el.textContent = safeText(v); }
-  function setHref(id, v){ var el=document.getElementById(id); if(el) el.href = v || "#"; }
+  function safeText(x){
+    return (x == null) ? "" : String(x);
+  }
 
-  function setRiskClass(id, level){
+  function setText(id, v){
     var el = document.getElementById(id);
-    if(!el) return;
-    el.classList.remove("risk-low","risk-medium","risk-high","risk-missing");
-    if(level === "LOW") el.classList.add("risk-low");
-    else if(level === "MEDIUM") el.classList.add("risk-medium");
-    else if(level === "HIGH") el.classList.add("risk-high");
-    else el.classList.add("risk-missing");
+    if(el) el.textContent = safeText(v);
   }
 
-  async function fetchJson(url){
-    const r=await fetch(url,{cache:"no-store"});
-    if(!r.ok) throw new Error("HTTP "+r.status);
-    return await r.json();
-  }
-
-  const CANDIDATES = {
-    viewModel: ["/data/digest/view_model_latest.json", "/data/world_politics/analysis/view_model_latest.json"],
-    health: ["/data/digest/health_latest.json", "/data/world_politics/analysis/health_latest.json"],
-    summary: ["/data/digest/daily_summary_latest.json", "/data/world_politics/analysis/daily_summary_latest.json"],
-    sentiment: ["/data/world_politics/analysis/sentiment_latest.json", "/data/digest/sentiment_latest.json"],
-    fxDecision: ["/data/fx/fx_decision_latest.json", "/data/fx/fx_decision_latest_jpythb.json"]
-  };
-
-  async function pickFirstOk(urls){
-    for(const u of urls){
-      try{
-        const j = await fetchJson(u);
-        return {url:u, json:j};
-      }catch(_e){}
-    }
-    return null;
+  function setHref(id, v){
+    var el = document.getElementById(id);
+    if(el) el.href = v || "#";
   }
 
   function firstNumber(){
-    for(let i=0;i<arguments.length;i++){
-      const v = arguments[i];
+    for(var i = 0; i < arguments.length; i++){
+      var v = arguments[i];
       if(typeof v === "number" && !Number.isNaN(v)) return v;
       if(typeof v === "string" && v.trim() !== "" && !Number.isNaN(Number(v))) return Number(v);
     }
@@ -274,115 +254,18 @@
   }
 
   function firstString(){
-    for(let i=0;i<arguments.length;i++){
-      const v = arguments[i];
+    for(var i = 0; i < arguments.length; i++){
+      var v = arguments[i];
       if(typeof v === "string" && v.trim()) return v.trim();
     }
     return "";
   }
 
-  function toLevelFromRisk(v){
-    if(v == null) return "—";
-    if(v >= 0.72) return "HIGH";
-    if(v >= 0.42) return "MEDIUM";
-    return "LOW";
-  }
-
-  function normalizeRisk(summary, sentiment){
-    const summaryRisk = firstNumber(summary && summary.risk_score, summary && summary.risk, summary && summary.riskScore);
-    if(summaryRisk != null) return summaryRisk;
-    const s = sentiment && (sentiment.summary || sentiment.today || sentiment.sentiment_summary || sentiment);
-    return firstNumber(s && s.risk, s && s.risk_score, s && s.riskScore);
-  }
-
-  function normalizeSentimentBalance(sentiment){
-    if(!sentiment) return {label:"—", detail:"sentiment missing"};
-
-    const s = sentiment.summary || sentiment.today || sentiment.sentiment_summary || sentiment;
-
-    const pos = firstNumber(s && s.positive_count, s && s.positive, s && s.pos_count);
-    const neg = firstNumber(s && s.negative_count, s && s.negative, s && s.neg_count);
-    const neu = firstNumber(s && s.neutral_count, s && s.neutral);
-    const mix = firstNumber(s && s.mixed_count, s && s.mixed);
-
-    if(pos != null || neg != null || neu != null || mix != null){
-      const pairs = [
-        ["POS", pos || 0],
-        ["NEG", neg || 0],
-        ["NEU", neu || 0],
-        ["MIX", mix || 0]
-      ].sort(function(a,b){ return b[1] - a[1]; });
-
-      const top = pairs[0];
-      return {
-        label: top[0],
-        detail: "pos " + (pos||0) + " / neg " + (neg||0) + " / neu " + (neu||0) + " / mix " + (mix||0)
-      };
-    }
-
-    const items = Array.isArray(sentiment.items) ? sentiment.items : [];
-    if(items.length){
-      const counts = {positive:0, negative:0, neutral:0, mixed:0, unknown:0};
-      items.forEach(function(it){
-        const label = firstString(it.sentiment_label, it.sentiment, it.label).toLowerCase();
-        if(Object.prototype.hasOwnProperty.call(counts, label)) counts[label] += 1;
-        else counts.unknown += 1;
-      });
-      const top = Object.entries(counts).sort(function(a,b){ return b[1] - a[1]; })[0];
-      return {
-        label: top ? top[0].toUpperCase() : "—",
-        detail: "items " + items.length
-      };
-    }
-
-    return {label:"—", detail:"no sentiment stats"};
-  }
-
-  function normalizeFxRegime(fx){
-    if(!fx) return {label:"—", detail:"fx decision missing"};
-    const label = firstString(fx.regime, fx.decision, fx.action, fx.status, fx.recommendation) || "—";
-    const detail = firstString(fx.reason, fx.rationale, fx.message, fx.note) || "global decision";
-    return {label: label.toUpperCase(), detail: detail};
-  }
-
-  function normalizeArticles(vm, sentiment){
-    if(vm){
-      const sectionCards =
-        Array.isArray(vm.sections) ?
-          vm.sections.reduce(function(n, sec){
-            return n + (Array.isArray(sec.cards) ? sec.cards.length : 0);
-          }, 0) : null;
-
-      const articles = firstNumber(
-        vm && vm.meta && vm.meta.items,
-        vm && vm.sentiment_summary && vm.sentiment_summary.articles,
-        vm && vm.today && vm.today.sentiment_summary && vm.today.sentiment_summary.articles,
-        sectionCards
-      );
-      if(articles != null) return articles;
-    }
-
-    if(sentiment && Array.isArray(sentiment.items)) return sentiment.items.length;
-    return null;
-  }
-
-  function normalizeUpdated(vm, summary, sentiment, health){
-    return firstString(
-      vm && vm.date,
-      vm && vm.as_of,
-      summary && summary.date,
-      summary && summary.as_of,
-      sentiment && sentiment.date,
-      sentiment && sentiment.as_of,
-      health && health.date,
-      health && health.as_of
-    ) || "--";
-  }
-
   function renderKV(obj){
-    const lines = [];
+    var lines = [];
     Object.entries(obj || {}).forEach(function(pair){
-      const k = pair[0], v = pair[1];
+      var k = pair[0];
+      var v = pair[1];
       if(v == null) return;
       if(typeof v === "object") return;
       lines.push(k + ": " + String(v));
@@ -392,13 +275,13 @@
 
   function renderHealth(h){
     if(!h) return "—";
-    const sum = h.summary || {};
-    const date = h.date || h.as_of || "";
-    const total = firstNumber(sum.total, h.total, Array.isArray(h.checks) ? h.checks.length : null);
-    const ok = firstNumber(sum.ok, h.ok_count, h.OK);
-    const warn = firstNumber(sum.warn, h.warn_count, h.WARN);
-    const ng = firstNumber(sum.ng, h.ng_count, h.NG);
-    const parts = [];
+    var sum = h.summary || {};
+    var date = h.date || h.as_of || "";
+    var total = firstNumber(sum.total, h.total, Array.isArray(h.checks) ? h.checks.length : null);
+    var ok = firstNumber(sum.ok, h.ok_count, h.OK);
+    var warn = firstNumber(sum.warn, h.warn_count, h.WARN);
+    var ng = firstNumber(sum.ng, h.ng_count, h.NG);
+    var parts = [];
     if(date) parts.push("date: " + date);
     if(total != null) parts.push("total: " + total);
     if(ok != null) parts.push("OK: " + ok);
@@ -409,13 +292,13 @@
 
   function renderSentiment(s){
     if(!s) return "—";
-    const date = s.date || s.as_of || "";
-    const items = Array.isArray(s.items) ? s.items.length : firstNumber(s.total_items, s.summary && s.summary.articles);
-    const summary = s.summary || s.today || s.sentiment_summary || {};
-    const risk = firstNumber(summary.risk, summary.risk_score, summary.riskScore);
-    const pos = firstNumber(summary.positive, summary.posScore, summary.positive_count);
-    const unc = firstNumber(summary.uncertainty, summary.uncScore);
-    const parts = [];
+    var date = s.date || s.as_of || "";
+    var items = Array.isArray(s.items) ? s.items.length : firstNumber(s.total_items, s.summary && s.summary.articles);
+    var summary = s.summary || s.today || s.sentiment_summary || {};
+    var risk = firstNumber(summary.risk, summary.risk_score, summary.riskScore);
+    var pos = firstNumber(summary.positive, summary.posScore, summary.positive_count);
+    var unc = firstNumber(summary.uncertainty, summary.uncScore);
+    var parts = [];
     if(date) parts.push("date: " + date);
     if(items != null) parts.push("items: " + items);
     if(risk != null) parts.push("risk: " + Number(risk).toFixed(2));
@@ -426,37 +309,47 @@
 
   function renderSummary(sum){
     if(!sum) return "—";
-    const text = firstString(
+    var text = firstString(
       sum.summary,
       sum.text_summary,
       sum.daily_summary,
       sum.yesterday_summary_text
     );
     if(text) return text.split("\n").slice(0,6).join("\n");
+
     if(sum.yesterday_summary){
       if(typeof sum.yesterday_summary.text === "string" && sum.yesterday_summary.text.trim()){
         return sum.yesterday_summary.text.trim().split("\n").slice(0,6).join("\n");
       }
       if(Array.isArray(sum.yesterday_summary.titles) && sum.yesterday_summary.titles.length){
-        return sum.yesterday_summary.titles.slice(0,8).map(function(t){ return "• " + safeText(t); }).join("\n");
+        return sum.yesterday_summary.titles.slice(0,8).map(function(t){
+          return "• " + safeText(t);
+        }).join("\n");
       }
     }
+
     return renderKV(sum);
   }
 
-  (async function main(){
+  async function main(){
     try{
-      const vmRes = await pickFirstOk(CANDIDATES.viewModel);
-      const healthRes = await pickFirstOk(CANDIDATES.health);
-      const senRes = await pickFirstOk(CANDIDATES.sentiment);
-      const sumRes = await pickFirstOk(CANDIDATES.summary);
-      const fxRes = await pickFirstOk(CANDIDATES.fxDecision);
+      var gs = await window.GPGlobalStatus.load({
+        fxDecisionCandidates: [
+          "/data/fx/fx_decision_latest.json",
+          "/data/fx/fx_decision_latest_jpythb.json"
+        ]
+      });
 
-      const vm = vmRes && vmRes.json;
-      const health = healthRes && healthRes.json;
-      const sentiment = senRes && senRes.json;
-      const summary = sumRes && sumRes.json;
-      const fxDecision = fxRes && fxRes.json;
+      var vmRes = gs.vmRes;
+      var healthRes = gs.healthRes;
+      var senRes = gs.senRes;
+      var sumRes = gs.sumRes;
+
+      var vm = gs.vm;
+      var health = gs.health;
+      var sentiment = gs.sentiment;
+      var summary = gs.summary;
+      var articles = gs.articles;
 
       if(vm){
         setText("evHint", "OK");
@@ -496,32 +389,6 @@
         setText("sumBody", "daily_summary_latest.json not available.");
       }
 
-      const updated = normalizeUpdated(vm, summary, sentiment, health);
-      const riskScore = normalizeRisk(summary, sentiment);
-      const riskLevel = toLevelFromRisk(riskScore);
-      const sentimentBalance = normalizeSentimentBalance(sentiment);
-      const fxRegime = normalizeFxRegime(fxDecision);
-      const articles = normalizeArticles(vm, sentiment);
-
-      setText("pillAsOf", "as_of: " + updated);
-      setText("pillReady", "Ready");
-
-      setText("gsRisk", riskLevel);
-      setRiskClass("gsRisk", riskLevel);
-      setText("gsRiskSub", riskScore != null ? ("risk score " + Number(riskScore).toFixed(2)) : "daily summary fallback");
-
-      setText("gsSentiment", sentimentBalance.label);
-      setText("gsSentimentSub", sentimentBalance.detail);
-
-      setText("gsFx", fxRegime.label);
-      setText("gsFxSub", fxRegime.detail);
-
-      setText("gsArticles", articles != null ? String(articles) : "—");
-      setText("gsArticlesSub", vmRes ? "digest latest" : "sentiment fallback");
-
-      setText("gsUpdated", updated);
-      setText("gsUpdatedSub", firstString(vmRes && vmRes.url, sumRes && sumRes.url, senRes && senRes.url, healthRes && healthRes.url) || "runtime latest");
-
       setText("kpiEvents", articles != null ? String(articles) : "—");
       setText("kpiHealthOk", health && health.summary && health.summary.ok != null ? String(health.summary.ok) : "—");
       setText("kpiSentimentItems", sentiment && Array.isArray(sentiment.items) ? String(sentiment.items.length) : (articles != null ? String(articles) : "—"));
@@ -530,7 +397,9 @@
       setText("pillReady", "Error");
       console.warn(e);
     }
-  })();
+  }
+
+  main();
 })();
 </script>
 </body>

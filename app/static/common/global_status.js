@@ -6,20 +6,15 @@
   }
 
   function setText(id, v){
-    const el = document.getElementById(id);
+    var el = document.getElementById(id);
     if(el) el.textContent = safeText(v);
   }
 
   function setRiskClass(id, level){
-    const el = document.getElementById(id);
+    var el = document.getElementById(id);
     if(!el) return;
 
-    el.classList.remove(
-      "risk-low",
-      "risk-medium",
-      "risk-high",
-      "risk-missing"
-    );
+    el.classList.remove("risk-low", "risk-medium", "risk-high", "risk-missing");
 
     if(level === "LOW") el.classList.add("risk-low");
     else if(level === "MEDIUM") el.classList.add("risk-medium");
@@ -28,24 +23,25 @@
   }
 
   async function fetchJson(url){
-    const r = await fetch(url, { cache: "no-store" });
+    var r = await fetch(url, { cache: "no-store" });
     if(!r.ok) throw new Error("HTTP " + r.status);
     return await r.json();
   }
 
-  async function pickFirstJson(urls){
-    for(const u of urls){
+  async function pickFirstOk(urls){
+    for(var i = 0; i < urls.length; i++){
+      var u = urls[i];
       try{
-        const j = await fetchJson(u);
-        return { url: u, data: j };
+        var j = await fetchJson(u);
+        return { url: u, json: j };
       }catch(_e){}
     }
     return null;
   }
 
   function firstNumber(){
-    for(let i = 0; i < arguments.length; i++){
-      const v = arguments[i];
+    for(var i = 0; i < arguments.length; i++){
+      var v = arguments[i];
       if(typeof v === "number" && !Number.isNaN(v)) return v;
       if(typeof v === "string" && v.trim() !== "" && !Number.isNaN(Number(v))) return Number(v);
     }
@@ -53,8 +49,8 @@
   }
 
   function firstString(){
-    for(let i = 0; i < arguments.length; i++){
-      const v = arguments[i];
+    for(var i = 0; i < arguments.length; i++){
+      var v = arguments[i];
       if(typeof v === "string" && v.trim()) return v.trim();
     }
     return "";
@@ -68,14 +64,14 @@
   }
 
   function normalizeRisk(summary, sentiment){
-    const summaryRisk = firstNumber(
+    var summaryRisk = firstNumber(
       summary && summary.risk_score,
       summary && summary.risk,
       summary && summary.riskScore
     );
     if(summaryRisk != null) return summaryRisk;
 
-    const s = sentiment && (sentiment.summary || sentiment.today || sentiment.sentiment_summary || sentiment);
+    var s = sentiment && (sentiment.summary || sentiment.today || sentiment.sentiment_summary || sentiment);
     return firstNumber(
       s && s.risk,
       s && s.risk_score,
@@ -84,41 +80,44 @@
   }
 
   function normalizeSentimentBalance(sentiment){
-    if(!sentiment) return { label: "—", detail: "sentiment missing" };
+    if(!sentiment){
+      return { label: "—", detail: "sentiment missing" };
+    }
 
-    const s = sentiment.summary || sentiment.today || sentiment.sentiment_summary || sentiment;
+    var s = sentiment.summary || sentiment.today || sentiment.sentiment_summary || sentiment;
 
-    const pos = firstNumber(s && s.positive_count, s && s.positive, s && s.pos_count);
-    const neg = firstNumber(s && s.negative_count, s && s.negative, s && s.neg_count);
-    const neu = firstNumber(s && s.neutral_count, s && s.neutral);
-    const mix = firstNumber(s && s.mixed_count, s && s.mixed);
+    var pos = firstNumber(s && s.positive_count, s && s.positive, s && s.pos_count);
+    var neg = firstNumber(s && s.negative_count, s && s.negative, s && s.neg_count);
+    var neu = firstNumber(s && s.neutral_count, s && s.neutral);
+    var mix = firstNumber(s && s.mixed_count, s && s.mixed);
 
     if(pos != null || neg != null || neu != null || mix != null){
-      const pairs = [
+      var pairs = [
         ["POS", pos || 0],
         ["NEG", neg || 0],
         ["NEU", neu || 0],
         ["MIX", mix || 0]
       ].sort(function(a, b){ return b[1] - a[1]; });
 
-      const top = pairs[0];
+      var top = pairs[0];
       return {
         label: top[0],
         detail: "pos " + (pos || 0) + " / neg " + (neg || 0) + " / neu " + (neu || 0) + " / mix " + (mix || 0)
       };
     }
 
-    const items = Array.isArray(sentiment.items) ? sentiment.items : [];
+    var items = Array.isArray(sentiment.items) ? sentiment.items : [];
     if(items.length){
-      const counts = { positive: 0, negative: 0, neutral: 0, mixed: 0, unknown: 0 };
+      var counts = { positive: 0, negative: 0, neutral: 0, mixed: 0, unknown: 0 };
       items.forEach(function(it){
-        const label = firstString(it.sentiment_label, it.sentiment, it.label).toLowerCase();
+        var label = firstString(it.sentiment_label, it.sentiment, it.label).toLowerCase();
         if(Object.prototype.hasOwnProperty.call(counts, label)) counts[label] += 1;
         else counts.unknown += 1;
       });
-      const top = Object.entries(counts).sort(function(a, b){ return b[1] - a[1]; })[0];
+
+      var top2 = Object.entries(counts).sort(function(a, b){ return b[1] - a[1]; })[0];
       return {
-        label: top ? top[0].toUpperCase() : "—",
+        label: top2 ? top2[0].toUpperCase() : "—",
         detail: "items " + items.length
       };
     }
@@ -126,15 +125,41 @@
     return { label: "—", detail: "no sentiment stats" };
   }
 
+  function normalizeFxRegime(fx){
+    if(!fx){
+      return { label: "—", detail: "fx decision missing" };
+    }
+
+    var label = firstString(
+      fx.regime,
+      fx.decision,
+      fx.action,
+      fx.status,
+      fx.recommendation
+    ) || "—";
+
+    var detail = firstString(
+      fx.reason,
+      fx.rationale,
+      fx.message,
+      fx.note
+    ) || "global decision";
+
+    return {
+      label: label.toUpperCase(),
+      detail: detail
+    };
+  }
+
   function normalizeArticles(vm, sentiment){
     if(vm){
-      const sectionCards = Array.isArray(vm.sections)
+      var sectionCards = Array.isArray(vm.sections)
         ? vm.sections.reduce(function(n, sec){
             return n + (Array.isArray(sec.cards) ? sec.cards.length : 0);
           }, 0)
         : null;
 
-      const articles = firstNumber(
+      var articles = firstNumber(
         vm && vm.meta && vm.meta.items,
         vm && vm.sentiment_summary && vm.sentiment_summary.articles,
         vm && vm.today && vm.today.sentiment_summary && vm.today.sentiment_summary.articles,
@@ -161,86 +186,56 @@
     ) || "--";
   }
 
-  function normalizeFxRegime(fx){
-    if(!fx) return { label: "—", detail: "fx decision missing" };
+  async function loadGlobalStatus(opts){
+    opts = opts || {};
 
-    const label = firstString(
-      fx.regime,
-      fx.decision,
-      fx.action,
-      fx.status,
-      fx.recommendation
-    ) || "—";
-
-    const detail = firstString(
-      fx.reason,
-      fx.rationale,
-      fx.message,
-      fx.note
-    ) || "global decision";
-
-    return {
-      label: label.toUpperCase(),
-      detail: detail
+    var candidates = {
+      viewModel: opts.viewModelCandidates || [
+        "/data/digest/view_model_latest.json",
+        "/data/world_politics/analysis/view_model_latest.json"
+      ],
+      health: opts.healthCandidates || [
+        "/data/digest/health_latest.json",
+        "/data/world_politics/analysis/health_latest.json"
+      ],
+      summary: opts.summaryCandidates || [
+        "/data/digest/daily_summary_latest.json",
+        "/data/world_politics/analysis/daily_summary_latest.json"
+      ],
+      sentiment: opts.sentimentCandidates || [
+        "/data/world_politics/analysis/sentiment_latest.json",
+        "/data/digest/sentiment_latest.json"
+      ],
+      fxDecision: opts.fxDecisionCandidates || [
+        "/data/fx/fx_decision_latest.json"
+      ]
     };
-  }
 
-  const DEFAULT_CANDIDATES = {
-    viewModel: [
-      "/data/digest/view_model_latest.json",
-      "/data/world_politics/analysis/view_model_latest.json"
-    ],
-    health: [
-      "/data/digest/health_latest.json",
-      "/data/world_politics/analysis/health_latest.json"
-    ],
-    summary: [
-      "/data/digest/daily_summary_latest.json",
-      "/data/world_politics/analysis/daily_summary_latest.json"
-    ],
-    sentiment: [
-      "/data/world_politics/analysis/sentiment_latest.json",
-      "/data/digest/sentiment_latest.json"
-    ],
-    fxDecision: [
-      "/data/fx/fx_decision_latest.json",
-      "/data/fx/fx_decision_latest_jpythb.json"
-    ]
-  };
+    var vmRes = await pickFirstOk(candidates.viewModel);
+    var healthRes = await pickFirstOk(candidates.health);
+    var senRes = await pickFirstOk(candidates.sentiment);
+    var sumRes = await pickFirstOk(candidates.summary);
+    var fxRes = await pickFirstOk(candidates.fxDecision);
 
-  async function loadGlobalStatus(options){
-    const cfg = Object.assign({}, DEFAULT_CANDIDATES, options || {});
+    var vm = vmRes && vmRes.json;
+    var health = healthRes && healthRes.json;
+    var sentiment = senRes && senRes.json;
+    var summary = sumRes && sumRes.json;
+    var fxDecision = fxRes && fxRes.json;
 
-    const vmRes = await pickFirstJson(cfg.viewModel);
-    const healthRes = await pickFirstJson(cfg.health);
-    const senRes = await pickFirstJson(cfg.sentiment);
-    const sumRes = await pickFirstJson(cfg.summary);
-    const fxRes = await pickFirstJson(cfg.fxDecision);
-
-    const vm = vmRes && vmRes.data;
-    const health = healthRes && healthRes.data;
-    const sentiment = senRes && senRes.data;
-    const summary = sumRes && sumRes.data;
-    const fxDecision = fxRes && fxRes.data;
-
-    const updated = normalizeUpdated(vm, summary, sentiment, health);
-    const riskScore = normalizeRisk(summary, sentiment);
-    const riskLevel = toLevelFromRisk(riskScore);
-    const sentimentBalance = normalizeSentimentBalance(sentiment);
-    const fxRegime = normalizeFxRegime(fxDecision);
-    const articles = normalizeArticles(vm, sentiment);
+    var updated = normalizeUpdated(vm, summary, sentiment, health);
+    var riskScore = normalizeRisk(summary, sentiment);
+    var riskLevel = toLevelFromRisk(riskScore);
+    var sentimentBalance = normalizeSentimentBalance(sentiment);
+    var fxRegime = normalizeFxRegime(fxDecision);
+    var articles = normalizeArticles(vm, sentiment);
 
     setText("pillAsOf", "as_of: " + updated);
     setText("pillReady", "Ready");
 
     setText("gsRisk", riskLevel);
     setRiskClass("gsRisk", riskLevel);
-    setText(
-      "gsRiskSub",
-      riskScore != null
-        ? ("risk score " + Number(riskScore).toFixed(2))
-        : "daily summary fallback"
-    );
+    setText("gsRiskSub", riskScore != null ? ("risk score " + Number(riskScore).toFixed(2)) : "daily summary fallback");
 
     setText("gsSentiment", sentimentBalance.label);
     setText("gsSentimentSub", sentimentBalance.detail);
@@ -258,37 +253,44 @@
         vmRes && vmRes.url,
         sumRes && sumRes.url,
         senRes && senRes.url,
-        healthRes && healthRes.url
+        healthRes && healthRes.url,
+        fxRes && fxRes.url
       ) || "runtime latest"
     );
 
     return {
-      viewModel: vm,
+      vmRes: vmRes,
+      healthRes: healthRes,
+      senRes: senRes,
+      sumRes: sumRes,
+      fxRes: fxRes,
+      vm: vm,
       health: health,
       sentiment: sentiment,
       summary: summary,
       fxDecision: fxDecision,
-      meta: {
-        updated: updated,
-        riskScore: riskScore,
-        riskLevel: riskLevel,
-        articles: articles
-      }
+      updated: updated,
+      riskScore: riskScore,
+      riskLevel: riskLevel,
+      sentimentBalance: sentimentBalance,
+      fxRegime: fxRegime,
+      articles: articles
     };
   }
 
   window.GPGlobalStatus = {
+    fetchJson: fetchJson,
+    pickFirstOk: pickFirstOk,
+    firstNumber: firstNumber,
+    firstString: firstString,
+    toLevelFromRisk: toLevelFromRisk,
+    normalizeRisk: normalizeRisk,
+    normalizeSentimentBalance: normalizeSentimentBalance,
+    normalizeFxRegime: normalizeFxRegime,
+    normalizeArticles: normalizeArticles,
+    normalizeUpdated: normalizeUpdated,
     load: loadGlobalStatus,
-    setRiskClass: setRiskClass,
-    helpers: {
-      firstNumber: firstNumber,
-      firstString: firstString,
-      normalizeRisk: normalizeRisk,
-      normalizeSentimentBalance: normalizeSentimentBalance,
-      normalizeArticles: normalizeArticles,
-      normalizeUpdated: normalizeUpdated,
-      normalizeFxRegime: normalizeFxRegime,
-      toLevelFromRisk: toLevelFromRisk
-    }
+    setText: setText,
+    setRiskClass: setRiskClass
   };
 })();

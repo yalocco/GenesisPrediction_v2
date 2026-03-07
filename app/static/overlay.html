@@ -4,8 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Overlay - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260307-gso2" />
-  <script src="/static/_shared_nav.js?v=20260307-gso2"></script>
+  <link rel="stylesheet" href="/static/app.css?v=20260307-gso3" />
+  <script src="/static/_shared_nav.js?v=20260307-gso3"></script>
+  <script src="/static/common/global_status.js?v=20260307-gso3"></script>
   <style>
     .overlay-hero{margin-bottom:14px;}
     .overlay-pills{margin-top:10px;}
@@ -169,219 +170,133 @@
 (function(){
   "use strict";
 
-  function safeText(x){ return (x==null) ? "" : String(x); }
-  function setText(id, v){ var el=document.getElementById(id); if(el) el.textContent = safeText(v); }
-  function setHref(id, v){ var el=document.getElementById(id); if(el) el.href = v || "#"; }
-  function setImg(id, v){ var el=document.getElementById(id); if(el) el.src = v || ""; }
-
-  function setRiskClass(id, level){
-    var el = document.getElementById(id);
-    if(!el) return;
-    el.classList.remove("risk-low","risk-medium","risk-high","risk-missing");
-    if(level === "LOW") el.classList.add("risk-low");
-    else if(level === "MEDIUM") el.classList.add("risk-medium");
-    else if(level === "HIGH") el.classList.add("risk-high");
-    else el.classList.add("risk-missing");
+  function safeText(x){
+    return (x == null) ? "" : String(x);
   }
 
-  async function fetchJson(url){
-    const r = await fetch(url, {cache:"no-store"});
-    if(!r.ok) throw new Error("HTTP " + r.status);
-    return await r.json();
+  function setText(id, v){
+    var el = document.getElementById(id);
+    if(el) el.textContent = safeText(v);
+  }
+
+  function setHref(id, v){
+    var el = document.getElementById(id);
+    if(el) el.href = v || "#";
+  }
+
+  function setImg(id, v){
+    var el = document.getElementById(id);
+    if(el) el.src = v || "";
   }
 
   async function urlExists(url){
     try{
-      const r = await fetch(url + (url.indexOf("?")>=0 ? "&" : "?") + "_t=" + Date.now(), {method:"HEAD", cache:"no-store"});
+      var r = await fetch(
+        url + (url.indexOf("?") >= 0 ? "&" : "?") + "_t=" + Date.now(),
+        { method: "HEAD", cache: "no-store" }
+      );
       return r.ok;
     }catch(_e){
       return false;
     }
   }
 
-  function firstNumber(){
-    for(let i=0;i<arguments.length;i++){
-      const v = arguments[i];
-      if(typeof v === "number" && !Number.isNaN(v)) return v;
-      if(typeof v === "string" && v.trim() !== "" && !Number.isNaN(Number(v))) return Number(v);
+  async function pickFirstImage(urls){
+    for(var i = 0; i < urls.length; i++){
+      var u = urls[i];
+      try{
+        var ok = await urlExists(u);
+        if(ok) return { url: u };
+      }catch(_e){}
     }
     return null;
   }
 
-  function firstString(){
-    for(let i=0;i<arguments.length;i++){
-      const v = arguments[i];
-      if(typeof v === "string" && v.trim()) return v.trim();
-    }
-    return "";
+  async function pickFirstJson(urls){
+    return await window.GPGlobalStatus.pickFirstOk(urls).then(function(res){
+      if(!res) return null;
+      return { url: res.url, data: res.json };
+    });
   }
 
-  function toLevelFromRisk(v){
-    if(v == null) return "—";
-    if(v >= 0.72) return "HIGH";
-    if(v >= 0.42) return "MEDIUM";
-    return "LOW";
-  }
-
-  function normalizeRisk(summary, sentiment){
-    const summaryRisk = firstNumber(summary && summary.risk_score, summary && summary.risk, summary && summary.riskScore);
-    if(summaryRisk != null) return summaryRisk;
-    const s = sentiment && (sentiment.summary || sentiment.today || sentiment.sentiment_summary || sentiment);
-    return firstNumber(s && s.risk, s && s.risk_score, s && s.riskScore);
-  }
-
-  function normalizeSentimentBalance(sentiment){
-    if(!sentiment) return {label:"—", detail:"sentiment missing"};
-    const s = sentiment.summary || sentiment.today || sentiment.sentiment_summary || sentiment;
-    const pos = firstNumber(s && s.positive_count, s && s.positive, s && s.pos_count);
-    const neg = firstNumber(s && s.negative_count, s && s.negative, s && s.neg_count);
-    const neu = firstNumber(s && s.neutral_count, s && s.neutral);
-    const mix = firstNumber(s && s.mixed_count, s && s.mixed);
-
-    if(pos != null || neg != null || neu != null || mix != null){
-      const pairs = [["POS", pos || 0], ["NEG", neg || 0], ["NEU", neu || 0], ["MIX", mix || 0]].sort(function(a,b){ return b[1] - a[1]; });
-      const top = pairs[0];
-      return {label: top[0], detail: "pos " + (pos||0) + " / neg " + (neg||0) + " / neu " + (neu||0) + " / mix " + (mix||0)};
+  function extractDecision(obj){
+    if(!obj){
+      return {
+        decision: "—",
+        reason: "Decision JSON not available."
+      };
     }
 
-    const items = Array.isArray(sentiment.items) ? sentiment.items : [];
-    if(items.length){
-      const counts = {positive:0, negative:0, neutral:0, mixed:0, unknown:0};
-      items.forEach(function(it){
-        const label = firstString(it.sentiment_label, it.sentiment, it.label).toLowerCase();
-        if(Object.prototype.hasOwnProperty.call(counts, label)) counts[label] += 1;
-        else counts.unknown += 1;
-      });
-      const top = Object.entries(counts).sort(function(a,b){ return b[1] - a[1]; })[0];
-      return {label: top ? top[0].toUpperCase() : "—", detail: "items " + items.length};
-    }
+    var d = obj.decision || obj.action || obj.status || obj.recommendation || "—";
+    var r = obj.reason || obj.rationale || obj.message || obj.note || "";
 
-    return {label:"—", detail:"no sentiment stats"};
+    return {
+      decision: safeText(d),
+      reason: safeText(r) || "Decision JSON loaded, but no reason field was found."
+    };
   }
 
-  function normalizeArticles(vm, sentiment){
-    if(vm){
-      const sectionCards = Array.isArray(vm.sections) ? vm.sections.reduce(function(n, sec){ return n + (Array.isArray(sec.cards) ? sec.cards.length : 0); }, 0) : null;
-      const articles = firstNumber(vm && vm.meta && vm.meta.items, vm && vm.sentiment_summary && vm.sentiment_summary.articles, vm && vm.today && vm.today.sentiment_summary && vm.today.sentiment_summary.articles, sectionCards);
-      if(articles != null) return articles;
-    }
-    if(sentiment && Array.isArray(sentiment.items)) return sentiment.items.length;
-    return null;
-  }
-
-  function normalizeUpdated(vm, summary, sentiment, health){
-    return firstString(vm && vm.date, vm && vm.as_of, summary && summary.date, summary && summary.as_of, sentiment && sentiment.date, sentiment && sentiment.as_of, health && health.date, health && health.as_of) || "--";
-  }
-
-  const STATUS_CANDIDATES = {
-    viewModel: ["/data/digest/view_model_latest.json", "/data/world_politics/analysis/view_model_latest.json"],
-    health: ["/data/digest/health_latest.json", "/data/world_politics/analysis/health_latest.json"],
-    summary: ["/data/digest/daily_summary_latest.json", "/data/world_politics/analysis/daily_summary_latest.json"],
-    sentiment: ["/data/world_politics/analysis/sentiment_latest.json", "/data/digest/sentiment_latest.json"]
-  };
-
-  const MAP = {
+  var MAP = {
     JPYTHB: {
       pairLabel: "JPYTHB",
-      imgCandidates: ["/data/fx/fx_overlay_latest_jpythb.png", "/data/fx/jpy_thb_remittance_overlay.png", "/data/fx/fx_jpy_thb_overlay.png"],
-      decisionCandidates: ["/data/fx/fx_decision_latest_jpythb.json", "/data/fx/fx_decision_latest.json"],
+      imgCandidates: [
+        "/data/fx/fx_overlay_latest_jpythb.png",
+        "/data/fx/jpy_thb_remittance_overlay.png",
+        "/data/fx/fx_jpy_thb_overlay.png"
+      ],
+      decisionCandidates: [
+        "/data/fx/fx_decision_latest_jpythb.json",
+        "/data/fx/fx_decision_latest.json"
+      ],
       note: "Primary files exist in current FX lane. Remittance overlay should usually render."
     },
     USDJPY: {
       pairLabel: "USDJPY",
-      imgCandidates: ["/data/fx/fx_overlay_latest_usdjpy.png", "/data/fx/fx_jpy_usd_overlay.png"],
-      decisionCandidates: ["/data/fx/fx_decision_latest_usdjpy.json", "/data/fx/fx_decision_latest.json"],
+      imgCandidates: [
+        "/data/fx/fx_overlay_latest_usdjpy.png",
+        "/data/fx/fx_jpy_usd_overlay.png"
+      ],
+      decisionCandidates: [
+        "/data/fx/fx_decision_latest_usdjpy.json",
+        "/data/fx/fx_decision_latest.json"
+      ],
       note: "USDJPY uses existing latest overlay image. Pair-specific decision may fall back to global decision JSON."
     },
     USDTHB: {
       pairLabel: "USDTHB",
-      imgCandidates: ["/data/fx/fx_overlay_latest_usdthb.png", "/data/fx/fx_multi_usd_thb_overlay.png"],
-      decisionCandidates: ["/data/fx/fx_decision_latest_usdthb.json", "/data/fx/fx_decision_latest.json"],
+      imgCandidates: [
+        "/data/fx/fx_overlay_latest_usdthb.png",
+        "/data/fx/fx_multi_usd_thb_overlay.png"
+      ],
+      decisionCandidates: [
+        "/data/fx/fx_decision_latest_usdthb.json",
+        "/data/fx/fx_decision_latest.json"
+      ],
       note: "USDTHB pair-specific latest files are not present yet. This page falls back to existing multi overlay image and global decision JSON when available."
     },
     MULTI: {
       pairLabel: "MULTI",
-      imgCandidates: ["/data/fx/fx_overlay_multi_latest.png", "/data/fx/fx_multi_overlay.png"],
-      decisionCandidates: ["/data/fx/fx_decision_latest_multi.json", "/data/fx/fx_decision_latest.json"],
+      imgCandidates: [
+        "/data/fx/fx_overlay_multi_latest.png",
+        "/data/fx/fx_multi_overlay.png"
+      ],
+      decisionCandidates: [
+        "/data/fx/fx_decision_latest_multi.json",
+        "/data/fx/fx_decision_latest.json"
+      ],
       note: "Multi overlay uses shared aggregate image. Pair-specific decision may not exist."
     }
   };
 
-  async function pickFirstJson(urls){
-    for(const u of urls){
-      try{
-        const j = await fetchJson(u);
-        return {url:u, data:j};
-      }catch(_e){}
-    }
-    return null;
-  }
-
-  async function pickFirstImage(urls){
-    for(const u of urls){
-      try{
-        const ok = await urlExists(u);
-        if(ok) return {url:u};
-      }catch(_e){}
-    }
-    return null;
-  }
-
-  function extractDecision(obj){
-    if(!obj) return {decision:"—", reason:"Decision JSON not available."};
-    const d = obj.decision || obj.action || obj.status || obj.recommendation || "—";
-    const r = obj.reason || obj.rationale || obj.message || obj.note || "";
-    return {decision: safeText(d), reason: safeText(r) || "Decision JSON loaded, but no reason field was found."};
-  }
-
-  async function loadGlobalStatus(fxObj, pairLabel){
-    const vmRes = await pickFirstJson(STATUS_CANDIDATES.viewModel);
-    const healthRes = await pickFirstJson(STATUS_CANDIDATES.health);
-    const senRes = await pickFirstJson(STATUS_CANDIDATES.sentiment);
-    const sumRes = await pickFirstJson(STATUS_CANDIDATES.summary);
-
-    const vm = vmRes && vmRes.data;
-    const health = healthRes && healthRes.data;
-    const sentiment = senRes && senRes.data;
-    const summary = sumRes && sumRes.data;
-
-    const updated = normalizeUpdated(vm, summary, sentiment, health);
-    const riskScore = normalizeRisk(summary, sentiment);
-    const riskLevel = toLevelFromRisk(riskScore);
-    const sentimentBalance = normalizeSentimentBalance(sentiment);
-    const articles = normalizeArticles(vm, sentiment);
-
-    setText("pillAsOf", "as_of: " + updated);
-    setText("pillReady", "Ready");
-
-    setText("gsRisk", riskLevel);
-    setRiskClass("gsRisk", riskLevel);
-    setText("gsRiskSub", riskScore != null ? ("risk score " + Number(riskScore).toFixed(2)) : "daily summary fallback");
-
-    setText("gsSentiment", sentimentBalance.label);
-    setText("gsSentimentSub", sentimentBalance.detail);
-
-    const fxLabel = firstString(fxObj && fxObj.regime, fxObj && fxObj.decision, fxObj && fxObj.action, fxObj && fxObj.status, fxObj && fxObj.recommendation) || "—";
-    const fxReason = firstString(fxObj && fxObj.reason, fxObj && fxObj.rationale, fxObj && fxObj.message, fxObj && fxObj.note) || (pairLabel + " fallback");
-    setText("gsFx", fxLabel.toUpperCase());
-    setText("gsFxSub", fxReason);
-
-    setText("gsArticles", articles != null ? String(articles) : "—");
-    setText("gsArticlesSub", vmRes ? "digest latest" : "sentiment fallback");
-
-    setText("gsUpdated", updated);
-    setText("gsUpdatedSub", firstString(vmRes && vmRes.url, sumRes && sumRes.url, senRes && senRes.url, healthRes && healthRes.url) || "runtime latest");
-  }
-
   async function loadPair(pair){
-    const conf = MAP[pair] || MAP.JPYTHB;
+    var conf = MAP[pair] || MAP.JPYTHB;
 
     setText("pairPill", "pair: " + conf.pairLabel);
     setText("pairNote", conf.note);
 
-    const imagePicked = await pickFirstImage(conf.imgCandidates);
+    var imagePicked = await pickFirstImage(conf.imgCandidates);
     if(imagePicked){
-      const imgUrl = imagePicked.url + "?t=" + Date.now();
+      var imgUrl = imagePicked.url + "?t=" + Date.now();
       setImg("img", imgUrl);
       setHref("btnOpenImage", imgUrl);
       setText("srcImage", "source: " + imagePicked.url);
@@ -393,12 +308,9 @@
       setText("imageStateKpi", "MISS");
     }
 
-    const jsonPicked = await pickFirstJson(conf.decisionCandidates);
-    let fxObj = null;
-
+    var jsonPicked = await pickFirstJson(conf.decisionCandidates);
     if(jsonPicked){
-      fxObj = jsonPicked.data;
-      const ex = extractDecision(jsonPicked.data);
+      var ex = extractDecision(jsonPicked.data);
       setText("decision", ex.decision);
       setText("reason", ex.reason);
       setText("decisionKpi", ex.decision);
@@ -418,12 +330,21 @@
       setText("sourcePill", conf.pairLabel + " files missing");
     }
 
-    await loadGlobalStatus(fxObj, conf.pairLabel);
+    try{
+      await window.GPGlobalStatus.load({
+        fxDecisionCandidates: conf.decisionCandidates
+      });
+    }catch(e){
+      setText("pillReady", "Error");
+      console.warn(e);
+    }
   }
 
-  const sel = document.getElementById("pair");
+  var sel = document.getElementById("pair");
   if(sel){
-    sel.addEventListener("change", function(){ loadPair(sel.value); });
+    sel.addEventListener("change", function(){
+      loadPair(sel.value);
+    });
   }
 
   loadPair("JPYTHB");
