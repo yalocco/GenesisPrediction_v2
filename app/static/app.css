@@ -1,4 +1,3 @@
-
 body{
   margin:0;
   font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
@@ -7,28 +6,77 @@ body{
   color:#e9eefc;
 }
 
+/* ===============================
+   Topbar
+================================ */
+
 .topbar{
   position:sticky;
   top:0;
   backdrop-filter: blur(10px);
   background:rgba(7,10,18,.8);
   border-bottom:1px solid rgba(255,255,255,.08);
+  z-index:1000;
 }
 
 .topbar-inner{
-  max-width:1200px;
-  margin:0 auto;
-  padding:10px 20px;
   display:flex;
   justify-content:space-between;
   align-items:center;
 }
 
-.brand{display:flex;align-items:center;gap:10px;}
-.brand-dot{width:10px;height:10px;border-radius:50%;background:#6aa4ff;}
-.brand-title{font-weight:600;font-size:14px;}
+/* ===============================
+   Container (Genesis標準幅)
+================================ */
 
-.topnav{display:flex;gap:10px;flex-wrap:wrap;}
+.container{
+  width:min(1240px, calc(100% - 28px));
+  margin:0 auto;
+}
+
+/* header container */
+
+.topbar .container{
+  padding:10px 0;
+}
+
+/* page container */
+
+.page.container{
+  padding:40px 0 80px;
+}
+
+/* ===============================
+   Brand
+================================ */
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.brand-dot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:#6aa4ff;
+}
+
+.brand-title{
+  font-weight:600;
+  font-size:14px;
+}
+
+/* ===============================
+   Navigation
+================================ */
+
+.topnav{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
 
 .pill{
   padding:6px 12px;
@@ -38,6 +86,11 @@ body{
   font-size:12px;
   text-decoration:none;
   color:#e9eefc;
+  transition:all .15s ease;
+}
+
+.pill:hover{
+  background:rgba(255,255,255,.08);
 }
 
 .pill.active{
@@ -46,13 +99,19 @@ body{
 }
 
 .pill.good .dot{
-  width:8px;height:8px;border-radius:50%;
+  width:8px;
+  height:8px;
+  border-radius:50%;
   background:#31d07f;
   display:inline-block;
 }
 
+/* ===============================
+   Legacy support (旧page)
+================================ */
+
 .page{
-  max-width:1200px;
+  width:min(1240px, calc(100% - 28px));
   margin:0 auto;
-  padding:40px 20px 80px;
+  padding:40px 0 80px;
 }
