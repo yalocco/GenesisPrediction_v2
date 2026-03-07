@@ -1,228 +1,514 @@
-# docs/ai_startup_protocol.md
+# AI Startup Protocol
+GenesisPrediction v2
 
-````md
-# AI Startup Protocol (GenesisPrediction v2)
-
-Version: 1.0
 Status: Active
-Last Updated: 2026-03-06
+Purpose: 新しいAIがGenesisPredictionを正しく起動・理解・作業開始するための公式プロトコル
+Last Updated: 2026-03-07
 
 ---
 
-# 0. 目的
+# 0. Purpose
 
-本ドキュメントは  
-GenesisPrediction v2 において **新しいAIをどう起動するか** を固定するための公式手順である。
+このドキュメントは
 
-目的：
+```text
+AI起動プロトコル
+````
 
-- 新しいスレでも同じ前提で開始する
-- AIに毎回構造説明をやり直さない
-- Chat Memory ではなく Repository Memory を優先させる
-- AIの初動ミスを防ぐ
+である。
+
+目的
+
+* 新しいAIが最短で GenesisPrediction v2 を理解できるようにする
+* スレ変更、PC変更、AI変更が起きても同じ前提で再開できるようにする
+* Repository Memory を入口から順に読み込めるようにする
+* 推測ではなく、固定化された設計知識に基づいて作業を始められるようにする
+
+対象
+
+```text
+ChatGPT
+Open-WebUI
+ローカルLLM
+新しいAIスレ
+新しいPC
+```
 
 ---
 
-# 1. 基本原則
+# 1. Startup Goal
 
-GenesisPrediction v2 では  
-AIは **Chat Memory ではなく Repository Memory（docs）を優先**する。
+AI起動時に達成すべきことは以下である。
 
-知識構造：
-
-Chat Memory  
+```text
+プロジェクトの目的を理解する
 ↓
-Repository Memory  
+システム構造を理解する
 ↓
-Project Knowledge  
-
-AIは起動時に必ず
-
-- ai_bootstrap_prompt.md
-- Repository Memory
-- project_status.md
-
-を基準に動く。
-
----
-
-# 2. 起動時に最初に読むファイル
-
-新しいAIは、まず以下を読む。
-
-## 最優先
-
-- `docs/ai_bootstrap_prompt.md`
-
-## 主要知識
-
-- `docs/repo_map.md`
-- `docs/repo_architecture.md`
-- `docs/project_status.md`
-- `docs/pipeline_system.md`
-- `docs/ui_system.md`
-- `docs/genesis_brain.md`
-- `docs/chat_operating_rules.md`
-
-## 必要時に読む
-
-- `docs/runbook_morning.md`
-- `docs/working_agreement.md`
-- `docs/gui_phase2_working_rules.md`
+SSTを理解する
+↓
+運用ルールを理解する
+↓
+現在地を理解する
+↓
+そのスレの作業へ入る
+```
 
 ---
 
-# 3. 起動手順（標準）
+# 2. First Principle
+
+GenesisPrediction v2 の最重要原則
+
+```text
+analysis = 唯一の真実
+```
+
+つまり
+
+```text
+scripts → analysis を生成
+UI → analysis を読む
+UI → 再計算しない
+```
+
+AIはこの原則を絶対に崩してはならない。
+
+---
+
+# 3. System Overview
+
+GenesisPrediction v2 は
+
+```text
+世界観測AI
+```
+
+を構築する研究プロジェクトである。
+
+目的
+
+```text
+世界の変化を観測
+↓
+パターン理解
+↓
+未来リスク予測
+↓
+判断支援
+```
+
+用途
+
+```text
+家族の安全
+資産防衛
+世界理解
+```
+
+---
+
+# 4. Core Architecture
+
+GenesisPrediction v2 のシステム構造
+
+```text
+data
+↓
+scripts
+↓
+analysis
+↓
+prediction
+↓
+UI
+```
+
+役割
+
+```text
+data        = 素材
+scripts     = データ生成
+analysis    = 真実 (Single Source of Truth)
+prediction  = 未来推定
+UI          = 表示
+```
+
+---
+
+# 5. Official Load Order
+
+AIは以下の順で知識をロードする。
 
 ## Step 1
 
-AIに以下を与える。
+```text
+docs/ai_quick_context.md
+```
+
+役割
 
 ```text
-docs/ai_bootstrap_prompt.md を前提知識として扱ってください。
-````
+20秒理解
+```
 
 ---
 
 ## Step 2
 
-AIが Repository Memory を参照することを確認する。
+```text
+docs/repository_memory_index.md
+```
 
-最低限、以下を前提にしていること。
+役割
 
-* `repo_map.md`
-* `project_status.md`
-* `pipeline_system.md`
-* `ui_system.md`
+```text
+Repository Memory の入口
+```
 
 ---
 
 ## Step 3
 
-そのスレでの **今回の1作業** を与える。
+```text
+docs/genesis_system_map.md
+```
 
-例：
-
-* Sentiment分類の有効化を続ける
-* Digest UI の依存JSONを確定する
-* Morning Ritual のwarn原因を切り分ける
-
----
-
-# 4. 起動後のAIルール
-
-AIは必ず以下を守る。
-
-* 1ターン = 1作業
-* 差分修正禁止
-* 完全ファイル提示
-* 長大ファイルはダウンロード運用
-* UIは analysis を読むだけ
-* analysis を手動で真実化しない
-
----
-
-# 5. 問題発生時の判断順
-
-## UIが壊れた
-
-1. analysis を確認
-2. analysis が正しい → GUI問題
-3. analysis が壊れている → scripts問題
-
-## 数値が出ない
-
-1. analysis を確認
-2. scripts の生成状況を見る
-3. data を確認する
-
-## パイプライン停止
-
-* `scripts/` を確認する
-* `runbook_morning.md` を参照する
-
----
-
-# 6. AIごとの使い方
-
-## 6.1 ChatGPT 新スレ
-
-新スレ1投稿目に、以下のどちらかを貼る。
-
-### 標準
-
-`docs/ai_bootstrap_prompt.md` の全文
-
-### 短縮
+役割
 
 ```text
-GenesisPrediction v2 の作業です。
-docs/ai_bootstrap_prompt.md を前提に進めてください。
-今回の作業は project_status.md の Next Action を基準にします。
+システム全体構造の把握
 ```
 
 ---
 
-## 6.2 Open-WebUI / ローカルLLM
+## Step 4
 
-セッション開始時に以下を与える。
+Core Architecture を読む
 
 ```text
-GenesisPrediction v2 の開発を開始します。
-まず docs/ai_bootstrap_prompt.md を読んで、Repository Memory を優先してください。
+docs/repo_map.md
+docs/pipeline_system.md
+docs/ui_system.md
+docs/ui_data_dependencies.md
+docs/analysis_data_schema.md
+docs/prediction_architecture.md
+docs/genesis_prediction_roadmap.md
 ```
 
-必要なら Knowledge Source として以下を登録する。
+役割
 
-* `docs/repo_map.md`
-* `docs/repo_architecture.md`
-* `docs/project_status.md`
-* `docs/pipeline_system.md`
-* `docs/ui_system.md`
-* `docs/genesis_brain.md`
-* `docs/chat_operating_rules.md`
-
----
-
-# 7. 起動成功の条件
-
-以下をAIが理解していれば、起動成功とする。
-
-* `analysis/` が Runtime SST
-* `scripts/` が生成
-* `app/static/` が表示
-* 今回の作業が何か
-* 完全ファイル運用ルール
-* 1ターン = 1作業
+```text
+構造
+生成フロー
+UI依存
+analysis schema
+予測設計
+長期進化計画
+```
 
 ---
 
-# 8. 禁止事項
+## Step 5
 
-* Chat履歴だけを前提に作業する
-* docs を読まずに構造を推測する
-* UI側で再計算を始める
-* 差分パッチを出す
-* 1ターンで複数案件を混ぜる
+Project Philosophy を読む
+
+```text
+docs/genesis_brain.md
+```
+
+役割
+
+```text
+設計思想
+Human + AI 共同研究の軸
+```
 
 ---
 
-# 9. 結論
+## Step 6
 
-GenesisPrediction v2 のAIは
+Operation / Debug を読む
 
-AI Bootstrap
+```text
+docs/runbook_morning.md
+docs/debug_playbook.md
+```
+
+役割
+
+```text
+通常運用
+異常時の切り分け
+```
+
+---
+
+## Step 7
+
+Development Rules を読む
+
+```text
+docs/working_agreement.md
+docs/chat_operating_rules.md
+docs/gui_phase2_working_rules.md
+docs/thread_templates.md
+docs/ai_thread_start_template.md
+docs/ai_rules.md
+```
+
+役割
+
+```text
+共同作業ルール
+スレ運用
+GUI安全運用
+AI絶対ルール
+```
+
+---
+
+## Step 8
+
+System Memory を読む
+
+```text
+docs/system_history.md
+docs/decision_log.md
+docs/project_status.md
+```
+
+役割
+
+```text
+過去の変更
+設計判断
+現在地
+```
+
+---
+
+## Step 9
+
+必要時のみ Optional を読む
+
+```text
+docs/labos_business_model.md
+```
+
+役割
+
+```text
+LABOS公開
+価値提供
+収益化構想
+```
+
+---
+
+# 6. Runtime Understanding
+
+GenesisPrediction v2 は
+
+```text
+Morning Ritual
+```
+
+で毎日動く。
+
+AIはまずこれを理解する。
+
+標準概略
+
+```text
+git pull
 ↓
-Repository Memory
+run_daily_with_publish
 ↓
-Project Knowledge
+FX lane
+↓
+build_data_health
+↓
+save_observation_memory
+↓
+build_sentiment_trend
+↓
+GUI確認
+```
 
-の順で起動する。
+Morning Ritual は GenesisPrediction の心拍である。
+起動後のAIは、これを壊す提案をしてはならない。
 
-この順序を守ることで、
-AIは毎回 **同じ構造理解から安全に作業開始**できる。
+---
+
+# 7. Current Evolution Stage
+
+GenesisPrediction は段階的に進化する。
+
+```text
+観測AI
+↓
+時系列AI
+↓
+予測AI
+↓
+判断AI
+```
+
+現時点では
+
+```text
+Observation System
+↓
+Observation Memory
+↓
+Trend Engine
+```
+
+まで進んでいる。
+
+つまり
+
+```text
+analysis = 現在の真実
+history  = 観測記憶
+trend    = 時系列解釈
+prediction = 次フェーズ
+```
+
+である。
+
+---
+
+# 8. AI Behavior Rules
+
+AIは以下を守る。
+
+```text
+1ターン = 1作業
+差分修正禁止
+完全ファイル提示
+大きなファイルはダウンロード運用
+UIで分析ロジックを持たない
+推測せず、analysis / data / docs を確認する
+```
+
+特に
+
+```text
+app/static
+```
+
+は事故が起きやすいため慎重に扱う。
+
+---
+
+# 9. What AI Must Verify Before Acting
+
+AIが変更提案をする前に確認すべきこと
+
+```text
+1. この問題は scripts / analysis / UI のどこに属するか
+2. analysis が正しいか
+3. Repository Memory に既存ルールがあるか
+4. Morning Ritual を壊さないか
+5. その変更は 1作業として独立しているか
+```
+
+---
+
+# 10. Startup Output Requirement
+
+AI起動後、最初の出力で最低限把握すべき内容
+
+```text
+このプロジェクトは何か
+SSTは何か
+現在の層構造はどうなっているか
+今どのフェーズにいるか
+このスレの目的は何か
+次の1手は何か
+```
+
+---
+
+# 11. Standard Startup Summary Format
+
+AIは必要に応じて以下の形式で理解を要約してよい。
+
+```text
+Project:
+GenesisPrediction v2 は世界観測AI研究プロジェクト
+
+SST:
+analysis が唯一の真実
+
+Structure:
+data → scripts → analysis → prediction → UI
+
+Runtime:
+Morning Ritual が日次運用の中核
+
+Current Stage:
+Observation System + Memory Layer + Trend Engine
+
+This Thread:
+このスレの目的
+
+Next Action:
+次の1手
+```
+
+---
+
+# 12. Failure Prevention
+
+AIは以下をしてはならない。
+
+```text
+UIで再計算する
+analysis を手動編集前提で提案する
+Morning Ritual 中に構造変更を混ぜる
+複数案件を1ターンで混ぜる
+大きなGUIファイルをブラウザコピペ前提で扱う
+```
+
+---
+
+# 13. Final Principle
+
+GenesisPrediction は
+
+```text
+Human + AI
+```
+
+の共同研究プロジェクトである。
+
+Human
+
+```text
+目的
+判断
+倫理
+最終決定
+```
+
+AI
+
+```text
+観測
+分析
+設計補助
+コード生成
+構造整理
+```
+
+AIは人間の目的に従い、
+GenesisPrediction の長期安定と発展に資する提案を行うこと。
 
 ---
 
 END OF DOCUMENT
 
+```
