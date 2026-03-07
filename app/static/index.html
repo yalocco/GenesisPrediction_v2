@@ -4,221 +4,139 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Home - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260307v2" />
-  <script src="/static/_shared_nav.js?v=20260307v2"></script>
+  <link rel="stylesheet" href="/static/app.css?v=20260307-gsb1" />
+  <script src="/static/_shared_nav.js?v=20260307-gsb1"></script>
   <style>
-    .hero{margin-top:18px;display:flex;flex-direction:column;gap:14px}
-    .hero-title{font-size:48px;line-height:1.02;font-weight:700;letter-spacing:-0.03em}
-    .hero-sub{font-size:20px;line-height:1.7;color:var(--muted,#a9b4c7);max-width:980px}
-    .meta-row{display:flex;flex-wrap:wrap;gap:12px}
-    .section-stack{display:flex;flex-direction:column;gap:18px;margin-top:18px}
-    .section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
-    .section-copy{display:flex;flex-direction:column;gap:6px}
-    .section-kicker{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#92a1b8)}
-    .section-title-xl{font-size:22px;line-height:1.25;font-weight:650}
-    .section-note{font-size:13px;color:var(--muted,#8fa2bf)}
-    .status-dot{display:inline-block;width:10px;height:10px;border-radius:999px;background:#2bd576;box-shadow:0 0 0 4px rgba(43,213,118,.12)}
-    .status-dot.warn{background:#f5c542;box-shadow:0 0 0 4px rgba(245,197,66,.12)}
-    .status-dot.ng{background:#ff6b6b;box-shadow:0 0 0 4px rgba(255,107,107,.12)}
-    .kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
-    .kpi-card{border:1px solid rgba(145,166,211,.16);border-radius:18px;padding:16px 18px;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01))}
-    .kpi-label{font-size:12px;color:var(--muted,#9ca9bd);margin-bottom:10px;text-transform:lowercase;letter-spacing:.06em}
-    .kpi-value{font-size:38px;line-height:1;font-weight:700;letter-spacing:-0.03em}
-    .kpi-sub{margin-top:8px;font-size:12px;color:var(--muted,#8ea0b8)}
-    .summary-text{font-size:15px;line-height:1.8;color:var(--fg,#eef4ff);white-space:pre-wrap}
-    .events-list{display:grid;grid-template-columns:1fr;gap:10px}
-    .event-item{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid rgba(145,166,211,.12);border-radius:16px;background:rgba(255,255,255,.015)}
-    .event-rank{flex:0 0 28px;height:28px;border-radius:999px;display:grid;place-items:center;font-size:12px;font-weight:700;border:1px solid rgba(105,169,255,.28);color:#b8d2ff;background:rgba(105,169,255,.08)}
-    .event-body{min-width:0;display:flex;flex-direction:column;gap:4px}
-    .event-title{font-size:15px;line-height:1.5;color:#dce8ff}
-    .event-meta{font-size:12px;color:var(--muted,#94a5bf)}
-    .health-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-    .health-box{border:1px solid rgba(145,166,211,.12);border-radius:16px;padding:14px 16px;background:rgba(255,255,255,.015)}
-    .health-name{font-size:12px;color:var(--muted,#95a5bc);text-transform:uppercase;letter-spacing:.08em}
-    .health-value{margin-top:8px;font-size:28px;line-height:1;font-weight:700}
-    .health-value.ok{color:#8df0b6}
-    .health-value.warn{color:#ffd768}
-    .health-value.ng{color:#ff9d9d}
-    .source-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
-    .btn.ghost{background:transparent}
-    .mini-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-    .mini-card{border:1px solid rgba(145,166,211,.12);border-radius:16px;padding:14px 16px;background:rgba(255,255,255,.015)}
-    .mini-label{font-size:12px;color:var(--muted,#95a5bc);margin-bottom:8px;text-transform:lowercase;letter-spacing:.06em}
-    .mini-value{font-size:22px;line-height:1.2;font-weight:650}
-    .mono-wrap{white-space:pre-wrap;word-break:break-word}
-    .empty-note{font-size:14px;color:var(--muted,#97a7bf)}
-    @media (max-width: 1100px){
-      .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .health-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
-    }
-    @media (max-width: 760px){
-      .hero-title{font-size:38px}
-      .hero-sub{font-size:16px}
-      .kpi-grid,.health-grid,.mini-grid{grid-template-columns:1fr}
-      .section-head{flex-direction:column;align-items:flex-start}
-    }
+    .home-hero{margin-bottom:14px;}
+    .status-shell{margin-top:14px;padding:14px 16px;border-radius:18px;border:1px solid rgba(120,160,220,.18);background:linear-gradient(180deg, rgba(10,16,30,.66), rgba(7,12,24,.48));box-shadow:0 12px 30px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.04);}
+    .status-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
+    .status-title{font-size:12px;letter-spacing:.18em;text-transform:uppercase;opacity:.82;}
+    .status-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;}
+    .status-item{min-width:0;border:1px solid rgba(120,160,220,.12);border-radius:14px;padding:12px 12px 10px;background:rgba(8,14,28,.22);}
+    .status-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.72;margin-bottom:6px;}
+    .status-value{font-size:24px;line-height:1.05;font-weight:700;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .status-sub{margin-top:4px;font-size:12px;opacity:.72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .home-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px;}
+    .home-kpi{border:1px solid rgba(120,160,220,.16);border-radius:16px;padding:14px 16px;background:rgba(8,14,28,.18);min-height:86px;}
+    .home-kpi .hint{margin-bottom:6px;}
+    .home-kpi .value{font-size:31px;line-height:1.05;letter-spacing:-0.02em;font-weight:600;}
+    .home-pre{white-space:pre-wrap;word-break:break-word;}
+    @media (max-width: 1100px){.status-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.home-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}}
+    @media (max-width: 700px){.status-grid{grid-template-columns:1fr;}.home-kpis{grid-template-columns:1fr;}}
   </style>
 </head>
 <body>
 <main class="gp-main">
   <div class="page gp-page gp-page--sentiment">
     <section class="panel">
-      <div class="hero">
-        <div class="hero-title">Home</div>
-        <div class="hero-sub">Today snapshot / Daily summary / Sentiment / Data health を、Sentiment / Digest と同じトーンで見やすくまとめます。</div>
-        <div class="meta-row">
-          <span id="pillAsOf" class="pill">as_of: --</span>
-          <span id="pillReady" class="pill">Ready</span>
-          <span id="pillHealth" class="pill">Health: --</span>
-          <span id="pillItems" class="pill">items: --</span>
+      <div class="home-hero">
+        <div class="h1">Home</div>
+        <p class="sub">Today snapshot / Daily summary / Sentiment / Data health をまとめて表示します。</p>
+
+        <div class="status-shell">
+          <div class="status-top">
+            <div class="status-title">Global Status</div>
+            <div class="pillrow">
+              <span id="pillAsOf" class="pill">as_of: --</span>
+              <span id="pillReady" class="pill">loading…</span>
+            </div>
+          </div>
+
+          <div class="status-grid">
+            <div class="status-item">
+              <div class="status-label">Global Risk</div>
+              <div id="gsRisk" class="status-value">—</div>
+              <div id="gsRiskSub" class="status-sub">daily summary / sentiment</div>
+            </div>
+            <div class="status-item">
+              <div class="status-label">Sentiment Balance</div>
+              <div id="gsSentiment" class="status-value">—</div>
+              <div id="gsSentimentSub" class="status-sub">article distribution</div>
+            </div>
+            <div class="status-item">
+              <div class="status-label">FX Regime</div>
+              <div id="gsFx" class="status-value">—</div>
+              <div id="gsFxSub" class="status-sub">decision / fallback</div>
+            </div>
+            <div class="status-item">
+              <div class="status-label">Articles</div>
+              <div id="gsArticles" class="status-value">—</div>
+              <div id="gsArticlesSub" class="status-sub">digest latest</div>
+            </div>
+            <div class="status-item">
+              <div class="status-label">Updated</div>
+              <div id="gsUpdated" class="status-value">—</div>
+              <div id="gsUpdatedSub" class="status-sub">latest runtime stamp</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="home-kpis">
+          <div class="home-kpi">
+            <div class="hint">Events</div>
+            <div id="kpiEvents" class="value">—</div>
+          </div>
+          <div class="home-kpi">
+            <div class="hint">Health OK</div>
+            <div id="kpiHealthOk" class="value">—</div>
+          </div>
+          <div class="home-kpi">
+            <div class="hint">Sentiment Items</div>
+            <div id="kpiSentimentItems" class="value">—</div>
+          </div>
+          <div class="home-kpi">
+            <div class="hint">Summary</div>
+            <div id="kpiSummaryState" class="value">—</div>
+          </div>
         </div>
       </div>
 
-      <div class="section-stack">
+      <div class="grid2" style="margin-top:12px;">
         <div class="card">
-          <div class="section-head">
-            <div class="section-copy">
-              <div class="section-kicker">Snapshot</div>
-              <div class="section-title-xl">Today overview</div>
-              <div class="section-note">Digest / Sentiment / Health から主要数字を集約表示します。</div>
-            </div>
-            <span id="overviewHint" class="pill"><span class="status-dot"></span>&nbsp;loading</span>
+          <div class="sectionTitle">
+            <h2>Events (today)</h2>
+            <span id="evHint" class="hint">loading…</span>
           </div>
-          <div class="kpi-grid">
-            <div class="kpi-card">
-              <div class="kpi-label">articles</div>
-              <div id="kpiArticles" class="kpi-value">--</div>
-              <div class="kpi-sub">digest sentiment summary</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-label">positive</div>
-              <div id="kpiPositive" class="kpi-value">--</div>
-              <div class="kpi-sub">classified articles</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-label">negative</div>
-              <div id="kpiNegative" class="kpi-value">--</div>
-              <div class="kpi-sub">classified articles</div>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-label">mixed</div>
-              <div id="kpiMixed" class="kpi-value">--</div>
-              <div class="kpi-sub">classified articles</div>
-            </div>
+          <div id="evBody" class="mono small home-pre">loading…</div>
+          <div class="pillrow" style="margin-top:10px;">
+            <span id="evSource" class="pill">source: --</span>
           </div>
         </div>
 
         <div class="card">
-          <div class="section-head">
-            <div class="section-copy">
-              <div class="section-kicker">Daily summary</div>
-              <div class="section-title-xl">Summary</div>
-              <div class="section-note">その日の要点を上段で読みやすく表示します。</div>
-            </div>
-            <span id="sumHint" class="pill"><span class="status-dot"></span>&nbsp;loading</span>
+          <div class="sectionTitle">
+            <h2>Data Health</h2>
+            <span id="healthHint" class="hint">loading…</span>
           </div>
-          <div id="sumBody" class="summary-text">loading…</div>
-          <div class="source-row">
+          <div id="healthBody" class="mono small home-pre">loading…</div>
+          <div class="pillrow" style="margin-top:10px;">
+            <a id="btnOpenHealth" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open JSON</a>
+            <span id="healthSource" class="pill">source: --</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-top:12px;">
+        <div class="card">
+          <div class="sectionTitle">
+            <h2>Sentiment</h2>
+            <span id="senHint" class="hint">loading…</span>
+          </div>
+          <div id="senBody" class="mono small home-pre">loading…</div>
+          <div class="pillrow" style="margin-top:10px;">
+            <span id="senSource" class="pill">source: --</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="sectionTitle">
+            <h2>Daily Summary</h2>
+            <span id="sumHint" class="hint">loading…</span>
+          </div>
+          <div id="sumBody" class="mono small home-pre">loading…</div>
+          <div class="pillrow" style="margin-top:10px;">
             <a id="btnOpenSummary" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open JSON</a>
             <span id="sumSource" class="pill">source: --</span>
-          </div>
-        </div>
-
-        <div class="grid2">
-          <div class="card">
-            <div class="section-head">
-              <div class="section-copy">
-                <div class="section-kicker">Highlights</div>
-                <div class="section-title-xl">Events (today)</div>
-                <div class="section-note">Digest の top highlights から先頭数件を抜粋します。</div>
-              </div>
-              <span id="evHint" class="pill"><span class="status-dot"></span>&nbsp;loading</span>
-            </div>
-            <div id="evBody" class="events-list">
-              <div class="empty-note">loading…</div>
-            </div>
-            <div class="source-row">
-              <span id="evSource" class="pill">source: --</span>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="section-head">
-              <div class="section-copy">
-                <div class="section-kicker">Health</div>
-                <div class="section-title-xl">Data Health</div>
-                <div class="section-note">パイプライン状態を数字で一覧表示します。</div>
-              </div>
-              <span id="healthHint" class="pill"><span class="status-dot"></span>&nbsp;loading</span>
-            </div>
-            <div class="health-grid">
-              <div class="health-box">
-                <div class="health-name">OK</div>
-                <div id="healthOk" class="health-value ok">--</div>
-              </div>
-              <div class="health-box">
-                <div class="health-name">WARN</div>
-                <div id="healthWarn" class="health-value warn">--</div>
-              </div>
-              <div class="health-box">
-                <div class="health-name">NG</div>
-                <div id="healthNg" class="health-value ng">--</div>
-              </div>
-            </div>
-            <div class="mini-grid" style="margin-top:12px;">
-              <div class="mini-card">
-                <div class="mini-label">as_of</div>
-                <div id="healthDate" class="mini-value">--</div>
-              </div>
-              <div class="mini-card">
-                <div class="mini-label">total</div>
-                <div id="healthTotal" class="mini-value">--</div>
-              </div>
-            </div>
-            <div class="source-row">
-              <a id="btnOpenHealth" class="btn ghost" href="#" target="_blank" rel="noopener noreferrer">Open JSON</a>
-              <span id="healthSource" class="pill">source: --</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="section-head">
-            <div class="section-copy">
-              <div class="section-kicker">Sentiment</div>
-              <div class="section-title-xl">Sentiment snapshot</div>
-              <div class="section-note">Sentiment ページへ入る前の概要確認用です。</div>
-            </div>
-            <span id="senHint" class="pill"><span class="status-dot"></span>&nbsp;loading</span>
-          </div>
-          <div class="mini-grid">
-            <div class="mini-card">
-              <div class="mini-label">as_of</div>
-              <div id="senDate" class="mini-value">--</div>
-            </div>
-            <div class="mini-card">
-              <div class="mini-label">items</div>
-              <div id="senItems" class="mini-value">--</div>
-            </div>
-            <div class="mini-card">
-              <div class="mini-label">avg risk</div>
-              <div id="senRisk" class="mini-value">--</div>
-            </div>
-            <div class="mini-card">
-              <div class="mini-label">avg positive</div>
-              <div id="senPositive" class="mini-value">--</div>
-            </div>
-            <div class="mini-card">
-              <div class="mini-label">avg uncertainty</div>
-              <div id="senUncertainty" class="mini-value">--</div>
-            </div>
-            <div class="mini-card">
-              <div class="mini-label">source</div>
-              <div id="senSourceInline" class="mini-value mono-wrap" style="font-size:14px;font-weight:500;">--</div>
-            </div>
-          </div>
-          <div class="source-row">
-            <span id="senSource" class="pill">source: --</span>
           </div>
         </div>
       </div>
@@ -230,274 +148,269 @@
 (function(){
   "use strict";
 
-  function safeText(x){ return (x == null) ? "" : String(x); }
-  function setText(id, v){ var el = document.getElementById(id); if(el) el.textContent = safeText(v); }
-  function setHTML(id, v){ var el = document.getElementById(id); if(el) el.innerHTML = v || ""; }
-  function setHref(id, v){ var el = document.getElementById(id); if(el) el.href = v || "#"; }
+  function safeText(x){ return (x==null) ? "" : String(x); }
+  function setText(id, v){ var el=document.getElementById(id); if(el) el.textContent = safeText(v); }
+  function setHref(id, v){ var el=document.getElementById(id); if(el) el.href = v || "#"; }
 
   async function fetchJson(url){
-    const r = await fetch(url, { cache: "no-store" });
+    const r = await fetch(url, {cache:"no-store"});
     if(!r.ok) throw new Error("HTTP " + r.status);
     return await r.json();
   }
 
   const CANDIDATES = {
-    viewModel: [
-      "/data/digest/view_model_latest.json",
-      "/data/world_politics/analysis/view_model_latest.json"
-    ],
-    health: [
-      "/data/digest/health_latest.json",
-      "/data/world_politics/analysis/health_latest.json"
-    ],
-    summary: [
-      "/data/world_politics/analysis/daily_summary_latest.json",
-      "/data/digest/daily_summary_latest.json"
-    ],
-    sentiment: [
-      "/data/world_politics/analysis/sentiment_latest.json",
-      "/data/digest/sentiment_latest.json"
-    ]
+    viewModel: ["/data/digest/view_model_latest.json", "/data/world_politics/analysis/view_model_latest.json"],
+    health: ["/data/digest/health_latest.json", "/data/world_politics/analysis/health_latest.json"],
+    summary: ["/data/digest/daily_summary_latest.json", "/data/world_politics/analysis/daily_summary_latest.json"],
+    sentiment: ["/data/world_politics/analysis/sentiment_latest.json", "/data/digest/sentiment_latest.json"],
+    fxDecision: ["/data/fx/fx_decision_latest.json", "/data/fx/fx_decision_latest_jpythb.json"]
   };
 
   async function pickFirstOk(urls){
     for(const u of urls){
       try{
         const j = await fetchJson(u);
-        return { url: u, json: j };
+        return {url:u, json:j};
       }catch(_e){}
     }
     return null;
   }
 
-  function classifyPill(id, state){
-    var el = document.getElementById(id);
-    if(!el) return;
-    var klass = "status-dot";
-    if(state === "WARN") klass += " warn";
-    if(state === "NG") klass += " ng";
-    var label = state || "--";
-    el.innerHTML = '<span class="' + klass + '"></span>&nbsp;' + label;
+  function firstNumber(){
+    for(let i=0;i<arguments.length;i++){
+      const v = arguments[i];
+      if(typeof v === "number" && !Number.isNaN(v)) return v;
+      if(typeof v === "string" && v.trim() !== "" && !Number.isNaN(Number(v))) return Number(v);
+    }
+    return null;
   }
 
-  function firstNonEmpty(){
-    for(var i=0;i<arguments.length;i++){
-      var v = arguments[i];
-      if(v == null) continue;
-      if(typeof v === "string" && !v.trim()) continue;
-      return v;
+  function firstString(){
+    for(let i=0;i<arguments.length;i++){
+      const v = arguments[i];
+      if(typeof v === "string" && v.trim()) return v.trim();
     }
     return "";
   }
 
-  function formatNum(x, digits){
-    return (typeof x === "number" && isFinite(x)) ? x.toFixed(digits == null ? 3 : digits) : "--";
+  function toLevelFromRisk(v){
+    if(v == null) return "—";
+    if(v >= 0.72) return "HIGH";
+    if(v >= 0.42) return "MEDIUM";
+    return "LOW";
   }
 
-  function collectCards(vm){
-    if(!vm || !Array.isArray(vm.sections)) return [];
-    var cards = [];
-    for(const sec of vm.sections){
-      if(sec && Array.isArray(sec.cards)) cards = cards.concat(sec.cards);
+  function normalizeRisk(summary, sentiment){
+    const summaryRisk = firstNumber(summary && summary.risk_score, summary && summary.risk, summary && summary.riskScore);
+    if(summaryRisk != null) return summaryRisk;
+    const s = sentiment && (sentiment.summary || sentiment.today || sentiment.sentiment_summary || sentiment);
+    return firstNumber(s && s.risk, s && s.risk_score, s && s.riskScore);
+  }
+
+  function normalizeSentimentBalance(sentiment){
+    if(!sentiment) return {label:"—", detail:"sentiment missing"};
+    const s = sentiment.summary || sentiment.today || sentiment.sentiment_summary || sentiment;
+    const pos = firstNumber(s && s.positive_count, s && s.positive, s && s.pos_count);
+    const neg = firstNumber(s && s.negative_count, s && s.negative, s && s.neg_count);
+    const neu = firstNumber(s && s.neutral_count, s && s.neutral);
+    const mix = firstNumber(s && s.mixed_count, s && s.mixed);
+
+    if(pos != null || neg != null || neu != null || mix != null){
+      const pairs = [["POS", pos || 0], ["NEG", neg || 0], ["NEU", neu || 0], ["MIX", mix || 0]].sort(function(a,b){ return b[1] - a[1]; });
+      const top = pairs[0];
+      return {label: top[0], detail: "pos " + (pos||0) + " / neg " + (neg||0) + " / neu " + (neu||0) + " / mix " + (mix||0)};
     }
-    return cards;
+
+    const items = Array.isArray(sentiment.items) ? sentiment.items : [];
+    if(items.length){
+      const counts = {positive:0, negative:0, neutral:0, mixed:0, unknown:0};
+      items.forEach(function(it){
+        const label = firstString(it.sentiment_label, it.sentiment, it.label).toLowerCase();
+        if(Object.prototype.hasOwnProperty.call(counts, label)) counts[label] += 1;
+        else counts.unknown += 1;
+      });
+      const top = Object.entries(counts).sort(function(a,b){ return b[1] - a[1]; })[0];
+      return {label: top ? top[0].toUpperCase() : "—", detail: "items " + items.length};
+    }
+
+    return {label:"—", detail:"no sentiment stats"};
   }
 
-  function escapeHtml(s){
-    return safeText(s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+  function normalizeFxRegime(fx){
+    if(!fx) return {label:"—", detail:"fx decision missing"};
+    const label = firstString(fx.regime, fx.decision, fx.action, fx.status, fx.recommendation) || "—";
+    const detail = firstString(fx.reason, fx.rationale, fx.message, fx.note) || "global decision";
+    return {label: label.toUpperCase(), detail: detail};
   }
 
-  function renderEvents(vm){
-    const cards = collectCards(vm).slice(0, 5);
-    if(!cards.length) return '<div class="empty-note">No highlight cards</div>';
-    return cards.map(function(card, idx){
-      var title = safeText(firstNonEmpty(card.title, card.headline, "(untitled)"));
-      var source = safeText(firstNonEmpty(card.source, card.domain, card.publisher, "—"));
-      var riskVal = firstNonEmpty(card.risk, card.sentiment && card.sentiment.risk, card.risk_score, null);
-      var label = safeText(firstNonEmpty(card.sentiment && (card.sentiment.sentiment_label || card.sentiment.sentiment), card.sentiment_label, card.sentiment, "—"));
-      var riskTxt = (typeof riskVal === "number") ? ('risk ' + riskVal.toFixed(3)) : label;
-      return [
-        '<div class="event-item">',
-          '<div class="event-rank">', (idx + 1), '</div>',
-          '<div class="event-body">',
-            '<div class="event-title">', escapeHtml(title), '</div>',
-            '<div class="event-meta">', escapeHtml(source), ' · ', escapeHtml(riskTxt), '</div>',
-          '</div>',
-        '</div>'
-      ].join('');
-    }).join('');
-  }
+  function normalizeArticles(vm, sentiment){
+    if(vm){
+      const sectionCards = Array.isArray(vm.sections)
+        ? vm.sections.reduce(function(n, sec){ return n + (Array.isArray(sec.cards) ? sec.cards.length : 0); }, 0)
+        : null;
 
-  function getSentimentSummary(vm){
-    return firstNonEmpty(
-      vm && vm.sentiment_summary,
-      vm && vm.today && vm.today.sentiment_summary,
-      vm && vm.today && vm.today.sentiment,
-      {}
-    ) || {};
-  }
-
-  function renderSummaryText(sum, vmJson){
-    if(sum){
-      const direct = firstNonEmpty(
-        sum.summary,
-        sum.text_summary,
-        sum.daily_summary,
-        sum.yesterday_summary_text,
-        sum.headline,
-        sum.text,
-        sum.description,
-        sum.generated_summary,
-        ""
+      const articles = firstNumber(
+        vm && vm.meta && vm.meta.items,
+        vm && vm.sentiment_summary && vm.sentiment_summary.articles,
+        vm && vm.today && vm.today.sentiment_summary && vm.today.sentiment_summary.articles,
+        sectionCards
       );
-      if(typeof direct === "string" && direct.trim()) return direct.trim();
-
-      if(sum.yesterday_summary){
-        const yText = firstNonEmpty(
-          sum.yesterday_summary.text,
-          sum.yesterday_summary.summary,
-          sum.yesterday_summary.headline,
-          ""
-        );
-        if(typeof yText === "string" && yText.trim()) return yText.trim();
-        if(Array.isArray(sum.yesterday_summary.titles) && sum.yesterday_summary.titles.length){
-          return sum.yesterday_summary.titles.slice(0, 8).map(function(x){ return '• ' + safeText(x); }).join('\n');
-        }
-      }
-
-      if(Array.isArray(sum.highlights) && sum.highlights.length){
-        return sum.highlights.slice(0, 6).map(function(x){ return '• ' + safeText(x); }).join('\n');
-      }
+      if(articles != null) return articles;
     }
-
-    if(vmJson){
-      const vmDirect = firstNonEmpty(
-        vmJson.summary,
-        vmJson.text_summary,
-        vmJson.daily_summary,
-        vmJson.headline,
-        vmJson.meta && vmJson.meta.summary,
-        vmJson.meta && vmJson.meta.headline,
-        vmJson.today && vmJson.today.summary,
-        vmJson.today && vmJson.today.headline,
-        ""
-      );
-      if(typeof vmDirect === "string" && vmDirect.trim()) return vmDirect.trim();
-
-      const cards = collectCards(vmJson).slice(0, 5);
-      if(cards.length){
-        return cards.map(function(card){
-          return '• ' + safeText(firstNonEmpty(card.title, card.headline, '(untitled)'));
-        }).join('\n');
-      }
-    }
-
-    return "Summary not found";
+    if(sentiment && Array.isArray(sentiment.items)) return sentiment.items.length;
+    return null;
   }
 
-  function sentimentStats(s){
-    const items = Array.isArray(s && s.items) ? s.items : [];
-    let r = 0, p = 0, u = 0, n = 0;
-    for(const it of items){
-      if(typeof it.risk === "number" && isFinite(it.risk)) r += it.risk;
-      if(typeof it.positive === "number" && isFinite(it.positive)) p += it.positive;
-      if(typeof it.uncertainty === "number" && isFinite(it.uncertainty)) u += it.uncertainty;
-      n += 1;
+  function normalizeUpdated(vm, summary, sentiment, health){
+    return firstString(
+      vm && vm.date, vm && vm.as_of,
+      summary && summary.date, summary && summary.as_of,
+      sentiment && sentiment.date, sentiment && sentiment.as_of,
+      health && health.date, health && health.as_of
+    ) || "--";
+  }
+
+  function renderKV(obj){
+    const lines = [];
+    Object.entries(obj || {}).forEach(function(pair){
+      const k = pair[0], v = pair[1];
+      if(v == null) return;
+      if(typeof v === "object") return;
+      lines.push(k + ": " + String(v));
+    });
+    return lines.join("\n");
+  }
+
+  function renderHealth(h){
+    if(!h) return "—";
+    const sum = h.summary || {};
+    const date = h.date || h.as_of || "";
+    const total = firstNumber(sum.total, h.total, Array.isArray(h.checks) ? h.checks.length : null);
+    const ok = firstNumber(sum.ok, h.ok_count, h.OK);
+    const warn = firstNumber(sum.warn, h.warn_count, h.WARN);
+    const ng = firstNumber(sum.ng, h.ng_count, h.NG);
+    const parts = [];
+    if(date) parts.push("date: " + date);
+    if(total != null) parts.push("total: " + total);
+    if(ok != null) parts.push("OK: " + ok);
+    if(warn != null) parts.push("WARN: " + warn);
+    if(ng != null) parts.push("NG: " + ng);
+    return parts.join("\n");
+  }
+
+  function renderSentiment(s){
+    if(!s) return "—";
+    const date = s.date || s.as_of || "";
+    const items = Array.isArray(s.items) ? s.items.length : firstNumber(s.total_items, s.summary && s.summary.articles);
+    const summary = s.summary || s.today || s.sentiment_summary || {};
+    const risk = firstNumber(summary.risk, summary.risk_score, summary.riskScore);
+    const pos = firstNumber(summary.positive, summary.posScore, summary.positive_count);
+    const unc = firstNumber(summary.uncertainty, summary.uncScore);
+    const parts = [];
+    if(date) parts.push("date: " + date);
+    if(items != null) parts.push("items: " + items);
+    if(risk != null) parts.push("risk: " + Number(risk).toFixed(2));
+    if(pos != null) parts.push("positive: " + Number(pos).toFixed(2));
+    if(unc != null) parts.push("uncertainty: " + Number(unc).toFixed(2));
+    return parts.join("\n");
+  }
+
+  function renderSummary(sum){
+    if(!sum) return "—";
+    const text = firstString(sum.summary, sum.text_summary, sum.daily_summary, sum.yesterday_summary_text);
+    if(text) return text.split("\n").slice(0,6).join("\n");
+    if(sum.yesterday_summary){
+      if(typeof sum.yesterday_summary.text === "string" && sum.yesterday_summary.text.trim()){
+        return sum.yesterday_summary.text.trim().split("\n").slice(0,6).join("\n");
+      }
+      if(Array.isArray(sum.yesterday_summary.titles) && sum.yesterday_summary.titles.length){
+        return sum.yesterday_summary.titles.slice(0,8).map(function(t){ return "• " + safeText(t); }).join("\n");
+      }
     }
-    return {
-      items: items.length,
-      risk: n ? (r / n) : null,
-      positive: n ? (p / n) : null,
-      uncertainty: n ? (u / n) : null,
-      date: firstNonEmpty(s && s.date, s && s.as_of, "--")
-    };
+    return renderKV(sum);
   }
 
   (async function main(){
     try{
-      const vm = await pickFirstOk(CANDIDATES.viewModel);
-      const h = await pickFirstOk(CANDIDATES.health);
-      const s = await pickFirstOk(CANDIDATES.sentiment);
-      const sum = await pickFirstOk(CANDIDATES.summary);
+      const vmRes = await pickFirstOk(CANDIDATES.viewModel);
+      const healthRes = await pickFirstOk(CANDIDATES.health);
+      const senRes = await pickFirstOk(CANDIDATES.sentiment);
+      const sumRes = await pickFirstOk(CANDIDATES.summary);
+      const fxRes = await pickFirstOk(CANDIDATES.fxDecision);
 
-      if(vm && vm.json){
-        classifyPill("overviewHint", "OK");
-        classifyPill("evHint", "OK");
-        setText("evSource", "source: " + vm.url);
-        setText("pillAsOf", "as_of: " + firstNonEmpty(vm.json.date, vm.json.as_of, "--"));
-        setHTML("evBody", renderEvents(vm.json));
+      const vm = vmRes && vmRes.json;
+      const health = healthRes && healthRes.json;
+      const sentiment = senRes && senRes.json;
+      const summary = sumRes && sumRes.json;
+      const fxDecision = fxRes && fxRes.json;
 
-        const ss = getSentimentSummary(vm.json);
-        setText("kpiArticles", firstNonEmpty(ss.articles, "--"));
-        setText("kpiPositive", firstNonEmpty(ss.positive_count, "--"));
-        setText("kpiNegative", firstNonEmpty(ss.negative_count, "--"));
-        setText("kpiMixed", firstNonEmpty(ss.mixed_count, "--"));
-        setText("pillItems", "items: " + firstNonEmpty(ss.articles, collectCards(vm.json).length, "--"));
+      if(vm){
+        setText("evHint", "OK");
+        setText("evBody", renderKV(vm).slice(0, 1400));
+        setText("evSource", "source: " + vmRes.url);
       }else{
-        classifyPill("overviewHint", "missing");
-        classifyPill("evHint", "missing");
+        setText("evHint", "missing");
+        setText("evBody", "view_model_latest.json not available.");
       }
 
-      if(sum && sum.json){
-        classifyPill("sumHint", "OK");
-        setText("sumBody", renderSummaryText(sum.json, vm && vm.json));
-        setText("sumSource", "source: " + sum.url);
-        setHref("btnOpenSummary", sum.url);
+      if(health){
+        setText("healthHint", "OK");
+        setText("healthBody", renderHealth(health));
+        setText("healthSource", "source: " + healthRes.url);
+        setHref("btnOpenHealth", healthRes.url);
       }else{
-        const fallbackSummary = renderSummaryText(null, vm && vm.json);
-        if(fallbackSummary && fallbackSummary !== "Summary not found"){
-          classifyPill("sumHint", "OK");
-          setText("sumBody", fallbackSummary);
-          setText("sumSource", "source: " + (vm ? vm.url + " (view_model fallback)" : "fallback"));
-          setHref("btnOpenSummary", vm ? vm.url : "#");
-        }else{
-          classifyPill("sumHint", "missing");
-          setText("sumBody", "Summary JSON not found");
-        }
+        setText("healthHint", "missing");
+        setText("healthBody", "health_latest.json not available.");
       }
 
-      if(h && h.json){
-        const hs = h.json && h.json.summary ? h.json.summary : {};
-        const okVal = firstNonEmpty(hs.ok, h.json.ok, h.json.ok_count, h.json.OK, "--");
-        const warnVal = firstNonEmpty(hs.warn, h.json.warn, h.json.warn_count, h.json.WARN, "--");
-        const ngVal = firstNonEmpty(hs.ng, h.json.ng, h.json.ng_count, h.json.NG, "--");
-        const totalVal = firstNonEmpty(hs.total, h.json.total, Array.isArray(h.json.checks) ? h.json.checks.length : "--", "--");
-        const warn = Number(firstNonEmpty(hs.warn, h.json.warn, h.json.warn_count, h.json.WARN, 0));
-        const ng = Number(firstNonEmpty(hs.ng, h.json.ng, h.json.ng_count, h.json.NG, 0));
-        const overall = ng > 0 ? "NG" : (warn > 0 ? "WARN" : "OK");
-        classifyPill("healthHint", overall);
-        setText("healthOk", okVal);
-        setText("healthWarn", warnVal);
-        setText("healthNg", ngVal);
-        setText("healthDate", firstNonEmpty(vm && vm.json && (vm.json.date || vm.json.as_of), sum && sum.json && (sum.json.date || sum.json.as_of), s && s.json && (s.json.date || s.json.as_of), h.json.as_of, h.json.date, "--"));
-        setText("healthTotal", totalVal);
-        setText("healthSource", "source: " + h.url);
-        setHref("btnOpenHealth", h.url);
-        setText("pillHealth", "Health: " + overall);
+      if(sentiment){
+        setText("senHint", "OK");
+        setText("senBody", renderSentiment(sentiment));
+        setText("senSource", "source: " + senRes.url);
       }else{
-        classifyPill("healthHint", "missing");
+        setText("senHint", "missing");
+        setText("senBody", "sentiment_latest.json not available.");
       }
 
-      if(s && s.json){
-        const stats = sentimentStats(s.json);
-        classifyPill("senHint", "OK");
-        setText("senDate", stats.date || "--");
-        setText("senItems", stats.items || "--");
-        setText("senRisk", formatNum(stats.risk, 3));
-        setText("senPositive", formatNum(stats.positive, 3));
-        setText("senUncertainty", formatNum(stats.uncertainty, 3));
-        setText("senSource", "source: " + s.url);
-        setText("senSourceInline", s.url);
+      if(summary){
+        setText("sumHint", "OK");
+        setText("sumBody", renderSummary(summary));
+        setText("sumSource", "source: " + sumRes.url);
+        setHref("btnOpenSummary", sumRes.url);
       }else{
-        classifyPill("senHint", "missing");
+        setText("sumHint", "missing");
+        setText("sumBody", "daily_summary_latest.json not available.");
       }
 
-      setText("pillReady", "Loaded");
+      const updated = normalizeUpdated(vm, summary, sentiment, health);
+      const riskScore = normalizeRisk(summary, sentiment);
+      const riskLevel = toLevelFromRisk(riskScore);
+      const sentimentBalance = normalizeSentimentBalance(sentiment);
+      const fxRegime = normalizeFxRegime(fxDecision);
+      const articles = normalizeArticles(vm, sentiment);
+
+      setText("pillAsOf", "as_of: " + updated);
+      setText("pillReady", "Ready");
+
+      setText("gsRisk", riskLevel);
+      setText("gsRiskSub", riskScore != null ? ("risk score " + Number(riskScore).toFixed(2)) : "daily summary fallback");
+
+      setText("gsSentiment", sentimentBalance.label);
+      setText("gsSentimentSub", sentimentBalance.detail);
+
+      setText("gsFx", fxRegime.label);
+      setText("gsFxSub", fxRegime.detail);
+
+      setText("gsArticles", articles != null ? String(articles) : "—");
+      setText("gsArticlesSub", vmRes ? "digest latest" : "sentiment fallback");
+
+      setText("gsUpdated", updated);
+      setText("gsUpdatedSub", firstString(vmRes && vmRes.url, sumRes && sumRes.url, senRes && senRes.url, healthRes && healthRes.url) || "runtime latest");
+
+      setText("kpiEvents", articles != null ? String(articles) : "—");
+      setText("kpiHealthOk", health && health.summary && health.summary.ok != null ? String(health.summary.ok) : "—");
+      setText("kpiSentimentItems", sentiment && Array.isArray(sentiment.items) ? String(sentiment.items.length) : (articles != null ? String(articles) : "—"));
+      setText("kpiSummaryState", summary ? "OK" : "MISS");
     }catch(e){
       setText("pillReady", "Error");
       console.warn(e);
