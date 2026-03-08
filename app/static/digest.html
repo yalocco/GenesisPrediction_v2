@@ -1,298 +1,159 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Digest - GenesisPrediction v2</title>
+  <link rel="stylesheet" href="/static/app.css?v=20260308-ui10" />
+  <script src="/static/common/global_status.js?v=20260308-ui10"></script>
   <style>
-    :root{
-      --bg-1:#07111f;
-      --bg-2:#0b1730;
-      --bg-3:#102445;
-      --panel:rgba(13,24,45,.68);
-      --panel-strong:rgba(12,22,42,.86);
-      --stroke:rgba(255,255,255,.10);
-      --text:#eaf1ff;
-      --muted:#9fb2d9;
-      --soft:#7f93bb;
-      --accent:#69a9ff;
-      --accent-2:#90c2ff;
-      --good:#2fd28d;
-      --bad:#ff6b81;
-      --warn:#ffbc58;
-      --neutral:#8ea3c7;
-      --mixed:#b28cff;
-      --shadow:0 18px 60px rgba(0,0,0,.34);
-      --radius-xl:24px;
-      --radius-lg:18px;
-      --radius-md:14px;
-      --container:1360px;
+    .digest-hero{margin-bottom:14px;}
+
+    .status-shell{
+      margin-top:14px;
+      padding:14px 16px;
+      border-radius:18px;
+      border:1px solid rgba(120,160,220,.18);
+      background:linear-gradient(180deg, rgba(10,16,30,.66), rgba(7,12,24,.48));
+      box-shadow:0 12px 30px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.04);
     }
-
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      color:var(--text);
-      font-family:Inter,"Noto Sans JP","Hiragino Sans","Yu Gothic UI",system-ui,-apple-system,sans-serif;
-      background:
-        radial-gradient(circle at top left, rgba(105,169,255,.22), transparent 28%),
-        radial-gradient(circle at top right, rgba(47,210,141,.11), transparent 24%),
-        linear-gradient(180deg, var(--bg-3) 0%, var(--bg-2) 44%, var(--bg-1) 100%);
-      min-height:100vh;
-    }
-
-    a{color:inherit;text-decoration:none}
-    img{display:block;max-width:100%}
-
-    .shell{
-      width:min(calc(100% - 32px), var(--container));
-      margin:0 auto;
-      padding:18px 0 40px;
-    }
-
-    .topbar{
+    .status-top{
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:16px;
-      padding:12px 14px;
-      margin-bottom:18px;
-      border:1px solid var(--stroke);
-      border-radius:999px;
-      background:rgba(7,14,27,.42);
-      backdrop-filter:blur(14px);
-      box-shadow:var(--shadow);
-    }
-
-    .brand{
-      display:flex;
-      align-items:center;
       gap:12px;
-      min-width:0;
-    }
-
-    .brand-mark{
-      width:42px;
-      height:42px;
-      border-radius:50%;
-      display:grid;
-      place-items:center;
-      font-weight:800;
-      letter-spacing:.08em;
-      color:#fff;
-      background:linear-gradient(135deg, rgba(105,169,255,.95), rgba(144,194,255,.55));
-      box-shadow:0 10px 28px rgba(105,169,255,.28);
-      flex:0 0 auto;
-    }
-
-    .brand-copy{min-width:0}
-    .brand-title{font-size:15px;font-weight:800;letter-spacing:.02em;white-space:nowrap}
-    .brand-sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-    nav{
-      display:flex;
-      align-items:center;
-      justify-content:flex-end;
       flex-wrap:wrap;
-      gap:10px;
+      margin-bottom:10px;
     }
-
-    .nav-link{
-      padding:10px 14px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(255,255,255,.04);
-      color:var(--muted);
-      font-size:13px;
-      font-weight:700;
-      transition:.18s ease;
-    }
-    .nav-link:hover{border-color:rgba(105,169,255,.45);color:var(--text)}
-    .nav-link.active{
-      color:#fff;
-      border-color:rgba(105,169,255,.48);
-      background:rgba(105,169,255,.16);
-      box-shadow:inset 0 0 0 1px rgba(255,255,255,.04);
-    }
-
-    .hero{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-end;
-      gap:18px;
-      margin-bottom:18px;
-      padding:22px 24px;
-      border-radius:var(--radius-xl);
-      border:1px solid var(--stroke);
-      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.025));
-      backdrop-filter:blur(14px);
-      box-shadow:var(--shadow);
-    }
-
-    .hero-copy h1{
-      margin:0 0 8px;
-      font-size:clamp(28px,4vw,38px);
-      line-height:1.05;
-      letter-spacing:-.03em;
-    }
-
-    .hero-copy p{
-      margin:0;
-      color:var(--muted);
-      font-size:14px;
-      line-height:1.7;
-      max-width:760px;
-    }
-
-    .hero-meta{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      justify-content:flex-end;
-    }
-
-    .meta-pill{
-      padding:10px 14px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.09);
-      background:rgba(255,255,255,.04);
-      color:var(--muted);
+    .status-title{
       font-size:12px;
-      font-weight:700;
-      white-space:nowrap;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      opacity:.82;
     }
-
-    .glass{
-      border:1px solid var(--stroke);
-      background:var(--panel);
-      backdrop-filter:blur(14px);
-      border-radius:var(--radius-xl);
-      box-shadow:var(--shadow);
-    }
-
-    .section-head{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:14px;
-      margin-bottom:16px;
-    }
-
-    .section-title{
-      margin:0;
-      font-size:20px;
-      letter-spacing:-.02em;
-    }
-
-    .section-sub{
-      margin:6px 0 0;
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.6;
-    }
-
-    .summary-highlights{
+    .status-grid{
       display:grid;
-      grid-template-columns:minmax(0,1.25fr) minmax(320px,.95fr);
-      gap:18px;
-      align-items:stretch;
-      margin-bottom:18px;
+      grid-template-columns:repeat(5,minmax(0,1fr));
+      gap:12px;
+    }
+    .status-item{
+      min-width:0;
+      border:1px solid rgba(120,160,220,.12);
+      border-radius:14px;
+      padding:12px 12px 10px;
+      background:rgba(8,14,28,.22);
+    }
+    .status-label{
+      font-size:11px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      opacity:.72;
+      margin-bottom:6px;
+    }
+    .status-value{
+      font-size:24px;
+      line-height:1.05;
+      font-weight:700;
+      letter-spacing:-.02em;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      color:#eef4ff;
+    }
+    .status-sub{
+      margin-top:4px;
+      font-size:12px;
+      opacity:.72;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
 
-    .panel{
-      padding:22px;
-      min-height:100%;
+    .digest-top{
+      display:grid;
+      grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);
+      gap:16px;
+      align-items:stretch;
+      margin-top:14px;
+    }
+
+    .summaryCard,
+    .highlightsCard{
+      height:100%;
       display:flex;
       flex-direction:column;
     }
 
-    .summary-body{
-      display:grid;
-      gap:14px;
+    .summaryBody{
+      min-height:250px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.14);
+      border-radius:16px;
+      padding:16px;
+      white-space:pre-wrap;
+      word-break:break-word;
+      line-height:1.8;
+      color:#dbe6ff;
       flex:1;
     }
 
-    .summary-text{
-      min-height:0;
-      border-radius:var(--radius-lg);
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(255,255,255,.03);
-      padding:18px 18px 16px;
-      color:var(--text);
-      line-height:1.9;
-      font-size:15px;
-      white-space:pre-wrap;
-    }
-
-    .summary-tags{
+    .topicRow{
       display:flex;
       flex-wrap:wrap;
       gap:8px;
+      margin-top:12px;
     }
 
-    .tag{
-      padding:8px 12px;
+    .topicTag{
+      display:inline-flex;
+      align-items:center;
+      min-height:30px;
+      padding:5px 10px;
       border-radius:999px;
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(255,255,255,.035);
-      color:var(--muted);
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.04);
       font-size:12px;
-      font-weight:700;
+      color:#d9e4ff;
     }
 
-    .kpi-grid{
+    .digest-kpis{
       display:grid;
       grid-template-columns:repeat(2,minmax(0,1fr));
       gap:12px;
       flex:1;
-      align-content:start;
     }
 
-    .kpi-card{
-      border-radius:var(--radius-lg);
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(255,255,255,.035);
-      padding:16px 16px 15px;
-      min-height:110px;
-      display:flex;
-      flex-direction:column;
-      justify-content:space-between;
-      gap:10px;
+    .digest-kpi{
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.14);
+      border-radius:16px;
+      padding:14px 14px 12px;
+      min-height:96px;
     }
-
-    .kpi-label{
-      color:var(--muted);
+    .digest-kpi .k{
       font-size:12px;
-      font-weight:700;
-      letter-spacing:.04em;
       text-transform:uppercase;
+      letter-spacing:.08em;
+      opacity:.74;
+      margin-bottom:8px;
     }
-
-    .kpi-value{
-      font-size:clamp(28px,4vw,36px);
-      line-height:1;
-      font-weight:800;
-      letter-spacing:-.03em;
+    .digest-kpi .v{
+      font-size:22px;
+      font-weight:700;
+      line-height:1.05;
+      margin-bottom:5px;
     }
-
-    .kpi-foot{
-      color:var(--soft);
+    .digest-kpi .s{
       font-size:12px;
-      font-weight:600;
+      opacity:.72;
     }
 
-    .tone-positive .kpi-value{color:var(--good)}
-    .tone-negative .kpi-value{color:var(--bad)}
-    .tone-neutral .kpi-value{color:var(--neutral)}
-    .tone-mixed .kpi-value{color:var(--mixed)}
-    .tone-warn .kpi-value{color:var(--warn)}
-    .tone-accent .kpi-value{color:var(--accent-2)}
-
-    .articles-panel{
-      padding:22px;
-      margin-top:0;
-    }
+    .tone-articles .v{color:#eef4ff;}
+    .tone-positive .v{color:#56efc1;}
+    .tone-negative .v{color:#ff7e8d;}
+    .tone-neutral .v{color:#a8b8d8;}
+    .tone-mixed .v{color:#b998ff;}
+    .tone-unknown .v{color:#ffcf6f;}
 
     .toolbar{
       display:flex;
@@ -300,16 +161,10 @@
       justify-content:space-between;
       gap:12px;
       flex-wrap:wrap;
-      margin-bottom:16px;
+      margin-bottom:14px;
     }
 
-    .toolbar-left{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-
+    .toolbar-left,
     .toolbar-right{
       display:flex;
       align-items:center;
@@ -317,614 +172,638 @@
       flex-wrap:wrap;
     }
 
-    .button{
-      appearance:none;
-      border:none;
-      cursor:pointer;
-      padding:10px 14px;
-      border-radius:999px;
-      font-size:13px;
-      font-weight:800;
-      color:var(--muted);
-      background:rgba(255,255,255,.045);
-      border:1px solid rgba(255,255,255,.08);
-      transition:.18s ease;
-    }
-
-    .button:hover{color:var(--text);border-color:rgba(105,169,255,.4)}
-    .button.active{background:rgba(105,169,255,.16);color:#fff;border-color:rgba(105,169,255,.48)}
-
-    .muted-note{
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.6;
-    }
-
-    .article-grid{
+    .articleGrid{
       display:grid;
       grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:16px;
+      gap:14px;
     }
 
-    .article{
+    .articleCard{
       display:grid;
-      grid-template-columns:220px minmax(0,1fr);
-      gap:16px;
-      padding:16px;
-      border-radius:var(--radius-lg);
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(255,255,255,.035);
-      min-height:190px;
-    }
-
-    .article-media{
-      position:relative;
+      grid-template-columns:180px minmax(0,1fr);
+      gap:14px;
+      min-height:192px;
+      border:1px solid rgba(120,160,220,.14);
+      border-radius:18px;
+      background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+      padding:14px;
       overflow:hidden;
-      border-radius:16px;
-      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
-      border:1px solid rgba(255,255,255,.08);
-      min-height:156px;
     }
 
-    .article-media img{
+    .thumbWrap{
+      min-height:160px;
+      border-radius:14px;
+      overflow:hidden;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .thumbWrap img{
       width:100%;
       height:100%;
       object-fit:cover;
     }
 
-    .article-media .fallback{
-      position:absolute;
-      inset:0;
-      display:grid;
-      place-items:center;
-      font-weight:900;
-      font-size:28px;
-      color:rgba(255,255,255,.9);
-      letter-spacing:.04em;
-      background:
-        radial-gradient(circle at top left, rgba(105,169,255,.35), transparent 35%),
-        linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
-    }
-
-    .article-body{
-      min-width:0;
+    .thumbFallback{
+      width:100%;
+      height:100%;
       display:flex;
-      flex-direction:column;
-      gap:12px;
+      align-items:center;
+      justify-content:center;
+      font-size:40px;
+      font-weight:700;
+      color:#8fb8ff;
+      background:radial-gradient(circle at 30% 20%, rgba(106,164,255,.22), transparent 48%), rgba(255,255,255,.03);
     }
 
-    .article-meta{
+    .articleBody{min-width:0; display:flex; flex-direction:column;}
+
+    .articleMeta{
       display:flex;
       flex-wrap:wrap;
       gap:8px;
-      align-items:center;
+      margin-bottom:10px;
     }
 
-    .badge{
+    .badge,
+    .scorePill{
       display:inline-flex;
       align-items:center;
-      gap:6px;
-      padding:7px 10px;
+      min-height:28px;
+      padding:4px 10px;
       border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.04);
       font-size:11px;
-      font-weight:800;
-      letter-spacing:.04em;
-      text-transform:uppercase;
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(255,255,255,.045);
-      color:var(--muted);
+      line-height:1;
     }
 
-    .badge.positive{color:var(--good)}
-    .badge.negative{color:var(--bad)}
-    .badge.neutral{color:var(--neutral)}
-    .badge.mixed{color:var(--mixed)}
-    .badge.unknown{color:var(--warn)}
+    .badge.positive{color:#56efc1;}
+    .badge.negative{color:#ff7e8d;}
+    .badge.neutral{color:#a8b8d8;}
+    .badge.mixed{color:#b998ff;}
+    .badge.unknown{color:#ffcf6f;}
 
-    .article-title{
-      margin:0;
-      font-size:20px;
-      line-height:1.35;
-      letter-spacing:-.02em;
-      overflow-wrap:anywhere;
-    }
-
-    .article-title a:hover{color:var(--accent-2)}
-
-    .article-summary{
-      margin:0;
-      color:#dce7ff;
-      font-size:14px;
-      line-height:1.75;
-      display:-webkit-box;
-      -webkit-line-clamp:4;
-      -webkit-box-orient:vertical;
-      overflow:hidden;
-    }
-
-    .article-source{
-      color:var(--muted);
-      font-size:12px;
+    .articleTitle{
+      margin:0 0 8px;
+      font-size:17px;
+      line-height:1.45;
       font-weight:700;
     }
 
-    .score-row{
+    .articleTitle a{
+      text-decoration:none;
+    }
+
+    .articleTitle a:hover{
+      text-decoration:underline;
+    }
+
+    .articleSummary{
+      margin:0;
+      font-size:13px;
+      line-height:1.75;
+      color:#d4def7;
+      flex:1;
+    }
+
+    .scoreRow{
       display:flex;
       flex-wrap:wrap;
       gap:8px;
-      margin-top:auto;
+      margin-top:12px;
     }
 
-    .score-chip{
-      padding:8px 10px;
-      border-radius:999px;
-      background:rgba(255,255,255,.04);
-      border:1px solid rgba(255,255,255,.08);
-      color:var(--muted);
-      font-size:12px;
-      font-weight:700;
-    }
-
-    .empty{
+    .emptyState{
       display:none;
-      padding:20px;
-      border-radius:var(--radius-lg);
-      border:1px dashed rgba(255,255,255,.14);
-      background:rgba(255,255,255,.025);
-      color:var(--muted);
-      font-size:14px;
-      line-height:1.8;
+      border:1px dashed rgba(255,255,255,.16);
+      border-radius:16px;
+      padding:18px;
       text-align:center;
+      color:#b5c7ea;
+      background:rgba(8,14,28,.18);
     }
 
-    .footer-note{
-      margin-top:16px;
-      color:var(--soft);
-      font-size:12px;
-      text-align:right;
+    @media (max-width:1100px){
+      .status-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+      .digest-top{grid-template-columns:1fr;}
+      .articleGrid{grid-template-columns:1fr;}
     }
 
-    @media (max-width: 1120px){
-      .summary-highlights{grid-template-columns:1fr}
-      .article-grid{grid-template-columns:1fr}
+    @media (max-width:820px){
+      .digest-kpis{grid-template-columns:1fr;}
+      .articleCard{grid-template-columns:1fr;}
+      .thumbWrap{min-height:220px;}
     }
 
-    @media (max-width: 760px){
-      .shell{width:min(calc(100% - 20px), var(--container));padding-top:12px}
-      .topbar,.hero{border-radius:24px}
-      .hero{padding:18px}
-      .panel,.articles-panel{padding:18px}
-      .kpi-grid{grid-template-columns:1fr 1fr}
-      .article{grid-template-columns:1fr}
-      .article-media{min-height:210px}
-    }
-
-    @media (max-width: 560px){
-      .topbar{padding:14px;border-radius:24px}
-      nav{justify-content:flex-start}
-      .kpi-grid{grid-template-columns:1fr}
-      .hero-copy p{font-size:13px}
+    @media (max-width:700px){
+      .status-grid{grid-template-columns:1fr;}
     }
   </style>
 </head>
 <body>
-  <div class="shell">
-    <header class="topbar">
-      <div class="brand">
-        <div class="brand-mark">G</div>
-        <div class="brand-copy">
-          <div class="brand-title">GenesisPrediction v2</div>
-          <div class="brand-sub">Digest / Summary / Highlights / Articles</div>
-        </div>
+  <div id="site-header"></div>
+
+  <div class="page container">
+    <main class="gp-main">
+      <div class="gp-page">
+        <section class="panel">
+          <div class="digest-hero">
+            <div class="h1">Digest</div>
+            <p id="heroText" class="sub">Summary と Highlights を横並び同高で配置し、Highlights は KPI のみ表示します。Articles はその直下に全件表示します。</p>
+
+            <div class="status-shell">
+              <div class="status-top">
+                <div class="status-title">Global Status</div>
+                <div class="pillrow">
+                  <span id="pillAsOfLocal" class="pill">as_of: --</span>
+                  <span id="pillReadyLocal" class="pill">loading…</span>
+                </div>
+              </div>
+
+              <div class="status-grid">
+                <div class="status-item">
+                  <div class="status-label">Global Risk</div>
+                  <div id="gsRisk" class="status-value risk-missing">—</div>
+                  <div id="gsRiskSub" class="status-sub">daily summary / sentiment</div>
+                </div>
+
+                <div class="status-item">
+                  <div class="status-label">Sentiment Balance</div>
+                  <div id="gsSentiment" class="status-value">—</div>
+                  <div id="gsSentimentSub" class="status-sub">article distribution</div>
+                </div>
+
+                <div class="status-item">
+                  <div class="status-label">FX Regime</div>
+                  <div id="gsFx" class="status-value">—</div>
+                  <div id="gsFxSub" class="status-sub">decision / fallback</div>
+                </div>
+
+                <div class="status-item">
+                  <div class="status-label">Articles</div>
+                  <div id="gsArticles" class="status-value">—</div>
+                  <div id="gsArticlesSub" class="status-sub">digest latest</div>
+                </div>
+
+                <div class="status-item">
+                  <div class="status-label">Updated</div>
+                  <div id="gsUpdated" class="status-value">—</div>
+                  <div id="gsUpdatedSub" class="status-sub">latest runtime stamp</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="digest-top">
+            <div class="card summaryCard">
+              <div class="sectionTitle">
+                <h2>Summary</h2>
+                <span id="summaryHint" class="hint">loading…</span>
+              </div>
+              <div id="summaryBody" class="summaryBody">loading…</div>
+              <div id="topicRow" class="topicRow"></div>
+              <div class="pillrow" style="margin-top:12px;">
+                <span id="summarySource" class="pill">source: --</span>
+              </div>
+            </div>
+
+            <div class="card highlightsCard">
+              <div class="sectionTitle">
+                <h2>Highlights</h2>
+                <span id="highlightsHint" class="hint">KPI only</span>
+              </div>
+
+              <div class="digest-kpis">
+                <div class="digest-kpi tone-articles">
+                  <div class="k">Articles</div>
+                  <div id="kpiArticles" class="v">—</div>
+                  <div class="s">full article count</div>
+                </div>
+                <div class="digest-kpi tone-positive">
+                  <div class="k">Positive</div>
+                  <div id="kpiPositive" class="v">—</div>
+                  <div class="s">positive_count</div>
+                </div>
+                <div class="digest-kpi tone-negative">
+                  <div class="k">Negative</div>
+                  <div id="kpiNegative" class="v">—</div>
+                  <div class="s">negative_count</div>
+                </div>
+                <div class="digest-kpi tone-neutral">
+                  <div class="k">Neutral</div>
+                  <div id="kpiNeutral" class="v">—</div>
+                  <div class="s">neutral_count</div>
+                </div>
+                <div class="digest-kpi tone-mixed">
+                  <div class="k">Mixed</div>
+                  <div id="kpiMixed" class="v">—</div>
+                  <div class="s">mixed_count</div>
+                </div>
+                <div class="digest-kpi tone-unknown">
+                  <div class="k">Unknown</div>
+                  <div id="kpiUnknown" class="v">—</div>
+                  <div class="s">unknown_count</div>
+                </div>
+              </div>
+
+              <div class="pillrow" style="margin-top:12px;">
+                <span id="highlightsSource" class="pill">source: --</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:16px;">
+            <div class="sectionTitle">
+              <h2>Articles</h2>
+              <div class="hint"><span id="renderedCount">--</span> / <span id="totalCount">--</span></div>
+            </div>
+
+            <div class="toolbar">
+              <div class="toolbar-left">
+                <button class="btn btn-small active" type="button" data-sort="risk">Sort: risk</button>
+                <button class="btn btn-small" type="button" data-sort="score">Sort: score</button>
+                <button class="btn btn-small" type="button" data-sort="newest">Sort: newest</button>
+              </div>
+              <div class="toolbar-right">
+                <span id="articlesState" class="pill">cards[].sentiment preferred</span>
+              </div>
+            </div>
+
+            <div id="emptyState" class="emptyState">表示できる記事がありません。Digest ViewModel を優先し、必要時のみ daily_news_latest.json に fallback してください。</div>
+            <div id="articleGrid" class="articleGrid"></div>
+            <div class="pillrow" style="margin-top:12px;">
+              <span id="articlesSource" class="pill">source: --</span>
+            </div>
+          </div>
+        </section>
       </div>
-      <nav>
-        <a class="nav-link" href="/static/index.html">Home</a>
-        <a class="nav-link" href="/static/overlay.html">Overlay</a>
-        <a class="nav-link" href="/static/sentiment.html">Sentiment</a>
-        <a class="nav-link active" href="/static/digest.html">Digest</a>
-      </nav>
-    </header>
-
-    <section class="hero glass">
-      <div class="hero-copy">
-        <h1>Daily Digest</h1>
-        <p id="heroText">最新の要約・KPI・主要記事を 1 画面で確認できます。Digest は view_model_latest を正規化済み表示レイヤとして読み込み、必要時のみ summary/news に fallback します。</p>
-      </div>
-      <div class="hero-meta">
-        <div class="meta-pill" id="metaAsOf">as_of: --</div>
-        <div class="meta-pill" id="metaItems">items: --</div>
-        <div class="meta-pill" id="metaSource">source: loading...</div>
-      </div>
-    </section>
-
-    <section class="summary-highlights">
-      <article class="glass panel" aria-labelledby="summaryHeading">
-        <div class="section-head">
-          <div>
-            <h2 class="section-title" id="summaryHeading">Summary</h2>
-            <p class="section-sub">Digest ViewModel の summary を優先表示。未定義時のみ daily_summary_latest の summary / text_summary 系へ fallback。</p>
-          </div>
-        </div>
-        <div class="summary-body">
-          <div class="summary-text" id="summaryText">Loading summary...</div>
-          <div class="summary-tags" id="summaryTags"></div>
-        </div>
-      </article>
-
-      <aside class="glass panel" aria-labelledby="highlightsHeading">
-        <div class="section-head">
-          <div>
-            <h2 class="section-title" id="highlightsHeading">Highlights</h2>
-            <p class="section-sub">記事カードはここに出さず、KPI / 数値のみ表示します。</p>
-          </div>
-        </div>
-        <div class="kpi-grid" id="kpiGrid">
-          <div class="kpi-card tone-accent">
-            <div class="kpi-label">Articles</div>
-            <div class="kpi-value" id="kpiArticles">--</div>
-            <div class="kpi-foot">full article count</div>
-          </div>
-          <div class="kpi-card tone-positive">
-            <div class="kpi-label">Positive</div>
-            <div class="kpi-value" id="kpiPositive">--</div>
-            <div class="kpi-foot">positive_count</div>
-          </div>
-          <div class="kpi-card tone-negative">
-            <div class="kpi-label">Negative</div>
-            <div class="kpi-value" id="kpiNegative">--</div>
-            <div class="kpi-foot">negative_count</div>
-          </div>
-          <div class="kpi-card tone-neutral">
-            <div class="kpi-label">Neutral</div>
-            <div class="kpi-value" id="kpiNeutral">--</div>
-            <div class="kpi-foot">neutral_count</div>
-          </div>
-          <div class="kpi-card tone-mixed">
-            <div class="kpi-label">Mixed</div>
-            <div class="kpi-value" id="kpiMixed">--</div>
-            <div class="kpi-foot">mixed_count</div>
-          </div>
-          <div class="kpi-card tone-warn">
-            <div class="kpi-label">Unknown</div>
-            <div class="kpi-value" id="kpiUnknown">--</div>
-            <div class="kpi-foot">unknown_count</div>
-          </div>
-        </div>
-      </aside>
-    </section>
-
-    <section class="glass articles-panel" aria-labelledby="articlesHeading">
-      <div class="section-head">
-        <div>
-          <h2 class="section-title" id="articlesHeading">Articles</h2>
-          <p class="section-sub">Summary / Highlights の直下へ移動。Top highlights 抽出記事または fallback news を一覧表示します。</p>
-        </div>
-      </div>
-
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <button class="button active" type="button" data-sort="risk">Sort: Risk</button>
-          <button class="button" type="button" data-sort="score">Sort: Score</button>
-          <button class="button" type="button" data-sort="newest">Sort: Newest</button>
-        </div>
-        <div class="toolbar-right">
-          <div class="muted-note" id="articlesNote">cards[].sentiment を優先して表示します。</div>
-        </div>
-      </div>
-
-      <div class="empty" id="emptyState">表示できる記事がありません。まず data/digest/view_model_latest.json を確認し、必要時のみ daily_summary_latest / daily_news_latest の fallback を見てください。</div>
-      <div class="article-grid" id="articleGrid"></div>
-      <div class="footer-note" id="footerNote">Digest source: --</div>
-    </section>
+    </main>
   </div>
 
+  <div id="site-footer"></div>
+
+  <script src="/static/common/layout.js?v=20260308-ui10"></script>
   <script>
-    const DIGEST_CANDIDATES = [
-      '/data/digest/view_model_latest.json',
-      '/analysis/digest/view_model_latest.json'
-    ];
+    (function(){
+      "use strict";
 
-    const SUMMARY_CANDIDATES = [
-      '/data/world_politics/analysis/daily_summary_latest.json',
-      '/analysis/world_politics/daily_summary_latest.json'
-    ];
+      var DIGEST_CANDIDATES = [
+        "/data/digest/view_model_latest.json",
+        "/data/digest/view/view_model_latest.json",
+        "/analysis/digest/view_model_latest.json"
+      ];
 
-    const NEWS_CANDIDATES = [
-      '/data/world_politics/analysis/daily_news_latest.json',
-      '/analysis/world_politics/daily_news_latest.json'
-    ];
+      var SUMMARY_CANDIDATES = [
+        "/data/world_politics/analysis/daily_summary_latest.json",
+        "/analysis/world_politics/analysis/daily_summary_latest.json",
+        "/analysis/world_politics/daily_summary_latest.json"
+      ];
 
-    const state = {
-      sort: 'risk',
-      expanded: true,
-      articles: [],
-      source: 'unresolved',
-      digest: null,
-      summary: null,
-      news: null,
-    };
+      var NEWS_CANDIDATES = [
+        "/data/world_politics/analysis/daily_news_latest.json",
+        "/analysis/world_politics/analysis/daily_news_latest.json",
+        "/analysis/world_politics/daily_news_latest.json"
+      ];
 
-    const $ = (id) => document.getElementById(id);
+      var state = {
+        sort: "risk",
+        articles: [],
+        digestPath: "-",
+        summaryPath: "-",
+        newsPath: "-",
+        sourceMode: "no-data"
+      };
 
-    async function fetchFirstJson(candidates){
-      for(const url of candidates){
-        try{
-          const response = await fetch(url, { cache: 'no-store' });
-          if(!response.ok) continue;
-          const data = await response.json();
-          return { url, data };
-        }catch(_err){}
-      }
-      return null;
-    }
-
-    function toNumber(value, fallback = 0){
-      const n = Number(value);
-      return Number.isFinite(n) ? n : fallback;
-    }
-
-    function firstDefined(...values){
-      for(const value of values){
-        if(value !== undefined && value !== null && value !== '') return value;
-      }
-      return null;
-    }
-
-    function textOr(value, fallback){
-      if(value === undefined || value === null) return fallback;
-      const text = String(value).trim();
-      return text ? text : fallback;
-    }
-
-    function fmtDate(value){
-      if(!value) return '--';
-      const d = new Date(value);
-      if(Number.isNaN(d.getTime())) return String(value);
-      return d.toLocaleString('ja-JP', {
-        year:'numeric', month:'2-digit', day:'2-digit',
-        hour:'2-digit', minute:'2-digit'
-      });
-    }
-
-    function getWorldPoliticsSection(vm){
-      const sections = Array.isArray(vm?.sections) ? vm.sections : [];
-      return sections.find(s => ['world_politics','world-politics','worldPolitics'].includes(String(s?.id || s?.name || '').trim())) || sections[0] || null;
-    }
-
-    function getCards(vm){
-      const section = getWorldPoliticsSection(vm);
-      if(Array.isArray(section?.cards)) return section.cards;
-      if(Array.isArray(vm?.cards)) return vm.cards;
-      return [];
-    }
-
-    function getSentimentSummary(vm){
-      return vm?.sentiment_summary || vm?.today?.sentiment_summary || vm?.today?.sentiment || {};
-    }
-
-    function getSummaryText(vm, summaryData){
-      return firstDefined(
-        vm?.summary,
-        vm?.today?.summary,
-        vm?.meta?.summary,
-        summaryData?.summary,
-        summaryData?.text_summary,
-        summaryData?.daily_summary,
-        summaryData?.yesterday_summary_text,
-        'No summary available.'
-      );
-    }
-
-    function getTopicTags(vm, summaryData){
-      const topics = [];
-      const pushTopic = (value) => {
-        if(value === undefined || value === null) return;
-        if(Array.isArray(value)) value.forEach(pushTopic);
-        else {
-          const text = String(value).trim();
-          if(text) topics.push(text);
+      function $(id){ return document.getElementById(id); }
+      function safeText(v){ return v == null ? "" : String(v); }
+      function setText(id, v){ var el = $(id); if(el) el.textContent = safeText(v); }
+      function firstDefined(){
+        for(var i = 0; i < arguments.length; i++){
+          var v = arguments[i];
+          if(v !== undefined && v !== null && v !== "") return v;
         }
-      };
-      pushTopic(vm?.topics);
-      pushTopic(vm?.today?.topics);
-      pushTopic(summaryData?.topics);
-      return [...new Set(topics)].slice(0, 8);
-    }
-
-    function normalizeLabel(raw){
-      const value = String(raw || 'unknown').toLowerCase();
-      if(['positive','negative','neutral','mixed','unknown'].includes(value)) return value;
-      return 'unknown';
-    }
-
-    function normalizeArticle(card, index){
-      const sentiment = card?.sentiment || {};
-      const label = normalizeLabel(firstDefined(sentiment.sentiment_label, sentiment.sentiment, sentiment.label, card?.sentiment_label, card?.sentiment, card?.label));
-      const risk = toNumber(firstDefined(sentiment.risk, sentiment.riskScore, card?.risk, card?.risk_score), 0);
-      const score = toNumber(firstDefined(sentiment.score, sentiment.net, card?.score, card?.net), 0);
-      const title = textOr(firstDefined(card?.title, card?.headline), `Untitled article ${index + 1}`);
-      const summary = textOr(firstDefined(card?.summary, card?.description, card?.content), 'Summary not available.');
-      const image = firstDefined(card?.image, card?.urlToImage, card?.thumbnail, card?.image_url);
-      const source = textOr(firstDefined(card?.source, card?.publisher, card?.domain), 'Unknown source');
-      const publishedAt = firstDefined(card?.publishedAt, card?.published_at, card?.date, card?.datetime);
-      return {
-        title,
-        summary,
-        url: firstDefined(card?.url, card?.link, '#') || '#',
-        image,
-        source,
-        publishedAt,
-        label,
-        risk,
-        score,
-        positive: toNumber(firstDefined(sentiment.positive, card?.positive), 0),
-        uncertainty: toNumber(firstDefined(sentiment.uncertainty, card?.uncertainty), 0),
-      };
-    }
-
-    function normalizeNewsArticle(item, index){
-      const title = textOr(firstDefined(item?.title, item?.headline), `News ${index + 1}`);
-      const summary = textOr(firstDefined(item?.description, item?.summary, item?.content), 'Summary not available.');
-      return {
-        title,
-        summary,
-        url: firstDefined(item?.url, item?.link, '#') || '#',
-        image: firstDefined(item?.urlToImage, item?.image, item?.thumbnail),
-        source: textOr(firstDefined(item?.source, item?.source?.name, item?.publisher), 'Unknown source'),
-        publishedAt: firstDefined(item?.publishedAt, item?.published_at, item?.date),
-        label: 'unknown',
-        risk: 0,
-        score: 0,
-        positive: 0,
-        uncertainty: 0,
-      };
-    }
-
-    function fallbackMonogram(title){
-      const text = String(title || 'G').trim();
-      return (text[0] || 'G').toUpperCase();
-    }
-
-    function articleCard(article){
-      const safeUrl = article.url && article.url !== '#' ? article.url : '#';
-      const target = safeUrl === '#' ? '' : ' target="_blank" rel="noreferrer"';
-      const image = article.image
-        ? `<img src="${escapeHtml(article.image)}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='grid';" /><div class="fallback" style="display:none">${escapeHtml(fallbackMonogram(article.title))}</div>`
-        : `<div class="fallback">${escapeHtml(fallbackMonogram(article.title))}</div>`;
-
-      return `
-        <article class="article">
-          <div class="article-media">${image}</div>
-          <div class="article-body">
-            <div class="article-meta">
-              <span class="badge ${escapeHtml(article.label)}">${escapeHtml(article.label)}</span>
-              <span class="badge">${escapeHtml(article.source)}</span>
-              <span class="badge">${escapeHtml(fmtDate(article.publishedAt))}</span>
-            </div>
-            <h3 class="article-title"><a href="${escapeHtml(safeUrl)}"${target}>${escapeHtml(article.title)}</a></h3>
-            <p class="article-summary">${escapeHtml(article.summary)}</p>
-            <div class="score-row">
-              <span class="score-chip">risk: ${formatMetric(article.risk)}</span>
-              <span class="score-chip">score: ${formatMetric(article.score)}</span>
-              <span class="score-chip">positive: ${formatMetric(article.positive)}</span>
-              <span class="score-chip">uncertainty: ${formatMetric(article.uncertainty)}</span>
-            </div>
-          </div>
-        </article>
-      `;
-    }
-
-    function formatMetric(value){
-      const n = Number(value);
-      if(!Number.isFinite(n)) return '--';
-      return Math.abs(n) >= 100 ? n.toFixed(0) : n.toFixed(2).replace(/\.00$/, '');
-    }
-
-    function escapeHtml(value){
-      return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    function sortArticles(articles, sort){
-      const list = [...articles];
-      if(sort === 'score'){
-        return list.sort((a,b) => (b.score - a.score) || (b.risk - a.risk));
+        return null;
       }
-      if(sort === 'newest'){
-        return list.sort((a,b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0));
+      function toNumber(value, fallback){
+        var n = Number(value);
+        return Number.isFinite(n) ? n : (fallback == null ? 0 : fallback);
       }
-      return list.sort((a,b) => (b.risk - a.risk) || (b.score - a.score));
-    }
-
-    function renderKpis(summary, articleCount){
-      $('kpiArticles').textContent = String(toNumber(firstDefined(summary.articles, articleCount), articleCount));
-      $('kpiPositive').textContent = String(toNumber(summary.positive_count, 0));
-      $('kpiNegative').textContent = String(toNumber(summary.negative_count, 0));
-      $('kpiNeutral').textContent = String(toNumber(summary.neutral_count, 0));
-      $('kpiMixed').textContent = String(toNumber(summary.mixed_count, 0));
-      $('kpiUnknown').textContent = String(toNumber(summary.unknown_count, 0));
-    }
-
-    function renderSummary(vm, summaryData){
-      $('summaryText').textContent = textOr(getSummaryText(vm, summaryData), 'No summary available.');
-      const tags = getTopicTags(vm, summaryData);
-      $('summaryTags').innerHTML = tags.length
-        ? tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')
-        : '<span class="tag">topics unavailable</span>';
-    }
-
-    function renderArticles(){
-      const grid = $('articleGrid');
-      const empty = $('emptyState');
-      const sorted = sortArticles(state.articles, state.sort);
-      const visible = sorted;
-
-      if(!visible.length){
-        grid.innerHTML = '';
-        empty.style.display = 'block';
-        return;
+      function textOr(value, fallback){
+        if(value == null) return fallback;
+        var text = String(value).trim();
+        return text ? text : fallback;
       }
+      function fmtMetric(value){
+        var n = Number(value);
+        if(!Number.isFinite(n)) return "--";
+        return Math.abs(n) >= 100 ? String(Math.round(n)) : n.toFixed(2).replace(/\.00$/, "");
+      }
+      function fmtDate(value){
+        if(!value) return "--";
+        var d = new Date(value);
+        if(Number.isNaN(d.getTime())) return String(value);
+        try{
+          return d.toLocaleString("ja-JP", { year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit" });
+        }catch(_e){
+          return String(value);
+        }
+      }
+      function escapeHtml(value){
+        return String(value == null ? "" : value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+      function fetchFirstJson(candidates){
+        var i = 0;
+        function step(){
+          if(i >= candidates.length) return Promise.resolve(null);
+          var url = candidates[i++];
+          return fetch(url, { cache:"no-store" }).then(function(r){
+            if(!r.ok) throw new Error("HTTP " + r.status);
+            return r.json().then(function(j){ return { url:url, data:j }; });
+          }).catch(function(){
+            return step();
+          });
+        }
+        return step();
+      }
+      function getWorldPoliticsSection(vm){
+        var sections = Array.isArray(vm && vm.sections) ? vm.sections : [];
+        for(var i = 0; i < sections.length; i++){
+          var s = sections[i] || {};
+          var id = String(s.id || s.name || "").trim();
+          if(id === "world_politics" || id === "world-politics" || id === "worldPolitics") return s;
+        }
+        return sections[0] || null;
+      }
+      function getCards(vm){
+        var section = getWorldPoliticsSection(vm);
+        if(section && Array.isArray(section.cards)) return section.cards;
+        if(vm && Array.isArray(vm.cards)) return vm.cards;
+        return [];
+      }
+      function getSentimentSummary(vm){
+        return (vm && (vm.sentiment_summary || (vm.today && (vm.today.sentiment_summary || vm.today.sentiment)))) || {};
+      }
+      function getSummaryText(vm, summaryData){
+        return firstDefined(
+          vm && vm.summary,
+          vm && vm.today && vm.today.summary,
+          vm && vm.meta && vm.meta.summary,
+          summaryData && summaryData.summary,
+          summaryData && summaryData.text_summary,
+          summaryData && summaryData.daily_summary,
+          summaryData && summaryData.yesterday_summary_text,
+          "No summary available."
+        );
+      }
+      function getTopicTags(vm, summaryData){
+        var out = [];
+        function push(value){
+          if(value == null) return;
+          if(Array.isArray(value)){ value.forEach(push); return; }
+          var text = String(value).trim();
+          if(text) out.push(text);
+        }
+        push(vm && vm.topics);
+        push(vm && vm.today && vm.today.topics);
+        push(summaryData && summaryData.topics);
+        return Array.from(new Set(out)).slice(0, 8);
+      }
+      function normalizeLabel(raw){
+        var v = String(raw || "unknown").toLowerCase();
+        if(v === "positive" || v === "negative" || v === "neutral" || v === "mixed" || v === "unknown") return v;
+        return "unknown";
+      }
+      function normalizeArticle(card, index){
+        card = card || {};
+        var sentiment = card.sentiment || {};
+        var label = normalizeLabel(firstDefined(sentiment.sentiment_label, sentiment.sentiment, sentiment.label, card.sentiment_label, card.sentiment, card.label));
+        return {
+          title: textOr(firstDefined(card.title, card.headline), "Untitled article " + (index + 1)),
+          summary: textOr(firstDefined(card.summary, card.description, card.content), "Summary not available."),
+          url: firstDefined(card.url, card.link, "#") || "#",
+          image: firstDefined(card.image, card.urlToImage, card.thumbnail, card.image_url),
+          source: textOr(firstDefined(card.source, card.publisher, card.domain), "Unknown source"),
+          publishedAt: firstDefined(card.publishedAt, card.published_at, card.date, card.datetime),
+          label: label,
+          risk: toNumber(firstDefined(sentiment.risk, sentiment.riskScore, card.risk, card.risk_score), 0),
+          score: toNumber(firstDefined(sentiment.score, sentiment.net, card.score, card.net), 0),
+          positive: toNumber(firstDefined(sentiment.positive, card.positive), 0),
+          uncertainty: toNumber(firstDefined(sentiment.uncertainty, card.uncertainty), 0)
+        };
+      }
+      function normalizeNewsArticle(item, index){
+        item = item || {};
+        var source = item.source;
+        if(source && typeof source === "object") source = source.name || source.id || "";
+        return {
+          title: textOr(firstDefined(item.title, item.headline), "News " + (index + 1)),
+          summary: textOr(firstDefined(item.description, item.summary, item.content), "Summary not available."),
+          url: firstDefined(item.url, item.link, "#") || "#",
+          image: firstDefined(item.urlToImage, item.image, item.thumbnail),
+          source: textOr(firstDefined(source, item.publisher), "Unknown source"),
+          publishedAt: firstDefined(item.publishedAt, item.published_at, item.date),
+          label: "unknown",
+          risk: 0,
+          score: 0,
+          positive: 0,
+          uncertainty: 0
+        };
+      }
+      function fallbackMonogram(title){
+        var text = String(title || "G").trim();
+        return (text[0] || "G").toUpperCase();
+      }
+      function sortArticles(articles, sort){
+        var list = articles.slice();
+        if(sort === "score"){
+          return list.sort(function(a,b){ return (b.score - a.score) || (b.risk - a.risk); });
+        }
+        if(sort === "newest"){
+          return list.sort(function(a,b){ return new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0); });
+        }
+        return list.sort(function(a,b){ return (b.risk - a.risk) || (b.score - a.score); });
+      }
+      function riskLabelFromValue(value){
+        var n = Number(value);
+        if(!Number.isFinite(n)) return { text:"—", cls:"risk-missing" };
+        if(n >= 0.66) return { text:"HIGH", cls:"risk-high" };
+        if(n >= 0.33) return { text:"MEDIUM", cls:"risk-medium" };
+        return { text:"LOW", cls:"risk-low" };
+      }
+      function sentimentBalanceText(summary){
+        var p = toNumber(summary.positive_count, 0);
+        var n = toNumber(summary.negative_count, 0);
+        var u = toNumber(summary.neutral_count, 0);
+        var m = toNumber(summary.mixed_count, 0);
+        var max = Math.max(p, n, u, m);
+        if(max <= 0) return "—";
+        if(max === m) return "MIX";
+        if(max === p) return "POS";
+        if(max === n) return "NEG";
+        return "NEU";
+      }
+      function renderTopics(tags){
+        var row = $("topicRow");
+        if(!row) return;
+        if(!tags.length){
+          row.innerHTML = '<span class="topicTag">topics unavailable</span>';
+          return;
+        }
+        row.innerHTML = tags.map(function(tag){
+          return '<span class="topicTag">' + escapeHtml(tag) + '</span>';
+        }).join("");
+      }
+      function renderKpis(summary, articleCount){
+        setText("kpiArticles", String(toNumber(firstDefined(summary.articles, articleCount), articleCount)));
+        setText("kpiPositive", String(toNumber(summary.positive_count, 0)));
+        setText("kpiNegative", String(toNumber(summary.negative_count, 0)));
+        setText("kpiNeutral", String(toNumber(summary.neutral_count, 0)));
+        setText("kpiMixed", String(toNumber(summary.mixed_count, 0)));
+        setText("kpiUnknown", String(toNumber(summary.unknown_count, 0)));
+      }
+      function articleCard(article){
+        var safeUrl = article.url && article.url !== "#" ? article.url : "#";
+        var target = safeUrl === "#" ? "" : ' target="_blank" rel="noreferrer"';
+        var imageHtml = article.image
+          ? '<img src="' + escapeHtml(article.image) + '" alt="" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';" /><div class="thumbFallback" style="display:none">' + escapeHtml(fallbackMonogram(article.title)) + '</div>'
+          : '<div class="thumbFallback">' + escapeHtml(fallbackMonogram(article.title)) + '</div>';
 
-      empty.style.display = 'none';
-      grid.innerHTML = visible.map(articleCard).join('');
-      $('articlesNote').textContent = `${sorted.length} articles / sort=${state.sort}`;
-    }
+        return '' +
+          '<article class="articleCard">' +
+            '<div class="thumbWrap">' + imageHtml + '</div>' +
+            '<div class="articleBody">' +
+              '<div class="articleMeta">' +
+                '<span class="badge ' + escapeHtml(article.label) + '">' + escapeHtml(article.label) + '</span>' +
+                '<span class="badge">' + escapeHtml(article.source) + '</span>' +
+                '<span class="badge">' + escapeHtml(fmtDate(article.publishedAt)) + '</span>' +
+              '</div>' +
+              '<h3 class="articleTitle"><a href="' + escapeHtml(safeUrl) + '"' + target + '>' + escapeHtml(article.title) + '</a></h3>' +
+              '<p class="articleSummary">' + escapeHtml(article.summary) + '</p>' +
+              '<div class="scoreRow">' +
+                '<span class="scorePill">risk ' + escapeHtml(fmtMetric(article.risk)) + '</span>' +
+                '<span class="scorePill">score ' + escapeHtml(fmtMetric(article.score)) + '</span>' +
+                '<span class="scorePill">positive ' + escapeHtml(fmtMetric(article.positive)) + '</span>' +
+                '<span class="scorePill">unc ' + escapeHtml(fmtMetric(article.uncertainty)) + '</span>' +
+              '</div>' +
+            '</div>' +
+          '</article>';
+      }
+      function renderArticles(){
+        var grid = $("articleGrid");
+        var empty = $("emptyState");
+        var sorted = sortArticles(state.articles, state.sort);
 
-    function wireToolbar(){
-      document.querySelectorAll('[data-sort]').forEach(button => {
-        button.addEventListener('click', () => {
-          state.sort = button.dataset.sort;
-          document.querySelectorAll('[data-sort]').forEach(el => el.classList.toggle('active', el === button));
-          renderArticles();
+        if(!sorted.length){
+          grid.innerHTML = "";
+          empty.style.display = "block";
+          setText("renderedCount", "0");
+          setText("totalCount", "0");
+          return;
+        }
+
+        empty.style.display = "none";
+        grid.innerHTML = sorted.map(articleCard).join("");
+        setText("renderedCount", String(sorted.length));
+        setText("totalCount", String(sorted.length));
+      }
+      function wireToolbar(){
+        var buttons = document.querySelectorAll('[data-sort]');
+        buttons.forEach(function(button){
+          button.addEventListener('click', function(){
+            state.sort = button.dataset.sort;
+            buttons.forEach(function(el){ el.classList.toggle('active', el === button); });
+            renderArticles();
+          });
         });
-      });
+      }
+      function applyStatus(summary, articleCount, digest, summaryData){
+        var risk = riskLabelFromValue(firstDefined(summary.risk, summary.global_risk, digest && digest.global_risk));
+        setText("gsRisk", risk.text);
+        $("gsRisk").className = "status-value " + risk.cls;
+        setText("gsRiskSub", textOr(firstDefined(summary.regime_reason, summary.reason), "daily summary / sentiment"));
 
-    }
+        setText("gsSentiment", sentimentBalanceText(summary));
+        setText("gsSentimentSub", 'pos ' + toNumber(summary.positive_count, 0) + ' / neg ' + toNumber(summary.negative_count, 0) + ' / neu ' + toNumber(summary.neutral_count, 0) + ' / mix ' + toNumber(summary.mixed_count, 0));
 
-    async function init(){
-      wireToolbar();
+        setText("gsFx", textOr(firstDefined(digest && digest.fx_regime, summary.fx_regime, summary.fx_decision), "—"));
+        setText("gsFxSub", textOr(firstDefined(summary.fx_reason, digest && digest.fx_reason), "decision / fallback"));
 
-      const digestResult = await fetchFirstJson(DIGEST_CANDIDATES);
-      const summaryResult = await fetchFirstJson(SUMMARY_CANDIDATES);
-      const newsResult = await fetchFirstJson(NEWS_CANDIDATES);
+        setText("gsArticles", String(articleCount));
+        setText("gsArticlesSub", state.sourceMode === 'digest' ? 'digest latest' : (state.sourceMode === 'news-fallback' ? 'fallback news' : 'no data'));
 
-      state.digest = digestResult?.data || null;
-      state.summary = summaryResult?.data || null;
-      state.news = newsResult?.data || null;
+        var updated = firstDefined(digest && digest.updated_at, digest && digest.as_of, digest && digest.date, summaryData && summaryData.generated_at, summaryData && summaryData.as_of);
+        setText("gsUpdated", textOr(updated ? String(updated).slice(0, 10) : null, "—"));
+        setText("gsUpdatedSub", textOr(state.digestPath, 'latest runtime stamp'));
 
-      const cards = state.digest ? getCards(state.digest).map(normalizeArticle) : [];
-      const newsItemsRaw = Array.isArray(state.news?.items) ? state.news.items : Array.isArray(state.news) ? state.news : [];
-      const newsItems = newsItemsRaw.map(normalizeNewsArticle);
+        var asOf = textOr(firstDefined(digest && digest.as_of, digest && digest.date, summaryData && summaryData.as_of, summaryData && summaryData.date), '--');
+        setText("pillAsOfLocal", 'as_of: ' + asOf);
+        setText("pillReadyLocal", articleCount ? 'Ready' : 'No data');
+        if($('pillAsOf')) $('pillAsOf').textContent = 'as_of: ' + asOf;
+        if($('pillReady')) $('pillReady').textContent = articleCount ? 'Ready' : 'No data';
+      }
+      async function init(){
+        wireToolbar();
 
-      state.articles = cards.length ? cards : newsItems;
-      state.source = cards.length
-        ? `digest:${digestResult?.url || 'n/a'}`
-        : newsItems.length
-          ? `fallback:${newsResult?.url || 'n/a'}`
-          : 'no-data';
+        var digestResult = await fetchFirstJson(DIGEST_CANDIDATES);
+        var summaryResult = await fetchFirstJson(SUMMARY_CANDIDATES);
+        var newsResult = await fetchFirstJson(NEWS_CANDIDATES);
 
-      const sentimentSummary = getSentimentSummary(state.digest || {});
-      renderKpis(sentimentSummary, state.articles.length);
-      renderSummary(state.digest || {}, state.summary || {});
-      renderArticles();
+        var digest = digestResult && digestResult.data ? digestResult.data : null;
+        var summaryData = summaryResult && summaryResult.data ? summaryResult.data : null;
+        var newsData = newsResult && newsResult.data ? newsResult.data : null;
 
-      $('metaAsOf').textContent = `as_of: ${textOr(firstDefined(state.digest?.date, state.digest?.as_of, state.summary?.as_of), '--')}`;
-      $('metaItems').textContent = `items: ${state.articles.length}`;
-      $('metaSource').textContent = `source: ${state.source}`;
-      $('footerNote').textContent = `Digest source: ${state.source}`;
+        state.digestPath = digestResult && digestResult.url ? digestResult.url : '-';
+        state.summaryPath = summaryResult && summaryResult.url ? summaryResult.url : '-';
+        state.newsPath = newsResult && newsResult.url ? newsResult.url : '-';
 
-      const section = getWorldPoliticsSection(state.digest || {});
-      const highlightCount = Array.isArray(section?.cards) ? section.cards.length : 0;
-      $('heroText').textContent = cards.length
-        ? `Summary と Highlights を同じ高さで並べ、Highlights は KPI のみ表示しています。Articles は下段へ移動し、Top highlights ${highlightCount} 件を基準に表示します。`
-        : 'Digest ViewModel を取得できなかったため fallback news を表示しています。正式運用では data/digest/view_model_latest.json を優先してください。';
-    }
+        var cards = digest ? getCards(digest).map(normalizeArticle) : [];
+        var newsItemsRaw = Array.isArray(newsData && newsData.items) ? newsData.items : Array.isArray(newsData) ? newsData : [];
+        var newsItems = newsItemsRaw.map(normalizeNewsArticle);
 
-    init();
+        state.articles = cards.length ? cards : newsItems;
+        state.sourceMode = cards.length ? 'digest' : (newsItems.length ? 'news-fallback' : 'no-data');
+
+        var sentimentSummary = getSentimentSummary(digest || {});
+        var summaryText = textOr(getSummaryText(digest || {}, summaryData || {}), 'No summary available.');
+        var topicTags = getTopicTags(digest || {}, summaryData || {});
+        var section = getWorldPoliticsSection(digest || {});
+        var highlightCount = Array.isArray(section && section.cards) ? section.cards.length : 0;
+
+        setText('summaryBody', summaryText);
+        setText('summaryHint', state.sourceMode === 'digest' ? 'digest preferred' : (state.sourceMode === 'news-fallback' ? 'fallback summary/news' : 'no data'));
+        setText('summarySource', 'source: ' + (summaryResult && summaryResult.url ? summaryResult.url : state.digestPath));
+        setText('highlightsSource', 'source: ' + state.digestPath);
+        setText('articlesSource', 'source: ' + (state.sourceMode === 'digest' ? state.digestPath : state.newsPath));
+        setText('articlesState', state.sourceMode === 'digest' ? 'cards[].sentiment preferred' : 'daily_news_latest fallback');
+        renderTopics(topicTags);
+        renderKpis(sentimentSummary, state.articles.length);
+        renderArticles();
+        applyStatus(sentimentSummary, state.articles.length, digest || {}, summaryData || {});
+
+        if(state.sourceMode === 'digest'){
+          setText('heroText', 'Summary と Highlights を横並び同高で配置し、Highlights は KPI のみ表示します。Articles はその直下に全件表示します。');
+          setText('highlightsHint', 'KPI only / digest');
+        }else if(state.sourceMode === 'news-fallback'){
+          setText('heroText', 'Digest ViewModel を取得できなかったため fallback news を全件表示しています。正式運用では view_model_latest.json を優先してください。');
+          setText('highlightsHint', 'KPI only / fallback');
+        }else{
+          setText('heroText', 'Digest / Summary / News の取得に失敗しました。データ生成後に再読み込みしてください。');
+          setText('highlightsHint', 'KPI only / no data');
+        }
+      }
+
+      init();
+    })();
   </script>
 </body>
 </html>

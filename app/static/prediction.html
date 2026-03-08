@@ -4,81 +4,336 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Prediction - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260308-pred1" />
-  <script src="/static/_shared_nav.js?v=20260308-pred1"></script>
-  <script src="/static/common/global_status.js?v=20260308-pred1"></script>
+  <link rel="stylesheet" href="/static/app.css?v=20260308-ui2" />
+  <script src="/static/common/layout.js?v=20260308-ui2"></script>
+  <script src="/static/common/global_status.js?v=20260308-ui2"></script>
   <style>
     .pred-hero{margin-bottom:14px;}
-    .status-shell{margin-top:14px;padding:14px 16px;border-radius:18px;border:1px solid rgba(120,160,220,.18);background:linear-gradient(180deg, rgba(10,16,30,.66), rgba(7,12,24,.48));box-shadow:0 12px 30px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.04);}
-    .status-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
-    .status-title{font-size:12px;letter-spacing:.18em;text-transform:uppercase;opacity:.82;}
-    .status-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;}
-    .status-item{min-width:0;border:1px solid rgba(120,160,220,.12);border-radius:14px;padding:12px 12px 10px;background:rgba(8,14,28,.22);}
-    .status-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.72;margin-bottom:6px;}
-    .status-value{font-size:24px;line-height:1.05;font-weight:700;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#eef4ff;transition:color .18s ease, text-shadow .18s ease;}
-    .status-sub{margin-top:4px;font-size:12px;opacity:.72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+    .status-shell{
+      margin-top:14px;
+      padding:14px 16px;
+      border-radius:18px;
+      border:1px solid rgba(120,160,220,.18);
+      background:linear-gradient(180deg, rgba(10,16,30,.66), rgba(7,12,24,.48));
+      box-shadow:0 12px 30px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    .status-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .status-title{
+      font-size:12px;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      opacity:.82;
+    }
+    .status-grid{
+      display:grid;
+      grid-template-columns:repeat(5,minmax(0,1fr));
+      gap:12px;
+    }
+    .status-item{
+      min-width:0;
+      border:1px solid rgba(120,160,220,.12);
+      border-radius:14px;
+      padding:12px 12px 10px;
+      background:rgba(8,14,28,.22);
+    }
+    .status-label{
+      font-size:11px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      opacity:.72;
+      margin-bottom:6px;
+    }
+    .status-value{
+      font-size:24px;
+      line-height:1.05;
+      font-weight:700;
+      letter-spacing:-.02em;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      color:#eef4ff;
+      transition:color .18s ease, text-shadow .18s ease;
+    }
+    .status-sub{
+      margin-top:4px;
+      font-size:12px;
+      opacity:.72;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
     .risk-low{color:#7eb6ff;text-shadow:0 0 18px rgba(126,182,255,.14);}
-    .risk-medium{color:#ffc36d;text-shadow:0 0 18px rgba(255,195,109,.12);}
+    .risk-guarded,.risk-medium{color:#f6c760;text-shadow:0 0 18px rgba(246,199,96,.12);}
+    .risk-elevated{color:#ff9f5a;text-shadow:0 0 18px rgba(255,159,90,.14);}
     .risk-high{color:#ff7d7d;text-shadow:0 0 18px rgba(255,125,125,.14);}
+    .risk-critical{color:#ff4d88;text-shadow:0 0 18px rgba(255,77,136,.14);}
     .risk-missing{color:#d7ddeb;}
 
-    .pred-summary-grid{display:grid;grid-template-columns:1.35fr .9fr;gap:16px;margin-top:14px;}
+    .pred-summary-grid{
+      display:grid;
+      grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);
+      gap:16px;
+      margin-top:14px;
+      align-items:stretch;
+    }
     .pred-card{min-width:0;}
-    .pred-section{padding:18px;}
-    .pred-title{font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.75;margin-bottom:8px;}
-    .pred-headline{font-size:34px;line-height:1.08;letter-spacing:-.03em;font-weight:800;margin:0 0 10px;}
-    .pred-summary{color:var(--soft,#c8d7f6);font-size:15px;line-height:1.7;margin:0;white-space:pre-wrap;}
-    .pred-pills{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;}
-    .pred-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;border:1px solid rgba(120,160,220,.14);background:rgba(255,255,255,.025);font-size:13px;color:var(--soft,#c8d7f6);}
+    .pred-lead,
+    .pred-side-card{
+      height:100%;
+      display:flex;
+      flex-direction:column;
+    }
+    .pred-title{
+      font-size:12px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      opacity:.75;
+      margin-bottom:8px;
+    }
+    .pred-headline{
+      font-size:34px;
+      line-height:1.08;
+      letter-spacing:-.03em;
+      font-weight:800;
+      margin:0 0 10px;
+    }
+    .pred-summary{
+      color:var(--soft,#c8d7f6);
+      font-size:15px;
+      line-height:1.8;
+      margin:0;
+      white-space:pre-wrap;
+      word-break:break-word;
+      flex:1;
+    }
+    .pred-pills{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:16px;
+    }
+    .pred-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:999px;
+      border:1px solid rgba(120,160,220,.14);
+      background:rgba(255,255,255,.025);
+      font-size:13px;
+      color:var(--soft,#c8d7f6);
+    }
 
-    .pred-side-stack{display:flex;flex-direction:column;gap:14px;}
-    .pred-metric{padding:16px;border-radius:18px;border:1px solid rgba(120,160,220,.14);background:rgba(8,14,28,.18);}
-    .pred-metric .label{font-size:12px;letter-spacing:.1em;text-transform:uppercase;opacity:.72;margin-bottom:8px;}
-    .pred-metric .value{font-size:30px;line-height:1.02;font-weight:800;letter-spacing:-.03em;}
-    .pred-metric .sub{margin-top:8px;font-size:13px;color:var(--soft,#c8d7f6);}
-    .confidence{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;}
-    .bar{height:10px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden;border:1px solid rgba(255,255,255,.03);}
-    .bar > span{display:block;height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#81b7ff,#b29dff);transition:width .35s ease;}
+    .pred-side-stack{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      flex:1;
+    }
+    .pred-metric{
+      padding:16px;
+      border-radius:18px;
+      border:1px solid rgba(120,160,220,.14);
+      background:rgba(8,14,28,.18);
+    }
+    .pred-metric .label{
+      font-size:12px;
+      letter-spacing:.1em;
+      text-transform:uppercase;
+      opacity:.72;
+      margin-bottom:8px;
+    }
+    .pred-metric .value{
+      font-size:30px;
+      line-height:1.02;
+      font-weight:800;
+      letter-spacing:-.03em;
+    }
+    .pred-metric .sub{
+      margin-top:8px;
+      font-size:13px;
+      color:var(--soft,#c8d7f6);
+    }
+    .confidence{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:10px;
+      align-items:center;
+    }
+    .bar{
+      height:10px;
+      border-radius:999px;
+      background:rgba(255,255,255,.06);
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.03);
+    }
+    .bar > span{
+      display:block;
+      height:100%;
+      width:0%;
+      border-radius:999px;
+      background:linear-gradient(90deg,#81b7ff,#b29dff);
+      transition:width .35s ease;
+    }
 
-    .pred-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px;}
-    .pred-kpi{border:1px solid rgba(120,160,220,.16);border-radius:16px;padding:14px 16px;background:rgba(8,14,28,.18);min-height:86px;}
-    .pred-kpi .hint{margin-bottom:6px;}
-    .pred-kpi .value{font-size:31px;line-height:1.05;letter-spacing:-0.02em;font-weight:600;}
+    .pred-kpis{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:12px;
+      margin-top:14px;
+    }
+    .pred-kpi{
+      border:1px solid rgba(120,160,220,.16);
+      border-radius:16px;
+      padding:14px 16px;
+      background:rgba(8,14,28,.18);
+      min-height:86px;
+    }
+    .pred-kpi .value{
+      font-size:31px;
+      line-height:1.05;
+      letter-spacing:-0.02em;
+      font-weight:600;
+    }
 
-    .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px;}
-    .sectionTitle{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;}
-    .sectionTitle h2{margin:0;font-size:18px;line-height:1.2;}
+    .grid2{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:16px;
+      margin-top:16px;
+    }
+    .sectionTitle{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .sectionTitle h2{
+      margin:0;
+      font-size:18px;
+      line-height:1.2;
+    }
 
-    .scenario-list,.list{display:flex;flex-direction:column;gap:12px;}
-    .scenario{padding:16px;border-radius:18px;border:1px solid rgba(120,160,220,.12);background:rgba(255,255,255,.02);}
-    .scenario-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;}
-    .scenario-name{font-size:15px;font-weight:800;letter-spacing:.02em;text-transform:capitalize;}
-    .scenario-prob{color:var(--soft,#c8d7f6);font-weight:700;font-size:13px;}
-    .scenario-summary{color:var(--soft,#c8d7f6);margin:0 0 12px;white-space:pre-wrap;}
-    .mini-bar{height:8px;border-radius:999px;background:rgba(255,255,255,.05);overflow:hidden;margin-bottom:10px;}
-    .mini-bar > span{display:block;height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#8cc0ff,#c1b8ff);transition:width .35s ease;}
+    .scenario-list,.list{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .scenario{
+      padding:16px;
+      border-radius:18px;
+      border:1px solid rgba(120,160,220,.12);
+      background:rgba(255,255,255,.02);
+    }
+    .scenario-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:10px;
+    }
+    .scenario-name{
+      font-size:15px;
+      font-weight:800;
+      letter-spacing:.02em;
+      text-transform:capitalize;
+    }
+    .scenario-prob{
+      color:var(--soft,#c8d7f6);
+      font-weight:700;
+      font-size:13px;
+    }
+    .scenario-summary{
+      color:var(--soft,#c8d7f6);
+      margin:0 0 12px;
+      white-space:pre-wrap;
+    }
+    .mini-bar{
+      height:8px;
+      border-radius:999px;
+      background:rgba(255,255,255,.05);
+      overflow:hidden;
+      margin-bottom:10px;
+    }
+    .mini-bar > span{
+      display:block;
+      height:100%;
+      width:0%;
+      border-radius:999px;
+      background:linear-gradient(90deg,#8cc0ff,#c1b8ff);
+      transition:width .35s ease;
+    }
 
-    .list-item{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:16px;background:rgba(255,255,255,.02);border:1px solid rgba(120,160,220,.12);}
-    .bullet{width:28px;height:28px;flex:0 0 28px;border-radius:10px;display:grid;place-items:center;color:#06111f;font-size:12px;font-weight:900;background:linear-gradient(135deg,#9ec7ff,#c5b8ff);}
-    .list-item strong{display:block;margin-bottom:2px;font-size:13px;}
-    .list-item span{color:var(--soft,#c8d7f6);font-size:13px;white-space:pre-wrap;}
+    .list-item{
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+      padding:12px;
+      border-radius:16px;
+      background:rgba(255,255,255,.02);
+      border:1px solid rgba(120,160,220,.12);
+    }
+    .bullet{
+      width:28px;
+      height:28px;
+      flex:0 0 28px;
+      border-radius:10px;
+      display:grid;
+      place-items:center;
+      color:#06111f;
+      font-size:12px;
+      font-weight:900;
+      background:linear-gradient(135deg,#9ec7ff,#c5b8ff);
+    }
+    .list-item strong{
+      display:block;
+      margin-bottom:2px;
+      font-size:13px;
+    }
+    .list-item span{
+      color:var(--soft,#c8d7f6);
+      font-size:13px;
+      white-space:pre-wrap;
+    }
 
-    .empty{display:none;padding:22px;border-radius:22px;border:1px dashed rgba(130,170,255,.24);background:rgba(255,255,255,.02);color:var(--soft,#c8d7f6);margin-top:16px;}
-    .good{color:#4fd1a5}
-    .guarded{color:#f6c760}
-    .elevated{color:#ff9f5a}
-    .high{color:#ff6b6b}
-    .critical{color:#ff4d88}
+    .empty{
+      display:none;
+      padding:22px;
+      border-radius:22px;
+      border:1px dashed rgba(130,170,255,.24);
+      background:rgba(255,255,255,.02);
+      color:var(--soft,#c8d7f6);
+      margin-top:16px;
+    }
 
-    .pred-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--muted,#9db0d6);font-size:12px;padding:10px 2px 0;margin-top:10px;flex-wrap:wrap;}
+    .pred-foot{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      color:var(--muted,#9db0d6);
+      font-size:12px;
+      padding:10px 2px 0;
+      margin-top:10px;
+      flex-wrap:wrap;
+    }
 
-    @media (max-width: 1100px){
+    @media (max-width:1100px){
       .status-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
       .pred-summary-grid{grid-template-columns:1fr;}
       .pred-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}
       .grid2{grid-template-columns:1fr;}
     }
-    @media (max-width: 700px){
+    @media (max-width:700px){
       .status-grid{grid-template-columns:1fr;}
       .pred-kpis{grid-template-columns:1fr;}
       .pred-headline{font-size:28px;}
@@ -86,322 +341,347 @@
   </style>
 </head>
 <body>
-<main class="gp-main">
-  <div class="page gp-page gp-page--sentiment">
-    <section class="panel">
-      <div class="pred-hero">
-        <div class="h1">Prediction</div>
-        <p class="sub">Prediction Runtime の最新出力を読み込み、シナリオ確率・リスク・監視項目を表示します。</p>
+  <div id="site-header"></div>
 
-        <div class="status-shell">
-          <div class="status-top">
-            <div class="status-title">Global Status</div>
-            <div class="pillrow">
-              <span id="pillAsOf" class="pill">as_of: --</span>
-              <span id="pillReady" class="pill">loading…</span>
-            </div>
-          </div>
+  <div class="page container">
+    <main class="gp-main">
+      <div class="gp-page">
+        <section class="panel">
+          <div class="pred-hero">
+            <div class="h1">Prediction</div>
+            <p class="sub">Prediction Runtime の最新出力を読み込み、シナリオ確率・リスク・監視項目を表示します。</p>
 
-          <div class="status-grid">
-            <div class="status-item">
-              <div class="status-label">Global Risk</div>
-              <div id="gsRisk" class="status-value risk-missing">—</div>
-              <div id="gsRiskSub" class="status-sub">daily summary / sentiment</div>
-            </div>
-            <div class="status-item">
-              <div class="status-label">Sentiment Balance</div>
-              <div id="gsSentiment" class="status-value">—</div>
-              <div id="gsSentimentSub" class="status-sub">article distribution</div>
-            </div>
-            <div class="status-item">
-              <div class="status-label">FX Regime</div>
-              <div id="gsFx" class="status-value">—</div>
-              <div id="gsFxSub" class="status-sub">decision / fallback</div>
-            </div>
-            <div class="status-item">
-              <div class="status-label">Articles</div>
-              <div id="gsArticles" class="status-value">—</div>
-              <div id="gsArticlesSub" class="status-sub">digest latest</div>
-            </div>
-            <div class="status-item">
-              <div class="status-label">Updated</div>
-              <div id="gsUpdated" class="status-value">—</div>
-              <div id="gsUpdatedSub" class="status-sub">latest runtime stamp</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="pred-summary-grid">
-          <div class="card pred-card pred-section">
-            <div class="pred-title">Prediction Dashboard</div>
-            <h2 class="pred-headline" id="summary-title">Future outlook is loading…</h2>
-            <p class="pred-summary" id="summary-text">Reading the latest prediction output and preparing the current risk outlook.</p>
-
-            <div class="pred-pills">
-              <span class="pred-pill"><strong>As of</strong> <span id="as-of">--</span></span>
-              <span class="pred-pill"><strong>Horizon</strong> <span id="horizon">--</span></span>
-              <span class="pred-pill"><strong>Dominant Scenario</strong> <span id="dominant">--</span></span>
-            </div>
-          </div>
-
-          <div class="card pred-card pred-section">
-            <div class="pred-side-stack">
-              <div class="pred-metric">
-                <div class="label">Overall Risk</div>
-                <div class="value" id="overall-risk">--</div>
-                <div class="sub" id="risk-sub">Waiting for prediction_latest.json</div>
-              </div>
-
-              <div class="pred-metric">
-                <div class="label">Confidence</div>
-                <div class="confidence">
-                  <div class="bar"><span id="confidence-bar"></span></div>
-                  <div id="confidence-value">--</div>
+            <div class="status-shell">
+              <div class="status-top">
+                <div class="status-title">Global Status</div>
+                <div class="pillrow">
+                  <span id="pillAsOfLocal" class="pill">as_of: --</span>
+                  <span id="pillReadyLocal" class="pill">loading…</span>
                 </div>
               </div>
 
-              <div class="pillrow">
-                <a class="btn" id="json-link" href="/analysis/prediction/prediction_latest.json" target="_blank" rel="noopener noreferrer">Open JSON</a>
-                <a class="btn" href="/static/prediction_history.html">Open History</a>
+              <div class="status-grid">
+                <div class="status-item">
+                  <div class="status-label">Global Risk</div>
+                  <div id="gsRisk" class="status-value risk-missing">—</div>
+                  <div id="gsRiskSub" class="status-sub">daily summary / sentiment</div>
+                </div>
+                <div class="status-item">
+                  <div class="status-label">Sentiment Balance</div>
+                  <div id="gsSentiment" class="status-value">—</div>
+                  <div id="gsSentimentSub" class="status-sub">article distribution</div>
+                </div>
+                <div class="status-item">
+                  <div class="status-label">FX Regime</div>
+                  <div id="gsFx" class="status-value">—</div>
+                  <div id="gsFxSub" class="status-sub">decision / fallback</div>
+                </div>
+                <div class="status-item">
+                  <div class="status-label">Articles</div>
+                  <div id="gsArticles" class="status-value">—</div>
+                  <div id="gsArticlesSub" class="status-sub">digest latest</div>
+                </div>
+                <div class="status-item">
+                  <div class="status-label">Updated</div>
+                  <div id="gsUpdated" class="status-value">—</div>
+                  <div id="gsUpdatedSub" class="status-sub">latest runtime stamp</div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div class="pred-kpis">
-          <div class="pred-kpi">
-            <div class="hint">Best Case</div>
-            <div class="value" id="best-prob">--</div>
-          </div>
-          <div class="pred-kpi">
-            <div class="hint">Base Case</div>
-            <div class="value" id="base-prob">--</div>
-          </div>
-          <div class="pred-kpi">
-            <div class="hint">Worst Case</div>
-            <div class="value" id="worst-prob">--</div>
-          </div>
-          <div class="pred-kpi">
-            <div class="hint">Signal Count</div>
-            <div class="value" id="signal-count">--</div>
-          </div>
-        </div>
-      </div>
+          <div class="pred-summary-grid">
+            <div class="card pred-card pred-lead">
+              <div class="pred-title">Prediction Dashboard</div>
+              <h2 class="pred-headline" id="summary-title">Future outlook is loading…</h2>
+              <p class="pred-summary" id="summary-text">Reading the latest prediction output and preparing the current risk outlook.</p>
 
-      <div class="grid2">
-        <div class="card pred-card pred-section">
-          <div class="sectionTitle">
-            <h2>Scenario probabilities</h2>
-            <span class="hint">best / base / worst</span>
-          </div>
-          <div class="scenario-list">
-            <div class="scenario">
-              <div class="scenario-top">
-                <div class="scenario-name">Best case</div>
-                <div class="scenario-prob" id="scenario-best-label">--</div>
+              <div class="pred-pills">
+                <span class="pred-pill"><strong>As of</strong> <span id="as-of">--</span></span>
+                <span class="pred-pill"><strong>Horizon</strong> <span id="horizon">--</span></span>
+                <span class="pred-pill"><strong>Dominant Scenario</strong> <span id="dominant">--</span></span>
               </div>
-              <div class="mini-bar"><span id="scenario-best-bar"></span></div>
-              <p class="scenario-summary" id="scenario-best-summary">No data yet.</p>
             </div>
 
-            <div class="scenario">
-              <div class="scenario-top">
-                <div class="scenario-name">Base case</div>
-                <div class="scenario-prob" id="scenario-base-label">--</div>
+            <div class="card pred-card pred-side-card">
+              <div class="pred-side-stack">
+                <div class="pred-metric">
+                  <div class="label">Overall Risk</div>
+                  <div class="value risk-missing" id="overall-risk">--</div>
+                  <div class="sub" id="risk-sub">Waiting for prediction_latest.json</div>
+                </div>
+
+                <div class="pred-metric">
+                  <div class="label">Confidence</div>
+                  <div class="confidence">
+                    <div class="bar"><span id="confidence-bar"></span></div>
+                    <div id="confidence-value">--</div>
+                  </div>
+                </div>
+
+                <div class="pillrow">
+                  <a class="btn" id="json-link" href="/analysis/prediction/prediction_latest.json" target="_blank" rel="noopener noreferrer">Open JSON</a>
+                  <a class="btn" href="/static/prediction_history.html">Open History</a>
+                </div>
               </div>
-              <div class="mini-bar"><span id="scenario-base-bar"></span></div>
-              <p class="scenario-summary" id="scenario-base-summary">No data yet.</p>
+            </div>
+          </div>
+
+          <div class="pred-kpis">
+            <div class="pred-kpi">
+              <div class="hint">Best Case</div>
+              <div class="value" id="best-prob">--</div>
+            </div>
+            <div class="pred-kpi">
+              <div class="hint">Base Case</div>
+              <div class="value" id="base-prob">--</div>
+            </div>
+            <div class="pred-kpi">
+              <div class="hint">Worst Case</div>
+              <div class="value" id="worst-prob">--</div>
+            </div>
+            <div class="pred-kpi">
+              <div class="hint">Signal Count</div>
+              <div class="value" id="signal-count">--</div>
+            </div>
+          </div>
+
+          <div class="grid2">
+            <div class="card pred-card">
+              <div class="sectionTitle">
+                <h2>Scenario probabilities</h2>
+                <span class="hint">best / base / worst</span>
+              </div>
+              <div class="scenario-list">
+                <div class="scenario">
+                  <div class="scenario-top">
+                    <div class="scenario-name">Best case</div>
+                    <div class="scenario-prob" id="scenario-best-label">--</div>
+                  </div>
+                  <div class="mini-bar"><span id="scenario-best-bar"></span></div>
+                  <p class="scenario-summary" id="scenario-best-summary">No data yet.</p>
+                </div>
+
+                <div class="scenario">
+                  <div class="scenario-top">
+                    <div class="scenario-name">Base case</div>
+                    <div class="scenario-prob" id="scenario-base-label">--</div>
+                  </div>
+                  <div class="mini-bar"><span id="scenario-base-bar"></span></div>
+                  <p class="scenario-summary" id="scenario-base-summary">No data yet.</p>
+                </div>
+
+                <div class="scenario">
+                  <div class="scenario-top">
+                    <div class="scenario-name">Worst case</div>
+                    <div class="scenario-prob" id="scenario-worst-label">--</div>
+                  </div>
+                  <div class="mini-bar"><span id="scenario-worst-bar"></span></div>
+                  <p class="scenario-summary" id="scenario-worst-summary">No data yet.</p>
+                </div>
+              </div>
             </div>
 
-            <div class="scenario">
-              <div class="scenario-top">
-                <div class="scenario-name">Worst case</div>
-                <div class="scenario-prob" id="scenario-worst-label">--</div>
+            <div class="card pred-card">
+              <div class="sectionTitle">
+                <h2>What to watch</h2>
+                <span class="hint">watchpoints</span>
               </div>
-              <div class="mini-bar"><span id="scenario-worst-bar"></span></div>
-              <p class="scenario-summary" id="scenario-worst-summary">No data yet.</p>
+              <div class="list" id="watchpoints-list"></div>
             </div>
           </div>
-        </div>
 
-        <div class="card pred-card pred-section">
-          <div class="sectionTitle">
-            <h2>What to watch</h2>
-            <span class="hint">watchpoints</span>
+          <div class="grid2">
+            <div class="card pred-card">
+              <div class="sectionTitle">
+                <h2>Primary drivers</h2>
+                <span class="hint">drivers</span>
+              </div>
+              <div class="list" id="drivers-list"></div>
+            </div>
+
+            <div class="card pred-card">
+              <div class="sectionTitle">
+                <h2>Invalidation conditions</h2>
+                <span class="hint">watch for breaks</span>
+              </div>
+              <div class="list" id="invalidations-list"></div>
+            </div>
           </div>
-          <div class="list" id="watchpoints-list"></div>
-        </div>
-      </div>
 
-      <div class="grid2">
-        <div class="card pred-card pred-section">
-          <div class="sectionTitle">
-            <h2>Primary drivers</h2>
-            <span class="hint">drivers</span>
+          <div class="card pred-card" style="margin-top:16px;">
+            <div class="sectionTitle">
+              <h2>Key implications</h2>
+              <span class="hint">read-only runtime view</span>
+            </div>
+            <div class="list" id="implications-list"></div>
           </div>
-          <div class="list" id="drivers-list"></div>
-        </div>
 
-        <div class="card pred-card pred-section">
-          <div class="sectionTitle">
-            <h2>Invalidation conditions</h2>
-            <span class="hint">watch for breaks</span>
+          <div class="empty" id="empty-state">
+            prediction_latest.json could not be loaded. Check the prediction runtime output and server mapping for <code>/analysis/prediction/prediction_latest.json</code>.
           </div>
-          <div class="list" id="invalidations-list"></div>
-        </div>
-      </div>
 
-      <div class="card pred-card pred-section" style="margin-top:16px;">
-        <div class="sectionTitle">
-          <h2>Key implications</h2>
-          <span class="hint">read-only runtime view</span>
-        </div>
-        <div class="list" id="implications-list"></div>
+          <div class="pred-foot">
+            <div>Prediction UI is read-only. Logic lives in scripts + prediction outputs.</div>
+            <div id="generated-at">generated_at: --</div>
+          </div>
+        </section>
       </div>
-
-      <div class="empty" id="empty-state">
-        prediction_latest.json could not be loaded. Check the prediction runtime output and server mapping for <code>/analysis/prediction/prediction_latest.json</code>.
-      </div>
-
-      <div class="pred-foot">
-        <div>Prediction UI is read-only. Logic lives in scripts + prediction outputs.</div>
-        <div id="generated-at">generated_at: --</div>
-      </div>
-    </section>
+    </main>
   </div>
-</main>
 
-<script>
-(function(){
-  "use strict";
+  <div id="site-footer"></div>
 
-  var SOURCE_URL = "/analysis/prediction/prediction_latest.json";
-  var el = function(id){ return document.getElementById(id); };
+  <script>
+  (function(){
+    "use strict";
 
-  function pct(value){
-    var n = Number(value);
-    if (!Number.isFinite(n)) return "--";
-    return (n * 100).toFixed(0) + "%";
-  }
+    var SOURCE_URL = "/analysis/prediction/prediction_latest.json";
+    var el = function(id){ return document.getElementById(id); };
 
-  function confPct(value){
-    var n = Number(value);
-    if (!Number.isFinite(n)) return "--";
-    return (n * 100).toFixed(1) + "%";
-  }
-
-  function cap(text){
-    if (!text || typeof text !== "string") return "--";
-    return text.replaceAll("_"," ").replace(/\b\w/g, function(ch){ return ch.toUpperCase(); });
-  }
-
-  function riskClass(risk){
-    var key = String(risk || "").toLowerCase();
-    if (["low","guarded","elevated","high","critical"].includes(key)) return key;
-    return "";
-  }
-
-  function setScenarioBlock(prefix, prob, summary){
-    el("scenario-" + prefix + "-label").textContent = pct(prob);
-    el("scenario-" + prefix + "-bar").style.width = Number.isFinite(Number(prob)) ? Math.max(0, Math.min(100, prob * 100)) + "%" : "0%";
-    el("scenario-" + prefix + "-summary").textContent = summary || "No summary";
-  }
-
-  function renderList(targetId, items, label){
-    var target = el(targetId);
-    target.innerHTML = "";
-
-    if (!Array.isArray(items) || items.length === 0){
-      var node = document.createElement("div");
-      node.className = "list-item";
-      node.innerHTML = '<div class="bullet">–</div><div><strong>' + label + '</strong><span>No data</span></div>';
-      target.appendChild(node);
-      return;
+    function setText(id, value){
+      var node = el(id);
+      if(node) node.textContent = value;
     }
 
-    items.forEach(function(item, idx){
-      var node = document.createElement("div");
-      node.className = "list-item";
-      node.innerHTML =
-        '<div class="bullet">' + (idx + 1) + '</div>' +
-        '<div><strong>' + label + ' ' + (idx + 1) + '</strong><span>' + item + '</span></div>';
-      target.appendChild(node);
-    });
-  }
-
-  function render(payload){
-    var risk = String(payload.overall_risk || "--");
-    var riskEl = el("overall-risk");
-    riskEl.textContent = cap(risk);
-    riskEl.className = "value " + riskClass(risk);
-
-    el("risk-sub").textContent = "Dominant scenario: " + cap(payload.dominant_scenario || "--");
-    el("summary-title").textContent = cap(payload.dominant_scenario || "prediction outlook");
-    el("summary-text").textContent = payload.summary || "No summary available.";
-    el("as-of").textContent = payload.as_of || "--";
-    el("horizon").textContent = payload.horizon || "--";
-    el("dominant").textContent = cap(payload.dominant_scenario || "--");
-    el("generated-at").textContent = "generated_at: " + (payload.generated_at || "--");
-
-    var confidence = Number(payload.confidence);
-    el("confidence-value").textContent = confPct(confidence);
-    el("confidence-bar").style.width = Number.isFinite(confidence) ? Math.max(0, Math.min(100, confidence * 100)) + "%" : "0%";
-
-    var probs = payload.scenario_probabilities || {};
-    var best = Number(probs.best_case);
-    var base = Number(probs.base_case);
-    var worst = Number(probs.worst_case);
-
-    el("best-prob").textContent = pct(best);
-    el("base-prob").textContent = pct(base);
-    el("worst-prob").textContent = pct(worst);
-    el("signal-count").textContent = String((payload.meta && payload.meta.signal_count) ?? "--");
-
-    setScenarioBlock("best", best, best > base && best > worst ? "Best case is currently dominant." : "Upside path if risk pressure softens.");
-    setScenarioBlock("base", base, payload.dominant_scenario === "base_case" ? (payload.summary || "Base case is dominant.") : "Central working scenario.");
-    setScenarioBlock("worst", worst, worst >= 0.25 ? "Adverse branch is meaningful and should be watched." : "Adverse branch exists but is not dominant.");
-
-    renderList("watchpoints-list", payload.watchpoints || [], "Watchpoint");
-    renderList("drivers-list", payload.drivers || [], "Driver");
-    renderList("invalidations-list", payload.invalidation_conditions || [], "Invalidation");
-    renderList("implications-list", payload.key_implications || [], "Implication");
-
-    el("empty-state").style.display = "none";
-  }
-
-  async function loadPrediction(){
-    try{
-      var res = await fetch(SOURCE_URL + "?t=" + Date.now(), { cache: "no-store" });
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      var payload = await res.json();
-      render(payload);
-    }catch(err){
-      console.error(err);
-      el("empty-state").style.display = "block";
-      el("summary-title").textContent = "Prediction output not available";
-      el("summary-text").textContent = "Check prediction runtime output and server mapping.";
+    function pct(value){
+      var n = Number(value);
+      if (!Number.isFinite(n)) return "--";
+      return (n * 100).toFixed(0) + "%";
     }
-  }
 
-  async function main(){
-    try{
-      await window.GPGlobalStatus.load({
-        fxDecisionCandidates: [
-          "/data/fx/fx_decision_latest.json",
-          "/data/fx/fx_decision_latest_jpythb.json"
-        ]
+    function confPct(value){
+      var n = Number(value);
+      if (!Number.isFinite(n)) return "--";
+      return (n * 100).toFixed(1) + "%";
+    }
+
+    function cap(text){
+      if (!text || typeof text !== "string") return "--";
+      return text.replaceAll("_"," ").replace(/\b\w/g, function(ch){ return ch.toUpperCase(); });
+    }
+
+    function riskClass(risk){
+      var key = String(risk || "").toLowerCase();
+      if (["low","guarded","elevated","high","critical"].includes(key)) return "risk-" + key;
+      if (key === "medium") return "risk-medium";
+      return "risk-missing";
+    }
+
+    function setScenarioBlock(prefix, prob, summary){
+      setText("scenario-" + prefix + "-label", pct(prob));
+      var bar = el("scenario-" + prefix + "-bar");
+      if (bar) bar.style.width = Number.isFinite(Number(prob)) ? Math.max(0, Math.min(100, prob * 100)) + "%" : "0%";
+      setText("scenario-" + prefix + "-summary", summary || "No summary");
+    }
+
+    function renderList(targetId, items, label){
+      var target = el(targetId);
+      if (!target) return;
+      target.innerHTML = "";
+
+      if (!Array.isArray(items) || items.length === 0){
+        var emptyNode = document.createElement("div");
+        emptyNode.className = "list-item";
+        emptyNode.innerHTML = '<div class="bullet">–</div><div><strong>' + label + '</strong><span>No data</span></div>';
+        target.appendChild(emptyNode);
+        return;
+      }
+
+      items.forEach(function(item, idx){
+        var node = document.createElement("div");
+        node.className = "list-item";
+        node.innerHTML =
+          '<div class="bullet">' + (idx + 1) + '</div>' +
+          '<div><strong>' + label + ' ' + (idx + 1) + '</strong><span>' + item + '</span></div>';
+        target.appendChild(node);
       });
-    }catch(e){
-      console.warn(e);
-      var ready = el("pillReady");
-      if (ready) ready.textContent = "Error";
     }
 
-    loadPrediction();
-  }
+    function render(payload){
+      var risk = String(payload.overall_risk || "--");
+      var riskEl = el("overall-risk");
+      if (riskEl){
+        riskEl.textContent = cap(risk);
+        riskEl.className = "value " + riskClass(risk);
+      }
 
-  main();
-})();
-</script>
+      setText("risk-sub", "Dominant scenario: " + cap(payload.dominant_scenario || "--"));
+      setText("summary-title", cap(payload.dominant_scenario || "prediction outlook"));
+      setText("summary-text", payload.summary || "No summary available.");
+      setText("as-of", payload.as_of || "--");
+      setText("horizon", payload.horizon || "--");
+      setText("dominant", cap(payload.dominant_scenario || "--"));
+      setText("generated-at", "generated_at: " + (payload.generated_at || "--"));
+
+      var asOfText = payload.as_of || payload.generated_at || "--";
+      setText("pillAsOfLocal", "as_of: " + asOfText);
+      setText("pillReadyLocal", "Ready");
+      if (el("pillAsOf")) el("pillAsOf").textContent = "as_of: " + asOfText;
+      if (el("pillReady")) el("pillReady").textContent = "Ready";
+
+      var confidence = Number(payload.confidence);
+      setText("confidence-value", confPct(confidence));
+      var confidenceBar = el("confidence-bar");
+      if (confidenceBar) confidenceBar.style.width = Number.isFinite(confidence) ? Math.max(0, Math.min(100, confidence * 100)) + "%" : "0%";
+
+      var probs = payload.scenario_probabilities || {};
+      var best = Number(probs.best_case);
+      var base = Number(probs.base_case);
+      var worst = Number(probs.worst_case);
+
+      setText("best-prob", pct(best));
+      setText("base-prob", pct(base));
+      setText("worst-prob", pct(worst));
+      setText("signal-count", String((payload.meta && payload.meta.signal_count) ?? "--"));
+
+      setScenarioBlock("best", best, best > base && best > worst ? "Best case is currently dominant." : "Upside path if risk pressure softens.");
+      setScenarioBlock("base", base, payload.dominant_scenario === "base_case" ? (payload.summary || "Base case is dominant.") : "Central working scenario.");
+      setScenarioBlock("worst", worst, worst >= 0.25 ? "Adverse branch is meaningful and should be watched." : "Adverse branch exists but is not dominant.");
+
+      renderList("watchpoints-list", payload.watchpoints || [], "Watchpoint");
+      renderList("drivers-list", payload.drivers || [], "Driver");
+      renderList("invalidations-list", payload.invalidation_conditions || [], "Invalidation");
+      renderList("implications-list", payload.key_implications || [], "Implication");
+
+      var empty = el("empty-state");
+      if (empty) empty.style.display = "none";
+    }
+
+    async function loadPrediction(){
+      try{
+        var res = await fetch(SOURCE_URL + "?t=" + Date.now(), { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        var payload = await res.json();
+        render(payload);
+      }catch(err){
+        console.error(err);
+        setText("pillReadyLocal", "No data");
+        if (el("pillReady")) el("pillReady").textContent = "No data";
+        var empty = el("empty-state");
+        if (empty) empty.style.display = "block";
+        setText("summary-title", "Prediction output not available");
+        setText("summary-text", "Check prediction runtime output and server mapping.");
+      }
+    }
+
+    async function main(){
+      try{
+        await window.GPGlobalStatus.load({
+          fxDecisionCandidates: [
+            "/data/fx/fx_decision_latest.json",
+            "/data/fx/fx_decision_latest_jpythb.json"
+          ]
+        });
+      }catch(e){
+        console.warn(e);
+      }
+
+      await loadPrediction();
+    }
+
+    main();
+  })();
+  </script>
 </body>
 </html>
