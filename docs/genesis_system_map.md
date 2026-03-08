@@ -1,11 +1,10 @@
-# Genesis System Map
-GenesisPrediction v2
+# GenesisPrediction v2 --- System Map
 
-Status: Active  
-Purpose: システム全体構造の概要マップ  
-Last Updated: 2026-03-07
+Status: Active\
+Purpose: GenesisPrediction v2 の全体構造を1枚で理解できるようにする\
+Last Updated: 2026-03-08
 
----
+------------------------------------------------------------------------
 
 # 0. Purpose
 
@@ -13,378 +12,280 @@ Last Updated: 2026-03-07
 
 GenesisPrediction v2 の
 
-```
+**システム全体構造**
 
-システム全体構造
-
-```
-
-を1ページで理解できるようにするためのマップである。
+を整理するためのマップである。
 
 目的
 
-- AIがプロジェクト全体構造を即理解できるようにする
-- Repository Memory の入口として機能させる
-- 新しいAIスレの理解速度を上げる
-- ドキュメント間の関係を整理する
+-   新しいAIが構造を誤解しない
+-   開発スレ依存をなくす
+-   Repository Memory を自己完結させる
+-   GenesisPrediction の責務分離を明確にする
 
----
+------------------------------------------------------------------------
 
-# 1. System Overview
+# 1. GenesisPrediction 全体構造
 
-GenesisPrediction v2 は
+GenesisPrediction は次のレイヤーで構成される。
 
-```
+Data Sources ↓ Pipeline (scripts) ↓ Analysis (SST) ↓ Prediction Layer ↓
+UI ↓ LABOS Public UI
 
-観測AI
-↓
-時系列AI
-↓
-予測AI
-↓
-判断AI
+------------------------------------------------------------------------
 
-```
+# 2. Data Sources
 
-へ進化する研究プロジェクトである。
+観測対象となる外部データ。
 
----
+例
 
-# 2. Core Architecture
+-   News API
+-   MediaStack
+-   FX API
+-   ExchangeRate
 
-システム構造
+保存先
 
-```
+data/
 
-data
-↓
-scripts
-↓
-analysis
-↓
-prediction
-↓
-UI
+data は「素材」であり、壊れても再生成できる。
 
-```
+------------------------------------------------------------------------
+
+# 3. Pipeline Layer（scripts）
+
+Pipeline は「生成工場」である。
 
 役割
 
-```
+-   収集
+-   分析
+-   整形
+-   集計
 
-data        = 素材
-scripts     = データ生成
-analysis    = 真実 (Single Source of Truth)
-prediction  = 未来推定
-UI          = 表示
+主なエントリーポイント
 
-```
+scripts/run_morning_ritual.ps1
+
+Morning Ritual は GenesisPrediction の心拍である。
+
+Pipeline Flow
+
+Fetch\
+↓\
+Analyzer\
+↓\
+Sentiment\
+↓\
+Digest\
+↓\
+Overlay\
+↓\
+Health\
+↓\
+Prediction
+
+生成物はすべて
+
+analysis/
+
+に出力される。
+
+------------------------------------------------------------------------
+
+# 4. Analysis Layer（SST）
+
+GenesisPrediction の
+
+Single Source of Truth は
+
+analysis/
+
+である。
 
 重要原則
 
-```
+analysis = 真実
 
-analysis = 唯一の真実
-UI は analysis を読む
-UI は再計算しない
+UI は analysis を読むだけ。
 
-```
+------------------------------------------------------------------------
 
----
+# 5. Prediction Layer
 
-# 3. Runtime System
+Prediction は最終要約。
 
-GenesisPrediction v2 の日次処理
+Observation\
+↓\
+Trend\
+↓\
+Signal\
+↓\
+Scenario\
+↓\
+Prediction
 
-```
+主な出力
 
-Morning Ritual
+prediction_latest.json
 
-git pull
-↓
-run_daily_with_publish
-↓
-FX lane
-↓
-build_data_health
-↓
-latest artifacts refresh
-↓
-UI確認
+------------------------------------------------------------------------
 
-```
+# 6. Prediction History
 
-詳細
+保存場所
 
-```
-
-docs/runbook_morning.md
-
-```
-
----
-
-# 4. Data Domains
-
-analysis 内の主要データ
-
-```
-
-analysis/world_politics
-analysis/digest
-analysis/fx
-analysis/prediction
-analysis/health
-
-```
-
-構造定義
-
-```
-
-docs/analysis_data_schema.md
-
-```
-
----
-
-# 5. UI Layer
-
-UI構成
-
-```
-
-app/static/index.html
-app/static/overlay.html
-app/static/sentiment.html
-app/static/digest.html
-
-```
-
-UI設計
-
-```
-
-docs/ui_system.md
-
-```
-
-UI依存関係
-
-```
-
-docs/ui_data_dependencies.md
-
-```
-
----
-
-# 6. Prediction Layer
-
-将来の予測エンジン
-
-```
-
-trend detection
-pattern similarity
-risk estimation
-scenario generation
-
-```
-
-設計
-
-```
-
-docs/prediction_architecture.md
-
-```
-
----
-
-# 7. Project Philosophy
-
-GenesisPrediction の思想
-
-```
-
-Human + AI 共同研究
-
-```
-
-AI
-
-```
-
-観測
-分析
-補助
-
-```
-
-Human
-
-```
-
-目的
-判断
-倫理
-
-```
-
-思想ドキュメント
-
-```
-
-docs/genesis_brain.md
-
-```
-
----
-
-# 8. Project Knowledge Base
-
-Repository Memory は以下で構成される。
-
-Core Architecture
-
-```
-
-repo_map.md
-pipeline_system.md
-ui_system.md
-ui_data_dependencies.md
-analysis_data_schema.md
-prediction_architecture.md
-genesis_prediction_roadmap.md
-
-```
-
-Operation
-
-```
-
-runbook_morning.md
-
-```
-
-Debug
-
-```
-
-debug_playbook.md
-
-```
-
-Development Rules
-
-```
-
-working_agreement.md
-chat_operating_rules.md
-gui_phase2_working_rules.md
-thread_templates.md
-
-```
-
-System Memory
-
-```
-
-system_history.md
-decision_log.md
-
-```
-
-Project Status
-
-```
-
-project_status.md
-
-```
-
-Optional
-
-```
-
-labos_business_model.md
-
-```
-
----
-
-# 9. System Evolution
-
-GenesisPrediction の進化
-
-Phase 1
-
-```
-
-観測システム
-
-```
-
-Phase 2
-
-```
-
-時系列分析
-
-```
-
-Phase 3
-
-```
-
-リスク予測
-
-```
-
-Phase 4
-
-```
-
-シナリオ生成
-
-```
-
-Phase 5
-
-```
-
-意思決定支援
-
-```
-
----
-
-# 10. Final Vision
-
-GenesisPrediction の最終形
-
-```
-
-世界観測AI
-↓
-未来予測AI
-↓
-危機回避AI
-
-```
+analysis/prediction_history/
 
 用途
 
-```
+-   研究ログ
+-   バックテスト
+-   未来検証
 
-家族の安全
-資産防衛
-世界理解
+Prediction は「日次仮説」として凍結される。
 
-```
+------------------------------------------------------------------------
 
----
+# 7. UI Layer
+
+UI は Read Only。
+
+場所
+
+app/static/
+
+------------------------------------------------------------------------
+
+## UI Pages
+
+-   Home
+-   Overlay
+-   Sentiment
+-   Digest
+-   Prediction
+-   Prediction History
+
+------------------------------------------------------------------------
+
+## UI Layout
+
+共通構造
+
+header\
+layout.js\
+footer
+
+------------------------------------------------------------------------
+
+# 8. Digest UI
+
+Daily Summary UI
+
+表示
+
+-   Summary
+-   KPI
+-   Highlights
+-   Articles
+
+データ
+
+view_model_latest.json
+
+------------------------------------------------------------------------
+
+# 9. Overlay UI
+
+FX 可視化
+
+fx_overlay_latest.png
+
+通貨ペア
+
+-   JPY/THB
+-   USD/JPY
+
+------------------------------------------------------------------------
+
+# 10. Sentiment UI
+
+ニュース感情分析
+
+-   positive
+-   negative
+-   neutral
+-   mixed
+
+------------------------------------------------------------------------
+
+# 11. Prediction UI
+
+prediction_latest.json を表示
+
+内容
+
+-   summary
+-   risk
+-   scenario
+-   confidence
+-   watchpoints
+-   drivers
+
+------------------------------------------------------------------------
+
+# 12. Prediction History UI
+
+過去予測の閲覧
+
+analysis/prediction_history/
+
+用途
+
+-   研究ログ
+-   バックテスト
+-   検証
+
+------------------------------------------------------------------------
+
+# 13. System Responsibility
+
+data = 素材\
+scripts = 生成\
+analysis = 成果物（真実）\
+UI = 表示\
+docs = 設計固定
+
+------------------------------------------------------------------------
+
+# 14. Development Rules
+
+-   1ターン = 1作業
+-   差分禁止
+-   完全ファイル
+
+------------------------------------------------------------------------
+
+# 15. Final Summary
+
+Data\
+↓\
+Pipeline\
+↓\
+Analysis (SST)\
+↓\
+Prediction\
+↓\
+UI\
+↓\
+LABOS
+
+重要原則
+
+analysis が真実\
+UI は読むだけ\
+Prediction は最終要約\
+Morning Ritual は心拍
 
 END OF DOCUMENT
-```
