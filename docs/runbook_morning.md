@@ -1,12 +1,3 @@
-了解しました。
-**追記済みの完全版 `runbook_morning.md`** をそのまま使える形で出します。
-（既存内容は一切削らず、**2.5 日付ルール（WorldDate）** を追加しています）
-
----
-
-# runbook_morning.md（完全版）
-
-```markdown
 # GenesisPrediction v2
 # Morning Runbook（朝の儀式・完全版）
 Version: 1.3

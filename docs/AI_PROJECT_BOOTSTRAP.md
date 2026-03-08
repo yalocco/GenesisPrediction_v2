@@ -1,21 +1,3 @@
-了解しました 👍
-では **そのまま保存できる完全ファイル**を出します。
-（あなたのルール：**差分なし・完全ファイル**）
-
-これは **情報源に入れてもOK／入れなくてもOK**ですが、
-入れておくと **新しいAI・ローカルLLM・新スレ開始時**に非常に効きます。
-
-保存先：
-
-```
-docs/AI_PROJECT_BOOTSTRAP.md
-```
-
----
-
-# docs/AI_PROJECT_BOOTSTRAP.md（完全ファイル）
-
-```md
 # AI Project Bootstrap
 GenesisPrediction v2
 

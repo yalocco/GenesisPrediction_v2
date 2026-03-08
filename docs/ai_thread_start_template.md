@@ -1,12 +1,3 @@
-了解です、相棒。
-これは **`docs/ai_thread_start_template.md` にそのまま上書きする完全ファイル v2**です。
-（差分ではなく全文。あなたの運用ルール通り）
-
----
-
-# docs/ai_thread_start_template.md（完全ファイル v2）
-
-```md
 # GenesisPrediction v2 — AI Thread Start Template
 
 Purpose  
