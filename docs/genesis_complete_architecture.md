@@ -1,5 +1,5 @@
-# GenesisPrediction v2  
-Complete System Architecture
+# GenesisPrediction v2
+## Complete System Architecture
 
 This document describes the **complete architecture of GenesisPrediction v2**.
 
@@ -398,7 +398,7 @@ The system converts **raw information → structured understanding → future sc
 
 GenesisPrediction is built on several principles.
 
-### Separation of Layers
+## Separation of Layers
 
 ```
 
@@ -415,7 +415,7 @@ Each layer has a clear responsibility.
 
 ---
 
-### Single Source of Truth
+## Single Source of Truth
 
 ```
 
@@ -427,7 +427,7 @@ represents the current world state.
 
 ---
 
-### Memory as Intelligence
+## Memory as Intelligence
 
 Historical storage enables:
 
@@ -441,7 +441,7 @@ prediction drift analysis
 
 ---
 
-### Human-Centered Insight
+## Human-Centered Insight
 
 The final consumer of the system is the **human decision maker**.
 
