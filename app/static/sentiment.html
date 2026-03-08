@@ -1,46 +1,82 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sentiment - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260303v2">
-  <script src="/static/_shared_nav.js?v=20260303v2"></script>
+  <link rel="stylesheet" href="/static/app.css?v=20260308-ui8" />
+  <script src="/static/common/global_status.js?v=20260308-ui8"></script>
   <style>
-    /* Keep sentiment page styling minimal so it matches app.css (Home/Overlay/Digest). */
-    body{ margin:0; }
+    body{margin:0;}
 
-    .page{ max-width: 1200px; margin: 0 auto; padding: 18px; }
-
-    /* sentiment-specific UI parts */
-    .grid{display:grid; grid-template-columns: 1.15fr .85fr; gap:18px; margin-top:14px;}
-    @media (max-width: 980px){ .grid{grid-template-columns:1fr;} }
-
-    .card{
-      background:rgba(255,255,255,.05);
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:18px;
-      padding:16px;
-      box-shadow:0 10px 26px rgba(0,0,0,.28);
+    .gridTop{
+      display:grid;
+      grid-template-columns:.92fr 1.08fr;
+      gap:18px;
+      margin-top:14px;
+      align-items:stretch;
     }
 
-    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
-    .muted{opacity:.82}
+    .controlsCard,
+    .trendCardMain{
+      height:100%;
+    }
 
-    .btn{
-      display:inline-flex;
+    .kpiGrid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:10px;
+      margin-top:12px;
+    }
+
+    .kpi{
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.14);
+      border-radius:14px;
+      padding:10px 12px;
+      min-height:64px;
+    }
+
+    .kpi .k{font-size:12px;opacity:.75;}
+    .kpi .v{font-size:24px;font-weight:700;margin-top:3px;}
+    .kpi .s{font-size:12px;opacity:.70;}
+
+    .sourceBox{
+      margin-top:10px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.12);
+      border-radius:14px;
+      padding:10px 12px;
+      overflow:hidden;
+    }
+
+    .sourceBox .path{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+      opacity:.9;
+      white-space:pre-wrap;
+      word-break:break-word;
+    }
+
+    .searchRow{
+      display:grid;
+      grid-template-columns:1.45fr .55fr .65fr auto;
+      gap:10px;
+      align-items:center;
+      margin-top:12px;
+    }
+
+    .check{
+      display:flex;
       align-items:center;
       gap:8px;
-      padding:9px 12px;
+      padding:10px 12px;
       border-radius:999px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(0,0,0,.18);
-      color:inherit;
-      text-decoration:none;
-      cursor:pointer;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.16);
       user-select:none;
-      line-height:1;
+      min-height:42px;
+      white-space:nowrap;
     }
-    .btn:hover{border-color:rgba(105,169,255,.55);}
 
     .tag{
       display:inline-flex;
@@ -54,64 +90,181 @@
       white-space:nowrap;
     }
 
-    .kpiGrid{display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:10px; margin-top:12px;}
-    @media (max-width: 980px){ .kpiGrid{grid-template-columns: repeat(2, minmax(0,1fr));} }
-    .kpi{
+    .hero-top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .hero-subpath{
+      margin-top:6px;
+      font-size:13px;
+      opacity:.82;
+    }
+
+    .hero-subpath code{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    }
+
+    .top-pills{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .howBand{
+      margin-top:16px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.12);
+      border-radius:14px;
+      padding:14px;
+    }
+
+    .howGrid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:16px;
+    }
+
+    .howItem{
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.02);
+      border-radius:12px;
+      padding:10px 12px;
+      font-size:13px;
+      line-height:1.6;
+      opacity:.92;
+    }
+
+    .howItem strong{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:18px;
+      height:18px;
+      border-radius:4px;
+      background:rgba(106,164,255,.18);
+      color:#8fc2ff;
+      font-size:11px;
+      margin-right:6px;
+    }
+
+    .debugBox{
+      margin-top:12px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.12);
+      border-radius:14px;
+      padding:10px 12px;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+      font-size:12px;
+      white-space:pre-wrap;
+      opacity:.85;
+    }
+
+    .trendCardMain{
+      display:flex;
+      flex-direction:column;
+    }
+
+    .trendTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+
+    .trendTitle{
+      font-size:18px;
+      font-weight:700;
+    }
+
+    .legendRow{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .legendTag{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      min-height:30px;
+      padding:5px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.18);
+      font-size:12px;
+      white-space:nowrap;
+    }
+
+    .legendDot{
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      display:inline-block;
+    }
+
+    .dotRisk{background:#ff7878;}
+    .dotPos{background:#5ef0c2;}
+    .dotUnc{background:#f0c85e;}
+
+    .trendMeta{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:10px;
+      margin-bottom:12px;
+    }
+
+    .miniMetric{
       border:1px solid rgba(255,255,255,.10);
       background:rgba(0,0,0,.14);
       border-radius:14px;
       padding:10px 12px;
-      min-height:64px;
-    }
-    .kpi .k{font-size:12px; opacity:.75;}
-    .kpi .v{font-size:24px; font-weight:700; margin-top:3px;}
-    .kpi .s{font-size:12px; opacity:.70;}
-
-    .sourceBox{
-      margin-top:10px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.12);
-      border-radius:14px;
-      padding:10px 12px;
-      overflow:hidden;
-    }
-    .sourceBox .path{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; opacity:.9}
-
-    .searchRow{display:grid; grid-template-columns: 1.6fr .5fr .6fr auto; gap:10px; align-items:center; margin-top:12px;}
-    @media (max-width: 980px){ .searchRow{grid-template-columns:1fr; } }
-
-    input.search, select.select{
-      width:100%;
-      background:rgba(0,0,0,.18);
-      border:1px solid rgba(255,255,255,.12);
-      color:inherit;
-      border-radius:999px;
-      padding:10px 12px;
-      outline:none;
-    }
-    input.search:focus, select.select:focus{border-color:rgba(105,169,255,.55);}
-
-    .check{
-      display:flex; align-items:center; gap:8px;
-      padding:10px 12px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(0,0,0,.16);
-      user-select:none;
     }
 
-    .trendGrid{display:grid; grid-template-columns: 1fr; gap:12px; margin-top:14px;}
-    .trendPanel{
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.12);
+    .miniMetric .k{
+      font-size:12px;
+      opacity:.72;
+      margin-bottom:4px;
+    }
+
+    .miniMetric .v{
+      font-size:20px;
+      font-weight:700;
+    }
+
+    .metricRisk .v{color:#ff8d8d;}
+    .metricPos .v{color:#77f3cf;}
+    .metricUnc .v{color:#f1d37b;}
+
+    .chartWrap{
+      border:1px solid rgba(120,160,220,.14);
       border-radius:16px;
+      background:rgba(8,14,28,.18);
       padding:12px;
+      flex:1 1 auto;
+      min-height:340px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
     }
-    .trendHead{display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap;}
-    .trendHead .right{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
-    canvas{width:100%; height:160px; display:block;}
 
-    .tableWrap{margin-top:14px;}
+    .chartCanvas{
+      width:100%;
+      height:320px;
+      display:block;
+    }
+
+    .tableWrap{
+      margin-top:14px;
+    }
+
     .tbl{
       width:100%;
       border-collapse:separate;
@@ -121,22 +274,47 @@
       border:1px solid rgba(255,255,255,.10);
       background:rgba(0,0,0,.12);
     }
-    .tbl th, .tbl td{
+
+    .tbl th,
+    .tbl td{
       padding:10px 10px;
       border-bottom:1px solid rgba(255,255,255,.08);
       vertical-align:top;
       text-align:left;
       font-size:13px;
     }
-    .tbl th{font-size:12px; opacity:.78; background:rgba(255,255,255,.03);}
+
+    .tbl th{
+      font-size:12px;
+      opacity:.78;
+      background:rgba(255,255,255,.03);
+    }
+
     .tbl tr:last-child td{border-bottom:none;}
 
-    .aTitle{font-weight:700; text-decoration:none; color:inherit;}
-    .aTitle:hover{ text-decoration:underline; }
-    .aUrl{font-size:12px; opacity:.70; margin-top:2px; word-break:break-all;}
-    .aSrc{font-size:12px; opacity:.80;}
+    .aTitle{
+      font-weight:700;
+      text-decoration:none;
+      color:inherit;
+    }
+
+    .aTitle:hover{text-decoration:underline;}
+
+    .aUrl{
+      font-size:12px;
+      opacity:.70;
+      margin-top:2px;
+      word-break:break-all;
+    }
+
+    .aSrc{
+      font-size:12px;
+      opacity:.80;
+    }
+
     .thumb{
-      width:40px; height:40px;
+      width:40px;
+      height:40px;
       border-radius:12px;
       border:1px solid rgba(255,255,255,.12);
       background:rgba(255,255,255,.06);
@@ -145,9 +323,21 @@
       align-items:center;
       justify-content:center;
     }
-    .thumb img{width:100%; height:100%; object-fit:cover; display:block;}
 
-    .metricRow{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+    .thumb img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+
+    .metricRow{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
     .mPill{
       display:inline-flex;
       align-items:center;
@@ -156,819 +346,791 @@
       border-radius:999px;
       border:1px solid rgba(255,255,255,.12);
       background:rgba(0,0,0,.18);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
       font-size:12px;
       min-width:72px;
     }
-    .mRisk{border-color:rgba(255,120,120,.38); background:rgba(255,120,120,.10);}
-    .mPos{border-color:rgba(120,255,200,.32); background:rgba(120,255,200,.10);}
-    .mUnc{border-color:rgba(255,220,120,.34); background:rgba(255,220,120,.10);}
-    .mNet{border-color:rgba(160,140,255,.32); background:rgba(160,140,255,.10);}
 
-    .howList{margin:10px 0 0; padding-left:18px; opacity:.88;}
-    .howList li{margin:6px 0;}
-    .howStatus{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(0,0,0,.18);
-      font-size:12px;
-      opacity:.92;
-      white-space:nowrap;
+    .mRisk{border-color:rgba(255,120,120,.38);background:rgba(255,120,120,.10);}
+    .mPos{border-color:rgba(120,255,200,.32);background:rgba(120,255,200,.10);}
+    .mUnc{border-color:rgba(255,220,120,.34);background:rgba(255,220,120,.10);}
+    .mNet{border-color:rgba(160,140,255,.32);background:rgba(160,140,255,.10);}
+
+    @media (max-width:1100px){
+      .kpiGrid{grid-template-columns:repeat(2,minmax(0,1fr));}
+      .searchRow{grid-template-columns:1fr;}
+      .trendMeta{grid-template-columns:1fr;}
+      .howGrid{grid-template-columns:repeat(2,minmax(0,1fr));}
     }
 
-    .debugBox{
-      margin-top:12px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.12);
-      border-radius:14px;
-      padding:10px 12px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-      font-size:12px;
-      white-space:pre-wrap;
-      opacity:.85;
+    @media (max-width:980px){
+      .gridTop{grid-template-columns:1fr;}
     }
-  
-/* --- Sentiment top alignment fix --- */
-.page{
-  padding-top:40px;
-}
 
-</style>
+    @media (max-width:700px){
+      .kpiGrid{grid-template-columns:1fr;}
+      .howGrid{grid-template-columns:1fr;}
+      .chartWrap{min-height:260px;}
+      .chartCanvas{height:240px;}
+    }
+  </style>
 </head>
 <body>
-<main>
-  <div class="page">
+  <div id="site-header"></div>
 
-    <!-- Unified header (match Home/Overlay/Digest) -->
-    <section class="panel">
-      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-        <div>
-          <div class="h1">Sentiment</div>
-          <p class="sub">Articles + trend (3-axis). (robust / safe)</p>
-          <div class="muted" style="margin-top:6px; font-size:13px;">
-            main: <code id="kSrcInline">-</code>
-            <span class="muted"> / </span>
-            trend: <code id="kTrendInline">-</code>
+  <div class="page container">
+    <main class="gp-main">
+      <div class="gp-page">
+        <section class="panel">
+
+          <div class="hero-top">
+            <div>
+              <div class="h1">Sentiment</div>
+              <p class="sub">Articles + trend (3-axis). (robust / safe)</p>
+              <div class="hero-subpath">
+                main: <code id="kSrcInline">-</code>
+                <span class="muted"> / </span>
+                trend: <code id="kTrendInline">-</code>
+              </div>
+            </div>
+
+            <div class="top-pills">
+              <span id="localPillAsOf" class="pill">as_of: --</span>
+              <span id="localPillItems" class="pill">items: --</span>
+              <span id="localPillRendered" class="pill">rendered: --</span>
+              <span id="localPillTrend" class="pill">trend_points: --</span>
+              <a id="btnOpenSentTop" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open JSON</a>
+              <a id="btnOpenTSTop" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open CSV</a>
+            </div>
           </div>
-        </div>
-        <div class="pillrow">
-          <span id="pillAsOf" class="pill">as_of: --</span>
-          <span id="pillItems" class="pill">items: --</span>
-          <span id="pillRendered" class="pill">rendered: --</span>
-          <span id="pillTrend" class="pill">trend_points: --</span>
-          <a id="btnOpenSentTop" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open JSON</a>
-          <a id="btnOpenTSTop" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open CSV</a>
-        </div>
+
+          <div class="gridTop">
+
+            <div class="card controlsCard">
+              <div class="sectionTitle">
+                <h2>Controls</h2>
+                <div class="pillrow">
+                  <span class="tag" id="kItems">items=--</span>
+                  <span class="tag" id="kRendered">rendered=--</span>
+                  <span class="tag" id="kTrendPts">trend_points=--</span>
+                </div>
+              </div>
+
+              <div class="pillrow" style="margin-top:12px;">
+                <a class="btn" id="btnReload" href="#">Reload</a>
+                <a class="btn" id="btnReset" href="#">Reset filters</a>
+                <a class="btn" id="btnOpenSent" href="#" target="_blank" rel="noopener noreferrer">Open sentiment_latest.json</a>
+                <a class="btn" id="btnOpenTS" href="#" target="_blank" rel="noopener noreferrer">Open sentiment_timeseries.csv</a>
+              </div>
+
+              <div class="kpiGrid">
+                <div class="kpi">
+                  <div class="k">as_of</div>
+                  <div class="v" id="kAsOf">--</div>
+                  <div class="s">date</div>
+                </div>
+                <div class="kpi">
+                  <div class="k">risk</div>
+                  <div class="v" id="kRisk">--</div>
+                  <div class="s">avg</div>
+                </div>
+                <div class="kpi">
+                  <div class="k">positive</div>
+                  <div class="v" id="kPos">--</div>
+                  <div class="s">avg</div>
+                </div>
+                <div class="kpi">
+                  <div class="k">uncertainty</div>
+                  <div class="v" id="kUnc">--</div>
+                  <div class="s">avg</div>
+                </div>
+              </div>
+
+              <div class="sourceBox">
+                <div class="k" style="opacity:.70; font-size:12px;">source</div>
+                <div class="path" id="kSrc">-</div>
+                <div class="muted" style="margin-top:4px; font-size:12px;" id="kTrend">trend: -</div>
+              </div>
+
+              <div class="searchRow">
+                <input id="q" class="select" type="search" placeholder="search (title/source)" />
+                <select id="fSent" class="select">
+                  <option value="all">All</option>
+                  <option value="pos">Positive</option>
+                  <option value="neg">Negative</option>
+                  <option value="neu">Neutral</option>
+                  <option value="mix">Mixed</option>
+                  <option value="unk">Unknown</option>
+                </select>
+                <select id="sort" class="select">
+                  <option value="risk">risk ↓</option>
+                  <option value="pos">positive ↓</option>
+                  <option value="unc">uncertainty ↓</option>
+                  <option value="net">net ↓</option>
+                  <option value="date">date ↓</option>
+                </select>
+                <label class="check">
+                  <input id="showMissing" type="checkbox" checked />
+                  <span>show missing</span>
+                </label>
+              </div>
+
+              <div class="debugBox" id="dbg">loading…</div>
+            </div>
+
+            <div class="card trendCardMain">
+              <div class="trendTop">
+                <div class="trendTitle">Combined Trend</div>
+                <div class="legendRow">
+                  <span class="legendTag"><span class="legendDot dotRisk"></span>Risk</span>
+                  <span class="legendTag"><span class="legendDot dotPos"></span>Positive</span>
+                  <span class="legendTag"><span class="legendDot dotUnc"></span>Uncertainty</span>
+                </div>
+              </div>
+
+              <div class="trendMeta">
+                <div class="miniMetric metricRisk">
+                  <div class="k">Risk</div>
+                  <div class="v" id="riskNow">--</div>
+                </div>
+                <div class="miniMetric metricPos">
+                  <div class="k">Positive</div>
+                  <div class="v" id="posNow">--</div>
+                </div>
+                <div class="miniMetric metricUnc">
+                  <div class="k">Uncertainty</div>
+                  <div class="v" id="uncNow">--</div>
+                </div>
+              </div>
+
+              <div class="chartWrap">
+                <canvas id="cvCombined" class="chartCanvas" width="1200" height="360"></canvas>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="howBand">
+            <div class="howGrid">
+              <div class="howItem"><strong>1</strong> sentiment_latest.json を探索してロード</div>
+              <div class="howItem"><strong>2</strong> items / rows / articles を自動判定</div>
+              <div class="howItem"><strong>3</strong> サムネ探索 + favicon fallback</div>
+              <div class="howItem"><strong>4</strong> sentiment_timeseries.csv を Trend 表示</div>
+            </div>
+          </div>
+
+        </section>
+
+        <section class="panel tableWrap">
+          <div class="sectionTitle">
+            <h2>Articles</h2>
+            <div class="hint">showing <span id="renderedN">--</span> / <span id="totalN">--</span></div>
+          </div>
+
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width:58px;"></th>
+                <th>title / url</th>
+                <th style="width:170px;">source</th>
+                <th style="width:340px;">metrics</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </section>
       </div>
-
-      <div class="grid">
-        <div class="card">
-          <div class="row" style="justify-content:space-between;">
-            <div style="font-weight:800; font-size:18px;">Controls</div>
-            <div class="row">
-              <span class="tag" id="kItems">items=--</span>
-              <span class="tag" id="kRendered">rendered=--</span>
-              <span class="tag" id="kTrendPts">trend_points=--</span>
-            </div>
-          </div>
-
-          <div class="row" style="margin-top:12px;">
-            <a class="btn" id="btnReload" href="#">Reload</a>
-            <a class="btn" id="btnReset" href="#">Reset filters</a>
-            <a class="btn" id="btnOpenSent" href="#" target="_blank" rel="noopener noreferrer">Open sentiment_latest.json</a>
-            <a class="btn" id="btnOpenTS" href="#" target="_blank" rel="noopener noreferrer">Open sentiment_timeseries.csv</a>
-          </div>
-
-          <div class="kpiGrid">
-            <div class="kpi">
-              <div class="k">as_of</div>
-              <div class="v" id="kAsOf">--</div>
-              <div class="s">date</div>
-            </div>
-            <div class="kpi">
-              <div class="k">risk</div>
-              <div class="v" id="kRisk">--</div>
-              <div class="s">avg</div>
-            </div>
-            <div class="kpi">
-              <div class="k">positive</div>
-              <div class="v" id="kPos">--</div>
-              <div class="s">avg</div>
-            </div>
-            <div class="kpi">
-              <div class="k">uncertainty</div>
-              <div class="v" id="kUnc">--</div>
-              <div class="s">avg</div>
-            </div>
-          </div>
-
-          <div class="sourceBox">
-            <div class="k" style="opacity:.70; font-size:12px;">source</div>
-            <div class="path" id="kSrc">-</div>
-            <div class="muted" style="margin-top:4px; font-size:12px;" id="kTrend">trend: -</div>
-          </div>
-
-          <div class="searchRow">
-            <input id="q" class="search" type="search" placeholder="search (title/source)" />
-            <select id="fSent" class="select">
-              <option value="all">All</option>
-              <option value="pos">Positive</option>
-              <option value="neg">Negative</option>
-              <option value="neu">Neutral</option>
-              <option value="mix">Mixed</option>
-              <option value="unk">Unknown</option>
-            </select>
-            <select id="sort" class="select">
-              <option value="risk">risk ↓</option>
-              <option value="pos">positive ↓</option>
-              <option value="unc">uncertainty ↓</option>
-              <option value="net">net ↓</option>
-              <option value="date">date ↓</option>
-            </select>
-            <label class="check">
-              <input id="showMissing" type="checkbox" checked />
-              <span>show missing</span>
-            </label>
-          </div>
-
-          <div class="debugBox" id="dbg">loading…</div>
-        </div>
-
-        <div class="card">
-          <div class="row" style="justify-content:space-between;">
-            <div style="font-weight:800; font-size:18px;">How it works</div>
-            <span class="howStatus" id="howStatus">● loading</span>
-          </div>
-          <ol class="howList">
-            <li><code>/analysis/sentiment_latest.json</code> を探索してロード</li>
-            <li>items / articles / rows など配列を自動判定</li>
-            <li>サムネ: urlToImage 系キーを広く探索 + <code>referrerpolicy=no-referrer</code> + favicon fallback</li>
-            <li>Trend: <code>sentiment_timeseries.csv</code> を探索してロード（推奨）。無ければ items 日付集計にフォールバック。</li>
-          </ol>
-        </div>
-      </div>
-    </section>
-
-    <section class="panel" style="margin-top:14px;">
-      <div class="h2">Sentiment Trend (3軸)</div>
-      <div class="trendGrid">
-        <div class="trendPanel">
-          <div class="trendHead">
-            <div style="font-weight:700;">Risk</div>
-            <div class="right">
-              <span class="tag" id="maxRisk">max: --</span>
-              <span class="tag">points=<span id="trendN">--</span></span>
-            </div>
-          </div>
-          <canvas id="cvRisk" width="1000" height="180"></canvas>
-        </div>
-
-        <div class="trendPanel">
-          <div class="trendHead">
-            <div style="font-weight:700;">Positive</div>
-            <div class="right">
-              <span class="tag" id="maxPos">max: --</span>
-            </div>
-          </div>
-          <canvas id="cvPos" width="1000" height="180"></canvas>
-        </div>
-
-        <div class="trendPanel">
-          <div class="trendHead">
-            <div style="font-weight:700;">Uncertainty</div>
-            <div class="right">
-              <span class="tag" id="maxUnc">max: --</span>
-            </div>
-          </div>
-          <canvas id="cvUnc" width="1000" height="180"></canvas>
-        </div>
-      </div>
-    </section>
-
-    <section class="panel tableWrap" style="margin-top:14px;">
-      <div class="row" style="justify-content:space-between; align-items:baseline; flex-wrap:wrap;">
-        <div class="h2">Articles</div>
-        <div class="muted" style="font-size:12px;">
-          showing <span id="renderedN">--</span> / <span id="totalN">--</span>
-        </div>
-      </div>
-
-      <table class="tbl">
-        <thead>
-          <tr>
-            <th style="width:58px;"> </th>
-            <th>title / url</th>
-            <th style="width:170px;">source</th>
-            <th style="width:340px;">metrics</th>
-          </tr>
-        </thead>
-        <tbody id="rows"></tbody>
-      </table>
-    </section>
-
+    </main>
   </div>
-</main>
 
-<script>
-(function(){
-  function $(id){ return document.getElementById(id); }
+  <div id="site-footer"></div>
 
-  function safeSetText(id, value){
-    var el = $(id);
-    if(el) el.textContent = value;
-  }
+  <script src="/static/common/layout.js?v=20260308-ui8"></script>
+  <script>
+    (function(){
+      "use strict";
 
-  function safeSetHref(id, href){
-    var el = $(id);
-    if(el) el.setAttribute('href', href);
-  }
+      function $(id){ return document.getElementById(id); }
 
-  function setPillState(id, mode, text){
-    var el = $(id);
-    if(!el) return;
-    el.classList.remove('good','warn','bad');
-    if(mode === 'good' || mode === 'warn' || mode === 'bad') el.classList.add(mode);
-    el.textContent = text;
-  }
-
-  function parseHealth(obj){
-    obj = obj || {};
-    var summary = (obj.summary && typeof obj.summary === 'object') ? obj.summary : {};
-    var status = safeText(obj.status || obj.overall_status || obj.overall || obj.health || obj.state).toUpperCase();
-    var okCount = Number(obj.ok || obj.ok_count || summary.ok || summary.ok_count || 0) || 0;
-    var warnCount = Number(obj.warn || obj.warn_count || obj.warning_count || summary.warn || summary.warn_count || summary.warning_count || 0) || 0;
-    var ngCount = Number(obj.ng || obj.ng_count || obj.error_count || obj.bad_count || summary.ng || summary.ng_count || summary.error_count || summary.bad_count || 0) || 0;
-
-    if(status.indexOf('NG') >= 0 || status.indexOf('ERROR') >= 0 || ngCount > 0){
-      return { level:'bad', label:'NG' };
-    }
-    if(status.indexOf('WARN') >= 0 || warnCount > 0){
-      return { level:'warn', label:'WARN' };
-    }
-    if(status.indexOf('OK') >= 0 || okCount > 0 || (okCount===0 && warnCount===0 && ngCount===0)){
-      return { level:'good', label:'OK' };
-    }
-    return { level:'', label:'--' };
-  }
-
-  function safeText(x){
-    if(x === null || x === undefined) return '';
-    return String(x);
-  }
-
-  function fmt3(n){
-    if(!isFinite(n)) return '--';
-    return (Math.round(n*1000)/1000).toFixed(3);
-  }
-
-  function clamp01(x){
-    x = Number(x);
-    if(!isFinite(x)) return 0;
-    if(x < 0) return 0;
-    if(x > 1) return 1;
-    return x;
-  }
-
-  function pickFirst(obj, keys){
-    for(var i=0;i<keys.length;i++){
-      var k = keys[i];
-      if(obj && obj[k] !== undefined && obj[k] !== null) return obj[k];
-    }
-    return undefined;
-  }
-
-  function normalizeItems(root){
-    if(!root) return [];
-    if(Array.isArray(root.items)) return root.items;
-    if(Array.isArray(root.articles)) return root.articles;
-    if(Array.isArray(root.rows)) return root.rows;
-    if(root.yesterday_summary && Array.isArray(root.yesterday_summary.items)) return root.yesterday_summary.items;
-    return [];
-  }
-
-  function normalizeOne(a){
-    a = a || {};
-    var src = '';
-    try{
-      if(a.source){
-        if(typeof a.source === 'string') src = a.source;
-        else if(a.source.name) src = a.source.name;
-        else if(a.source.id) src = a.source.id;
+      function safeText(x){
+        if(x === null || x === undefined) return "";
+        return String(x);
       }
-    }catch(_e){}
-    var url = safeText(a.url || a.link || '');
-    var title = safeText(a.title || a.headline || a.name || '');
-    var img = safeText(
-      a.urlToImage || a.image || a.image_url || a.imageUrl || a.thumbnail || a.thumb || ''
-    );
-    var pub = safeText(a.publishedAt || a.published_at || a.date || a.datetime || '');
-    var risk = clamp01(pickFirst(a, ['risk','risk_score','riskAvg','risk_mean']));
-    var pos  = clamp01(pickFirst(a, ['positive','pos','positive_score','pos_score']));
-    var unc  = clamp01(pickFirst(a, ['uncertainty','unc','uncertainty_score','unc_score']));
-    var net  = Number(pickFirst(a, ['net','net_score','sentiment_net','score','sentiment']));
-    if(!isFinite(net)){
-      // fallback: simple net = pos - risk
-      net = pos - risk;
-    }
 
-    return {
-      url: url,
-      title: title,
-      source: safeText(src || a.source_name || a.publisher || a.site || ''),
-      urlToImage: img,
-      publishedAt: pub,
-      risk: risk,
-      pos: pos,
-      unc: unc,
-      net: net
-    };
-  }
-
-  function guessFaviconFromUrl(url){
-    try{
-      var u = new URL(url);
-      return u.origin + '/favicon.ico';
-    }catch(_e){
-      return '';
-    }
-  }
-
-  function fetchJson(url){
-    return fetch(url, {cache:'no-store'}).then(function(r){
-      if(!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    });
-  }
-  function fetchText(url){
-    return fetch(url, {cache:'no-store'}).then(function(r){
-      if(!r.ok) throw new Error('HTTP ' + r.status);
-      return r.text();
-    });
-  }
-
-  function fetchJsonFirst(cands){
-    var i = 0;
-    function step(){
-      if(i >= cands.length) return Promise.reject(new Error('all candidates failed'));
-      var p = cands[i++];
-      return fetchJson(p).then(function(j){ return {path:p, json:j}; }).catch(function(_e){ return step(); });
-    }
-    return step();
-  }
-  function fetchTextFirst(cands){
-    var i = 0;
-    function step(){
-      if(i >= cands.length) return Promise.reject(new Error('all candidates failed'));
-      var p = cands[i++];
-      return fetchText(p).then(function(t){ return {path:p, text:t}; }).catch(function(_e){ return step(); });
-    }
-    return step();
-  }
-
-  function parseTimeseriesCsv(csv){
-    csv = safeText(csv);
-    var lines = csv.split(/\r?\n/).map(function(x){return x.trim();}).filter(Boolean);
-    if(lines.length < 2) return [];
-    var head = lines[0].split(',').map(function(x){return x.trim().toLowerCase();});
-    var idxDate = head.indexOf('date');
-    var idxRisk = head.indexOf('risk');
-    var idxPos  = head.indexOf('positive');
-    if(idxPos < 0) idxPos = head.indexOf('pos');
-    var idxUnc  = head.indexOf('uncertainty');
-    if(idxUnc < 0) idxUnc = head.indexOf('unc');
-
-    var out = [];
-    for(var i=1;i<lines.length;i++){
-      var cols = lines[i].split(',');
-      if(cols.length < 2) continue;
-      var d = (idxDate >= 0 ? cols[idxDate] : cols[0]) || '';
-      d = safeText(d).slice(0,10);
-      var r = idxRisk>=0 ? Number(cols[idxRisk]) : NaN;
-      var p = idxPos>=0 ? Number(cols[idxPos]) : NaN;
-      var u = idxUnc>=0 ? Number(cols[idxUnc]) : NaN;
-      if(!d) continue;
-      out.push({date:d, risk: clamp01(r), pos: clamp01(p), unc: clamp01(u)});
-    }
-    out.sort(function(a,b){ return a.date.localeCompare(b.date); });
-    return out;
-  }
-
-  function aggregateFromItems(items){
-    var m = {};
-    items.forEach(function(it){
-      var d = safeText(it.publishedAt).slice(0,10);
-      if(!d) return;
-      if(!m[d]) m[d] = {date:d, n:0, risk:0, pos:0, unc:0};
-      m[d].n++;
-      m[d].risk += it.risk;
-      m[d].pos  += it.pos;
-      m[d].unc  += it.unc;
-    });
-    var out = Object.keys(m).sort().map(function(k){
-      var x = m[k];
-      if(x.n){
-        x.risk /= x.n; x.pos /= x.n; x.unc /= x.n;
+      function safeSetText(id, value){
+        var el = $(id);
+        if(el) el.textContent = value;
       }
-      return {date:x.date, risk:x.risk, pos:x.pos, unc:x.unc};
-    });
-    return out;
-  }
 
-  function drawLine(canvas, series, pick, maxLabel){
-    var ctx = canvas.getContext('2d');
-    var w = canvas.width = canvas.clientWidth * (window.devicePixelRatio||1);
-    var h = canvas.height = Math.max(140, canvas.clientHeight) * (window.devicePixelRatio||1);
-    ctx.clearRect(0,0,w,h);
-
-    ctx.lineWidth = 2*(window.devicePixelRatio||1);
-    ctx.globalAlpha = 1;
-
-    // grid
-    ctx.strokeStyle = 'rgba(255,255,255,.08)';
-    ctx.lineWidth = 1*(window.devicePixelRatio||1);
-    for(var i=0;i<=4;i++){
-      var y = Math.round((h-20) * i/4) + 10;
-      ctx.beginPath();
-      ctx.moveTo(10,y);
-      ctx.lineTo(w-10,y);
-      ctx.stroke();
-    }
-
-    if(!series || !series.length){
-      if(maxLabel) maxLabel.textContent = 'max: --';
-      return;
-    }
-
-    var vals = series.map(function(x){return pick(x);});
-    var maxV = 0;
-    vals.forEach(function(v){ if(isFinite(v) && v > maxV) maxV = v; });
-    if(maxLabel) maxLabel.textContent = 'max: ' + fmt3(maxV);
-
-    function xAt(i){
-      if(series.length<=1) return 10;
-      return 10 + (w-20) * (i/(series.length-1));
-    }
-    function yAt(v){
-      var vv = clamp01(v);
-      return (h-20) - (h-20) * vv + 10;
-    }
-
-    // line
-    ctx.strokeStyle = 'rgba(105,169,255,.85)';
-    ctx.lineWidth = 2*(window.devicePixelRatio||1);
-    ctx.beginPath();
-    for(var j=0;j<series.length;j++){
-      var xx = xAt(j);
-      var yy = yAt(pick(series[j]));
-      if(j===0) ctx.moveTo(xx,yy);
-      else ctx.lineTo(xx,yy);
-    }
-    ctx.stroke();
-
-    // dots
-    ctx.fillStyle = 'rgba(255,255,255,.65)';
-    for(var k=0;k<series.length;k++){
-      var xd = xAt(k);
-      var yd = yAt(pick(series[k]));
-      ctx.beginPath();
-      ctx.arc(xd, yd, 2.2*(window.devicePixelRatio||1), 0, Math.PI*2);
-      ctx.fill();
-    }
-  }
-
-  function render(items){
-    items = items || [];
-    var q = safeText($('q').value).toLowerCase().trim();
-    var f = $('fSent').value;
-    var s = $('sort').value;
-    var showMissing = !!$('showMissing').checked;
-
-    var arr = items.slice();
-
-    // filter
-    if(q){
-      arr = arr.filter(function(it){
-        return (it.title||'').toLowerCase().indexOf(q)>=0
-            || (it.source||'').toLowerCase().indexOf(q)>=0
-            || (it.url||'').toLowerCase().indexOf(q)>=0;
-      });
-    }
-    if(f !== 'all'){
-      arr = arr.filter(function(it){
-        if(f==='pos') return it.net > 0.05;
-        if(f==='neg') return it.net < -0.05;
-        if(f==='neu') return Math.abs(it.net) <= 0.05;
-        if(f==='mix') return (it.unc >= 0.33) && (Math.abs(it.net) <= 0.12);
-        if(f==='unk') return (!isFinite(it.net)) || it.url==='' || it.title==='';
-        return true;
-      });
-    }
-
-    if(!showMissing){
-      arr = arr.filter(function(it){
-        return !!it.url && !!it.title;
-      });
-    }
-
-    // sort
-    function cmp(a,b, key){
-      var av = a[key], bv = b[key];
-      if(key === 'date'){
-        var ad = safeText(a.publishedAt).slice(0,10);
-        var bd = safeText(b.publishedAt).slice(0,10);
-        return bd.localeCompare(ad);
+      function safeSetHref(id, href){
+        var el = $(id);
+        if(el) el.setAttribute("href", href);
       }
-      av = Number(av); bv = Number(bv);
-      if(!isFinite(av)) av = -999;
-      if(!isFinite(bv)) bv = -999;
-      return (bv - av);
-    }
 
-    if(s==='risk') arr.sort(function(a,b){return cmp(a,b,'risk');});
-    else if(s==='pos') arr.sort(function(a,b){return cmp(a,b,'pos');});
-    else if(s==='unc') arr.sort(function(a,b){return cmp(a,b,'unc');});
-    else if(s==='net') arr.sort(function(a,b){return cmp(a,b,'net');});
-    else if(s==='date') arr.sort(function(a,b){return cmp(a,b,'date');});
+      function setLocalPill(id, mode, text){
+        var el = $(id);
+        if(!el) return;
+        el.classList.remove("good","warn","bad");
+        if(mode === "good" || mode === "warn" || mode === "bad") el.classList.add(mode);
+        el.textContent = text;
+      }
 
-    $('totalN').textContent = String(items.length);
-    $('renderedN').textContent = String(arr.length);
+      function fmt3(n){
+        if(!isFinite(n)) return "--";
+        return (Math.round(n * 1000) / 1000).toFixed(3);
+      }
 
-    // header tags + pills
-    $('kItems').textContent = 'items=' + items.length;
-    $('kRendered').textContent = 'rendered=' + arr.length + '/' + items.length;
-    $('kTrendPts').textContent = 'trend_points=' + (state.series ? state.series.length : 0);
+      function clamp01(x){
+        x = Number(x);
+        if(!isFinite(x)) return 0;
+        if(x < 0) return 0;
+        if(x > 1) return 1;
+        return x;
+      }
 
-    $('pillItems').textContent = 'items: ' + String(items.length);
-    $('pillRendered').textContent = 'rendered: ' + String(arr.length) + '/' + String(items.length);
-    $('pillTrend').textContent = 'trend_points: ' + String(state.series ? state.series.length : 0);
-    updateHeaderPills();
+      function pickFirst(obj, keys){
+        for(var i = 0; i < keys.length; i++){
+          var k = keys[i];
+          if(obj && obj[k] !== undefined && obj[k] !== null) return obj[k];
+        }
+        return undefined;
+      }
 
-    // rows
-    var tbody = $('rows');
-    tbody.innerHTML = '';
+      function normalizeItems(root){
+        if(!root) return [];
+        if(Array.isArray(root.items)) return root.items;
+        if(Array.isArray(root.articles)) return root.articles;
+        if(Array.isArray(root.rows)) return root.rows;
+        if(root.yesterday_summary && Array.isArray(root.yesterday_summary.items)) return root.yesterday_summary.items;
+        return [];
+      }
 
-    arr.forEach(function(it){
-      var tr = document.createElement('tr');
+      function normalizeOne(a){
+        a = a || {};
+        var src = "";
+        try{
+          if(a.source){
+            if(typeof a.source === "string") src = a.source;
+            else if(a.source.name) src = a.source.name;
+            else if(a.source.id) src = a.source.id;
+          }
+        }catch(_e){}
 
-      var td0 = document.createElement('td');
-      var dv = document.createElement('div');
-      dv.className = 'thumb';
-      var img = document.createElement('img');
-      img.loading = 'lazy';
-      img.referrerPolicy = 'no-referrer';
-      img.alt = '';
-      img.src = it.urlToImage || guessFaviconFromUrl(it.url);
-      img.onerror = function(){
-        var fb = guessFaviconFromUrl(it.url);
-        if(fb && img.src !== fb) img.src = fb;
+        var url = safeText(a.url || a.link || "");
+        var title = safeText(a.title || a.headline || a.name || "");
+        var img = safeText(a.urlToImage || a.image || a.image_url || a.imageUrl || a.thumbnail || a.thumb || "");
+        var pub = safeText(a.publishedAt || a.published_at || a.date || a.datetime || "");
+        var risk = clamp01(pickFirst(a, ["risk","risk_score","riskAvg","risk_mean"]));
+        var pos  = clamp01(pickFirst(a, ["positive","pos","positive_score","pos_score"]));
+        var unc  = clamp01(pickFirst(a, ["uncertainty","unc","uncertainty_score","unc_score"]));
+        var net  = Number(pickFirst(a, ["net","net_score","sentiment_net","score","sentiment"]));
+
+        if(!isFinite(net)){
+          net = pos - risk;
+        }
+
+        return {
+          url: url,
+          title: title,
+          source: safeText(src || a.source_name || a.publisher || a.site || ""),
+          urlToImage: img,
+          publishedAt: pub,
+          risk: risk,
+          pos: pos,
+          unc: unc,
+          net: net
+        };
+      }
+
+      function guessFaviconFromUrl(url){
+        try{
+          var u = new URL(url);
+          return u.origin + "/favicon.ico";
+        }catch(_e){
+          return "";
+        }
+      }
+
+      function fetchJson(url){
+        return fetch(url, { cache:"no-store" }).then(function(r){
+          if(!r.ok) throw new Error("HTTP " + r.status);
+          return r.json();
+        });
+      }
+
+      function fetchText(url){
+        return fetch(url, { cache:"no-store" }).then(function(r){
+          if(!r.ok) throw new Error("HTTP " + r.status);
+          return r.text();
+        });
+      }
+
+      function fetchJsonFirst(cands){
+        var i = 0;
+        function step(){
+          if(i >= cands.length) return Promise.reject(new Error("all candidates failed"));
+          var p = cands[i++];
+          return fetchJson(p).then(function(j){
+            return { path:p, json:j };
+          }).catch(function(){
+            return step();
+          });
+        }
+        return step();
+      }
+
+      function fetchTextFirst(cands){
+        var i = 0;
+        function step(){
+          if(i >= cands.length) return Promise.reject(new Error("all candidates failed"));
+          var p = cands[i++];
+          return fetchText(p).then(function(t){
+            return { path:p, text:t };
+          }).catch(function(){
+            return step();
+          });
+        }
+        return step();
+      }
+
+      function parseTimeseriesCsv(csv){
+        csv = safeText(csv);
+        var lines = csv.split(/\r?\n/).map(function(x){ return x.trim(); }).filter(Boolean);
+        if(lines.length < 2) return [];
+
+        var head = lines[0].split(",").map(function(x){ return x.trim().toLowerCase(); });
+        var idxDate = head.indexOf("date");
+        var idxRisk = head.indexOf("risk");
+        var idxPos  = head.indexOf("positive");
+        if(idxPos < 0) idxPos = head.indexOf("pos");
+        var idxUnc  = head.indexOf("uncertainty");
+        if(idxUnc < 0) idxUnc = head.indexOf("unc");
+
+        var out = [];
+        for(var i = 1; i < lines.length; i++){
+          var cols = lines[i].split(",");
+          if(cols.length < 2) continue;
+          var d = (idxDate >= 0 ? cols[idxDate] : cols[0]) || "";
+          d = safeText(d).slice(0,10);
+          var r = idxRisk >= 0 ? Number(cols[idxRisk]) : NaN;
+          var p = idxPos >= 0 ? Number(cols[idxPos]) : NaN;
+          var u = idxUnc >= 0 ? Number(cols[idxUnc]) : NaN;
+          if(!d) continue;
+          out.push({ date:d, risk:clamp01(r), pos:clamp01(p), unc:clamp01(u) });
+        }
+
+        out.sort(function(a,b){ return a.date.localeCompare(b.date); });
+        return out;
+      }
+
+      function aggregateFromItems(items){
+        var m = {};
+        items.forEach(function(it){
+          var d = safeText(it.publishedAt).slice(0,10);
+          if(!d) return;
+          if(!m[d]) m[d] = { date:d, n:0, risk:0, pos:0, unc:0 };
+          m[d].n++;
+          m[d].risk += it.risk;
+          m[d].pos += it.pos;
+          m[d].unc += it.unc;
+        });
+
+        return Object.keys(m).sort().map(function(k){
+          var x = m[k];
+          if(x.n){
+            x.risk /= x.n;
+            x.pos /= x.n;
+            x.unc /= x.n;
+          }
+          return { date:x.date, risk:x.risk, pos:x.pos, unc:x.unc };
+        });
+      }
+
+      function drawCombined(canvas, series){
+        var ctx = canvas.getContext("2d");
+        var ratio = window.devicePixelRatio || 1;
+        var w = canvas.width = canvas.clientWidth * ratio;
+        var h = canvas.height = Math.max(220, canvas.clientHeight) * ratio;
+        ctx.clearRect(0,0,w,h);
+
+        ctx.strokeStyle = "rgba(255,255,255,.08)";
+        ctx.lineWidth = 1 * ratio;
+        for(var i = 0; i <= 4; i++){
+          var y = Math.round((h - 20) * i / 4) + 10;
+          ctx.beginPath();
+          ctx.moveTo(10, y);
+          ctx.lineTo(w - 10, y);
+          ctx.stroke();
+        }
+
+        if(!series || !series.length){
+          safeSetText("riskNow", "--");
+          safeSetText("posNow", "--");
+          safeSetText("uncNow", "--");
+          return;
+        }
+
+        var last = series[series.length - 1];
+        safeSetText("riskNow", fmt3(last.risk));
+        safeSetText("posNow", fmt3(last.pos));
+        safeSetText("uncNow", fmt3(last.unc));
+
+        function xAt(i){
+          if(series.length <= 1) return 10;
+          return 10 + (w - 20) * (i / (series.length - 1));
+        }
+
+        function yAt(v){
+          var vv = clamp01(v);
+          return (h - 20) - (h - 20) * vv + 10;
+        }
+
+        function drawOne(pick, stroke, fill){
+          ctx.beginPath();
+          for(var j = 0; j < series.length; j++){
+            var xx = xAt(j);
+            var yy = yAt(pick(series[j]));
+            if(j === 0) ctx.moveTo(xx, yy);
+            else ctx.lineTo(xx, yy);
+          }
+          ctx.lineTo(w - 10, h - 10);
+          ctx.lineTo(10, h - 10);
+          ctx.closePath();
+          ctx.fillStyle = fill;
+          ctx.fill();
+
+          ctx.beginPath();
+          for(var k = 0; k < series.length; k++){
+            var x2 = xAt(k);
+            var y2 = yAt(pick(series[k]));
+            if(k === 0) ctx.moveTo(x2, y2);
+            else ctx.lineTo(x2, y2);
+          }
+          ctx.strokeStyle = stroke;
+          ctx.lineWidth = 2 * ratio;
+          ctx.stroke();
+        }
+
+        drawOne(function(x){ return x.risk; }, "rgba(255,120,120,.95)", "rgba(255,120,120,.08)");
+        drawOne(function(x){ return x.pos; }, "rgba(120,255,200,.95)", "rgba(120,255,200,.06)");
+        drawOne(function(x){ return x.unc; }, "rgba(255,220,120,.95)", "rgba(255,220,120,.06)");
+      }
+
+      function render(items){
+        items = items || [];
+        var q = safeText($("q").value).toLowerCase().trim();
+        var f = $("fSent").value;
+        var s = $("sort").value;
+        var showMissing = !!$("showMissing").checked;
+
+        var arr = items.slice();
+
+        if(q){
+          arr = arr.filter(function(it){
+            return (it.title || "").toLowerCase().indexOf(q) >= 0 ||
+                   (it.source || "").toLowerCase().indexOf(q) >= 0 ||
+                   (it.url || "").toLowerCase().indexOf(q) >= 0;
+          });
+        }
+
+        if(f !== "all"){
+          arr = arr.filter(function(it){
+            if(f === "pos") return it.net > 0.05;
+            if(f === "neg") return it.net < -0.05;
+            if(f === "neu") return Math.abs(it.net) <= 0.05;
+            if(f === "mix") return (it.unc >= 0.33) && (Math.abs(it.net) <= 0.12);
+            if(f === "unk") return (!isFinite(it.net)) || it.url === "" || it.title === "";
+            return true;
+          });
+        }
+
+        if(!showMissing){
+          arr = arr.filter(function(it){
+            return !!it.url && !!it.title;
+          });
+        }
+
+        function cmp(a,b,key){
+          var av = a[key], bv = b[key];
+          if(key === "date"){
+            var ad = safeText(a.publishedAt).slice(0,10);
+            var bd = safeText(b.publishedAt).slice(0,10);
+            return bd.localeCompare(ad);
+          }
+          av = Number(av);
+          bv = Number(bv);
+          if(!isFinite(av)) av = -999;
+          if(!isFinite(bv)) bv = -999;
+          return bv - av;
+        }
+
+        if(s === "risk") arr.sort(function(a,b){ return cmp(a,b,"risk"); });
+        else if(s === "pos") arr.sort(function(a,b){ return cmp(a,b,"pos"); });
+        else if(s === "unc") arr.sort(function(a,b){ return cmp(a,b,"unc"); });
+        else if(s === "net") arr.sort(function(a,b){ return cmp(a,b,"net"); });
+        else if(s === "date") arr.sort(function(a,b){ return cmp(a,b,"date"); });
+
+        $("totalN").textContent = String(items.length);
+        $("renderedN").textContent = String(arr.length);
+
+        $("kItems").textContent = "items=" + items.length;
+        $("kRendered").textContent = "rendered=" + arr.length + "/" + items.length;
+        $("kTrendPts").textContent = "trend_points=" + (state.series ? state.series.length : 0);
+
+        $("localPillItems").textContent = "items: " + String(items ? items.length : 0);
+        $("localPillRendered").textContent = "rendered: " + String(arr.length);
+        $("localPillTrend").textContent = "trend_points: " + String(state.series ? state.series.length : 0);
+        updateLocalPills();
+
+        var tbody = $("rows");
+        tbody.innerHTML = "";
+
+        arr.forEach(function(it){
+          var tr = document.createElement("tr");
+
+          var td0 = document.createElement("td");
+          var dv = document.createElement("div");
+          dv.className = "thumb";
+
+          var img = document.createElement("img");
+          img.loading = "lazy";
+          img.referrerPolicy = "no-referrer";
+          img.alt = "";
+          img.src = it.urlToImage || guessFaviconFromUrl(it.url);
+          img.onerror = function(){
+            var fb = guessFaviconFromUrl(it.url);
+            if(fb && img.src !== fb) img.src = fb;
+          };
+          dv.appendChild(img);
+          td0.appendChild(dv);
+          tr.appendChild(td0);
+
+          var td1 = document.createElement("td");
+          var a = document.createElement("a");
+          a.className = "aTitle";
+          a.href = it.url || "#";
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+          a.textContent = it.title || "(missing title)";
+          td1.appendChild(a);
+
+          var url = document.createElement("div");
+          url.className = "aUrl";
+          url.textContent = it.url || "(missing url)";
+          td1.appendChild(url);
+          tr.appendChild(td1);
+
+          var td2 = document.createElement("td");
+          var sdiv = document.createElement("div");
+          sdiv.className = "aSrc";
+          sdiv.textContent = it.source || "-";
+          td2.appendChild(sdiv);
+
+          var ddiv = document.createElement("div");
+          ddiv.className = "aUrl";
+          ddiv.textContent = safeText(it.publishedAt).slice(0,10) || "";
+          td2.appendChild(ddiv);
+          tr.appendChild(td2);
+
+          var td3 = document.createElement("td");
+          var mr = document.createElement("div");
+          mr.className = "metricRow";
+
+          function mp(cls, label, val){
+            var sp = document.createElement("span");
+            sp.className = "mPill " + cls;
+            sp.textContent = label + " " + fmt3(val);
+            return sp;
+          }
+
+          mr.appendChild(mp("mRisk", "risk", it.risk));
+          mr.appendChild(mp("mPos", "pos", it.pos));
+          mr.appendChild(mp("mUnc", "unc", it.unc));
+          mr.appendChild(mp("mNet", "net", it.net));
+
+          td3.appendChild(mr);
+          tr.appendChild(td3);
+
+          tbody.appendChild(tr);
+        });
+      }
+
+      var SENT_JSON_CAND = [
+        "/analysis/world_politics/analysis/sentiment_latest.json",
+        "/data/world_politics/analysis/sentiment_latest.json",
+        "/data/digest/sentiment_latest.json",
+        "/analysis/sentiment_latest.json"
+      ];
+
+      var TS_CAND = [
+        "/analysis/world_politics/analysis/sentiment_timeseries.csv",
+        "/analysis/sentiment_timeseries.csv",
+        "/data/digest/sentiment_timeseries.csv",
+        "/data/world_politics/analysis/sentiment_timeseries.csv"
+      ];
+
+      var state = {
+        sentPath: "-",
+        tsPath: "-",
+        items: [],
+        series: [],
+        asOf: "-"
       };
-      dv.appendChild(img);
-      td0.appendChild(dv);
-      tr.appendChild(td0);
 
-      var td1 = document.createElement('td');
-      var a = document.createElement('a');
-      a.className = 'aTitle';
-      a.href = it.url || '#';
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.textContent = it.title || '(missing title)';
-      td1.appendChild(a);
-
-      var url = document.createElement('div');
-      url.className = 'aUrl';
-      url.textContent = it.url || '(missing url)';
-      td1.appendChild(url);
-      tr.appendChild(td1);
-
-      var td2 = document.createElement('td');
-      var sdiv = document.createElement('div');
-      sdiv.className = 'aSrc';
-      sdiv.textContent = it.source || '-';
-      td2.appendChild(sdiv);
-      var ddiv = document.createElement('div');
-      ddiv.className = 'aUrl';
-      ddiv.textContent = safeText(it.publishedAt).slice(0,10) || '';
-      td2.appendChild(ddiv);
-      tr.appendChild(td2);
-
-      var td3 = document.createElement('td');
-      var mr = document.createElement('div');
-      mr.className = 'metricRow';
-
-      function mp(cls, label, val){
-        var sp = document.createElement('span');
-        sp.className = 'mPill ' + cls;
-        sp.textContent = label + ' ' + fmt3(val);
-        return sp;
+      function updateDebug(text){
+        $("dbg").textContent = text;
       }
-      mr.appendChild(mp('mRisk', 'risk', it.risk));
-      mr.appendChild(mp('mPos',  'pos',  it.pos));
-      mr.appendChild(mp('mUnc',  'unc',  it.unc));
-      mr.appendChild(mp('mNet',  'net',  it.net));
 
-      td3.appendChild(mr);
-      tr.appendChild(td3);
-
-      tbody.appendChild(tr);
-    });
-  }
-
-  var SENT_JSON_CAND = [
-    '/analysis/world_politics/analysis/sentiment_latest.json',
-    '/data/world_politics/analysis/sentiment_latest.json',
-    '/data/digest/sentiment_latest.json',
-    '/analysis/sentiment_latest.json'
-  ];
-
-  var TS_CAND = [
-    '/analysis/world_politics/analysis/sentiment_timeseries.csv',
-    '/analysis/sentiment_timeseries.csv',
-    '/data/digest/sentiment_timeseries.csv',
-    '/data/world_politics/analysis/sentiment_timeseries.csv'
-  ];
-
-  var HEALTH_CAND = [
-    '/analysis/world_politics/analysis/health_latest.json',
-    '/data/world_politics/analysis/health_latest.json',
-    '/analysis/health_latest.json'
-  ];
-
-  var state = {
-    sentPath: '-',
-    tsPath: '-',
-    items: [],
-    series: [],
-    asOf: '-',
-    health: { level:'', label:'--' }
-  };
-
-  function setHow(ok){
-    $('howStatus').textContent = ok ? '● loaded' : '● loading';
-    $('howStatus').style.borderColor = ok ? 'rgba(70,220,170,.28)' : 'rgba(255,255,255,.12)';
-    $('howStatus').style.background = ok ? 'rgba(70,220,170,.14)' : 'rgba(0,0,0,.18)';
-  }
-
-  function updateDebug(text){
-    $('dbg').textContent = text;
-  }
-
-  function updateHeaderPills(){
-    var readyMode = (state.items && state.items.length) ? 'good' : '';
-    var asofMode = (state.asOf && state.asOf !== '-') ? 'good' : '';
-    setPillState('pill-ready', readyMode, 'Ready');
-    setPillState('pill-health', state.health.level, 'Health: ' + state.health.label);
-    setPillState('pill-asof', asofMode, 'as_of: ' + (state.asOf || '-'));
-    setPillState('pillAsOf', asofMode, 'as_of: ' + (state.asOf || '-'));
-    setPillState('pillItems', readyMode, 'items: ' + String(state.items ? state.items.length : 0));
-    var renderedEl = $('renderedN');
-    var renderedTxt = renderedEl ? renderedEl.textContent : '--';
-    setPillState('pillRendered', readyMode, 'rendered: ' + renderedTxt);
-    setPillState('pillTrend', (state.series && state.series.length) ? 'good' : '', 'trend_points: ' + String(state.series ? state.series.length : 0));
-  }
-
-  function loadAll(){
-    setHow(false);
-    updateDebug('loading...');
-    fetchJsonFirst(HEALTH_CAND).then(function(res){
-      state.health = parseHealth(res.json);
-      updateHeaderPills();
-    }).catch(function(){
-      state.health = { level:'', label:'--' };
-      updateHeaderPills();
-    });
-
-    return fetchJsonFirst(SENT_JSON_CAND).then(function(res){
-      state.sentPath = res.path;
-      var root = res.json;
-      var items = normalizeItems(root).map(normalizeOne);
-      state.items = items;
-
-      // KPIs
-      var asof = safeText(root.as_of || root.date || root.asof || '').slice(0,10);
-      if(!asof && items.length){
-        // infer from newest publishedAt
-        var d = items.map(function(x){return (x.publishedAt||'').slice(0,10);}).filter(Boolean).sort().pop();
-        asof = d || '-';
+      function updateLocalPills(){
+        var readyMode = (state.items && state.items.length) ? "good" : "";
+        var asofMode = (state.asOf && state.asOf !== "-") ? "good" : "";
+        setLocalPill("localPillAsOf", asofMode, "as_of: " + (state.asOf || "-"));
+        setLocalPill("localPillItems", readyMode, "items: " + String(state.items ? state.items.length : 0));
+        setLocalPill("localPillRendered", readyMode, "rendered: " + ($("renderedN") ? $("renderedN").textContent : "--"));
+        setLocalPill("localPillTrend", (state.series && state.series.length) ? "good" : "", "trend_points: " + String(state.series ? state.series.length : 0));
       }
-      state.asOf = asof || '-';
-      safeSetText('kAsOf', state.asOf);
 
-      var avgRisk = 0, avgPos = 0, avgUnc = 0;
-      if(items.length){
-        items.forEach(function(it){ avgRisk += it.risk; avgPos += it.pos; avgUnc += it.unc; });
-        avgRisk /= items.length; avgPos /= items.length; avgUnc /= items.length;
+      function drawAll(){
+        drawCombined($("cvCombined"), state.series);
       }
-      $('kRisk').textContent = fmt3(avgRisk);
-      $('kPos').textContent = fmt3(avgPos);
-      $('kUnc').textContent = fmt3(avgUnc);
 
-      safeSetText('kSrc', state.sentPath);
-      safeSetText('kSrcInline', state.sentPath);
+      function loadAll(){
+        updateDebug("loading...");
 
-      // open buttons
-      safeSetHref('btnOpenSent', state.sentPath);
-      safeSetHref('btnOpenSentTop', state.sentPath);
+        return fetchJsonFirst(SENT_JSON_CAND).then(function(res){
+          state.sentPath = res.path;
+          var root = res.json;
+          var items = normalizeItems(root).map(normalizeOne);
+          state.items = items;
 
-      return fetchTextFirst(TS_CAND).then(function(ts){
-        state.tsPath = ts.path;
-        safeSetText('kTrend', 'trend: ' + state.tsPath);
-        safeSetText('kTrendInline', state.tsPath);
-        safeSetHref('btnOpenTS', state.tsPath);
-        safeSetHref('btnOpenTSTop', state.tsPath);
+          var asof = safeText(root.as_of || root.date || root.asof || "").slice(0,10);
+          if(!asof && items.length){
+            var d = items.map(function(x){ return (x.publishedAt || "").slice(0,10); }).filter(Boolean).sort().pop();
+            asof = d || "-";
+          }
+          state.asOf = asof || "-";
+          safeSetText("kAsOf", state.asOf);
 
-        var series = parseTimeseriesCsv(ts.text);
-        if(!series.length) series = aggregateFromItems(items);
-        state.series = series;
-        safeSetText('trendN', String(series.length));
+          var avgRisk = 0, avgPos = 0, avgUnc = 0;
+          if(items.length){
+            items.forEach(function(it){
+              avgRisk += it.risk;
+              avgPos += it.pos;
+              avgUnc += it.unc;
+            });
+            avgRisk /= items.length;
+            avgPos /= items.length;
+            avgUnc /= items.length;
+          }
 
-        // draw
-        drawLine($('cvRisk'), series, function(x){return x.risk;}, $('maxRisk'));
-        drawLine($('cvPos'),  series, function(x){return x.pos;},  $('maxPos'));
-        drawLine($('cvUnc'),  series, function(x){return x.unc;},  $('maxUnc'));
+          $("kRisk").textContent = fmt3(avgRisk);
+          $("kPos").textContent = fmt3(avgPos);
+          $("kUnc").textContent = fmt3(avgUnc);
 
-        render(items);
-        updateHeaderPills();
+          safeSetText("kSrc", state.sentPath);
+          safeSetText("kSrcInline", state.sentPath);
+          safeSetHref("btnOpenSent", state.sentPath);
+          safeSetHref("btnOpenSentTop", state.sentPath);
 
-        setHow(true);
-        updateDebug(
-          'debug: ok\n'
-          + 'sentiment: ' + state.sentPath + '\n'
-          + 'trend: ' + state.tsPath + '\n'
-          + 'items=' + items.length + ' trend_points=' + series.length
-        );
-      }).catch(function(_e){
-        // no timeseries -> fallback
-        state.tsPath = '(missing)';
-        safeSetText('kTrend', 'trend: (missing)');
-        safeSetText('kTrendInline', '(missing)');
-        safeSetHref('btnOpenTS', '#');
-        safeSetHref('btnOpenTSTop', '#');
+          return fetchTextFirst(TS_CAND).then(function(ts){
+            state.tsPath = ts.path;
+            safeSetText("kTrend", "trend: " + state.tsPath);
+            safeSetText("kTrendInline", state.tsPath);
+            safeSetHref("btnOpenTS", state.tsPath);
+            safeSetHref("btnOpenTSTop", state.tsPath);
 
-        var series2 = aggregateFromItems(items);
-        state.series = series2;
-        safeSetText('trendN', String(series2.length));
+            var series = parseTimeseriesCsv(ts.text);
+            if(!series.length) series = aggregateFromItems(items);
+            state.series = series;
 
-        drawLine($('cvRisk'), series2, function(x){return x.risk;}, $('maxRisk'));
-        drawLine($('cvPos'),  series2, function(x){return x.pos;},  $('maxPos'));
-        drawLine($('cvUnc'),  series2, function(x){return x.unc;},  $('maxUnc'));
+            render(items);
+            drawAll();
+            updateLocalPills();
 
-        render(items);
-        updateHeaderPills();
+            window.GPGlobalStatus.load({
+              fxDecisionCandidates: [
+                "/data/fx/fx_decision_latest.json",
+                "/data/fx/fx_decision_latest_jpythb.json"
+              ]
+            }).catch(function(e){
+              console.warn(e);
+            });
 
-        setHow(true);
-        updateDebug(
-          'debug: ok (trend fallback)\n'
-          + 'sentiment: ' + state.sentPath + '\n'
-          + 'trend: (fallback from items)\n'
-          + 'items=' + items.length + ' trend_points=' + series2.length
-        );
-      });
+            updateDebug(
+              "debug: ok\n" +
+              "sentiment: " + state.sentPath + "\n" +
+              "trend: " + state.tsPath + "\n" +
+              "items=" + items.length + " trend_points=" + series.length
+            );
+          }).catch(function(){
+            state.tsPath = "(missing)";
+            safeSetText("kTrend", "trend: (missing)");
+            safeSetText("kTrendInline", "(missing)");
+            safeSetHref("btnOpenTS", "#");
+            safeSetHref("btnOpenTSTop", "#");
 
-    }).catch(function(e){
-      state.items = [];
-      state.series = [];
-      state.asOf = '-';
-      setHow(false);
-      updateDebug('failed to load sentiment: ' + safeText(e && e.message));
-      safeSetText('howStatus', '● error');
-      updateHeaderPills();
-    });
-  }
+            var series2 = aggregateFromItems(items);
+            state.series = series2;
 
-  function wire(){
-    $('btnReload').addEventListener('click', function(ev){ ev.preventDefault(); loadAll(); });
-    $('btnReset').addEventListener('click', function(ev){
-      ev.preventDefault();
-      $('q').value = '';
-      $('fSent').value = 'all';
-      $('sort').value = 'risk';
-      $('showMissing').checked = true;
-      render(state.items);
-    });
+            render(items);
+            drawAll();
+            updateLocalPills();
 
-    $('q').addEventListener('input', function(){ render(state.items); });
-    $('fSent').addEventListener('change', function(){ render(state.items); });
-    $('sort').addEventListener('change', function(){ render(state.items); });
-    $('showMissing').addEventListener('change', function(){ render(state.items); });
+            window.GPGlobalStatus.load({
+              fxDecisionCandidates: [
+                "/data/fx/fx_decision_latest.json",
+                "/data/fx/fx_decision_latest_jpythb.json"
+              ]
+            }).catch(function(e){
+              console.warn(e);
+            });
 
-    window.addEventListener('resize', function(){
-      if(state.series && state.series.length){
-        drawLine($('cvRisk'), state.series, function(x){return x.risk;}, $('maxRisk'));
-        drawLine($('cvPos'),  state.series, function(x){return x.pos;},  $('maxPos'));
-        drawLine($('cvUnc'),  state.series, function(x){return x.unc;},  $('maxUnc'));
+            updateDebug(
+              "debug: ok (trend fallback)\n" +
+              "sentiment: " + state.sentPath + "\n" +
+              "trend: (fallback from items)\n" +
+              "items=" + items.length + " trend_points=" + series2.length
+            );
+          });
+        }).catch(function(e){
+          state.items = [];
+          state.series = [];
+          state.asOf = "-";
+          updateDebug("failed to load sentiment: " + safeText(e && e.message));
+          updateLocalPills();
+          drawAll();
+        });
       }
-    });
-  }
 
-  updateHeaderPills();
-  wire();
-  loadAll();
-})();
-</script>
+      function wire(){
+        $("btnReload").addEventListener("click", function(ev){
+          ev.preventDefault();
+          loadAll();
+        });
+
+        $("btnReset").addEventListener("click", function(ev){
+          ev.preventDefault();
+          $("q").value = "";
+          $("fSent").value = "all";
+          $("sort").value = "risk";
+          $("showMissing").checked = true;
+          render(state.items);
+        });
+
+        $("q").addEventListener("input", function(){ render(state.items); });
+        $("fSent").addEventListener("change", function(){ render(state.items); });
+        $("sort").addEventListener("change", function(){ render(state.items); });
+        $("showMissing").addEventListener("change", function(){ render(state.items); });
+
+        window.addEventListener("resize", function(){
+          drawAll();
+        });
+      }
+
+      wire();
+      updateLocalPills();
+      loadAll();
+    })();
+  </script>
 </body>
 </html>

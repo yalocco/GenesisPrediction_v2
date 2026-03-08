@@ -4,9 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Home - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260307-gsb3" />
-  <script src="/static/_shared_nav.js?v=20260307-gsb3"></script>
-  <script src="/static/common/global_status.js?v=20260307-gsb3"></script>
+  <link rel="stylesheet" href="/static/app.css?v=20260308-ui2" />
+  <script src="/static/common/global_status.js?v=20260308-ui2"></script>
   <style>
     .home-hero{margin-bottom:14px;}
     .status-shell{
@@ -59,7 +58,6 @@
       overflow:hidden;
       text-overflow:ellipsis;
       color:#eef4ff;
-      transition:color .18s ease, text-shadow .18s ease;
     }
     .status-sub{
       margin-top:4px;
@@ -69,10 +67,6 @@
       overflow:hidden;
       text-overflow:ellipsis;
     }
-    .risk-low{color:#7eb6ff;text-shadow:0 0 18px rgba(126,182,255,.14);}
-    .risk-medium{color:#ffc36d;text-shadow:0 0 18px rgba(255,195,109,.12);}
-    .risk-high{color:#ff7d7d;text-shadow:0 0 18px rgba(255,125,125,.14);}
-    .risk-missing{color:#d7ddeb;}
     .home-kpis{
       display:grid;
       grid-template-columns:repeat(4,minmax(0,1fr));
@@ -86,7 +80,6 @@
       background:rgba(8,14,28,.18);
       min-height:86px;
     }
-    .home-kpi .hint{margin-bottom:6px;}
     .home-kpi .value{
       font-size:31px;
       line-height:1.05;
@@ -96,311 +89,353 @@
     .home-pre{
       white-space:pre-wrap;
       word-break:break-word;
+      line-height:1.55;
+      font-size:13px;
+      color:#cfd9f8;
     }
-    @media (max-width: 1100px){
+    .home-pre strong{
+      color:#ffffff;
+    }
+    @media (max-width:1100px){
       .status-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
       .home-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}
     }
-    @media (max-width: 700px){
+    @media (max-width:700px){
       .status-grid{grid-template-columns:1fr;}
       .home-kpis{grid-template-columns:1fr;}
     }
   </style>
 </head>
 <body>
-<main class="gp-main">
-  <div class="page gp-page gp-page--sentiment">
-    <section class="panel">
-      <div class="home-hero">
-        <div class="h1">Home</div>
-        <p class="sub">Today snapshot / Daily summary / Sentiment / Data health をまとめて表示します。</p>
+  <div id="site-header"></div>
 
-        <div class="status-shell">
-          <div class="status-top">
-            <div class="status-title">Global Status</div>
-            <div class="pillrow">
-              <span id="pillAsOf" class="pill">as_of: --</span>
-              <span id="pillReady" class="pill">loading…</span>
+  <div class="page container">
+    <main class="gp-main">
+      <div class="gp-page">
+        <section class="panel">
+          <div class="home-hero">
+            <div class="h1">Home</div>
+            <p class="sub">Today snapshot / Daily summary / Sentiment / Data health をまとめて表示します。</p>
+
+            <div class="status-shell">
+              <div class="status-top">
+                <div class="status-title">Global Status</div>
+                <div class="pillrow">
+                  <span id="pillAsOf" class="pill">as_of: --</span>
+                  <span id="pillReady" class="pill">loading…</span>
+                </div>
+              </div>
+
+              <div class="status-grid">
+                <div class="status-item">
+                  <div class="status-label">Global Risk</div>
+                  <div id="gsRisk" class="status-value">—</div>
+                  <div id="gsRiskSub" class="status-sub">daily summary / sentiment</div>
+                </div>
+
+                <div class="status-item">
+                  <div class="status-label">Sentiment Balance</div>
+                  <div id="gsSentiment" class="status-value">—</div>
+                  <div id="gsSentimentSub" class="status-sub">article distribution</div>
+                </div>
+
+                <div class="status-item">
+                  <div class="status-label">FX Regime</div>
+                  <div id="gsFx" class="status-value">—</div>
+                  <div id="gsFxSub" class="status-sub">decision / fallback</div>
+                </div>
+
+                <div class="status-item">
+                  <div class="status-label">Articles</div>
+                  <div id="gsArticles" class="status-value">—</div>
+                  <div id="gsArticlesSub" class="status-sub">digest latest</div>
+                </div>
+
+                <div class="status-item">
+                  <div class="status-label">Updated</div>
+                  <div id="gsUpdated" class="status-value">—</div>
+                  <div id="gsUpdatedSub" class="status-sub">latest runtime stamp</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="home-kpis">
+              <div class="home-kpi">
+                <div class="hint">Events</div>
+                <div id="kpiEvents" class="value">—</div>
+              </div>
+              <div class="home-kpi">
+                <div class="hint">Health OK</div>
+                <div id="kpiHealthOk" class="value">—</div>
+              </div>
+              <div class="home-kpi">
+                <div class="hint">Sentiment Items</div>
+                <div id="kpiSentimentItems" class="value">—</div>
+              </div>
+              <div class="home-kpi">
+                <div class="hint">Summary</div>
+                <div id="kpiSummaryState" class="value">—</div>
+              </div>
             </div>
           </div>
 
-          <div class="status-grid">
-            <div class="status-item">
-              <div class="status-label">Global Risk</div>
-              <div id="gsRisk" class="status-value risk-missing">—</div>
-              <div id="gsRiskSub" class="status-sub">daily summary / sentiment</div>
+          <div class="grid2" style="margin-top:12px;">
+            <div class="card">
+              <div class="sectionTitle">
+                <h2>Events (today)</h2>
+                <span id="evHint" class="hint">loading…</span>
+              </div>
+              <div id="evBody" class="mono small home-pre">loading…</div>
+              <div class="pillrow" style="margin-top:10px;">
+                <span id="evSource" class="pill">source: --</span>
+              </div>
             </div>
-            <div class="status-item">
-              <div class="status-label">Sentiment Balance</div>
-              <div id="gsSentiment" class="status-value">—</div>
-              <div id="gsSentimentSub" class="status-sub">article distribution</div>
-            </div>
-            <div class="status-item">
-              <div class="status-label">FX Regime</div>
-              <div id="gsFx" class="status-value">—</div>
-              <div id="gsFxSub" class="status-sub">decision / fallback</div>
-            </div>
-            <div class="status-item">
-              <div class="status-label">Articles</div>
-              <div id="gsArticles" class="status-value">—</div>
-              <div id="gsArticlesSub" class="status-sub">digest latest</div>
-            </div>
-            <div class="status-item">
-              <div class="status-label">Updated</div>
-              <div id="gsUpdated" class="status-value">—</div>
-              <div id="gsUpdatedSub" class="status-sub">latest runtime stamp</div>
-            </div>
-          </div>
-        </div>
 
-        <div class="home-kpis">
-          <div class="home-kpi">
-            <div class="hint">Events</div>
-            <div id="kpiEvents" class="value">—</div>
+            <div class="card">
+              <div class="sectionTitle">
+                <h2>Data Health</h2>
+                <span id="healthHint" class="hint">loading…</span>
+              </div>
+              <div id="healthBody" class="mono small home-pre">loading…</div>
+              <div class="pillrow" style="margin-top:10px;">
+                <a id="btnOpenHealth" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open JSON</a>
+                <span id="healthSource" class="pill">source: --</span>
+              </div>
+            </div>
           </div>
-          <div class="home-kpi">
-            <div class="hint">Health OK</div>
-            <div id="kpiHealthOk" class="value">—</div>
+
+          <div class="grid2" style="margin-top:12px;">
+            <div class="card">
+              <div class="sectionTitle">
+                <h2>Sentiment</h2>
+                <span id="senHint" class="hint">loading…</span>
+              </div>
+              <div id="senBody" class="mono small home-pre">loading…</div>
+              <div class="pillrow" style="margin-top:10px;">
+                <span id="senSource" class="pill">source: --</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="sectionTitle">
+                <h2>Daily Summary</h2>
+                <span id="sumHint" class="hint">loading…</span>
+              </div>
+              <div id="sumBody" class="mono small home-pre">loading…</div>
+              <div class="pillrow" style="margin-top:10px;">
+                <a id="btnOpenSummary" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open JSON</a>
+                <span id="sumSource" class="pill">source: --</span>
+              </div>
+            </div>
           </div>
-          <div class="home-kpi">
-            <div class="hint">Sentiment Items</div>
-            <div id="kpiSentimentItems" class="value">—</div>
-          </div>
-          <div class="home-kpi">
-            <div class="hint">Summary</div>
-            <div id="kpiSummaryState" class="value">—</div>
-          </div>
-        </div>
+        </section>
       </div>
-
-      <div class="grid2" style="margin-top:12px;">
-        <div class="card">
-          <div class="sectionTitle">
-            <h2>Events (today)</h2>
-            <span id="evHint" class="hint">loading…</span>
-          </div>
-          <div id="evBody" class="mono small home-pre">loading…</div>
-          <div class="pillrow" style="margin-top:10px;">
-            <span id="evSource" class="pill">source: --</span>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="sectionTitle">
-            <h2>Data Health</h2>
-            <span id="healthHint" class="hint">loading…</span>
-          </div>
-          <div id="healthBody" class="mono small home-pre">loading…</div>
-          <div class="pillrow" style="margin-top:10px;">
-            <a id="btnOpenHealth" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open JSON</a>
-            <span id="healthSource" class="pill">source: --</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid2" style="margin-top:12px;">
-        <div class="card">
-          <div class="sectionTitle">
-            <h2>Sentiment</h2>
-            <span id="senHint" class="hint">loading…</span>
-          </div>
-          <div id="senBody" class="mono small home-pre">loading…</div>
-          <div class="pillrow" style="margin-top:10px;">
-            <span id="senSource" class="pill">source: --</span>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="sectionTitle">
-            <h2>Daily Summary</h2>
-            <span id="sumHint" class="hint">loading…</span>
-          </div>
-          <div id="sumBody" class="mono small home-pre">loading…</div>
-          <div class="pillrow" style="margin-top:10px;">
-            <a id="btnOpenSummary" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open JSON</a>
-            <span id="sumSource" class="pill">source: --</span>
-          </div>
-        </div>
-      </div>
-    </section>
+    </main>
   </div>
-</main>
 
-<script>
-(function(){
-  "use strict";
+  <div id="site-footer"></div>
 
-  function safeText(x){
-    return (x == null) ? "" : String(x);
-  }
+  <script src="/static/common/layout.js?v=20260308-ui2"></script>
+  <script>
+    (function(){
+      "use strict";
 
-  function setText(id, v){
-    var el = document.getElementById(id);
-    if(el) el.textContent = safeText(v);
-  }
-
-  function setHref(id, v){
-    var el = document.getElementById(id);
-    if(el) el.href = v || "#";
-  }
-
-  function firstNumber(){
-    for(var i = 0; i < arguments.length; i++){
-      var v = arguments[i];
-      if(typeof v === "number" && !Number.isNaN(v)) return v;
-      if(typeof v === "string" && v.trim() !== "" && !Number.isNaN(Number(v))) return Number(v);
-    }
-    return null;
-  }
-
-  function firstString(){
-    for(var i = 0; i < arguments.length; i++){
-      var v = arguments[i];
-      if(typeof v === "string" && v.trim()) return v.trim();
-    }
-    return "";
-  }
-
-  function renderKV(obj){
-    var lines = [];
-    Object.entries(obj || {}).forEach(function(pair){
-      var k = pair[0];
-      var v = pair[1];
-      if(v == null) return;
-      if(typeof v === "object") return;
-      lines.push(k + ": " + String(v));
-    });
-    return lines.join("\n");
-  }
-
-  function renderHealth(h){
-    if(!h) return "—";
-    var sum = h.summary || {};
-    var date = h.date || h.as_of || "";
-    var total = firstNumber(sum.total, h.total, Array.isArray(h.checks) ? h.checks.length : null);
-    var ok = firstNumber(sum.ok, h.ok_count, h.OK);
-    var warn = firstNumber(sum.warn, h.warn_count, h.WARN);
-    var ng = firstNumber(sum.ng, h.ng_count, h.NG);
-    var parts = [];
-    if(date) parts.push("date: " + date);
-    if(total != null) parts.push("total: " + total);
-    if(ok != null) parts.push("OK: " + ok);
-    if(warn != null) parts.push("WARN: " + warn);
-    if(ng != null) parts.push("NG: " + ng);
-    return parts.join("\n");
-  }
-
-  function renderSentiment(s){
-    if(!s) return "—";
-    var date = s.date || s.as_of || "";
-    var items = Array.isArray(s.items) ? s.items.length : firstNumber(s.total_items, s.summary && s.summary.articles);
-    var summary = s.summary || s.today || s.sentiment_summary || {};
-    var risk = firstNumber(summary.risk, summary.risk_score, summary.riskScore);
-    var pos = firstNumber(summary.positive, summary.posScore, summary.positive_count);
-    var unc = firstNumber(summary.uncertainty, summary.uncScore);
-    var parts = [];
-    if(date) parts.push("date: " + date);
-    if(items != null) parts.push("items: " + items);
-    if(risk != null) parts.push("risk: " + Number(risk).toFixed(2));
-    if(pos != null) parts.push("positive: " + Number(pos).toFixed(2));
-    if(unc != null) parts.push("uncertainty: " + Number(unc).toFixed(2));
-    return parts.join("\n");
-  }
-
-  function renderSummary(sum){
-    if(!sum) return "—";
-    var text = firstString(
-      sum.summary,
-      sum.text_summary,
-      sum.daily_summary,
-      sum.yesterday_summary_text
-    );
-    if(text) return text.split("\n").slice(0,6).join("\n");
-
-    if(sum.yesterday_summary){
-      if(typeof sum.yesterday_summary.text === "string" && sum.yesterday_summary.text.trim()){
-        return sum.yesterday_summary.text.trim().split("\n").slice(0,6).join("\n");
-      }
-      if(Array.isArray(sum.yesterday_summary.titles) && sum.yesterday_summary.titles.length){
-        return sum.yesterday_summary.titles.slice(0,8).map(function(t){
-          return "• " + safeText(t);
-        }).join("\n");
-      }
-    }
-
-    return renderKV(sum);
-  }
-
-  async function main(){
-    try{
-      var gs = await window.GPGlobalStatus.load({
-        fxDecisionCandidates: [
-          "/data/fx/fx_decision_latest.json",
-          "/data/fx/fx_decision_latest_jpythb.json"
-        ]
-      });
-
-      var vmRes = gs.vmRes;
-      var healthRes = gs.healthRes;
-      var senRes = gs.senRes;
-      var sumRes = gs.sumRes;
-
-      var vm = gs.vm;
-      var health = gs.health;
-      var sentiment = gs.sentiment;
-      var summary = gs.summary;
-      var articles = gs.articles;
-
-      if(vm){
-        setText("evHint", "OK");
-        setText("evBody", renderKV(vm).slice(0, 1400));
-        setText("evSource", "source: " + vmRes.url);
-      }else{
-        setText("evHint", "missing");
-        setText("evBody", "view_model_latest.json not available.");
+      function safeText(x){
+        return (x == null) ? "" : String(x);
       }
 
-      if(health){
-        setText("healthHint", "OK");
-        setText("healthBody", renderHealth(health));
-        setText("healthSource", "source: " + healthRes.url);
-        setHref("btnOpenHealth", healthRes.url);
-      }else{
-        setText("healthHint", "missing");
-        setText("healthBody", "health_latest.json not available.");
+      function setText(id, v){
+        var el = document.getElementById(id);
+        if(el) el.textContent = safeText(v);
       }
 
-      if(sentiment){
-        setText("senHint", "OK");
-        setText("senBody", renderSentiment(sentiment));
-        setText("senSource", "source: " + senRes.url);
-      }else{
-        setText("senHint", "missing");
-        setText("senBody", "sentiment_latest.json not available.");
+      function setHref(id, v){
+        var el = document.getElementById(id);
+        if(el) el.href = v || "#";
       }
 
-      if(summary){
-        setText("sumHint", "OK");
-        setText("sumBody", renderSummary(summary));
-        setText("sumSource", "source: " + sumRes.url);
-        setHref("btnOpenSummary", sumRes.url);
-      }else{
-        setText("sumHint", "missing");
-        setText("sumBody", "daily_summary_latest.json not available.");
+      function firstNumber(){
+        for(var i = 0; i < arguments.length; i++){
+          var v = arguments[i];
+          if(typeof v === "number" && !Number.isNaN(v)) return v;
+          if(typeof v === "string" && v.trim() !== "" && !Number.isNaN(Number(v))) return Number(v);
+        }
+        return null;
       }
 
-      setText("kpiEvents", articles != null ? String(articles) : "—");
-      setText("kpiHealthOk", health && health.summary && health.summary.ok != null ? String(health.summary.ok) : "—");
-      setText("kpiSentimentItems", sentiment && Array.isArray(sentiment.items) ? String(sentiment.items.length) : (articles != null ? String(articles) : "—"));
-      setText("kpiSummaryState", summary ? "OK" : "MISS");
-    }catch(e){
-      setText("pillReady", "Error");
-      console.warn(e);
-    }
-  }
+      function firstString(){
+        for(var i = 0; i < arguments.length; i++){
+          var v = arguments[i];
+          if(typeof v === "string" && v.trim()) return v.trim();
+        }
+        return "";
+      }
 
-  main();
-})();
-</script>
+      function renderKV(obj){
+        var lines = [];
+
+        Object.entries(obj || {}).forEach(function(pair){
+          var k = pair[0];
+          var v = pair[1];
+
+          if(v == null) return;
+          if(typeof v === "object") return;
+
+          var key = k.replace(/_/g," ");
+          key = key.charAt(0).toUpperCase() + key.slice(1);
+
+          lines.push(key + ": " + String(v));
+        });
+
+        return lines.join("\n");
+      }
+
+      function renderHealth(h){
+        if(!h) return "—";
+        var sum = h.summary || {};
+        var date = h.date || h.as_of || "";
+        var total = firstNumber(sum.total, h.total, Array.isArray(h.checks) ? h.checks.length : null);
+        var ok = firstNumber(sum.ok, h.ok_count, h.OK);
+        var warn = firstNumber(sum.warn, h.warn_count, h.WARN);
+        var ng = firstNumber(sum.ng, h.ng_count, h.NG);
+        var parts = [];
+        if(date) parts.push("date: " + date);
+        if(total != null) parts.push("total: " + total);
+        if(ok != null) parts.push("OK: " + ok);
+        if(warn != null) parts.push("WARN: " + warn);
+        if(ng != null) parts.push("NG: " + ng);
+        return parts.join("\n");
+      }
+
+      function renderSentiment(s){
+        if(!s) return "—";
+        var date = s.date || s.as_of || "";
+        var items = Array.isArray(s.items) ? s.items.length : firstNumber(s.total_items, s.summary && s.summary.articles);
+        var summary = s.summary || s.today || s.sentiment_summary || {};
+        var risk = firstNumber(summary.risk, summary.risk_score, summary.riskScore);
+        var pos = firstNumber(summary.positive, summary.posScore, summary.positive_count);
+        var unc = firstNumber(summary.uncertainty, summary.uncScore);
+        var parts = [];
+        if(date) parts.push("date: " + date);
+        if(items != null) parts.push("items: " + items);
+        if(risk != null) parts.push("risk: " + Number(risk).toFixed(2));
+        if(pos != null) parts.push("positive: " + Number(pos).toFixed(2));
+        if(unc != null) parts.push("uncertainty: " + Number(unc).toFixed(2));
+        return parts.join("\n");
+      }
+
+      function renderSummary(sum){
+        if(!sum) return "—";
+
+        var text = firstString(
+          sum.summary,
+          sum.text_summary,
+          sum.daily_summary,
+          sum.yesterday_summary_text
+        );
+
+        if(text){
+          return text
+            .replace(/\n+/g,"\n")
+            .split("\n")
+            .slice(0,6)
+            .join("\n");
+        }
+
+        if(sum.yesterday_summary){
+          if(typeof sum.yesterday_summary.text === "string" &&
+             sum.yesterday_summary.text.trim()){
+            return sum.yesterday_summary.text
+              .trim()
+              .split("\n")
+              .slice(0,6)
+              .join("\n");
+          }
+
+          if(Array.isArray(sum.yesterday_summary.titles) &&
+             sum.yesterday_summary.titles.length){
+            return sum.yesterday_summary.titles
+              .slice(0,8)
+              .map(function(t){
+                return "• " + safeText(t);
+              })
+              .join("\n");
+          }
+        }
+
+        return renderKV(sum);
+      }
+
+      async function main(){
+        try{
+          var gs = await window.GPGlobalStatus.load({
+            fxDecisionCandidates: [
+              "/data/fx/fx_decision_latest.json",
+              "/data/fx/fx_decision_latest_jpythb.json"
+            ]
+          });
+
+          var vmRes = gs.vmRes;
+          var healthRes = gs.healthRes;
+          var senRes = gs.senRes;
+          var sumRes = gs.sumRes;
+
+          var vm = gs.vm;
+          var health = gs.health;
+          var sentiment = gs.sentiment;
+          var summary = gs.summary;
+          var articles = gs.articles;
+
+          if(vm){
+            setText("evHint", "OK");
+            setText("evBody", renderKV(vm).slice(0, 1400));
+            setText("evSource", "source: " + vmRes.url);
+          }else{
+            setText("evHint", "missing");
+            setText("evBody", "view_model_latest.json not available.");
+          }
+
+          if(health){
+            setText("healthHint", "OK");
+            setText("healthBody", renderHealth(health));
+            setText("healthSource", "source: " + healthRes.url);
+            setHref("btnOpenHealth", healthRes.url);
+          }else{
+            setText("healthHint", "missing");
+            setText("healthBody", "health_latest.json not available.");
+          }
+
+          if(sentiment){
+            setText("senHint", "OK");
+            setText("senBody", renderSentiment(sentiment));
+            setText("senSource", "source: " + senRes.url);
+          }else{
+            setText("senHint", "missing");
+            setText("senBody", "sentiment_latest.json not available.");
+          }
+
+          if(summary){
+            setText("sumHint", "OK");
+            setText("sumBody", renderSummary(summary));
+            setText("sumSource", "source: " + sumRes.url);
+            setHref("btnOpenSummary", sumRes.url);
+          }else{
+            setText("sumHint", "missing");
+            setText("sumBody", "daily_summary_latest.json not available.");
+          }
+
+          setText("kpiEvents", articles != null ? String(articles) : "—");
+          setText("kpiHealthOk", health && health.summary && health.summary.ok != null ? String(health.summary.ok) : "—");
+          setText("kpiSentimentItems", sentiment && Array.isArray(sentiment.items) ? String(sentiment.items.length) : (articles != null ? String(articles) : "—"));
+          setText("kpiSummaryState", summary ? "OK" : "MISS");
+        }catch(e){
+          setText("pillReady", "Error");
+          console.warn(e);
+        }
+      }
+
+      main();
+    })();
+  </script>
 </body>
 </html>

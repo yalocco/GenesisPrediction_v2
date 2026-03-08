@@ -1,824 +1,930 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Digest - GenesisPrediction v2</title>
-
-  <link rel="stylesheet" href="/static/app.css?v=20260306v100" />
-
   <style>
     :root{
-      --bg0: #070b12;
-      --bg1: #0a1020;
-      --panel: rgba(255,255,255,.04);
-      --panel2: rgba(255,255,255,.06);
-      --line: rgba(255,255,255,.10);
-      --text: rgba(255,255,255,.90);
-      --muted: rgba(255,255,255,.65);
-      --faint: rgba(255,255,255,.45);
-      --accent: rgba(105,169,255,.95);
-      --good: rgba(80, 200, 140, .95);
-      --warn: rgba(240, 196, 72, .95);
-      --bad: rgba(255, 95, 95, .95);
-      --shadow: 0 14px 50px rgba(0,0,0,.45);
-      --radius: 18px;
+      --bg-1:#07111f;
+      --bg-2:#0b1730;
+      --bg-3:#102445;
+      --panel:rgba(13,24,45,.68);
+      --panel-strong:rgba(12,22,42,.86);
+      --stroke:rgba(255,255,255,.10);
+      --text:#eaf1ff;
+      --muted:#9fb2d9;
+      --soft:#7f93bb;
+      --accent:#69a9ff;
+      --accent-2:#90c2ff;
+      --good:#2fd28d;
+      --bad:#ff6b81;
+      --warn:#ffbc58;
+      --neutral:#8ea3c7;
+      --mixed:#b28cff;
+      --shadow:0 18px 60px rgba(0,0,0,.34);
+      --radius-xl:24px;
+      --radius-lg:18px;
+      --radius-md:14px;
+      --container:1360px;
     }
 
+    *{box-sizing:border-box}
+    html,body{height:100%}
     body{
       margin:0;
-      color: var(--text);
+      color:var(--text);
+      font-family:Inter,"Noto Sans JP","Hiragino Sans","Yu Gothic UI",system-ui,-apple-system,sans-serif;
       background:
-        radial-gradient(1200px 700px at 25% 25%, rgba(105,169,255,.10), transparent 60%),
-        radial-gradient(900px 600px at 70% 55%, rgba(80,200,140,.06), transparent 60%),
-        linear-gradient(180deg, var(--bg0), var(--bg1));
+        radial-gradient(circle at top left, rgba(105,169,255,.22), transparent 28%),
+        radial-gradient(circle at top right, rgba(47,210,141,.11), transparent 24%),
+        linear-gradient(180deg, var(--bg-3) 0%, var(--bg-2) 44%, var(--bg-1) 100%);
       min-height:100vh;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+
+    a{color:inherit;text-decoration:none}
+    img{display:block;max-width:100%}
+
+    .shell{
+      width:min(calc(100% - 32px), var(--container));
+      margin:0 auto;
+      padding:18px 0 40px;
     }
 
     .topbar{
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      backdrop-filter: blur(14px);
-      background: linear-gradient(180deg, rgba(0,0,0,.65), rgba(0,0,0,.20));
-      border-bottom: 1px solid rgba(255,255,255,.06);
-    }
-    .topbar-inner{
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 10px 16px;
       display:flex;
       align-items:center;
-      justify-content: space-between;
-      gap: 12px;
+      justify-content:space-between;
+      gap:16px;
+      padding:12px 14px;
+      margin-bottom:18px;
+      border:1px solid var(--stroke);
+      border-radius:999px;
+      background:rgba(7,14,27,.42);
+      backdrop-filter:blur(14px);
+      box-shadow:var(--shadow);
     }
+
     .brand{
-      display:flex;align-items:center;gap:10px;white-space:nowrap;
-      font-weight:700;font-size:14px;color:rgba(255,255,255,.92);
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width:0;
     }
-    .dot{width:8px;height:8px;border-radius:999px;background:var(--accent);box-shadow:0 0 0 3px rgba(105,169,255,.18);}
-    nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+
+    .brand-mark{
+      width:42px;
+      height:42px;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      font-weight:800;
+      letter-spacing:.08em;
+      color:#fff;
+      background:linear-gradient(135deg, rgba(105,169,255,.95), rgba(144,194,255,.55));
+      box-shadow:0 10px 28px rgba(105,169,255,.28);
+      flex:0 0 auto;
+    }
+
+    .brand-copy{min-width:0}
+    .brand-title{font-size:15px;font-weight:800;letter-spacing:.02em;white-space:nowrap}
+    .brand-sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+    nav{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+      gap:10px;
+    }
+
     .nav-link{
-      display:inline-flex;align-items:center;gap:8px;
-      padding: 6px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.02);
-      color: rgba(255,255,255,.82);
-      text-decoration:none;
-      font-size: 12px;
-      transition: .15s ease;
+      padding:10px 14px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.04);
+      color:var(--muted);
+      font-size:13px;
+      font-weight:700;
+      transition:.18s ease;
     }
-    .nav-link:hover{border-color: rgba(105,169,255,.45); color: rgba(255,255,255,.92);}
-    .nav-link.active{border-color: rgba(105,169,255,.85); box-shadow: 0 0 0 3px rgba(105,169,255,.14) inset;}
-    .pill{
-      display:inline-flex;align-items:center;gap:8px;
-      padding: 6px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.02);
-      color: rgba(255,255,255,.78);
+    .nav-link:hover{border-color:rgba(105,169,255,.45);color:var(--text)}
+    .nav-link.active{
+      color:#fff;
+      border-color:rgba(105,169,255,.48);
+      background:rgba(105,169,255,.16);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.04);
+    }
+
+    .hero{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:18px;
+      margin-bottom:18px;
+      padding:22px 24px;
+      border-radius:var(--radius-xl);
+      border:1px solid var(--stroke);
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.025));
+      backdrop-filter:blur(14px);
+      box-shadow:var(--shadow);
+    }
+
+    .hero-copy h1{
+      margin:0 0 8px;
+      font-size:clamp(28px,4vw,38px);
+      line-height:1.05;
+      letter-spacing:-.03em;
+    }
+
+    .hero-copy p{
+      margin:0;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.7;
+      max-width:760px;
+    }
+
+    .hero-meta{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      justify-content:flex-end;
+    }
+
+    .meta-pill{
+      padding:10px 14px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.09);
+      background:rgba(255,255,255,.04);
+      color:var(--muted);
       font-size:12px;
+      font-weight:700;
       white-space:nowrap;
-      transition: .15s ease;
     }
-    .pill .led{
-      width:8px;height:8px;border-radius:999px;background: rgba(255,255,255,.25);
-      box-shadow: 0 0 0 3px rgba(255,255,255,.08);
-    }
-    .pill.good{
-      border-color: rgba(80,200,140,.28);
-      color: rgba(255,255,255,.90);
-    }
-    .pill.good .led{background: var(--good); box-shadow: 0 0 0 3px rgba(80,200,140,.18);}
-    .pill.warn{
-      border-color: rgba(240,196,72,.28);
-      color: rgba(255,255,255,.90);
-    }
-    .pill.warn .led{background: var(--warn); box-shadow: 0 0 0 3px rgba(240,196,72,.18);}
-    .pill.bad{
-      border-color: rgba(255,95,95,.28);
-      color: rgba(255,255,255,.90);
-    }
-    .pill.bad .led{background: var(--bad); box-shadow: 0 0 0 3px rgba(255,95,95,.18);}
 
-    .wrap{max-width: 1200px; margin: 0 auto; padding: 22px 16px 60px;}
-    .header{
-      display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap;
-      padding-top: 6px;
+    .glass{
+      border:1px solid var(--stroke);
+      background:var(--panel);
+      backdrop-filter:blur(14px);
+      border-radius:var(--radius-xl);
+      box-shadow:var(--shadow);
     }
-    .hgroup h1{margin:0; font-size: 34px; letter-spacing:.2px;}
-    .hgroup .sub{margin-top:6px; color: var(--muted); font-size: 14px;}
-    .meta-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap; justify-content:flex-end;}
-    .meta-row a{color: var(--accent); text-decoration:none;}
-    .meta-row a:hover{text-decoration:underline;}
 
-    .section{margin-top: 18px;}
+    .section-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      margin-bottom:16px;
+    }
+
+    .section-title{
+      margin:0;
+      font-size:20px;
+      letter-spacing:-.02em;
+    }
+
+    .section-sub{
+      margin:6px 0 0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.6;
+    }
+
+    .summary-highlights{
+      display:grid;
+      grid-template-columns:minmax(0,1.25fr) minmax(320px,.95fr);
+      gap:18px;
+      align-items:stretch;
+      margin-bottom:18px;
+    }
+
     .panel{
-      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 16px 16px;
-    }
-    .section h2{margin:0 0 10px 0; font-size: 26px; letter-spacing:.2px;}
-
-    .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap; margin-top: 10px;}
-    input[type="text"], select, button{
-      background: rgba(255,255,255,.03);
-      color: rgba(255,255,255,.86);
-      border: 1px solid rgba(255,255,255,.12);
-      border-radius: 10px;
-      padding: 8px 10px;
-      font-size: 12px;
-      outline: none;
-    }
-    input[type="text"]{min-width: 220px;}
-    button{cursor:pointer; transition:.12s ease;}
-    button:hover{border-color: rgba(105,169,255,.55);}
-    button.primary{border-color: rgba(105,169,255,.75); box-shadow: 0 0 0 3px rgba(105,169,255,.12) inset;}
-    .mini{display:inline-flex;align-items:center;gap:10px;color: var(--muted);font-size:12px; margin-top: 2px;}
-    .statusline{color: var(--muted); font-size: 12px; margin-top: 2px;}
-
-    .kpi-row{display:grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px;}
-    @media (max-width: 980px){ .kpi-row{grid-template-columns: repeat(3, minmax(0, 1fr));} }
-    @media (max-width: 560px){ .kpi-row{grid-template-columns: repeat(2, minmax(0, 1fr));} }
-    .kpi{background: rgba(0,0,0,.10); border: 1px solid rgba(255,255,255,.10); border-radius: 14px; padding: 12px 12px;}
-    .kpi .label{color: var(--faint); font-size: 12px;}
-    .kpi .value{font-size: 22px; margin-top: 6px; font-weight: 700;}
-
-    .cards{display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 10px;}
-    @media (max-width: 900px){ .cards{grid-template-columns: 1fr;} }
-    .card{
-      background: rgba(0,0,0,.16);
-      border: 1px solid rgba(255,255,255,.10);
-      border-radius: 16px;
-      overflow:hidden;
+      padding:22px;
+      min-height:100%;
       display:flex;
-      gap: 12px;
-      padding: 12px;
-      min-height: 112px;
+      flex-direction:column;
     }
-    .thumb{
-      width: 112px; height: 112px; border-radius: 12px;
-      background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.10);
-      flex: 0 0 auto;
-      overflow:hidden;
+
+    .summary-body{
+      display:grid;
+      gap:14px;
+      flex:1;
+    }
+
+    .summary-text{
+      min-height:0;
+      border-radius:var(--radius-lg);
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.03);
+      padding:18px 18px 16px;
+      color:var(--text);
+      line-height:1.9;
+      font-size:15px;
+      white-space:pre-wrap;
+    }
+
+    .summary-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+
+    .tag{
+      padding:8px 12px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.035);
+      color:var(--muted);
+      font-size:12px;
+      font-weight:700;
+    }
+
+    .kpi-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+      flex:1;
+      align-content:start;
+    }
+
+    .kpi-card{
+      border-radius:var(--radius-lg);
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.035);
+      padding:16px 16px 15px;
+      min-height:110px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      gap:10px;
+    }
+
+    .kpi-label{
+      color:var(--muted);
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+    }
+
+    .kpi-value{
+      font-size:clamp(28px,4vw,36px);
+      line-height:1;
+      font-weight:800;
+      letter-spacing:-.03em;
+    }
+
+    .kpi-foot{
+      color:var(--soft);
+      font-size:12px;
+      font-weight:600;
+    }
+
+    .tone-positive .kpi-value{color:var(--good)}
+    .tone-negative .kpi-value{color:var(--bad)}
+    .tone-neutral .kpi-value{color:var(--neutral)}
+    .tone-mixed .kpi-value{color:var(--mixed)}
+    .tone-warn .kpi-value{color:var(--warn)}
+    .tone-accent .kpi-value{color:var(--accent-2)}
+
+    .articles-panel{
+      padding:22px;
+      margin-top:0;
+    }
+
+    .toolbar{
       display:flex;
       align-items:center;
-      justify-content:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:16px;
+    }
+
+    .toolbar-left{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .toolbar-right{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .button{
+      appearance:none;
+      border:none;
+      cursor:pointer;
+      padding:10px 14px;
+      border-radius:999px;
+      font-size:13px;
+      font-weight:800;
+      color:var(--muted);
+      background:rgba(255,255,255,.045);
+      border:1px solid rgba(255,255,255,.08);
+      transition:.18s ease;
+    }
+
+    .button:hover{color:var(--text);border-color:rgba(105,169,255,.4)}
+    .button.active{background:rgba(105,169,255,.16);color:#fff;border-color:rgba(105,169,255,.48)}
+
+    .muted-note{
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.6;
+    }
+
+    .article-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:16px;
+    }
+
+    .article{
+      display:grid;
+      grid-template-columns:220px minmax(0,1fr);
+      gap:16px;
+      padding:16px;
+      border-radius:var(--radius-lg);
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.035);
+      min-height:190px;
+    }
+
+    .article-media{
       position:relative;
+      overflow:hidden;
+      border-radius:16px;
+      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.08);
+      min-height:156px;
     }
-    .thumb img{width:100%;height:100%;object-fit:cover;display:block;}
-    .thumb-fallback{
-      width: 56px;
-      height: 56px;
-      border-radius: 16px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.12);
+
+    .article-media img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+    }
+
+    .article-media .fallback{
+      position:absolute;
+      inset:0;
+      display:grid;
+      place-items:center;
+      font-weight:900;
+      font-size:28px;
+      color:rgba(255,255,255,.9);
+      letter-spacing:.04em;
+      background:
+        radial-gradient(circle at top left, rgba(105,169,255,.35), transparent 35%),
+        linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+    }
+
+    .article-body{
+      min-width:0;
       display:flex;
-      align-items:center;
-      justify-content:center;
-      color: rgba(255,255,255,.78);
-      font-size: 22px;
-      font-weight: 700;
+      flex-direction:column;
+      gap:12px;
     }
-    .card-main{flex: 1 1 auto; min-width: 0;}
-    .title{margin: 0; font-size: 15px; line-height: 1.2; font-weight: 700; color: rgba(105,169,255,.95);}
-    .title a{color: inherit; text-decoration:none;}
-    .title a:hover{text-decoration:underline;}
-    .source{margin-top: 4px; color: rgba(255,255,255,.72); font-size: 12px;}
-    .desc{margin-top: 8px; color: rgba(255,255,255,.70); font-size: 12px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow:hidden;}
-    .card-side{flex: 0 0 auto; display:flex; flex-direction:column; align-items:flex-end; justify-content:space-between; min-width: 86px;}
-    .metric{font-variant-numeric: tabular-nums; color: rgba(255,255,255,.75); font-size: 12px;}
-    .metric b{color: rgba(255,255,255,.92);}
-    .badge{display:inline-flex;align-items:center;gap:6px; padding: 4px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.03); color: rgba(255,255,255,.78); font-size: 11px;}
-    .badge.good{border-color: rgba(80,200,140,.30); color: rgba(80,200,140,.95);}
-    .badge.bad {border-color: rgba(255,95,95,.30); color: rgba(255,95,95,.95);}
-    .badge.warn{border-color: rgba(240,196,72,.30); color: rgba(240,196,72,.95);}
-    .badge.neu {border-color: rgba(255,255,255,.16); color: rgba(255,255,255,.76);}
-    .empty{margin-top: 8px; color: rgba(255,255,255,.60); font-size: 12px;}
+
+    .article-meta{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:7px 10px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.045);
+      color:var(--muted);
+    }
+
+    .badge.positive{color:var(--good)}
+    .badge.negative{color:var(--bad)}
+    .badge.neutral{color:var(--neutral)}
+    .badge.mixed{color:var(--mixed)}
+    .badge.unknown{color:var(--warn)}
+
+    .article-title{
+      margin:0;
+      font-size:20px;
+      line-height:1.35;
+      letter-spacing:-.02em;
+      overflow-wrap:anywhere;
+    }
+
+    .article-title a:hover{color:var(--accent-2)}
+
+    .article-summary{
+      margin:0;
+      color:#dce7ff;
+      font-size:14px;
+      line-height:1.75;
+      display:-webkit-box;
+      -webkit-line-clamp:4;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+    }
+
+    .article-source{
+      color:var(--muted);
+      font-size:12px;
+      font-weight:700;
+    }
+
+    .score-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:auto;
+    }
+
+    .score-chip{
+      padding:8px 10px;
+      border-radius:999px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      color:var(--muted);
+      font-size:12px;
+      font-weight:700;
+    }
+
+    .empty{
+      display:none;
+      padding:20px;
+      border-radius:var(--radius-lg);
+      border:1px dashed rgba(255,255,255,.14);
+      background:rgba(255,255,255,.025);
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.8;
+      text-align:center;
+    }
+
+    .footer-note{
+      margin-top:16px;
+      color:var(--soft);
+      font-size:12px;
+      text-align:right;
+    }
+
+    @media (max-width: 1120px){
+      .summary-highlights{grid-template-columns:1fr}
+      .article-grid{grid-template-columns:1fr}
+    }
+
+    @media (max-width: 760px){
+      .shell{width:min(calc(100% - 20px), var(--container));padding-top:12px}
+      .topbar,.hero{border-radius:24px}
+      .hero{padding:18px}
+      .panel,.articles-panel{padding:18px}
+      .kpi-grid{grid-template-columns:1fr 1fr}
+      .article{grid-template-columns:1fr}
+      .article-media{min-height:210px}
+    }
+
+    @media (max-width: 560px){
+      .topbar{padding:14px;border-radius:24px}
+      nav{justify-content:flex-start}
+      .kpi-grid{grid-template-columns:1fr}
+      .hero-copy p{font-size:13px}
+    }
   </style>
 </head>
 <body>
-  <div class="topbar">
-    <div class="topbar-inner">
-      <div class="brand"><span class="dot"></span><span>GenesisPrediction v2</span></div>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">G</div>
+        <div class="brand-copy">
+          <div class="brand-title">GenesisPrediction v2</div>
+          <div class="brand-sub">Digest / Summary / Highlights / Articles</div>
+        </div>
+      </div>
       <nav>
         <a class="nav-link" href="/static/index.html">Home</a>
         <a class="nav-link" href="/static/overlay.html">Overlay</a>
         <a class="nav-link" href="/static/sentiment.html">Sentiment</a>
         <a class="nav-link active" href="/static/digest.html">Digest</a>
-        <span class="pill" id="pill-ready"><span class="led"></span>Ready</span>
-        <span class="pill" id="pill-health"><span class="led"></span>Health: --</span>
-        <span class="pill" id="pill-asof"><span class="led"></span>as_of: --</span>
       </nav>
-    </div>
-  </div>
+    </header>
 
-  <div class="wrap">
-    <div class="header">
-      <div class="hgroup">
-        <h1>Digest</h1>
-        <div class="sub">Daily summary + top highlights (robust / safe).</div>
+    <section class="hero glass">
+      <div class="hero-copy">
+        <h1>Daily Digest</h1>
+        <p id="heroText">最新の要約・KPI・主要記事を 1 画面で確認できます。Digest は view_model_latest を正規化済み表示レイヤとして読み込み、必要時のみ summary/news に fallback します。</p>
       </div>
-      <div class="meta-row">
-        <span class="pill" id="meta-asof"><span class="led"></span>as_of: --</span>
-        <span class="pill" id="meta-source"><span class="led"></span>source: --</span>
-        <span class="pill" id="meta-items"><span class="led"></span>items: --</span>
-        <a href="#" id="open-json" target="_blank" rel="noopener">Open JSON</a>
+      <div class="hero-meta">
+        <div class="meta-pill" id="metaAsOf">as_of: --</div>
+        <div class="meta-pill" id="metaItems">items: --</div>
+        <div class="meta-pill" id="metaSource">source: loading...</div>
       </div>
-    </div>
+    </section>
 
-    <div class="section">
-      <div class="panel">
-        <h2>Summary</h2>
-        <div class="statusline" id="summary-status">loading...</div>
-        <div id="summary-text" style="margin-top:8px; white-space:pre-wrap; color:rgba(255,255,255,.78); font-size:13px;"></div>
-        <div class="controls">
-          <input id="q" type="text" placeholder="Search title/source..." />
-          <select id="filter-sent">
-            <option value="all">All</option>
-            <option value="positive">positive</option>
-            <option value="negative">negative</option>
-            <option value="neutral">neutral</option>
-            <option value="mixed">mixed</option>
-            <option value="unknown">unknown</option>
-          </select>
-          <select id="sortby">
-            <option value="risk">Risk</option>
-            <option value="score">Score</option>
-            <option value="newest">Newest</option>
-          </select>
-          <button id="toggle-show" class="primary">Show all</button>
-          <button id="toggle-summary">Collapse summary</button>
+    <section class="summary-highlights">
+      <article class="glass panel" aria-labelledby="summaryHeading">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title" id="summaryHeading">Summary</h2>
+            <p class="section-sub">Digest ViewModel の summary を優先表示。未定義時のみ daily_summary_latest の summary / text_summary 系へ fallback。</p>
+          </div>
+        </div>
+        <div class="summary-body">
+          <div class="summary-text" id="summaryText">Loading summary...</div>
+          <div class="summary-tags" id="summaryTags"></div>
+        </div>
+      </article>
+
+      <aside class="glass panel" aria-labelledby="highlightsHeading">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title" id="highlightsHeading">Highlights</h2>
+            <p class="section-sub">記事カードはここに出さず、KPI / 数値のみ表示します。</p>
+          </div>
+        </div>
+        <div class="kpi-grid" id="kpiGrid">
+          <div class="kpi-card tone-accent">
+            <div class="kpi-label">Articles</div>
+            <div class="kpi-value" id="kpiArticles">--</div>
+            <div class="kpi-foot">full article count</div>
+          </div>
+          <div class="kpi-card tone-positive">
+            <div class="kpi-label">Positive</div>
+            <div class="kpi-value" id="kpiPositive">--</div>
+            <div class="kpi-foot">positive_count</div>
+          </div>
+          <div class="kpi-card tone-negative">
+            <div class="kpi-label">Negative</div>
+            <div class="kpi-value" id="kpiNegative">--</div>
+            <div class="kpi-foot">negative_count</div>
+          </div>
+          <div class="kpi-card tone-neutral">
+            <div class="kpi-label">Neutral</div>
+            <div class="kpi-value" id="kpiNeutral">--</div>
+            <div class="kpi-foot">neutral_count</div>
+          </div>
+          <div class="kpi-card tone-mixed">
+            <div class="kpi-label">Mixed</div>
+            <div class="kpi-value" id="kpiMixed">--</div>
+            <div class="kpi-foot">mixed_count</div>
+          </div>
+          <div class="kpi-card tone-warn">
+            <div class="kpi-label">Unknown</div>
+            <div class="kpi-value" id="kpiUnknown">--</div>
+            <div class="kpi-foot">unknown_count</div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="glass articles-panel" aria-labelledby="articlesHeading">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="articlesHeading">Articles</h2>
+          <p class="section-sub">Summary / Highlights の直下へ移動。Top highlights 抽出記事または fallback news を一覧表示します。</p>
         </div>
       </div>
-    </div>
 
-    <div class="section">
-      <div class="panel">
-        <h2>KPIs</h2>
-        <div class="statusline" id="kpi-status">loading...</div>
-        <div class="kpi-row" style="margin-top:10px;">
-          <div class="kpi"><div class="label">articles</div><div class="value" id="kpi-articles">--</div></div>
-          <div class="kpi"><div class="label">positive</div><div class="value" id="kpi-pos">--</div></div>
-          <div class="kpi"><div class="label">negative</div><div class="value" id="kpi-neg">--</div></div>
-          <div class="kpi"><div class="label">neutral</div><div class="value" id="kpi-neu">--</div></div>
-          <div class="kpi"><div class="label">mixed</div><div class="value" id="kpi-mix">--</div></div>
-          <div class="kpi"><div class="label">unknown</div><div class="value" id="kpi-unk">--</div></div>
-          <div class="kpi"><div class="label">avg_net</div><div class="value" id="kpi-avg">--</div></div>
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <button class="button active" type="button" data-sort="risk">Sort: Risk</button>
+          <button class="button" type="button" data-sort="score">Sort: Score</button>
+          <button class="button" type="button" data-sort="newest">Sort: Newest</button>
+        </div>
+        <div class="toolbar-right">
+          <div class="muted-note" id="articlesNote">cards[].sentiment を優先して表示します。</div>
         </div>
       </div>
-    </div>
 
-    <div class="section">
-      <div class="panel">
-        <h2>Top highlights</h2>
-        <div class="statusline" id="hi-status">loading...</div>
-        <div class="mini" id="showing"></div>
-        <div id="cards" class="cards"></div>
-        <div id="empty" class="empty" style="display:none;">no items</div>
-      </div>
-    </div>
+      <div class="empty" id="emptyState">表示できる記事がありません。まず data/digest/view_model_latest.json を確認し、必要時のみ daily_summary_latest / daily_news_latest の fallback を見てください。</div>
+      <div class="article-grid" id="articleGrid"></div>
+      <div class="footer-note" id="footerNote">Digest source: --</div>
+    </section>
   </div>
 
-<script>
-(() => {
-  "use strict";
+  <script>
+    const DIGEST_CANDIDATES = [
+      '/data/digest/view_model_latest.json',
+      '/analysis/digest/view_model_latest.json'
+    ];
 
-  const URL_DIGEST  = "/data/digest/view_model_latest.json";
-  const URL_SUMMARY = "/data/world_politics/analysis/daily_summary_latest.json";
-  const URL_NEWS    = "/data/world_politics/analysis/daily_news_latest.json";
-  const URL_HEALTH  = "/data/world_politics/analysis/health_latest.json";
-  const LS_SHOW_ALL = "digest_show_all_v1";
+    const SUMMARY_CANDIDATES = [
+      '/data/world_politics/analysis/daily_summary_latest.json',
+      '/analysis/world_politics/daily_summary_latest.json'
+    ];
 
-  const $ = (id) => document.getElementById(id);
+    const NEWS_CANDIDATES = [
+      '/data/world_politics/analysis/daily_news_latest.json',
+      '/analysis/world_politics/daily_news_latest.json'
+    ];
 
-  function safeText(x){
-    if (x === null || x === undefined) return "";
-    if (typeof x === "string") return x;
-    try { return JSON.stringify(x, null, 2); } catch { return String(x); }
-  }
-
-  function asNumber(x, def=0){
-    const n = Number(x);
-    return Number.isFinite(n) ? n : def;
-  }
-
-  function pick(obj, keys, def=null){
-    for (const k of keys){
-      if (obj && Object.prototype.hasOwnProperty.call(obj, k) && obj[k] !== null && obj[k] !== undefined) return obj[k];
-    }
-    return def;
-  }
-
-  function parseISOTime(x){
-    const t = Date.parse(x);
-    return Number.isFinite(t) ? t : 0;
-  }
-
-  function normalizeSentimentLabel(x){
-    const s = (x ?? "").toString().toLowerCase().trim();
-    if (!s) return "unknown";
-    if (s.includes("pos")) return "positive";
-    if (s.includes("neg")) return "negative";
-    if (s.includes("neu")) return "neutral";
-    if (s.includes("mix")) return "mixed";
-    return "unknown";
-  }
-
-  function badgeClass(label){
-    switch(label){
-      case "positive": return "good";
-      case "negative": return "bad";
-      case "neutral":  return "neu";
-      case "mixed":    return "warn";
-      default: return "neu";
-    }
-  }
-
-  function hostFromUrl(url){
-    try{
-      return new URL(url).hostname || "";
-    }catch{
-      return "";
-    }
-  }
-
-  function firstLetter(source, title){
-    const s = (safeText(source) || safeText(title) || "?").trim();
-    return s ? s[0].toUpperCase() : "?";
-  }
-
-  function faviconUrl(url, source){
-    const host = hostFromUrl(url) || String(source || "").replace(/^https?:\/\//, "").split("/")[0];
-    if (!host) return null;
-    return `https://www.google.com/s2/favicons?sz=128&domain_url=${encodeURIComponent("https://" + host)}`;
-  }
-
-  function sentimentObject(it){
-    return (it && typeof it.sentiment === "object" && it.sentiment !== null) ? it.sentiment : it;
-  }
-
-  function setPillState(el, mode, text){
-    if (!el) return;
-    el.classList.remove("good", "warn", "bad");
-    if (mode === "good" || mode === "warn" || mode === "bad") el.classList.add(mode);
-    if (text !== undefined) el.innerHTML = `<span class="led"></span>${text}`;
-  }
-
-  function parseHealth(obj){
-    const topStatus = String(
-      pick(obj, ["status", "overall_status", "overall", "health", "state"], "")
-    ).toUpperCase();
-
-    const rootOk   = asNumber(pick(obj, ["ok", "ok_count"], 0), 0);
-    const rootWarn = asNumber(pick(obj, ["warn", "warn_count", "warning_count"], 0), 0);
-    const rootNg   = asNumber(pick(obj, ["ng", "ng_count", "error_count", "bad_count"], 0), 0);
-
-    const summary = (obj && typeof obj.summary === "object" && obj.summary !== null) ? obj.summary : {};
-    const sumOk   = asNumber(pick(summary, ["ok", "ok_count"], 0), 0);
-    const sumWarn = asNumber(pick(summary, ["warn", "warn_count", "warning_count"], 0), 0);
-    const sumNg   = asNumber(pick(summary, ["ng", "ng_count", "error_count", "bad_count"], 0), 0);
-
-    const okCount   = Math.max(rootOk, sumOk);
-    const warnCount = Math.max(rootWarn, sumWarn);
-    const ngCount   = Math.max(rootNg, sumNg);
-
-    let level = "neutral";
-    let label = "--";
-
-    if (topStatus.includes("NG") || topStatus.includes("ERROR") || ngCount > 0){
-      level = "bad";
-      label = "NG";
-    } else if (topStatus.includes("WARN") || warnCount > 0){
-      level = "warn";
-      label = "WARN";
-    } else if (topStatus.includes("OK") || okCount > 0 || (okCount === 0 && warnCount === 0 && ngCount === 0)){
-      level = "good";
-      label = "OK";
-    }
-
-    return {
-      level,
-      label,
-      okCount,
-      warnCount,
-      ngCount,
+    const state = {
+      sort: 'risk',
+      expanded: true,
+      articles: [],
+      source: 'unresolved',
+      digest: null,
+      summary: null,
+      news: null,
     };
-  }
 
-  async function fetchJson(url){
-    const r = await fetch(url, { cache: "no-store" });
-    if (!r.ok) throw new Error(`HTTP ${r.status} for ${url}`);
-    return await r.json();
-  }
+    const $ = (id) => document.getElementById(id);
 
-  const state = {
-    sourceUrl: URL_DIGEST,
-    asOf: "--",
-    items: [],
-    summaryText: "",
-    showAll: false,
-    lastError: null,
-    sentimentSummary: null,
-    isReady: false,
-    health: {
-      level: "neutral",
-      label: "--",
-      okCount: 0,
-      warnCount: 0,
-      ngCount: 0,
-    },
-  };
-
-  function renderMeta(){
-    const asOfOk = !!(state.asOf && state.asOf !== "--");
-
-    $("meta-asof").innerHTML = `<span class="led"></span>as_of: ${state.asOf}`;
-    $("meta-source").innerHTML = `<span class="led"></span>source: ${state.sourceUrl}`;
-    $("meta-items").innerHTML = `<span class="led"></span>items: ${state.items.length}`;
-    $("open-json").setAttribute("href", state.sourceUrl);
-
-    setPillState($("pill-ready"), state.isReady ? "good" : "bad", `Ready`);
-    setPillState($("pill-health"), state.health.level, `Health: ${state.health.label}`);
-    setPillState($("pill-asof"), asOfOk ? "good" : "", `as_of: ${state.asOf}`);
-
-    setPillState($("meta-asof"), asOfOk ? "good" : "", `as_of: ${state.asOf}`);
-    setPillState($("meta-source"), state.isReady ? "good" : "", `source: ${state.sourceUrl}`);
-    setPillState($("meta-items"), state.items.length > 0 ? "good" : "", `items: ${state.items.length}`);
-  }
-
-  function renderSummary(){
-    const s = state.summaryText?.trim();
-    if (!s){
-      $("summary-status").textContent = state.lastError ? "error" : "OK";
-      $("summary-text").textContent = "(summary missing)";
-      return;
+    async function fetchFirstJson(candidates){
+      for(const url of candidates){
+        try{
+          const response = await fetch(url, { cache: 'no-store' });
+          if(!response.ok) continue;
+          const data = await response.json();
+          return { url, data };
+        }catch(_err){}
+      }
+      return null;
     }
-    $("summary-status").textContent = "OK";
-    $("summary-text").textContent = s;
-  }
 
-  function computeKPIs(items, summary=null){
-    if (summary && typeof summary === "object"){
-      const avgRaw = pick(summary, ["score", "net", "avg_net"], null);
-      const avgNum = Number(avgRaw);
+    function toNumber(value, fallback = 0){
+      const n = Number(value);
+      return Number.isFinite(n) ? n : fallback;
+    }
+
+    function firstDefined(...values){
+      for(const value of values){
+        if(value !== undefined && value !== null && value !== '') return value;
+      }
+      return null;
+    }
+
+    function textOr(value, fallback){
+      if(value === undefined || value === null) return fallback;
+      const text = String(value).trim();
+      return text ? text : fallback;
+    }
+
+    function fmtDate(value){
+      if(!value) return '--';
+      const d = new Date(value);
+      if(Number.isNaN(d.getTime())) return String(value);
+      return d.toLocaleString('ja-JP', {
+        year:'numeric', month:'2-digit', day:'2-digit',
+        hour:'2-digit', minute:'2-digit'
+      });
+    }
+
+    function getWorldPoliticsSection(vm){
+      const sections = Array.isArray(vm?.sections) ? vm.sections : [];
+      return sections.find(s => ['world_politics','world-politics','worldPolitics'].includes(String(s?.id || s?.name || '').trim())) || sections[0] || null;
+    }
+
+    function getCards(vm){
+      const section = getWorldPoliticsSection(vm);
+      if(Array.isArray(section?.cards)) return section.cards;
+      if(Array.isArray(vm?.cards)) return vm.cards;
+      return [];
+    }
+
+    function getSentimentSummary(vm){
+      return vm?.sentiment_summary || vm?.today?.sentiment_summary || vm?.today?.sentiment || {};
+    }
+
+    function getSummaryText(vm, summaryData){
+      return firstDefined(
+        vm?.summary,
+        vm?.today?.summary,
+        vm?.meta?.summary,
+        summaryData?.summary,
+        summaryData?.text_summary,
+        summaryData?.daily_summary,
+        summaryData?.yesterday_summary_text,
+        'No summary available.'
+      );
+    }
+
+    function getTopicTags(vm, summaryData){
+      const topics = [];
+      const pushTopic = (value) => {
+        if(value === undefined || value === null) return;
+        if(Array.isArray(value)) value.forEach(pushTopic);
+        else {
+          const text = String(value).trim();
+          if(text) topics.push(text);
+        }
+      };
+      pushTopic(vm?.topics);
+      pushTopic(vm?.today?.topics);
+      pushTopic(summaryData?.topics);
+      return [...new Set(topics)].slice(0, 8);
+    }
+
+    function normalizeLabel(raw){
+      const value = String(raw || 'unknown').toLowerCase();
+      if(['positive','negative','neutral','mixed','unknown'].includes(value)) return value;
+      return 'unknown';
+    }
+
+    function normalizeArticle(card, index){
+      const sentiment = card?.sentiment || {};
+      const label = normalizeLabel(firstDefined(sentiment.sentiment_label, sentiment.sentiment, sentiment.label, card?.sentiment_label, card?.sentiment, card?.label));
+      const risk = toNumber(firstDefined(sentiment.risk, sentiment.riskScore, card?.risk, card?.risk_score), 0);
+      const score = toNumber(firstDefined(sentiment.score, sentiment.net, card?.score, card?.net), 0);
+      const title = textOr(firstDefined(card?.title, card?.headline), `Untitled article ${index + 1}`);
+      const summary = textOr(firstDefined(card?.summary, card?.description, card?.content), 'Summary not available.');
+      const image = firstDefined(card?.image, card?.urlToImage, card?.thumbnail, card?.image_url);
+      const source = textOr(firstDefined(card?.source, card?.publisher, card?.domain), 'Unknown source');
+      const publishedAt = firstDefined(card?.publishedAt, card?.published_at, card?.date, card?.datetime);
       return {
-        articles: asNumber(pick(summary, ["articles"], items.length), items.length),
-        pos: asNumber(pick(summary, ["positive_count", "positiveCount"], 0), 0),
-        neg: asNumber(pick(summary, ["negative_count", "negativeCount"], 0), 0),
-        neu: asNumber(pick(summary, ["neutral_count", "neutralCount"], 0), 0),
-        mix: asNumber(pick(summary, ["mixed_count", "mixedCount"], 0), 0),
-        unk: asNumber(pick(summary, ["unknown_count", "unknownCount"], 0), 0),
-        avg: Number.isFinite(avgNum) ? avgNum : null,
+        title,
+        summary,
+        url: firstDefined(card?.url, card?.link, '#') || '#',
+        image,
+        source,
+        publishedAt,
+        label,
+        risk,
+        score,
+        positive: toNumber(firstDefined(sentiment.positive, card?.positive), 0),
+        uncertainty: toNumber(firstDefined(sentiment.uncertainty, card?.uncertainty), 0),
       };
     }
 
-    let pos=0, neg=0, neu=0, mix=0, unk=0;
-    let sumNet = 0, nNet = 0;
-
-    for (const it of items){
-      const sObj = sentimentObject(it);
-      const lab = normalizeSentimentLabel(pick(sObj, ["sentiment_label", "sentiment", "label"], ""));
-      if (lab === "positive") pos++;
-      else if (lab === "negative") neg++;
-      else if (lab === "neutral") neu++;
-      else if (lab === "mixed") mix++;
-      else unk++;
-
-      const net = pick(sObj, ["net", "net_score", "avg_net", "sentiment_net", "score"], null);
-      const netNum = Number(net);
-      if (Number.isFinite(netNum)){
-        sumNet += netNum;
-        nNet++;
-      }
-    }
-
-    const avg = nNet ? (sumNet / nNet) : null;
-    return { articles: items.length, pos, neg, neu, mix, unk, avg };
-  }
-
-  function renderKPIs(){
-    const k = computeKPIs(state.items, state.sentimentSummary);
-    $("kpi-articles").textContent = String(k.articles);
-    $("kpi-pos").textContent = String(k.pos);
-    $("kpi-neg").textContent = String(k.neg);
-    $("kpi-neu").textContent = String(k.neu);
-    $("kpi-mix").textContent = String(k.mix);
-    $("kpi-unk").textContent = String(k.unk);
-    $("kpi-avg").textContent = (k.avg === null) ? "—" : k.avg.toFixed(3);
-    $("kpi-status").textContent = state.lastError ? "error" : "OK";
-  }
-
-  function getFilteredSortedItems(){
-    const q = $("q").value.trim().toLowerCase();
-    const sent = $("filter-sent").value;
-    const sortby = $("sortby").value;
-
-    let list = state.items.slice();
-
-    if (q){
-      list = list.filter(it => {
-        const title = safeText(pick(it, ["title", "headline"], "")).toLowerCase();
-        const source = safeText(pick(it, ["source", "source_name", "publisher"], "")).toLowerCase();
-        return title.includes(q) || source.includes(q);
-      });
-    }
-
-    if (sent !== "all"){
-      list = list.filter(it => {
-        const sObj = sentimentObject(it);
-        return normalizeSentimentLabel(pick(sObj, ["sentiment_label", "sentiment", "label"], "")) === sent;
-      });
-    }
-
-    if (sortby === "risk"){
-      list.sort((a,b) => {
-        const ar = asNumber(pick(sentimentObject(a), ["risk","risk_score","severity","danger"], 0), 0);
-        const br = asNumber(pick(sentimentObject(b), ["risk","risk_score","severity","danger"], 0), 0);
-        if (br !== ar) return br - ar;
-        const as = asNumber(pick(sentimentObject(a), ["score","rank_score","importance", "net"], 0), 0);
-        const bs = asNumber(pick(sentimentObject(b), ["score","rank_score","importance", "net"], 0), 0);
-        return bs - as;
-      });
-    } else if (sortby === "score"){
-      list.sort((a,b) => {
-        const as = asNumber(pick(sentimentObject(a), ["score","rank_score","importance", "net"], 0), 0);
-        const bs = asNumber(pick(sentimentObject(b), ["score","rank_score","importance", "net"], 0), 0);
-        if (bs !== as) return bs - as;
-        const ar = asNumber(pick(sentimentObject(a), ["risk","risk_score","severity","danger"], 0), 0);
-        const br = asNumber(pick(sentimentObject(b), ["risk","risk_score","severity","danger"], 0), 0);
-        return br - ar;
-      });
-    } else {
-      list.sort((a,b) => parseISOTime(pick(b, ["publishedAt","published_at","time","date"], "")) - parseISOTime(pick(a, ["publishedAt","published_at","time","date"], "")));
-    }
-
-    return list;
-  }
-
-  function attachThumb(thumb, img, url, source, title){
-    thumb.innerHTML = "";
-
-    const fallbackNode = () => {
-      const box = document.createElement("div");
-      box.className = "thumb-fallback";
-      box.textContent = firstLetter(source, title);
-      thumb.appendChild(box);
-    };
-
-    const favicon = faviconUrl(url, source);
-    const preferred = img || favicon;
-
-    if (!preferred){
-      fallbackNode();
-      return;
-    }
-
-    const im = document.createElement("img");
-    im.loading = "lazy";
-    im.referrerPolicy = "no-referrer";
-    im.src = preferred;
-
-    let triedFavicon = false;
-    im.onerror = () => {
-      if (!triedFavicon && favicon && preferred !== favicon){
-        triedFavicon = true;
-        im.src = favicon;
-        return;
-      }
-      thumb.innerHTML = "";
-      fallbackNode();
-    };
-
-    thumb.appendChild(im);
-  }
-
-  function renderCards(){
-    const list = getFilteredSortedItems();
-    const shown = state.showAll ? list : list.slice(0, 10);
-
-    $("cards").innerHTML = "";
-    $("empty").style.display = shown.length ? "none" : "block";
-    $("showing").textContent = state.showAll ? `showing: all (${list.length})` : `showing: top ${Math.min(10, list.length)}/${list.length}`;
-    $("hi-status").textContent = state.lastError ? "error" : "OK";
-
-    for (const it of shown){
-      const sObj = sentimentObject(it);
-      const title = safeText(pick(it, ["title","headline"], "(no title)"));
-      const url = pick(it, ["url","link"], "#");
-      const source = safeText(pick(it, ["source","source_name","publisher"], "unknown"));
-      const desc = safeText(pick(it, ["description","summary","snippet"], ""));
-      const img = pick(it, ["image","urlToImage","thumbnail"], null);
-      const risk = asNumber(pick(sObj, ["risk","risk_score","severity","danger"], 0), 0);
-      const score = asNumber(pick(sObj, ["score","rank_score","importance", "net"], 0), 0);
-      const lab = normalizeSentimentLabel(pick(sObj, ["sentiment_label","sentiment","label"], ""));
-      const bcls = badgeClass(lab);
-
-      const card = document.createElement("div");
-      card.className = "card";
-
-      const thumb = document.createElement("div");
-      thumb.className = "thumb";
-      attachThumb(thumb, img, url, source, title);
-      card.appendChild(thumb);
-
-      const main = document.createElement("div");
-      main.className = "card-main";
-      main.innerHTML = `
-        <p class="title"><a href="${url}" target="_blank" rel="noopener">${escapeHtml(title)}</a></p>
-        <div class="source">${escapeHtml(source)}</div>
-        <div class="desc">${escapeHtml(desc)}</div>
-      `;
-      card.appendChild(main);
-
-      const side = document.createElement("div");
-      side.className = "card-side";
-      side.innerHTML = `
-        <div class="metric">risk <b>${risk.toFixed(3)}</b></div>
-        <div class="metric">score <b>${score.toFixed(3)}</b></div>
-        <div class="badge ${bcls}">${escapeHtml(lab)}</div>
-      `;
-      card.appendChild(side);
-
-      $("cards").appendChild(card);
-    }
-  }
-
-  function escapeHtml(s){
-    return String(s)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
-
-  function normalizeFromDigestViewModel(obj){
-    const asOf = pick(obj, ["date", "as_of", "asOf"], "--");
-    const section = Array.isArray(obj?.sections) ? (obj.sections.find(s => s && s.id === "world_politics") || obj.sections[0]) : null;
-    const items = Array.isArray(section?.cards) ? section.cards : [];
-    const summaryText = pick(obj, ["summary", "text_summary", "daily_summary"], "") || "";
-    const sentimentSummary = pick(obj, ["sentiment_summary"], null) || pick(obj?.today, ["sentiment_summary", "sentiment"], null);
-    return { asOf, summaryText, items, sentimentSummary };
-  }
-
-  function normalizeFromDailySummary(obj){
-    const items = Array.isArray(obj?.items) ? obj.items : [];
-    const asOf = pick(obj, ["date","as_of","asOf"], "--");
-    const summaryText = pick(obj, ["summary", "text_summary", "daily_summary"], "") || pick(obj, ["yesterday_summary_text"], "") || "";
-    return { asOf, summaryText, items };
-  }
-
-  function normalizeFromDailyNews(obj){
-    const raw = Array.isArray(obj?.items) ? obj.items : Array.isArray(obj?.articles) ? obj.articles : Array.isArray(obj?.events) ? obj.events : [];
-    const asOf = pick(obj, ["date","as_of","asOf"], "--");
-    const items = raw.map((a) => {
-      const sourceName = (typeof a?.source === "string") ? a.source : (typeof a?.source?.name === "string") ? a.source.name : pick(a, ["source_name","publisher"], "unknown");
+    function normalizeNewsArticle(item, index){
+      const title = textOr(firstDefined(item?.title, item?.headline), `News ${index + 1}`);
+      const summary = textOr(firstDefined(item?.description, item?.summary, item?.content), 'Summary not available.');
       return {
-        title: pick(a, ["title","headline"], "(no title)"),
-        url: pick(a, ["url","link"], "#"),
-        source: sourceName,
-        description: pick(a, ["description","summary","snippet"], ""),
-        image: pick(a, ["urlToImage","image","thumbnail"], null),
-        publishedAt: pick(a, ["publishedAt","published_at","time","date"], ""),
-        risk: asNumber(pick(a, ["risk","risk_score","severity","danger"], 0), 0),
-        score: asNumber(pick(a, ["score","rank_score","importance"], 0), 0),
-        sentiment: pick(a, ["sentiment","sentiment_label","label"], "unknown"),
-        net: pick(a, ["net","net_score","avg_net","sentiment_net"], null),
-      };
-    });
-    return { asOf, summaryText: "", items };
-  }
-
-  async function loadHealth(){
-    try{
-      const h = await fetchJson(URL_HEALTH);
-      state.health = parseHealth(h);
-    } catch {
-      state.health = {
-        level: "neutral",
-        label: "--",
-        okCount: 0,
-        warnCount: 0,
-        ngCount: 0,
+        title,
+        summary,
+        url: firstDefined(item?.url, item?.link, '#') || '#',
+        image: firstDefined(item?.urlToImage, item?.image, item?.thumbnail),
+        source: textOr(firstDefined(item?.source, item?.source?.name, item?.publisher), 'Unknown source'),
+        publishedAt: firstDefined(item?.publishedAt, item?.published_at, item?.date),
+        label: 'unknown',
+        risk: 0,
+        score: 0,
+        positive: 0,
+        uncertainty: 0,
       };
     }
-  }
 
-  async function load(){
-    state.lastError = null;
-    state.isReady = false;
-    $("summary-status").textContent = "loading...";
-    $("kpi-status").textContent = "loading...";
-    $("hi-status").textContent = "loading...";
-    $("summary-text").textContent = "";
-    $("cards").innerHTML = "";
-    $("empty").style.display = "none";
-    $("showing").textContent = "";
+    function fallbackMonogram(title){
+      const text = String(title || 'G').trim();
+      return (text[0] || 'G').toUpperCase();
+    }
 
-    const saved = localStorage.getItem(LS_SHOW_ALL);
-    state.showAll = (saved === null) ? true : (saved === "1");
-    $("toggle-show").textContent = state.showAll ? "Top 10" : "Show all";
-    $("toggle-show").classList.toggle("primary", !state.showAll);
+    function articleCard(article){
+      const safeUrl = article.url && article.url !== '#' ? article.url : '#';
+      const target = safeUrl === '#' ? '' : ' target="_blank" rel="noreferrer"';
+      const image = article.image
+        ? `<img src="${escapeHtml(article.image)}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='grid';" /><div class="fallback" style="display:none">${escapeHtml(fallbackMonogram(article.title))}</div>`
+        : `<div class="fallback">${escapeHtml(fallbackMonogram(article.title))}</div>`;
 
-    await loadHealth();
+      return `
+        <article class="article">
+          <div class="article-media">${image}</div>
+          <div class="article-body">
+            <div class="article-meta">
+              <span class="badge ${escapeHtml(article.label)}">${escapeHtml(article.label)}</span>
+              <span class="badge">${escapeHtml(article.source)}</span>
+              <span class="badge">${escapeHtml(fmtDate(article.publishedAt))}</span>
+            </div>
+            <h3 class="article-title"><a href="${escapeHtml(safeUrl)}"${target}>${escapeHtml(article.title)}</a></h3>
+            <p class="article-summary">${escapeHtml(article.summary)}</p>
+            <div class="score-row">
+              <span class="score-chip">risk: ${formatMetric(article.risk)}</span>
+              <span class="score-chip">score: ${formatMetric(article.score)}</span>
+              <span class="score-chip">positive: ${formatMetric(article.positive)}</span>
+              <span class="score-chip">uncertainty: ${formatMetric(article.uncertainty)}</span>
+            </div>
+          </div>
+        </article>
+      `;
+    }
 
-    try{
-      const d = await fetchJson(URL_DIGEST);
-      const nd = normalizeFromDigestViewModel(d);
-      if (Array.isArray(nd.items) && nd.items.length > 0){
-        state.sourceUrl = URL_DIGEST;
-        state.asOf = nd.asOf || "--";
-        state.summaryText = nd.summaryText || "";
-        state.items = nd.items;
-        state.sentimentSummary = nd.sentimentSummary || null;
-        state.isReady = true;
-        renderMeta();
-        renderSummary();
-        renderKPIs();
-        renderCards();
+    function formatMetric(value){
+      const n = Number(value);
+      if(!Number.isFinite(n)) return '--';
+      return Math.abs(n) >= 100 ? n.toFixed(0) : n.toFixed(2).replace(/\.00$/, '');
+    }
+
+    function escapeHtml(value){
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function sortArticles(articles, sort){
+      const list = [...articles];
+      if(sort === 'score'){
+        return list.sort((a,b) => (b.score - a.score) || (b.risk - a.risk));
+      }
+      if(sort === 'newest'){
+        return list.sort((a,b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0));
+      }
+      return list.sort((a,b) => (b.risk - a.risk) || (b.score - a.score));
+    }
+
+    function renderKpis(summary, articleCount){
+      $('kpiArticles').textContent = String(toNumber(firstDefined(summary.articles, articleCount), articleCount));
+      $('kpiPositive').textContent = String(toNumber(summary.positive_count, 0));
+      $('kpiNegative').textContent = String(toNumber(summary.negative_count, 0));
+      $('kpiNeutral').textContent = String(toNumber(summary.neutral_count, 0));
+      $('kpiMixed').textContent = String(toNumber(summary.mixed_count, 0));
+      $('kpiUnknown').textContent = String(toNumber(summary.unknown_count, 0));
+    }
+
+    function renderSummary(vm, summaryData){
+      $('summaryText').textContent = textOr(getSummaryText(vm, summaryData), 'No summary available.');
+      const tags = getTopicTags(vm, summaryData);
+      $('summaryTags').innerHTML = tags.length
+        ? tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')
+        : '<span class="tag">topics unavailable</span>';
+    }
+
+    function renderArticles(){
+      const grid = $('articleGrid');
+      const empty = $('emptyState');
+      const sorted = sortArticles(state.articles, state.sort);
+      const visible = sorted;
+
+      if(!visible.length){
+        grid.innerHTML = '';
+        empty.style.display = 'block';
         return;
       }
-    } catch (e){
-      state.lastError = e;
+
+      empty.style.display = 'none';
+      grid.innerHTML = visible.map(articleCard).join('');
+      $('articlesNote').textContent = `${sorted.length} articles / sort=${state.sort}`;
     }
 
-    try{
-      const s = await fetchJson(URL_SUMMARY);
-      const ns = normalizeFromDailySummary(s);
-      if (Array.isArray(ns.items) && ns.items.length > 0){
-        state.sourceUrl = URL_SUMMARY;
-        state.asOf = ns.asOf || "--";
-        state.summaryText = ns.summaryText || "";
-        state.items = ns.items;
-        state.sentimentSummary = null;
-        state.isReady = true;
-        renderMeta();
-        renderSummary();
-        renderKPIs();
-        renderCards();
-        return;
-      }
-      state.asOf = ns.asOf || "--";
-      state.summaryText = ns.summaryText || "";
-    } catch (e){
-      state.lastError = e;
+    function wireToolbar(){
+      document.querySelectorAll('[data-sort]').forEach(button => {
+        button.addEventListener('click', () => {
+          state.sort = button.dataset.sort;
+          document.querySelectorAll('[data-sort]').forEach(el => el.classList.toggle('active', el === button));
+          renderArticles();
+        });
+      });
+
     }
 
-    try{
-      const n = await fetchJson(URL_NEWS);
-      const nn = normalizeFromDailyNews(n);
-      state.sourceUrl = URL_NEWS;
-      state.asOf = state.asOf !== "--" ? state.asOf : (nn.asOf || "--");
-      state.items = nn.items;
-      state.sentimentSummary = null;
-      state.isReady = true;
-      renderMeta();
-      renderSummary();
-      renderKPIs();
-      renderCards();
-    } catch (e){
-      state.lastError = e;
-      state.sourceUrl = URL_DIGEST;
-      state.items = [];
-      state.sentimentSummary = null;
-      state.isReady = false;
-      renderMeta();
-      renderSummary();
-      renderKPIs();
-      renderCards();
-      $("summary-status").textContent = "error";
-      $("kpi-status").textContent = "error";
-      $("hi-status").textContent = "error";
+    async function init(){
+      wireToolbar();
+
+      const digestResult = await fetchFirstJson(DIGEST_CANDIDATES);
+      const summaryResult = await fetchFirstJson(SUMMARY_CANDIDATES);
+      const newsResult = await fetchFirstJson(NEWS_CANDIDATES);
+
+      state.digest = digestResult?.data || null;
+      state.summary = summaryResult?.data || null;
+      state.news = newsResult?.data || null;
+
+      const cards = state.digest ? getCards(state.digest).map(normalizeArticle) : [];
+      const newsItemsRaw = Array.isArray(state.news?.items) ? state.news.items : Array.isArray(state.news) ? state.news : [];
+      const newsItems = newsItemsRaw.map(normalizeNewsArticle);
+
+      state.articles = cards.length ? cards : newsItems;
+      state.source = cards.length
+        ? `digest:${digestResult?.url || 'n/a'}`
+        : newsItems.length
+          ? `fallback:${newsResult?.url || 'n/a'}`
+          : 'no-data';
+
+      const sentimentSummary = getSentimentSummary(state.digest || {});
+      renderKpis(sentimentSummary, state.articles.length);
+      renderSummary(state.digest || {}, state.summary || {});
+      renderArticles();
+
+      $('metaAsOf').textContent = `as_of: ${textOr(firstDefined(state.digest?.date, state.digest?.as_of, state.summary?.as_of), '--')}`;
+      $('metaItems').textContent = `items: ${state.articles.length}`;
+      $('metaSource').textContent = `source: ${state.source}`;
+      $('footerNote').textContent = `Digest source: ${state.source}`;
+
+      const section = getWorldPoliticsSection(state.digest || {});
+      const highlightCount = Array.isArray(section?.cards) ? section.cards.length : 0;
+      $('heroText').textContent = cards.length
+        ? `Summary と Highlights を同じ高さで並べ、Highlights は KPI のみ表示しています。Articles は下段へ移動し、Top highlights ${highlightCount} 件を基準に表示します。`
+        : 'Digest ViewModel を取得できなかったため fallback news を表示しています。正式運用では data/digest/view_model_latest.json を優先してください。';
     }
-  }
 
-  $("q").addEventListener("input", () => renderCards());
-  $("filter-sent").addEventListener("change", () => renderCards());
-  $("sortby").addEventListener("change", () => renderCards());
-
-  $("toggle-show").addEventListener("click", () => {
-    state.showAll = !state.showAll;
-    localStorage.setItem(LS_SHOW_ALL, state.showAll ? "1" : "0");
-    $("toggle-show").textContent = state.showAll ? "Top 10" : "Show all";
-    $("toggle-show").classList.toggle("primary", !state.showAll);
-    renderCards();
-  });
-
-  let summaryCollapsed = false;
-  $("toggle-summary").addEventListener("click", () => {
-    summaryCollapsed = !summaryCollapsed;
-    $("summary-text").style.display = summaryCollapsed ? "none" : "block";
-    $("toggle-summary").textContent = summaryCollapsed ? "Expand summary" : "Collapse summary";
-  });
-
-  load();
-})();
-</script>
+    init();
+  </script>
 </body>
 </html>
