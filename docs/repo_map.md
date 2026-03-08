@@ -1,297 +1,319 @@
-# Repository Map (GenesisPrediction v2)
+# GenesisPrediction v2 --- Repository Map
 
-Version: 2.0
-Status: Active
-Last Updated: 2026-03-06
+Status: Active Last Updated: 2026-03-08 Purpose: Repository
+の責務分離を公式定義する
 
----
+------------------------------------------------------------------------
 
-# 0. 目的
+# 0. Purpose
 
 このドキュメントは
-GenesisPrediction v2 の **リポジトリ構造と責務** を定義する。
-
-AIと人間が
-
-```
-どの問題を
-どのディレクトリで
-修正すべきか
-```
-
-を迷わないようにする。
-
----
-
-# 1. GenesisPrediction ディレクトリ構造
-
-```
-GenesisPrediction_v2/
-
-docs/        ← Repository Memory
-scripts/     ← データ生成
-data/        ← 素材
-analysis/    ← Single Source of Truth
-app/static/  ← UI
-```
-
----
-
-# 2. Single Source of Truth
 
 GenesisPrediction v2 の
-**唯一の真実（SST）** は
 
-```
-analysis/
-```
+**Repository 構造と責務**
+
+を固定する。
+
+目的
+
+-   新しいAIが repo 構造を誤解しないようにする
+-   scripts / data / analysis / UI の責務分離を明確にする
+-   デバッグ時の判断を速くする
+-   Repository Memory の基盤とする
+
+------------------------------------------------------------------------
+
+# 1. Repository Top Structure
+
+GenesisPrediction v2 の基本構造
+
+    scripts/
+    data/
+    analysis/
+    app/
+    docs/
+
+それぞれの役割は明確に分離されている。
+
+------------------------------------------------------------------------
+
+# 2. scripts
+
+    scripts/
+
+役割
+
+    データ生成
+    パイプライン実行
+    分析処理
+    レポート生成
+
+scripts は
+
+    工場
 
 である。
 
-ルール
+ここでは
 
-```
-scripts → analysis を生成
-analysis → UIが読む
-UI → 再計算しない
-```
+    データを生成する
 
----
+だけであり、
 
-# 3. 各ディレクトリの責務
+    真実は保持しない
 
-## docs/
+------------------------------------------------------------------------
 
-役割
+## 2.1 Main Entry
 
-```
-Repository Memory
-```
+最重要エントリーポイント
 
-内容
+    scripts/run_morning_ritual.ps1
 
-```
-設計
-ルール
-プロジェクト思想
-現在状態
-```
+これは
 
-主なファイル
+    GenesisPrediction の心拍
 
-```
-repo_map.md
-repo_architecture.md
-ui_system.md
-pipeline_system.md
-project_status.md
-genesis_brain.md
-chat_operating_rules.md
-working_agreement.md
-runbook_morning.md
-gui_phase2_working_rules.md
-```
+である。
 
----
+------------------------------------------------------------------------
 
-## scripts/
+# 3. data
+
+    data/
 
 役割
 
-```
-SST生成装置
-```
-
-主な処理
-
-```
-fetch
-analyze
-aggregate
-publish
-health
-```
+    素材データ
 
 例
 
-```
-run_daily_with_publish.ps1
-run_daily_fx_rates.ps1
-run_daily_fx_overlay.ps1
-build_data_health.py
-```
+    raw news
+    api data
+    intermediate data
 
----
+data は
 
-## data/
+    再生成可能
+
+である。
+
+------------------------------------------------------------------------
+
+# 4. analysis
+
+    analysis/
+
+analysis は
+
+    Single Source of Truth
+
+である。
+
+つまり
+
+    GenesisPrediction の真実
+
+は
+
+    analysis
+
+にある。
+
+------------------------------------------------------------------------
+
+## 4.1 主な成果物
+
+    analysis/
+
+    daily_news_latest.json
+    daily_summary_latest.json
+    sentiment_latest.json
+    health_latest.json
+
+    view_model_latest.json
+
+    fx_overlay_latest.png
+
+    trend_latest.json
+    signal_latest.json
+    scenario_latest.json
+    prediction_latest.json
+
+    prediction_history/
+
+------------------------------------------------------------------------
+
+# 5. app
+
+    app/
 
 役割
 
-```
-素材
-```
+    UI
 
-特徴
+UI は
 
-```
-Git管理対象外
-再生成可能
-```
+    analysis を読むだけ
 
----
+である。
 
-## analysis/
+UI は
+
+    read-only
+
+であり、
+
+    分析ロジックを持たない
+
+------------------------------------------------------------------------
+
+## 5.1 UI Location
+
+    app/static/
+
+主なページ
+
+    index.html
+    overlay.html
+    sentiment.html
+    digest.html
+    prediction.html
+    prediction_history.html
+
+------------------------------------------------------------------------
+
+## 5.2 UI Shared Components
+
+    app/static/common/
+
+    header.html
+    footer.html
+    layout.js
+
+共通スタイル
+
+    app/static/app.css
+
+------------------------------------------------------------------------
+
+# 6. docs
+
+    docs/
 
 役割
 
-```
-Single Source of Truth
-```
+    Repository Memory
 
-内容
+つまり
 
-```
-daily_news
-sentiment
-digest
-overlay
-health
-```
+    設計思想
+    構造定義
+    運用ルール
 
-このディレクトリのデータが
-**GenesisPrediction の最終出力**である。
+を保存する。
 
----
+------------------------------------------------------------------------
 
-## app/static/
+## 6.1 Core Docs
 
-役割
+重要ドキュメント
 
-```
-表示UI
-```
+    genesis_system_map.md
+    repo_map.md
+    project_status.md
 
-ページ
+    pipeline_system.md
+    ui_system.md
+    ui_data_dependencies.md
 
-```
-index.html
-overlay.html
-sentiment.html
-digest.html
-```
+    genesis_brain.md
+    prediction_layer_design_principles.md
 
-重要ルール
+    working_agreement.md
+    chat_operating_rules.md
 
-```
-UIはanalysisのみ読む
-UIは再計算しない
-```
+------------------------------------------------------------------------
 
----
+# 7. Debug 原則
 
-# 4. パイプライン構造
+トラブル時の確認順
 
-GenesisPrediction の基本フロー
+    1 analysis
+    2 scripts
+    3 UI
 
-```
-Morning Ritual
-↓
-Analyzer
-↓
-Sentiment
-↓
-Digest
-↓
-Overlay
-↓
-Health
-```
+理由
 
-詳細
+    analysis = 真実
 
-```
-docs/pipeline_system.md
-```
+------------------------------------------------------------------------
 
----
+# 8. Repository Philosophy
 
-# 5. 問題発生時の判断ルール
+GenesisPrediction の repo は
 
-## UI表示がおかしい
+    再現可能な研究システム
 
-```
-1 analysis を確認
-2 analysis が正しい → GUI問題
-3 analysis が壊れている → scripts問題
-```
+として設計されている。
 
----
+そのため
 
-## 数値が出ない
+    生成
+    保存
+    表示
+    設計
 
-```
-1 analysis を確認
-2 scripts 実行状況
-3 data
-```
+を分離する。
 
----
+------------------------------------------------------------------------
 
-## パイプラインが止まる
+# 9. Responsibility Map
 
-```
-scripts/
-```
+    scripts
+    生成
 
-を確認。
+    data
+    素材
 
----
+    analysis
+    成果物（真実）
 
-# 6. AI作業ルール
+    app
+    表示
 
-GenesisPrediction v2 の AI作業規約
+    docs
+    設計
 
-```
-1ターン = 1作業
-差分修正禁止
-完全ファイル提示
-```
+------------------------------------------------------------------------
 
-詳細
+# 10. Development Rules
 
-```
-docs/chat_operating_rules.md
-```
+GenesisPrediction の基本ルール
 
----
+    1ターン = 1作業
+    差分禁止
+    完全ファイル
+    長文はダウンロード方式
+    必要ならZIP
 
-# 7. 現在地
+------------------------------------------------------------------------
 
-現在の状態は
+# 11. Final Summary
 
-```
-docs/project_status.md
-```
+GenesisPrediction v2 Repository
 
-を参照。
+    scripts → 生成
+    data → 素材
+    analysis → 真実
+    app → 表示
+    docs → 設計
 
----
+最重要原則
 
-# 8. 結論
+    analysis が Single Source of Truth
 
-GenesisPrediction v2 は
-
-```
-scripts
-↓
-analysis
-↓
-UI
-```
-
-の責務分離構造で動く
-**AI共同開発プロジェクト**である。
-
----
+------------------------------------------------------------------------
 
 END OF DOCUMENT

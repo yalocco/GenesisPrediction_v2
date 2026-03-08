@@ -1,304 +1,387 @@
-# GenesisPrediction v2 — Project Status
+# GenesisPrediction v2 --- Project Status
 
-Status: Active
-Last Updated: 2026-03-06
-Version: 1.1
+Status: Active\
+Last Updated: 2026-03-08\
+Version: 2.0
 
----
+------------------------------------------------------------------------
 
-# Repository Memory
+# 0. Purpose
 
-GenesisPrediction v2 は  
-**Repository Memory（docs）を中心に開発する。**
+このドキュメントは
 
-AIは以下を前提知識として扱う。
+GenesisPrediction v2 の
 
-```
+**現在のシステム状態**
 
-docs/ai_bootstrap_prompt.md
+をまとめる。
 
-docs/repo_map.md
-docs/repo_architecture.md
-docs/project_status.md
+目的
 
-docs/pipeline_system.md
-docs/ui_system.md
+-   Repository Memory の入口を提供する
+-   新しいAIが現行構造を理解できるようにする
+-   システムの進行状況を整理する
+-   次フェーズを明確にする
 
-docs/genesis_brain.md
-docs/chat_operating_rules.md
+------------------------------------------------------------------------
 
-```
-
----
-
-# Current System
-
-## UI
-
-現在のUIページ
-
-```
-
-Home
-Overlay
-Sentiment
-Digest
-
-```
-
-Digest UI は **安定版完成**
-
----
-
-## Pipeline
-
-現在のパイプライン構造
-
-```
-
-Morning Ritual
-↓
-Analyzer
-↓
-Sentiment
-↓
-Digest
-↓
-Overlay
-↓
-Health
-
-```
-
-Morning Ritual は **安定動作**
-
----
-
-# Runtime Architecture
-
-GenesisPrediction v2 の Runtime 構造
-
-```
-
-scripts → analysis を生成
-analysis → Runtime SST
-UI → analysis を読む
-
-```
-
-analysis/ は **Single Source of Truth**
-
----
-
-# Known Stable Tags
-
-現在の安定タグ
-
-```
-
-deploy-ready-v1
-digest-ui-ok-20260305
-fx-multi-overlay-v1
-gui-mvp
-gui-ui-stable-v1
-gui-ui-stable-v1.1
-gui-ui-stable-v2.0
-gui-ui-stable-v2.1
-overlay-stable-v1
-research-morning-ritual-stable-v2
-research-morning-ritual-stable-v3
-research-morning-ritual-v1
-research-prediction-persistence-v1
-research-reports-stable-v1
-research-trend3-fx-v1
-research-trend3-fx-v2B-stable
-sentiment-stable-v1
-sentiment-thumb-step1
-ui-stable-2026-02-28
-ui-stable-pre-theme
-ui-stable-sentiment-v1
-
-```
-
----
-
-# Current Issue
-
-Sentiment分類が正常に反映されていない。
-
-Digest KPI
-
-```
-
-positive 0
-negative 0
-neutral 0
-mixed 0
-unknown 多数
-
-```
-
-原因
-
-```
-
-Sentiment join mismatch
-
-```
-
----
-
-# Next Task（最重要）
-
-Sentiment分類を有効化する。
-
-目標
-
-```
-
-positive
-negative
-neutral
-mixed
-
-```
-
-が Digest KPI に表示されること。
-
-unknown を減らす。
-
----
-
-# Next Phase
-
-Sentiment Trend 改良
-
-予定
-
-```
-
-3軸グラフ
-
-```
-
----
-
-# Future Phase
-
-Prediction Engine
-
-```
-
-signals
-scenarios
-predictions
-
-```
-
----
-
-# Development Rules
-
-AI作業ルール
-
-```
-
-1ターン = 1作業
-差分修正禁止
-完全ファイル提示
-
-```
-
----
-
-# Change Log
-
-## 2026-03-06
-
-Morning Ritual の **WorldDate 仕様変更**
-
-旧仕様
-
-```
-
-WorldDate = UTC yesterday
-
-```
-
-新仕様
-
-```
-
-WorldDate = LOCAL DATE
-
-```
-
-理由
-
-ニュース raw データ
-
-```
-
-data/world_politics/YYYY-MM-DD.json
-
-```
-
-が **ローカル日付基準で生成されるため**
-
-UTC yesterday を使用すると
-
-```
-
-missing raw news
-
-```
-
-エラーが発生することがあった。
-
-現在の正式仕様
-
-```
-
-scripts/run_morning_ritual.ps1
-
-```
-
-を **引数無しで実行する場合**
-
-```
-
-WorldDate = (Get-Date -Format "yyyy-MM-dd")
-
-```
-
-が使用される。
-
-この変更により
-
-- 会社PC
-- 自宅PC
-
-両環境で **Morning Ritual が安定完走**するようになった。
-
----
-
-# Knowledge Architecture
+# 1. Repository Memory
 
 GenesisPrediction v2 は
 
-```
+    Repository Memory
 
-Chat Memory
-↓
-Repository Memory
-↓
-Project Knowledge
+中心で開発される。
 
-```
+AI は以下の docs を前提知識として扱う。
 
-構造で開発する。
+    docs/genesis_system_map.md
+    docs/repo_map.md
+    docs/project_status.md
 
----
+    docs/pipeline_system.md
+    docs/ui_system.md
+    docs/ui_data_dependencies.md
+
+    docs/genesis_brain.md
+    docs/prediction_layer_design_principles.md
+
+    docs/working_agreement.md
+    docs/chat_operating_rules.md
+
+これにより
+
+    Chat Memory
+    ↓
+    Repository Memory
+    ↓
+    Project Knowledge
+
+の構造を実現する。
+
+------------------------------------------------------------------------
+
+# 2. Current System Architecture
+
+GenesisPrediction v2 の現在の構造
+
+    Data Sources
+    ↓
+    Pipeline (scripts)
+    ↓
+    Analysis (Runtime SST)
+    ↓
+    Prediction Layer
+    ↓
+    UI
+    ↓
+    LABOS Public UI
+
+最重要原則
+
+    analysis = Single Source of Truth
+
+------------------------------------------------------------------------
+
+# 3. Pipeline Status
+
+現在の Pipeline は
+
+    Morning Ritual
+
+を中心に構成される。
+
+メインエントリーポイント
+
+    scripts/run_morning_ritual.ps1
+
+主な処理
+
+    Fetch
+    ↓
+    Analyzer
+    ↓
+    Sentiment
+    ↓
+    Digest
+    ↓
+    Overlay
+    ↓
+    Health
+    ↓
+    Prediction
+
+Morning Ritual は
+
+    GenesisPrediction の心拍
+
+として毎日実行される。
+
+------------------------------------------------------------------------
+
+# 4. Analysis Layer
+
+analysis は
+
+    Runtime SST
+
+として扱われる。
+
+主な成果物
+
+    analysis/
+
+    daily_news_latest.json
+    daily_summary_latest.json
+    sentiment_latest.json
+    health_latest.json
+
+    view_model_latest.json
+
+    fx_overlay_latest.png
+
+    trend_latest.json
+    signal_latest.json
+    scenario_latest.json
+    prediction_latest.json
+
+    prediction_history/
+
+UI はこの成果物を読む。
+
+------------------------------------------------------------------------
+
+# 5. UI Status
+
+現在の UI ページ
+
+    Home
+    Overlay
+    Sentiment
+    Digest
+    Prediction
+    Prediction History
+
+UI の場所
+
+    app/static/
+
+UI の共通構造
+
+    header
+    footer
+    layout.js
+    app.css
+
+UI の原則
+
+    UI は read-only
+    UI は分析ロジックを持たない
+    UI は再計算しない
+
+------------------------------------------------------------------------
+
+# 6. Prediction Layer
+
+Prediction Layer は現在導入済み。
+
+基本構造
+
+    Observation
+    ↓
+    Trend
+    ↓
+    Signal
+    ↓
+    Scenario
+    ↓
+    Prediction
+
+Prediction の役割
+
+    最終要約
+    判断支援
+
+主な出力
+
+    prediction_latest.json
+
+------------------------------------------------------------------------
+
+# 7. Prediction History
+
+Prediction は研究ログとして保存される。
+
+保存場所
+
+    analysis/prediction_history/
+
+用途
+
+    バックテスト
+    予測検証
+    研究ログ
+
+Prediction は
+
+    日次仮説
+
+として凍結される。
+
+------------------------------------------------------------------------
+
+# 8. FX Overlay System
+
+現在の Overlay 対応通貨ペア
+
+    JPY/THB
+    USD/JPY
+    USD/THB
+
+表示
+
+    fx_overlay_latest.png
+
+用途
+
+    FX monitoring
+    Remittance timing
+    Risk observation
+
+------------------------------------------------------------------------
+
+# 9. Digest System
+
+Digest は
+
+    Daily Risk Summary UI
+
+である。
+
+主な表示
+
+    Summary
+    KPI
+    Highlights
+    Articles
+
+データソース
+
+    view_model_latest.json
+
+------------------------------------------------------------------------
+
+# 10. System Stability
+
+現在の状態
+
+    Morning Ritual 安定
+    Digest UI 安定
+    Overlay 安定
+    Prediction Layer 導入済
+    Repository Memory 構築中
+
+------------------------------------------------------------------------
+
+# 11. Current Development Phase
+
+現在のフェーズ
+
+    Repository Memory 整合化
+
+目的
+
+    docs を現行構造へ合わせる
+    新AIが誤解しないようにする
+
+更新対象
+
+    genesis_system_map.md
+    ui_system.md
+    project_status.md
+    repo_map.md
+
+------------------------------------------------------------------------
+
+# 12. Next Phase
+
+次のフェーズ
+
+    Prediction System 強化
+
+予定
+
+    Trend detection
+    Signal detection
+    Scenario generation
+    Prediction scoring
+    Prediction history analysis
+
+------------------------------------------------------------------------
+
+# 13. Future Direction
+
+GenesisPrediction は将来的に
+
+    Global Risk Observation System
+
+として進化する可能性がある。
+
+構造
+
+    News
+    ↓
+    Sentiment
+    ↓
+    Trend Detection
+    ↓
+    Signals
+    ↓
+    Scenario
+    ↓
+    Prediction
+
+目的
+
+    危険を早く知る
+    世界の変化を観測する
+    判断支援を行う
+
+------------------------------------------------------------------------
+
+# 14. Development Rules
+
+GenesisPrediction の作業ルール
+
+    1ターン = 1作業
+    差分提案禁止
+    完全ファイル
+    長文はダウンロード方式
+    必要ならZIP
+
+------------------------------------------------------------------------
+
+# 15. Final Summary
+
+GenesisPrediction v2 は
+
+    Daily Observation System
+
+として設計されている。
+
+中核
+
+    Morning Ritual
+    analysis (SST)
+    Prediction Layer
+    UI Visualization
+    Repository Memory
+
+目的
+
+    未来を当てることではなく
+    危険を早く知ること
+
+------------------------------------------------------------------------
 
 END OF DOCUMENT
-```
