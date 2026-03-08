@@ -2,10 +2,10 @@
 
 GenesisPrediction v2
 
-Version: 1.3
+Version: 1.4
 Status: Active
 Purpose: UI がどのデータを読むか、どの field に依存するか、fallback をどう扱うかを固定する
-Last Updated: 2026-03-07
+Last Updated: 2026-03-08
 
 ---
 
@@ -19,6 +19,7 @@ Last Updated: 2026-03-07
 - UI 改修時の事故を防ぐ
 - fallback 挙動を明文化する
 - scripts / analysis / UI の責務を分離して保つ
+- 統一済み UI レイアウトとデータ依存を対応づける
 
 重要原則:
 
@@ -49,6 +50,17 @@ app/static/index.html
 app/static/overlay.html
 app/static/sentiment.html
 app/static/digest.html
+app/static/prediction.html
+app/static/prediction_history.html
+```
+
+共通 UI 部品:
+
+```text
+app/static/app.css
+app/static/common/header.html
+app/static/common/footer.html
+app/static/common/layout.js
 ```
 
 主要なデータ配置:
@@ -57,7 +69,15 @@ app/static/digest.html
 data/world_politics/analysis/
 data/digest/
 data/fx/
+analysis/prediction/
+analysis/prediction/history/
 ```
+
+補足:
+
+- 全主要ページは共通 header / footer / layout.js を使う
+- レイアウト標準は `docs/ui_layout_standard.md` に従う
+- UI は data / analysis の latest または history を読む read-only レイヤである
 
 ---
 
@@ -92,7 +112,7 @@ data/world_politics/analysis/sentiment_latest.json
 - Events(today) は `data/digest/view_model_latest.json` の highlights / cards を使う
 - Data Health は `health_latest.json.summary.ok / warn / ng / total` を使う
 - Sentiment snapshot は Sentiment ページと揃えるため `data/world_politics/analysis/sentiment_latest.json` を優先参照する
-- 詳細分析は Sentiment / Digest / Overlay 側で行う
+- 詳細分析は Sentiment / Digest / Overlay / Prediction 側で行う
 - latest alias の鮮度が重要
 
 ---
@@ -585,6 +605,217 @@ card 直下に同名 field が存在する旧 schema にも、可能な限り後
 - `daily_news_latest.json` は fallback 用
 - `unknown` が大量発生する場合は、まず `view_model_latest.json` の `cards[].sentiment` を確認する
 - KPI が cards 件数と一致しない場合、`sentiment_summary` を見て仕様通りか判断する
+- 現行 UI では Highlights は KPI 表示専用であり、記事カードは Articles セクションへ集約する
+
+---
+
+# Prediction Page
+
+File:
+
+```text
+app/static/prediction.html
+```
+
+## Primary Data Source
+
+Prediction の正式な source of truth はこれ:
+
+```text
+analysis/prediction/prediction_latest.json
+```
+
+Prediction UI は Runtime が出力した latest prediction snapshot を表示する。
+
+## Allowed Supporting Sources
+
+Prediction page は上部 Global Status の共通表示のため、補助的に以下を読んでよい:
+
+```text
+data/digest/view_model_latest.json
+data/world_politics/analysis/daily_summary_latest.json
+data/world_politics/analysis/sentiment_latest.json
+data/fx/fx_decision_latest.json
+```
+
+ただし、Prediction の本体内容は `analysis/prediction/prediction_latest.json` を正とする。
+
+## Expected Root Structure
+
+Prediction JSON は少なくとも以下のような情報を含む想定:
+
+```text
+as_of
+horizon_days
+overall_risk
+dominant_scenario
+summary
+confidence
+scenarios
+watchpoints
+drivers
+invalidation
+implications
+signal_count
+```
+
+補足:
+
+- 実 runtime schema は進化してよい
+- UI は後方互換的に複数 field 名を拾ってよい
+- ただし UI が確率や risk を独自再計算してはならない
+
+## Scenario Probabilities
+
+Prediction UI が主に参照するのは以下:
+
+```text
+best_case
+base_case
+worst_case
+```
+
+または
+
+```text
+scenarios.best
+scenarios.base
+scenarios.worst
+```
+
+または scenario list 内の確率 field。
+
+UI は schema 差分を吸収してよいが、
+値の意味づけそのものは runtime 側を正とする。
+
+## Core Display Fields
+
+Prediction UI で主要表示する代表項目:
+
+```text
+overall_risk
+dominant_scenario
+summary
+confidence
+as_of
+horizon_days
+signal_count
+```
+
+## Section Fields
+
+Prediction 下段詳細では以下のような配列 / テキストを参照する想定:
+
+```text
+watchpoints[]
+drivers[]
+invalidation[]
+implications[]
+```
+
+UI は表示のために配列を整形してよいが、
+重要度判定や抽出ロジックを再実装してはならない。
+
+## Notes
+
+- Prediction は runtime output の可視化ページ
+- 正式 source は `analysis/prediction/prediction_latest.json`
+- Global Status は共通UI用の補助表示であり、Prediction判定そのものではない
+- ボタンで JSON を開く場合も、prediction latest を最優先とする
+
+---
+
+# Prediction History Page
+
+File:
+
+```text
+app/static/prediction_history.html
+```
+
+## Primary Data Source
+
+Prediction History の正式な source of truth はこれ:
+
+```text
+analysis/prediction/history/YYYY-MM-DD/prediction.json
+```
+
+Prediction History UI は history 配下の時系列 prediction snapshot 群を読み、
+ドリフト / リスク変化 / confidence 変化を表示する。
+
+## Supporting Sources
+
+上部 Global Status の共通表示のため、補助的に以下を読んでよい:
+
+```text
+data/digest/view_model_latest.json
+data/world_politics/analysis/daily_summary_latest.json
+data/world_politics/analysis/sentiment_latest.json
+data/fx/fx_decision_latest.json
+```
+
+ただし、History の本体表示は history prediction 群を正とする。
+
+## History Scan Model
+
+Prediction History UI は以下のような探索を行ってよい:
+
+```text
+analysis/prediction/history/*/prediction.json
+```
+
+または window 制御付きで:
+
+```text
+latest 7
+latest 30
+all available
+```
+
+これは表示対象の抽出であり、
+履歴データ自体の再計算ではない。
+
+## Expected Fields
+
+各 history prediction snapshot では少なくとも以下を扱えるのが望ましい:
+
+```text
+as_of
+overall_risk
+dominant_scenario
+confidence
+best_case
+base_case
+worst_case
+watchpoints
+```
+
+## Derived Presentation
+
+Prediction History UI は複数 snapshot を比較して、
+以下のような表示用差分を出してよい:
+
+```text
+risk drift
+confidence drift
+worst-case drift
+scenario shift
+persistent watchpoints
+```
+
+重要原則:
+
+- これは表示比較であり、分析再計算ではない
+- 元 snapshot の値を加工しすぎない
+- 過去値 → 現在値の比較表示に留める
+
+## Notes
+
+- Prediction History は時系列 review ページ
+- 上部 Global Status は他ページと同型の 5-card 横並びを標準とする
+- 本体は history snapshot の比較表示に集中する
+- latest と history の schema 差がある場合、UI は後方互換吸収をしてよい
 
 ---
 
@@ -630,6 +861,30 @@ fallback
 data/fx/fx_decision_latest.json
 ↓
 app/static/overlay.html
+```
+
+Prediction の正式データフロー:
+
+```text
+signals / scenarios / runtime inputs
+↓
+prediction runtime
+↓
+analysis/prediction/prediction_latest.json
+↓
+app/static/prediction.html
+```
+
+Prediction History の正式データフロー:
+
+```text
+prediction runtime
+↓
+analysis/prediction/history/YYYY-MM-DD/prediction.json
+↓
+window scan / latest-first selection
+↓
+app/static/prediction_history.html
 ```
 
 ---
@@ -684,6 +939,30 @@ MULTI:
 2. /data/fx/fx_decision_latest.json
 ```
 
+## Prediction Fallback Priority
+
+```text
+1. analysis/prediction/prediction_latest.json
+2. no fallback for core prediction content
+```
+
+補足:
+
+- Global Status 用の補助表示だけは digest / summary / sentiment / fx latest を読んでよい
+- ただし本体の scenario / confidence / watchpoints は prediction latest なしで捏造しない
+
+## Prediction History Fallback Priority
+
+```text
+1. analysis/prediction/history/*/prediction.json
+2. if history empty, show unavailable state
+```
+
+補足:
+
+- History 本文に `prediction_latest.json` を代用しない
+- 履歴が無い場合は empty state を表示する
+
 ## Thumbnail Fallback Priority
 
 ```text
@@ -713,7 +992,42 @@ UI は再計算しない
 analysis = SST
 digest view_model = Digest UI 用の正規化済み表示レイヤ
 overlay fallback = 表示継続のための read-only 補助
+prediction latest = Prediction UI の正式 runtime output
+prediction history = Prediction History UI の正式 review source
 ```
+
+---
+
+# Relation to Layout Standard
+
+UI 依存は、標準レイアウトと切り離して考えない。
+現行の主要ページは、以下の共通骨格を前提とする。
+
+```text
+#site-header
+.container
+.page content
+#site-footer
+/static/common/layout.js
+```
+
+また、標準の主要ナビゲーションは以下で固定する。
+
+```text
+Home
+Overlay
+Sentiment
+Digest
+Prediction
+Prediction History
+```
+
+重要:
+
+- レイアウト共通化は表示構造の統一であり、データ依存の共通化ではない
+- 各ページは同じ骨格を持っても、読む JSON / PNG / history source は異なる
+- データ依存を変更したら `docs/ui_data_dependencies.md` を更新する
+- レイアウト標準を変更したら `docs/ui_layout_standard.md` を更新する
 
 ---
 
@@ -725,7 +1039,9 @@ UI 変更時は必ず確認すること:
 2. その root structure は何か
 3. 必要 field は何か
 4. fallback はどこまで許すか
-5. docs/ui_data_dependencies.md を更新したか
+5. layout standard と矛盾していないか
+6. docs/ui_data_dependencies.md を更新したか
+7. 必要なら docs/ui_layout_standard.md も更新したか
 
 特に Digest を変更する場合は、
 以下の整合を必ず確認する:
@@ -745,6 +1061,24 @@ data/fx/
 pair-specific latest files
 fx_decision_latest.json
 app/static/overlay.html
+```
+
+特に Prediction を変更する場合は、
+以下の整合を必ず確認する:
+
+```text
+prediction runtime
+analysis/prediction/prediction_latest.json
+app/static/prediction.html
+```
+
+特に Prediction History を変更する場合は、
+以下の整合を必ず確認する:
+
+```text
+analysis/prediction/history/
+window scan logic
+app/static/prediction_history.html
 ```
 
 ---
@@ -805,6 +1139,40 @@ sentiment_summary.articles は全件
 3. Home が health.summary.* を読んでいるか
 ```
 
+## Symptom: Prediction で scenario / confidence が出ない
+
+確認順:
+
+```text
+1. analysis/prediction/prediction_latest.json が存在するか
+2. core fields が schema 上どこにあるか
+3. prediction.html が latest prediction を読んでいるか
+4. UI が fallback で埋めようとしていないか
+5. ブラウザキャッシュを疑う
+```
+
+## Symptom: Prediction History で history が空になる
+
+確認順:
+
+```text
+1. analysis/prediction/history/*/prediction.json があるか
+2. 日付ディレクトリが期待形式か
+3. latest 7 / latest 30 の window 条件が厳しすぎないか
+4. prediction_history.html が latest ではなく history を読んでいるか
+5. ブラウザキャッシュを疑う
+```
+
+## Symptom: Global Status が縦に伸びすぎる
+
+確認順:
+
+```text
+1. 5-card 横並び構造になっているか
+2. page-specific text dump になっていないか
+3. 他ページと同じ Global Status component / style を使っているか
+```
+
 ---
 
 # Future Expansion
@@ -820,6 +1188,8 @@ risk_score
 regime
 observation
 overlay_related_news
+prediction review notes
+scenario change log
 ```
 
 これらが UI に追加された場合、

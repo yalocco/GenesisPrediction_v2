@@ -1,224 +1,154 @@
 # UI Layout Standard
 GenesisPrediction v2
 
+Version: 1.1
 Status: Active
-Purpose: GenesisPrediction UI の標準レイアウト構造を定義する
+Purpose: GenesisPrediction UI の標準レイアウト構造と共通実装ルールを固定する
 Last Updated: 2026-03-08
 
 ---
 
 # 0. Purpose
 
-このドキュメントは
+このドキュメントは、GenesisPrediction v2 の UI 標準レイアウトを定義する。
 
-GenesisPrediction v2 の
+目的:
 
-UI標準レイアウト
-
-を定義する。
-
-目的
-
-- UI構造をページ間で統一する
+- ページ間の見た目と構造を統一する
 - 新規ページ追加時の迷いをなくす
-- 表示調整を局所対応ではなく構造対応にする
-- Prediction / History 系を含めて共通骨格を持たせる
+- 表示調整を場当たり対応ではなく構造対応にする
+- Prediction / Prediction History を含めた共通骨格を固定する
+- AI と人間の双方が、同じ前提で UI を保守できるようにする
 
-GenesisPrediction の UI は
-単なるページ集合ではなく、
+GenesisPrediction の UI は、単なる HTML 群ではなく、
 
+```text
 統一されたダッシュボード群
+```
 
 として扱う。
 
 ---
 
-# 1. Core Layout Model
+# 1. Core Principle
 
-GenesisPrediction UI の基本構造は以下とする。
+GenesisPrediction UI の基本原則は以下とする。
 
 ```text
-topbar
+共通フレームは固定
+ページ本文は用途ごとに分岐
+分析ロジックは UI に持ち込まない
+UI は read-only 表示層とする
+```
+
+つまり:
+
+```text
+analysis = Single Source of Truth
+UI = analysis / data を読む表示層
+```
+
+UI が行ってよいのは以下のみ:
+
+- 読み込み
+- 表示整形
+- 空値時の fallback 表示
+- レイアウト切り替え
+- ソートや絞り込みなどの軽い表示操作
+
+UI が持ってはいけないもの:
+
+- 分析値の再計算
+- リスク判定の再決定
+- 正式データの生成責務
+
+---
+
+# 2. Standard Frame
+
+全主要ページは以下の共通フレームを前提とする。
+
+```text
+header
 ↓
-container
+page container
 ↓
-dashboard panel
-  ├ left panel
-  └ right panel
+page title / page lead
 ↓
-content section
+global status
+↓
+page-specific sections
 ↓
 footer
-````
+```
 
-この構造を
-GenesisPrediction UI の標準テンプレートとする。
+これを GenesisPrediction UI の標準テンプレートとする。
 
 ---
 
-# 2. Three-Layer Principle
+# 3. Common Runtime Parts
 
-UI設計の中心原則は以下の三層である。
+主要ページが共通で使う部品は以下。
 
 ```text
-topbar
-container
-card
+app/static/app.css
+app/static/common/header.html
+app/static/common/footer.html
+app/static/common/layout.js
 ```
+
+補足:
+
+- `app.css` は共通見た目の単一ソースとする
+- `header.html` は共通ナビゲーションを持つ
+- `footer.html` は共通フッタを持つ
+- `layout.js` は header / footer の読込と active 表示の初期化を担う
+
+個別ページで独自 topbar を再実装しない。
 
 ---
 
-## 2.1 Topbar
+# 4. Standard DOM Structure
 
-役割
-
-```text
-全ページ共通ナビゲーション
-```
-
-含むもの
-
-```text
-ブランド
-主要ページリンク
-active表示
-```
-
-原則
-
-```text
-全ページ共通
-```
-
-Topbar は個別ページごとに持たず、
-共通部品として管理する。
-
----
-
-## 2.2 Container
-
-役割
-
-```text
-ページ固有コンテンツ領域
-```
-
-原則
-
-```text
-幅・余白ルールだけ共通
-中身はページごとに自由
-```
-
-Container そのものは共通部品化しない。
-
-理由
-
-* 各ページの構造が異なる
-* index / overlay / sentiment / digest / prediction / history で役割が違う
-* 中身まで共通化すると例外処理が増える
-
----
-
-## 2.3 Card
-
-役割
-
-```text
-情報を読む最小単位
-```
-
-例
-
-```text
-summary card
-risk card
-health card
-chart card
-article card
-watchpoint card
-prediction card
-```
-
-原則
-
-```text
-見た目は共通
-中身は自由
-```
-
-統一対象
-
-* 角丸
-* border
-* glass背景
-* shadow
-* padding
-* 見出しスタイル
-
----
-
-# 3. Standard Page Structure
-
-各ページの標準構造は以下とする。
+各ページの標準構造は以下を基準とする。
 
 ```html
 <body>
+  <div id="site-header"></div>
 
-<div id="site-header"></div>
+  <main class="page container">
+    <section class="page-hero">
+      <h1>Page Title</h1>
+      <p class="page-lead">Page description...</p>
+    </section>
 
-<div class="container">
-
-  <section class="dashboard-layout">
-    <section class="left-panel">
+    <section class="section global-status-section">
       ...
     </section>
 
-    <section class="right-panel">
+    <section class="section">
       ...
     </section>
-  </section>
+  </main>
 
-  <section class="content-section">
-    ...
-  </section>
+  <div id="site-footer"></div>
 
-</div>
-
-<div id="site-footer"></div>
-
-<script src="/static/common/layout.js"></script>
-
+  <script src="/static/common/layout.js"></script>
 </body>
 ```
 
----
+重要:
 
-# 4. Dashboard Layout Rule
-
-ダッシュボード型ページは以下を基本とする。
-
-```text
-Left Panel  = controls / KPI / source / debug / how it works
-Right Panel = charts / trends / visual status
-Bottom      = articles / lists / tables / details
-```
-
-これにより
-
-```text
-左 = 操作・説明
-右 = 結果・可視化
-下 = 詳細本文
-```
-
-という自然な視線導線を作る。
+- `#site-header` と `#site-footer` を使う
+- 本文は `page container` 系の共通余白に合わせる
+- 共通構造を崩す独自 topbar / footer は作らない
+- ヘッダリンク列は中央、Ready / Health / as_of pill 群は右寄せを維持する
 
 ---
 
 # 5. Topbar Standard
 
-Topbar の標準項目は以下。
+共通ヘッダで扱う主要ナビは以下。
 
 ```text
 Home
@@ -229,492 +159,482 @@ Prediction
 Prediction History
 ```
 
-役割
+ルール:
 
-```text
-GenesisPrediction の主要画面へ即移動する
-```
+- 並び順は固定
+- 文言は省略しない
+- 現在ページのみ active 表示
+- ブランド表示は左固定
+- ナビボタン列は中央配置
+- 状態 pill 群は右配置
 
-表示ルール
-
-* 現在ページのみ active
-* 並び順は固定
-* 文言は省略しない
-* History は `Prediction History` と明記する
+これにより、全ページで同じ視線導線を維持する。
 
 ---
 
-# 6. Common Fragment Policy
+# 6. Three-Layer Visual Rule
 
-共通部品は以下を使用する。
-
-```text
-app/static/common/header.html
-app/static/common/footer.html
-app/static/common/layout.js
-```
-
----
-
-## 6.1 header.html
-
-役割
+UI 設計の中心は以下の三層である。
 
 ```text
-全ページ共通の topbar
-```
-
----
-
-## 6.2 footer.html
-
-役割
-
-```text
-全ページ共通の footer
-```
-
----
-
-## 6.3 layout.js
-
-役割
-
-```text
-header / footer 読み込み
-active 判定
-共通レイアウト初期化
-```
-
-これにより
-各ページは共通部品を読み込むだけでよい。
-
----
-
-# 7. What to Commonize
-
-共通化するもの
-
-```text
-topbar
-footer
-container width
-container outer spacing
-card appearance
-button appearance
-nav appearance
-active style
-```
-
----
-
-# 8. What Not to Commonize
-
-共通化しないもの
-
-```text
-container内部構造
-ページ固有grid
-チャート構造
-記事一覧構造
-表構造
-データ依存ロジック
-```
-
-理由
-
-GenesisPrediction の各画面は
-同じ骨格を持ちながらも
-役割が異なるため。
-
----
-
-# 9. Sentiment Page as Baseline
-
-現在の UI 基準ページは
-
-```text
-sentiment.html
-```
-
-である。
-
-理由
-
-* 背景が安定している
-* topbar / glass / card の統一感がある
-* 情報量が多く、ダッシュボード型UIの基準に向いている
-
-ただし、
-Sentiment をそのままコピーするのではなく
-
-Sentiment を抽象化した構造
-
-を標準とする。
-
----
-
-# 10. Standard Layout Diagram
-
-GenesisPrediction UI 標準図
-
-```text
-┌──────────────────────────────────────────────┐
-│ Topbar                                       │
-│ Brand / Home / Overlay / Sentiment / Digest  │
-│ / Prediction / Prediction History            │
-└──────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────┐
-│ Container                                    │
-│                                              │
-│  ┌────────────────┬──────────────────────┐   │
-│  │ Left Panel     │ Right Panel          │   │
-│  │                │                      │   │
-│  │ Controls       │ Charts               │   │
-│  │ KPI            │ Trend                │   │
-│  │ Source         │ Visual Status        │   │
-│  │ Debug          │                      │   │
-│  │ How it works   │                      │   │
-│  └────────────────┴──────────────────────┘   │
-│                                              │
-│  ┌────────────────────────────────────────┐  │
-│  │ Content Section                        │  │
-│  │ Articles / Tables / Detailed Data      │  │
-│  └────────────────────────────────────────┘  │
-└──────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────┐
-│ Footer                                       │
-└──────────────────────────────────────────────┘
-```
-
----
-
-# 11. Page Mapping
-
-各ページへの適用イメージ
-
----
-
-## 11.1 Home
-
-```text
-Left Panel
-- summary
-- health
-- quick links
-
-Right Panel
-- key visuals
-- daily status
-
-Bottom
-- latest events
-```
-
----
-
-## 11.2 Overlay
-
-```text
-Left Panel
-- pair selector
-- decision summary
-- source info
-
-Right Panel
-- overlay image
-- trend / dashboard visuals
-
-Bottom
-- notes / related data
-```
-
----
-
-## 11.3 Sentiment
-
-```text
-Left Panel
-- controls
-- KPI
-- source
-- debug
-- how it works
-
-Right Panel
-- risk trend
-- positive trend
-- uncertainty trend
-
-Bottom
-- articles
-```
-
----
-
-## 11.4 Digest
-
-```text
-Left Panel
-- summary
-- KPI
-- filter / sort
-
-Right Panel
-- highlights
-- top risk cards
-
-Bottom
-- article cards
-```
-
----
-
-## 11.5 Prediction
-
-```text
-Left Panel
-- prediction summary
-- confidence
-- dominant scenario
-
-Right Panel
-- probability visuals
-- scenario chart
-
-Bottom
-- drivers / invalidation / implications
-```
-
----
-
-## 11.6 Prediction History
-
-```text
-Left Panel
-- current vs previous
-- persistent watchpoints
-- drift summary
-
-Right Panel
-- risk timeline
-- confidence trend
-- worst-case drift
-
-Bottom
-- timeline / review notes
-```
-
----
-
-# 12. UX Principle
-
-GenesisPrediction UI の UX 原則
-
-## Principle 1
-
-```text
-左で操作し
-右で理解し
-下で読む
-```
-
----
-
-## Principle 2
-
-```text
-情報の重さを下へ流す
-```
-
-軽い情報は上、
-重い情報は下へ置く。
-
----
-
-## Principle 3
-
-```text
-説明は圧縮する
-```
-
-How it works や source/debug は
-画面を圧迫しない形に整理する。
-
----
-
-## Principle 4
-
-```text
-まず全体像
-次に可視化
-最後に詳細
-```
-
----
-
-# 13. Height Balance Rule
-
-左右2カラム構造では
-極端な高さ不一致を避ける。
-
-原則
-
-```text
-left panel と right panel は
-同じ段として読める高さバランスに寄せる
-```
-
-完全一致までは要求しないが、
-Articles や下段コンテンツが不必要に下へ押し出される配置は避ける。
-
----
-
-# 14. How It Works Rule
-
-How it works は
-縦長の説明領域ではなく
-
-圧縮された説明カード群
-
-として扱うのが望ましい。
-
-推奨構造
-
-```text
-step 1
-step 2
-step 3
-step 4
-```
-
-を横並び、または2x2で配置する。
-
-目的
-
-* 縦スペース節約
-* Articles を上へ持ち上げる
-* 説明は維持しつつ情報密度を上げる
-
----
-
-# 15. Content Section Rule
-
-Content Section は
-ページの本体詳細を置く場所である。
-
-例
-
-```text
-articles
-tables
-detailed cards
-raw detail
-review lists
-```
-
-原則
-
-```text
-dashboard の下に置く
-```
-
-理由
-
-まず上部で状況を理解し、
-その後に詳細へ進むため。
-
----
-
-# 16. Design Stability Rule
-
-UI調整は局所対応ではなく、
-この標準レイアウトに沿って行う。
-
-つまり
-
-```text
-1ページだけ綺麗
-```
-
-ではなく
-
-```text
-GenesisPrediction 全体で揃う
-```
-
-ことを目指す。
-
----
-
-# 17. Relation to Existing Rules
-
-このドキュメントは以下と整合する。
-
-* `docs/working_agreement.md`
-* `docs/gui_phase2_working_rules.md`
-* `docs/ui_system.md`
-* `docs/ui_data_dependencies.md`
-
-特に重要な原則
-
-```text
-UI = read-only
-```
-
-は不変である。
-
-このレイアウト標準は
-表示構造の統一であり、
-分析ロジックの追加ではない。
-
----
-
-# 18. Final Principle
-
-GenesisPrediction UI は
-
-```text
-見た目を揃えるためのUI
-```
-
-ではなく
-
-```text
-理解しやすく
-壊れにくく
-増築しやすいUI
-```
-
-でなければならない。
-
-そのため、
-標準構造は
-
-```text
-topbar
-container
+frame
+section
 card
 ```
 
-を中心とし、
+## 6.1 Frame
+
+役割:
 
 ```text
-left panel
-right panel
-content section
+全ページで共通の骨格を与える
 ```
 
-で展開する。
+含むもの:
 
-これを
-GenesisPrediction UI Standard
-とする。
+- ヘッダ
+- フッタ
+- 最大幅
+- ページ左右余白
+- 主要ナビ導線
+
+## 6.2 Section
+
+役割:
+
+```text
+意味のある情報群をまとめる
+```
+
+例:
+
+- Global Status
+- Summary / Highlights
+- Controls / Chart
+- Articles
+- Prediction Dashboard
+- Timeline
+
+## 6.3 Card
+
+役割:
+
+```text
+情報を読む最小単位
+```
+
+例:
+
+- KPI card
+- summary card
+- health card
+- chart card
+- article card
+- prediction card
+- watchpoint card
+- timeline card
+
+カードは見た目を共通化し、中身だけをページごとに変える。
 
 ---
 
-END OF DOCUMENT
+# 7. Global Status Standard
 
-````
+Global Status は GenesisPrediction UI の最上段標準ブロックである。
+
+標準構成:
+
+```text
+GLOBAL RISK
+SENTIMENT BALANCE
+FX REGIME
+ARTICLES
+UPDATED
+```
+
+表示形式:
+
+```text
+横 5 カード
+```
+
+原則:
+
+- 可能な限り 1 行で表現する
+- 縦流しの説明列にしない
+- 高さを取りすぎない
+- Home / Overlay / Digest / Prediction / Prediction History で同系統表示とする
+
+理由:
+
+- ページ冒頭の高さを圧縮できる
+- 下の本文へ早く到達できる
+- ページ間の統一感が上がる
+
+Prediction History でもこの 5-card 標準を採用する。
+
+---
+
+# 8. Standard Section Patterns
+
+主要ページでよく使う標準断面は以下。
+
+## 8.1 Hero Section
+
+```text
+Page title
+1-2 行の lead 文
+必要なら source / quick pill 群
+```
+
+## 8.2 Dashboard Split
+
+```text
+左 = controls / meta / source / explanation
+右 = chart / image / summary KPI / result
+```
+
+この型は Sentiment / Overlay で有効。
+
+## 8.3 Summary + KPI Split
+
+```text
+左 = Summary
+右 = Highlights(KPI only)
+```
+
+この型は Digest の標準とする。
+
+## 8.4 Main Result + Side Metrics
+
+```text
+左 = 主結論
+右 = risk / confidence / action buttons
+```
+
+この型は Prediction / Prediction History で有効。
+
+## 8.5 Bottom Detail Area
+
+```text
+articles
+watchpoints
+scenario lists
+history timeline
+supporting detail
+```
+
+本文の詳細は下段へ送る。
+
+---
+
+# 9. Page-by-Page Standard
+
+## 9.1 Home
+
+目的:
+
+```text
+最新状態の総合入口
+```
+
+標準ブロック:
+
+- Hero
+- Global Status
+- KPI row
+- Events(today)
+- Data Health
+- Sentiment
+- Daily Summary
+
+## 9.2 Overlay
+
+目的:
+
+```text
+FX decision + remittance overlay の表示
+```
+
+標準ブロック:
+
+- Hero
+- Global Status
+- KPI row
+- Controls
+- FX Overlay image
+
+## 9.3 Sentiment
+
+目的:
+
+```text
+articles + trend 表示
+```
+
+標準ブロック:
+
+- Hero
+- source / quick pills
+- Controls
+- Combined Trend
+- helper cards
+- Articles
+
+## 9.4 Digest
+
+目的:
+
+```text
+summary + highlights + articles の集約
+```
+
+標準ブロック:
+
+- Hero
+- Global Status
+- Summary | Highlights
+- Articles
+
+Digest の Highlights は KPI only とする。
+
+Highlights 内に article 一覧を再配置しない。
+
+## 9.5 Prediction
+
+目的:
+
+```text
+最新 prediction runtime の表示
+```
+
+標準ブロック:
+
+- Hero
+- Global Status
+- Prediction Dashboard
+- Overall Risk / Confidence
+- KPI row
+- Scenario probabilities
+- What to watch
+- Drivers / invalidation / implications
+
+## 9.6 Prediction History
+
+目的:
+
+```text
+prediction drift / confidence change / risk evolution の時系列表示
+```
+
+標準ブロック:
+
+- Hero
+- Global Status
+- Prediction History Dashboard
+- Drift summary / confidence drift
+- KPI row
+- Risk timeline
+- Persistent watchpoints
+- Historical snapshots
+
+Prediction History の Global Status も縦説明ではなく横 5-card を標準とする。
+
+---
+
+# 10. Commonization Policy
+
+共通化するもの:
+
+```text
+header
+footer
+container width
+outer spacing
+section spacing
+card appearance
+button appearance
+pill appearance
+nav appearance
+active style
+Global Status 5-card pattern
+```
+
+共通化しないもの:
+
+```text
+container 内部の細かい grid
+チャート描画ロジック
+記事カードの細部
+prediction 本文の内容構造
+history 集計ロジック
+page-specific controls
+```
+
+原則:
+
+```text
+見た目の骨格は共通化
+中身の意味構造はページごとに最適化
+```
+
+---
+
+# 11. Alignment Rules
+
+以下を全ページで揃える。
+
+## 11.1 Header Alignment
+
+- ブランドは左
+- ナビ列は中央
+- 状態 pill 群は右
+- ヘッダ全体を左寄せの単列に崩さない
+
+## 11.2 Container Alignment
+
+- 本文コンテナは index と同じ水平位置を基準にする
+- 独自余白で左に寄せない
+- 主要ページは同じ最大幅系を使う
+
+## 11.3 Card Height Discipline
+
+- 冒頭ブロックは高さを取りすぎない
+- Global Status は説明文の縦積みを避ける
+- KPI は可能な限り短いラベルと短い補足でまとめる
+
+## 11.4 Action Button Discipline
+
+- Open JSON / Open CSV / Open image などの補助ボタンは card 内に置く
+- 主ボタンと補助ボタンの見た目差は app.css に従う
+
+---
+
+# 12. Data / Layout Responsibility Split
+
+責務分離は以下の通り。
+
+## 12.1 scripts / analysis
+
+- 正式データを生成する
+- summary / sentiment / prediction / history を決定する
+- latest / history alias を整備する
+
+## 12.2 UI
+
+- latest または history を読む
+- card / section / chart / article として表示する
+- 欠損時だけ fallback 表示を行う
+
+## 12.3 Docs
+
+- UI 標準を `docs/ui_layout_standard.md` に記録する
+- データ依存を `docs/ui_data_dependencies.md` に記録する
+
+---
+
+# 13. Fallback Rule
+
+UI の fallback は表示継続のためだけに使う。
+
+原則:
+
+```text
+fallback は UI 継続のための read-only 処理
+正式ソースの代替確定ではない
+```
+
+例:
+
+- Digest は `view_model_latest.json` を優先し、必要時のみ summary / news に fallback
+- Overlay は pair ごとの decision / image candidates を順に探索
+- Prediction History は history snapshots が少ない場合でも空ページにしない
+
+fallback を増やす場合は `ui_data_dependencies.md` に記録する。
+
+---
+
+# 14. Prohibited Patterns
+
+以下は禁止または非推奨とする。
+
+- ページごとの独自 topbar 再実装
+- 共通ヘッダを使わない独自ヘッダ
+- 大きく左寄せに崩れる container
+- Global Status の縦長リスト化
+- Highlights に article 一覧を重複表示すること
+- UI 内で分析値を再決定すること
+- 一時対応を標準化せず放置すること
+
+---
+
+# 15. Change Management Rule
+
+UI 標準に影響する変更をした場合は、必要に応じて以下を更新する。
+
+```text
+docs/ui_layout_standard.md
+docs/ui_data_dependencies.md
+```
+
+更新対象の例:
+
+- 主要ページ追加
+- 共通ナビ変更
+- Global Status 構造変更
+- 共通部品変更
+- fallback 方針変更
+- data path 変更
+
+---
+
+# 16. Current Standard Pages
+
+2026-03-08 時点で、統一対象の主要ページは以下。
+
+```text
+Home
+Overlay
+Sentiment
+Digest
+Prediction
+Prediction History
+```
+
+この 6 ページを GenesisPrediction GUI 第一章の標準完成形とみなす。
+
+---
+
+# 17. Practical Checklist
+
+新規 UI ページ、または大規模修正時は以下を確認する。
+
+```text
+[ ] app.css を使っているか
+[ ] common/header.html を使っているか
+[ ] common/footer.html を使っているか
+[ ] common/layout.js を使っているか
+[ ] header の中央ナビ / 右 pill 群が崩れていないか
+[ ] container が index 基準で揃っているか
+[ ] Global Status が横 5-card になっているか
+[ ] ページ固有ロジックを UI で再計算していないか
+[ ] fallback を docs に記録したか
+[ ] 大規模変更なら ui_data_dependencies.md も更新したか
+```
+
+---
+
+# 18. Final Rule
+
+GenesisPrediction UI の標準は以下に要約できる。
+
+```text
+共通骨格を守る
+ページ固有の意味だけを変える
+分析は analysis に置く
+UI は読むことに徹する
+```
+
+この原則を守ることで、
+GUI は増築しても壊れにくく、
+AI も人間も迷わず保守できる状態を維持できる。
