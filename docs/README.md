@@ -1,388 +1,255 @@
-# Docs Guide (GenesisPrediction v2)
+# GenesisPrediction Documentation
 
-このディレクトリは **GenesisPrediction v2 の「人間のための記憶・運用台本」** です。
-コードや自動処理とは役割を分け、
+GenesisPrediction v2 のドキュメント構造。
 
-**「どう使うか」「どう考えるか」「何を信頼するか」**
-
-を固定します。
+この README は **AI / Human が docs を理解するための入口**である。
 
 ---
 
-# 🤖 AI Bootstrap（最初に読む）
+# Docs Structure
 
-新しい AI / 新しいスレッド / 新しいPC で作業する場合は
-**必ず最初に以下を読む。**
-
-```
-docs/ai_bootstrap_prompt.md
-```
-
-このファイルは
-
-* AI初期化
-* Repository Memoryの読み込み
-* 作業ルールの適用
-
-を行う **AI起動プロンプト**です。
-
----
-
-# 📘 Human Operation Docs（人間運用ドキュメント）
-
-人間が **毎日の運用・観測・思考整理** に使うドキュメント。
-
----
-
-## runbook_morning.md（最重要）
-
-毎日の正式運用手順（凍結）。
-
-内容
-
-* 朝の儀式（Morning Ritual）
-* GUI / CLI の実行順
-* 運用禁止事項（事故防止）
-
-基本フロー
+docs は以下の構造に整理されている。
 
 ```
-git pull
-↓
-run_daily_with_publish.ps1
-↓
-FX lane
-↓
-Data Health
-↓
-GUI確認
-```
 
-迷ったら **まず runbook_morning.md を読む。**
-
----
-
-## observation.md
-
-日付ごとの観測ログ。
-
-内容
-
-* 自動生成ログ
-* 人間の1行所感
-
-目的
-
-```
-観測
-↓
-仮説
-↓
-判断
-```
-
-の履歴を残す。
-
----
-
-## gui_f1_panel_spec.md
-
-GUI F-1パネル設計書。
-
-目的
-
-* GUI実装前の合意
-* UI仕様の凍結
-
-GUIを触る前に読む。
-
----
-
-## assumptions.md
-
-分析の前提条件。
-
-内容
-
-* 世界観
-* 分析の前提
-* 暗黙ルール
-
----
-
-## diff_schema.md
-
-diff / daily_summary の構造説明。
-
-目的
-
-* データ理解
-* JSON構造理解
-
----
-
-## fragile_points.md
-
-壊れやすい箇所のメモ。
-
-内容
-
-* 注意点
-* 触ると壊れる箇所
-
----
-
-# 🧭 運用原則（要約）
-
-```
-.md は人間のために書く
-自動生成はヒントまで
-判断は人間が確定
-迷ったら観測へ戻る
-```
-
----
-
-# 📝 更新ルール
-
-```
-小さく書く（1行でも良い）
-毎日書く必要はない
-書かない日があっても問題なし
-```
-
----
-
-# 🗄 Data Management
-
-```
-data/ は Git 管理しない
-PC間同期は Syncthing
-```
-
-運用ルール
-
-```
-docs/data_sync_rule.md
-```
-
----
-
-# 🤖 AI Development Docs（Repository Memory）
-
-GenesisPrediction v2 は
-**AI共同開発プロジェクト**です。
-
-Chat の記憶に依存せず
-
-```
 docs/
-```
 
-に **設計知識を保存する仕組み**を持ちます。
+core/
+active/
+reference/
+archive/
+obsolete/
 
----
-
-## repo_map.md
-
-リポジトリ構造の地図。
-
-内容
-
-```
-scripts
-analysis
-app/static
-```
-
-の責務分離。
-
----
-
-## repo_architecture.md
-
-GenesisPrediction の **三層構造**。
-
-```
-Chat Memory
-↓
-Repository Memory
-↓
-Project Knowledge
 ```
 
 ---
 
-## project_status.md
+# 1. core
 
-プロジェクトの現在地。
+最重要ドキュメント。
 
-内容
-
-* 現在のUI
-* pipeline状態
-* stable tags
-* 次の作業
-
----
-
-## pipeline_system.md
-
-パイプライン構造。
-
-基本フロー
+GenesisPrediction の **設計思想・原則**。
 
 ```
-Morning Ritual
-↓
-Analyzer
-↓
-Sentiment
-↓
-Digest
-↓
-Overlay
-↓
-Health
-```
 
----
+core/
 
-## ui_system.md
+genesis_brain.md
+decision_log.md
+system_history.md
+project_status.md
+prediction_layer_design_principles.md
 
-UI構造の仕様書。
-
-対象ページ
+ui_design_philosophy.md
+ui_component_catalog.md
+GenesisPrediction_UI_Work_Rules.md
 
 ```
-Home
-Overlay
-Sentiment
-Digest
-```
-
-内容
-
-* HTML構造
-* JSON依存
-* UI責務
-* CSS構造
-
----
-
-## chat_operating_rules.md
-
-AI共同開発ルール。
-
-基本原則
-
-```
-1ターン = 1作業
-差分修正禁止
-完全ファイル提示
-```
-
----
-
-## genesis_brain.md
-
-GenesisPrediction の設計思想。
-
-内容
-
-```
-Single Source of Truth
-Pipeline思想
-分析哲学
-AI共同開発構造
-```
-
----
-
-# 🧠 GenesisPrediction Knowledge Architecture
-
-GenesisPrediction v2 は
-以下の **三層構造**で知識を管理する。
-
-```
-Chat Memory
-↓
-Repository Memory (docs)
-↓
-Project Knowledge
-```
-
----
-
-## Chat Memory
-
-AIとの会話履歴
-
-内容
-
-* 設計議論
-* 問題解決
-* 実験
-* 仮説
 
 特徴
 
-* 一時的
-* スレ変更で消える
+- 削除禁止
+- システムの根幹
+- AIが必ず理解すべき文書
 
 ---
 
-## Repository Memory
+# 2. active
 
-リポジトリ内の設計知識。
+**現行システム仕様**
 
-場所
+現在の GenesisPrediction v2 実装に直接対応する。
 
 ```
-docs/
+
+active/
+
+genesis_system_map.md
+repo_map.md
+pipeline_system.md
+
+analysis_data_schema.md
+
+ui_system.md
+ui_data_dependencies.md
+
+prediction_architecture.md
+genesis_prediction_roadmap.md
+
 ```
 
-内容
+特徴
 
-* UI構造
-* Pipeline構造
-* AI作業ルール
-* 設計思想
+- 実装変更と同期する
+- 現在の仕様
 
 ---
 
-## Project Knowledge
+# 3. reference
 
-実際のシステム。
+作業補助ドキュメント。
+
+AIや開発作業の補助。
 
 ```
-scripts/
-analysis/
-app/static/
-data/
+
+reference/
+
+ai_bootstrap.md
+ai_quick_context.md
+repository_memory_index.md
+
+ai_rules.md
+working_agreement.md
+chat_operating_rules.md
+
+debug_playbook.md
+
 ```
+
+特徴
+
+- 開発補助
+- AI作業ルール
 
 ---
 
-# 🧩 この構造のメリット
+# 4. archive
 
-この構造により
+過去設計・履歴。
 
 ```
-AI変更
-PC変更
-スレ変更
+
+archive/
+
+archive/
+constitution/
+specs/
+
 ```
 
-が起きても
+特徴
 
-* 開発継続可能
-* 構造理解を即復元
-* 手順再説明不要
-
-となる。
+- 歴史資料
+- 旧設計
+- 削除しない
 
 ---
 
-GenesisPrediction v2 は
-**AIと人間の共同開発プロジェクト**である。
+# 5. obsolete
+
+完全廃止ドキュメント。
+
+```
+
+obsolete/
+
+contracts/
+
+```
+
+特徴
+
+- 現在使用しない
+- 将来削除可能
+
+---
+
+# How AI Should Read Docs
+
+AIは以下の順番で読む。
+
+```
+
+1 core/genesis_brain.md
+
+2 core/decision_log.md
+3 core/system_history.md
+
+4 active/genesis_system_map.md
+5 active/repo_map.md
+6 active/pipeline_system.md
+
+7 active/prediction_architecture.md
+
+```
+
+その後必要に応じて
+
+```
+
+reference/
+archive/
+
+```
+
+を参照する。
+
+---
+
+# Design Philosophy
+
+GenesisPrediction は
+
+```
+
+Observation
+↓
+Trend
+↓
+Signal
+↓
+Scenario
+↓
+Prediction
+
+```
+
+という構造を持つ。
+
+Prediction は主役ではない。
+
+```
+
+Observation / Trend / Signal / Scenario
+
+```
+
+が本体である。
+
+---
+
+# Key Principle
+
+GenesisPrediction は
+
+```
+
+Explainable Forecast System
+
+```
+
+である。
+
+目的
+
+```
+
+未来を当てること
+
+```
+
+ではなく
+
+```
+
+危険を早く知ること
+
+```
+
+である。
+
+---
+
+# End
+```
