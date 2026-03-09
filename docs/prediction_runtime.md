@@ -1,596 +1,914 @@
 # Prediction Runtime
-GenesisPrediction v2
 
-Status: Active
-Purpose: Prediction Layer を日次運用へ組み込む Runtime 設計
-Last Updated: 2026-03-07
+Status: Active  
+Purpose: Signal → Scenario → Prediction を日次運用の中で安定実行する Runtime 仕様を固定する  
+Last Updated: 2026-03-09
 
 ---
 
 # 0. Purpose
 
-このドキュメントは
+このドキュメントは GenesisPrediction v2 における **Prediction Runtime** を定義する。
 
-```text
-Prediction Layer を実際に動かす Runtime
+Prediction Runtime の目的は次の通りである。
 
-を定義する。
-
-目的
-
-Prediction Engine を Morning Ritual に組み込む
-
-実行順序を固定する
-
-生成物を明確にする
-
-失敗時の切り分けを簡単にする
-
-将来の Prediction Pipeline 実装の土台にする
-
-Prediction Layer は設計だけでなく、
-
-毎日安定して再現可能に動くこと
-
-が必要である。
-
-1. Position in Full System
-
-GenesisPrediction v2 の全体構造
-
-data
-↓
-scripts
-↓
-analysis
-↓
-prediction
-↓
-UI
-
-Runtime 上の実際の意味
-
-data        = 素材
-scripts     = 生成装置
-analysis    = Runtime SST
-prediction  = analysis を元にした未来推定
-UI          = 表示
+- Signal Layer / Scenario Layer / Prediction Layer の実行順を固定する
+- Morning Ritual への統合点を明確にする
+- Output Artifact の保存先と責務を固定する
+- Early Warning Engine の位置づけを明確にする
+- UI が参照すべき Runtime SST を安定化する
 
 重要原則
 
-analysis = Single Source of Truth
-prediction は analysis を入力として生成される
-UI は prediction を読むだけ
-UI は再計算しない
-2. Prediction Runtime Overview
+```text
+Prediction Runtime は prediction logic を実行する運用層である
+```
 
-Prediction Runtime は次の処理を行う。
+これは設計思想そのものではなく、
+**毎日の心拍の中で Prediction Layer をどう動かすか**
+を定める文書である。
 
-analysis/latest を読む
+---
+
+# 1. Runtime Position in GenesisPrediction
+
+GenesisPrediction の全体流れは次のとおりである。
+
+```text
+Data Sources
 ↓
-Trend Engine 実行
+Pipeline (scripts)
 ↓
-Signal Engine 実行
+Analysis (SST)
 ↓
-Scenario Engine 実行
+Prediction Layer Runtime
 ↓
-Prediction Engine 実行
+UI
 ↓
-analysis/prediction/* を更新
+LABOS
+```
 
 Prediction Runtime は
 
-Morning Ritual 完走後
+```text
+analysis build の後
+UI update の前
+```
 
-に実行される。
+に配置される。
 
-理由
+つまり Prediction Runtime は
 
-Prediction は analysis を入力にするため
+- Observation の上に乗る
+- Trend の結果を受け取る
+- Signal / Scenario / Prediction を生成する
+- その成果物を UI と History に渡す
 
-upstream の fetch / analyzer / digest / fx / health が揃ってから動くべきため
+という役割を持つ。
 
-SST が確定した後に future layer を生成するため
+重要原則
 
-3. Runtime Order in Morning Ritual
+```text
+Prediction Runtime は analysis を完成させる最後段の一部である
+```
 
-Prediction Runtime を含む全体順序
+---
 
-git pull
+# 2. Runtime Scope
+
+Prediction Runtime が担当する範囲は以下である。
+
+## 2.1 In Scope
+
+- trend_latest.json を入力として読む
+- signal_latest.json を生成する
+- scenario_latest.json を生成する
+- prediction_latest.json を生成する
+- Early Warning を生成する
+- prediction history 用の凍結データを生成する
+- UI 用 latest artifact を更新する
+
+## 2.2 Out of Scope
+
+Prediction Runtime は以下を担当しない。
+
+- ニュース収集
+- sentiment 再計算
+- digest 再構築
+- overlay 再生成
+- UI 側ロジック実行
+- 手動判断の代行
+
+重要原則
+
+```text
+Prediction Runtime は観測を作らず、観測から予測構造を作る
+```
+
+---
+
+# 3. Core Runtime Flow
+
+Prediction Runtime の基本実行順は以下で固定する。
+
+```text
+analysis build
 ↓
-run_daily_with_publish
+trend build
 ↓
-FX lane
+signal build
 ↓
-build_data_health
+scenario build
 ↓
-latest artifacts refresh
+prediction build
 ↓
-Prediction Runtime
+early warning build
 ↓
-GUI確認
-
-Prediction Runtime の位置は
-
-latest artifacts refresh の後
-GUI確認の前
-
-で固定する。
-
-理由
-
-Prediction は最新 analysis を使う
-
-GUI は prediction 出力を表示対象に含みうる
-
-GUI確認時には prediction_latest.json が存在しているべき
-
-4. Prediction Runtime Internal Flow
-
-Prediction Runtime の内部フロー
-
-1. Load analysis inputs
-2. Validate required files
-3. Build trend_latest.json
-4. Build signal_latest.json
-5. Build scenario_latest.json
-6. Build prediction_latest.json
-7. Write latest outputs
-8. Optional history snapshot
-
-正式フロー
-
-analysis/*
+prediction history freeze
 ↓
-Trend Engine
+UI update
+```
+
+GenesisPrediction における最重要流れは次である。
+
+```text
+Observation
 ↓
-analysis/prediction/trend_latest.json
+Trend
 ↓
-Signal Engine
+Signal
 ↓
-analysis/prediction/signal_latest.json
+Scenario
 ↓
-Scenario Engine
-↓
-analysis/prediction/scenario_latest.json
-↓
-Prediction Engine
-↓
-analysis/prediction/prediction_latest.json
-5. Runtime Entry Point
+Prediction
+```
 
-Prediction Runtime の公式 entrypoint は
-将来的に以下を想定する。
+Prediction Runtime はこの流れを **毎日再現可能な形で運用する心拍** である。
 
-scripts/run_prediction_pipeline.py
+重要原則
 
-役割
+```text
+Observation から直接 Prediction を作らない
+```
 
-Prediction Layer 全体の orchestrator
+---
 
-入力確認
+# 4. Inputs
 
-各 engine 実行
+Prediction Runtime の主要入力は analysis/ にある Runtime SST である。
 
-出力保存
+最低限必要な入力は次の通り。
 
-ログ出力
+```text
+analysis/trend/trend_latest.json
+analysis/daily_summary_latest.json
+analysis/sentiment_latest.json
+analysis/health_latest.json
+```
 
-失敗時の終了コード返却
+将来的には以下も補助入力として利用可能。
 
-このファイルは
+```text
+analysis/observation/*.json
+analysis/anchors/*.json
+analysis/digest/view_model_latest.json
+analysis/fx/*.json
+analysis/prediction_history/
+```
 
-Morning Ritual から呼ばれる prediction 専用ランナー
+ただし Runtime の直接入力として最重要なのは
+
+```text
+trend_latest.json
+```
 
 である。
 
-6. Expected Inputs
+理由
 
-Prediction Runtime の主入力は以下。
+- Trend は Observation の変化方向をすでに整理している
+- Signal は Trend から兆候を抽出する層である
+- Runtime の責務分離が明確になる
 
-analysis/world_politics/sentiment_latest.json
-analysis/world_politics/daily_summary_latest.json
-analysis/health_latest.json
-analysis/fx/*
-analysis/digest/*
+重要原則
 
-将来追加される可能性
+```text
+Signal Runtime の主入力は Trend である
+```
 
-analysis/history/YYYY-MM-DD/*
-analysis/prediction/history/*
-observation memory outputs
-trend helper datasets
+---
 
-入力の原則
+# 5. Signal Runtime
 
-Prediction は data/ を直接見ない
-Prediction は analysis を正として使う
-7. Required Input Validation
+Signal Runtime は Trend を読んで、
+**注意すべき兆候** を構造化する。
 
-Prediction Runtime 開始時に最低限確認すべきもの
+## 5.1 Role
 
-analysis directory exists
-required latest files exist
-JSON parse succeeds
-as_of / date fields are usable
-critical inputs are not empty
+Signal の役割は次の通り。
 
-最低限の required files 例
+- persistence を検出する
+- anomaly を検出する
+- reversal を検出する
+- acceleration を検出する
+- regime_shift を検出する
 
-analysis/world_politics/sentiment_latest.json
-analysis/world_politics/daily_summary_latest.json
+Signal は「未来そのもの」ではない。
+Signal は
 
-補助扱いにできる入力
+```text
+未来分岐を作るための警告材料
+```
 
-analysis/health_latest.json
-analysis/fx/*
-analysis/digest/*
+である。
 
-原則
+## 5.2 Output
 
-必須入力が欠けたら hard fail
+最低出力
 
-補助入力が欠けたら warn + degraded run 可
+```text
+analysis/prediction/signal_latest.json
+```
 
-8. Output Files
+想定項目例
 
-Prediction Runtime が生成する正式成果物
+```text
+as_of
+signals[]
+overall_signal_strength
+signal_confidence
+source_trends
+notes
+```
 
-analysis/prediction/trend_latest.json
+## 5.3 Runtime Rule
+
+- Trend の説明を再掲するだけで終わらない
+- ノイズを Signal と誤認しない
+- 単発異常より持続兆候を優先する
+- 後段の Scenario が使える形で構造化する
+
+重要原則
+
+```text
+Signal は Early Warning の材料である
+```
+
+---
+
+# 6. Scenario Runtime
+
+Scenario Runtime は Signal を読んで、
+**未来分岐** を構造化する。
+
+## 6.1 Role
+
+Scenario の役割は次の通り。
+
+- best_case を定義する
+- base_case を定義する
+- worst_case を定義する
+- drivers を整理する
+- watchpoints を整理する
+- invalidation_conditions を整理する
+
+Scenario は単なる作文ではない。
+Signal と Trend をもとにした
+
+```text
+説明可能な未来分岐
+```
+
+である。
+
+## 6.2 Output
+
+最低出力
+
+```text
+analysis/prediction/scenario_latest.json
+```
+
+想定項目例
+
+```text
+as_of
+horizon_days
+best_case
+base_case
+worst_case
+probabilities
+drivers
+watchpoints
+invalidation_conditions
+scenario_confidence
+```
+
+## 6.3 Runtime Rule
+
+- Scenario を 1 本だけにしない
+- 未来分岐は最低 3 系統を維持する
+- すべての Scenario に理由を持たせる
+- watchpoints を必須にする
+- invalidation_conditions を持たせる
+
+重要原則
+
+```text
+Scenario を持たない Prediction は禁止
+```
+
+---
+
+# 7. Prediction Runtime
+
+Prediction Runtime は Scenario を読み、
+**公開用の最終要約** を生成する。
+
+## 7.1 Role
+
+Prediction の役割は次の通り。
+
+- dominant_scenario を定義する
+- overall_risk を定義する
+- confidence を定義する
+- summary を生成する
+- drivers / watchpoints を公開用に整理する
+- Early Warning 用の最終判定を補助する
+
+Prediction は主役ではない。
+Prediction は
+
+```text
+Scenario の公開用サマリー
+```
+
+である。
+
+## 7.2 Output
+
+最低出力
+
+```text
+analysis/prediction/prediction_latest.json
+```
+
+想定項目例
+
+```text
+as_of
+dominant_scenario
+overall_risk
+confidence
+summary
+drivers
+watchpoints
+invalidation_conditions
+early_warning_status
+horizon_days
+```
+
+## 7.3 Confidence Rule
+
+confidence は
+
+```text
+当たる確率
+```
+
+ではない。
+
+confidence は
+
+```text
+現在の観測とシナリオ整合性の強さ
+```
+
+である。
+
+評価に使う要素例
+
+- データ十分性
+- trend の明瞭さ
+- signal の強さ
+- scenario の整合性
+- watchpoints の具体性
+
+重要原則
+
+```text
+confidence を飾りにしない
+```
+
+---
+
+# 8. Early Warning Engine
+
+Early Warning Engine は Prediction Runtime の中核である。
+
+GenesisPrediction において重要なのは
+
+```text
+正解を当てることではなく
+危険を早く知ること
+```
+
+である。
+
+そのため Early Warning Engine は
+Prediction Runtime の一部として明示的に設計する。
+
+## 8.1 Purpose
+
+- 危険分岐の早期検出
+- watchpoints の運用化
+- warning 状態の安定表示
+- daily hypothesis の優先監視ポイント抽出
+
+## 8.2 Inputs
+
+Early Warning Engine は以下を使う。
+
+```text
+signal_latest.json
+scenario_latest.json
+prediction_latest.json
+health_latest.json
+```
+
+## 8.3 Output
+
+最低出力
+
+```text
+analysis/prediction/early_warning_latest.json
+```
+
+想定項目例
+
+```text
+as_of
+status
+level
+headline
+summary
+triggered_signals
+key_watchpoints
+escalation_reasons
+recommended_attention
+```
+
+## 8.4 Status Model
+
+最低限の状態は次の 3 段階を推奨する。
+
+```text
+NORMAL
+WATCH
+WARNING
+```
+
+必要に応じて将来拡張。
+
+```text
+CRITICAL
+```
+
+ただし初期設計では過剰に細分化しない。
+
+## 8.5 Runtime Rule
+
+- 単一指標だけで WARNING にしない
+- watchpoints と signal を必ず接続する
+- headline は簡潔にする
+- 理由のない alert を禁止する
+- daily run ごとの比較可能性を重視する
+
+重要原則
+
+```text
+Early Warning は怖がらせるためではなく見落としを減らすためにある
+```
+
+---
+
+# 9. Output Artifacts
+
+Prediction Runtime の出力は次の場所に固定する。
+
+```text
+analysis/prediction/
+```
+
+最低成果物
+
+```text
 analysis/prediction/signal_latest.json
 analysis/prediction/scenario_latest.json
 analysis/prediction/prediction_latest.json
+analysis/prediction/early_warning_latest.json
+```
 
-必要に応じて追加可能な付随成果物
+補助成果物候補
 
-analysis/prediction/runtime_status_latest.json
-analysis/prediction/prediction_health_latest.json
-analysis/prediction/prediction_debug_latest.json
+```text
+analysis/prediction/runtime_status.json
+analysis/prediction/prediction_bundle_latest.json
+analysis/prediction/watchpoints_latest.json
+```
 
-ただし v1 では複雑化を避けるため、
-まずは core 4 files を最優先とする。
+重要原則
 
-9. Optional History Snapshot
+```text
+latest 系は UI と運用の入口である
+```
 
-Prediction Runtime は将来的に history 保存を行ってよい。
+---
 
-保存先例
+# 10. Prediction History Freeze
 
-analysis/prediction/history/YYYY-MM-DD/
-  trend.json
-  signal.json
-  scenario.json
-  prediction.json
+Prediction は
 
-保存タイミング
+```text
+日次仮説
+```
 
-prediction_latest.json 生成成功後
+として凍結保存される。
 
-原則
+保存先は次で固定する。
 
-latest 成功後に history 保存
+```text
+analysis/prediction_history/
+```
 
-history 失敗で latest を壊さない
+または現行 UI 実装整合のために
 
-latest の生成が主目的
+```text
+analysis/prediction/history/
+```
 
-history は追加価値
+を利用する場合は、
+どちらか一方を正式仕様として固定し、UI 依存箇所を必ず一致させる。
 
-10. Runtime Success Criteria
+## 10.1 Purpose
 
-Prediction Runtime 成功条件
+- 予測検証
+- バックテスト
+- 研究ログ
+- drift 監視
+- 「その日どう見ていたか」の証跡保存
 
-trend_latest.json が生成されている
-signal_latest.json が生成されている
-scenario_latest.json が生成されている
-prediction_latest.json が生成されている
-JSON が parse 可能
-prediction summary が空でない
-overall_risk が設定されている
-working tree を汚さない
+## 10.2 Freeze Unit
 
-Morning Ritual 視点の成功条件
-
-Prediction Layer が安定生成され
-GUI確認前に prediction_latest.json が存在する
-11. Failure Handling Policy
-
-Prediction Runtime の異常時方針
-
-11.1 Input missing
+凍結単位は原則として日次。
 
 例
 
-sentiment_latest.json missing
-daily_summary_latest.json missing
+```text
+prediction_2026-03-09.json
+scenario_2026-03-09.json
+signal_2026-03-09.json
+early_warning_2026-03-09.json
+```
 
-対応
+## 10.3 Rule
 
-hard fail
-Prediction Runtime 停止
-原因をログ出力
+- latest を上書きしてよい
+- history は上書きしない
+- freeze は再現可能な日付キーを持つ
+- future backtest のため summary だけでなく理由も保存する
 
-理由
+重要原則
 
-Prediction は analysis を前提とするため、
-核心入力欠落のまま進めない。
+```text
+Prediction History は研究資産である
+```
 
-11.2 Optional domain missing
+---
 
-例
-
-fx input missing
-health input missing
-digest input missing
-
-対応
-
-warn
-degraded mode で継続可
-
-理由
-
-Prediction v1 は world_politics 主体でも成立しうるため。
-
-11.3 Engine-level failure
-
-例
-
-trend build failed
-scenario JSON write failed
-
-対応
-
-どの step で止まったか明示
-partial write を避ける
-非正常終了コードを返す
-
-原則
-
-壊れた prediction_latest.json を残さない
-12. Logging Design
-
-Prediction Runtime は step-based logging を持つ。
-
-推奨ログ例
-
-[Prediction] START
-[Prediction] Validate inputs
-[Prediction] Build trend
-[Prediction] Build signal
-[Prediction] Build scenario
-[Prediction] Build prediction
-[Prediction] Write outputs
-[Prediction] DONE
-
-エラー時例
-
-[Prediction] ERROR at Build scenario
-reason: missing signal collection
-
-ログ原則
-
-step 名が分かる
-
-入出力の失敗箇所が明確
-
-Morning Ritual から読んで追跡しやすい
-
-13. Runtime Idempotency
+# 11. Morning Ritual Integration
 
 Prediction Runtime は
 
-同じ入力なら同じ出力
+```text
+scripts/run_morning_ritual.ps1
+```
 
-を原則とする。
+の終盤で実行される。
 
-つまり
+理想実行順は次のとおり。
 
-再実行しても prediction が不必要に揺れない
+```text
+Fetch
+↓
+Analyzer
+↓
+Sentiment
+↓
+Digest
+↓
+Overlay
+↓
+Health
+↓
+Trend
+↓
+Signal
+↓
+Scenario
+↓
+Prediction
+↓
+Early Warning
+↓
+Prediction History Freeze
+↓
+UI Publish
+```
 
-ことを目指す。
+## 11.1 Integration Rule
 
-重要性
+- Morning Ritual 完了前に Prediction latest を確定する
+- Prediction latest 確定後に history を凍結する
+- UI publish は latest を読むだけにする
+- Morning Ritual の失敗時は部分成果物を明示する
 
-デバッグが容易
+## 11.2 Heartbeat Rule
 
-backtest が可能
+Prediction Runtime は常時推論エンジンではなく
 
-信頼性が上がる
+```text
+日次心拍の更新仮説エンジン
+```
 
-日次運用で安心して再実行できる
+として扱う。
 
-14. Runtime Isolation
+重要原則
 
-Prediction Runtime は
-既存の analysis 生成処理と責務を分離する。
+```text
+Prediction は Morning Ritual によって毎日更新される仮説である
+```
 
-原則
+---
 
-run_daily_with_publish は観測層まで
-run_prediction_pipeline.py は予測層のみ
+# 12. UI Integration
+
+UI は Prediction Runtime の成果物を **read-only** で参照する。
+
+Prediction UI の主入力
+
+```text
+analysis/prediction/prediction_latest.json
+analysis/prediction/scenario_latest.json
+analysis/prediction/early_warning_latest.json
+```
+
+Prediction History UI の主入力
+
+```text
+analysis/prediction_history/
+```
+
+または正式採用した history ディレクトリ。
+
+## 12.1 UI Role
+
+UI の役割は以下に限定する。
+
+- summary を表示する
+- overall_risk を表示する
+- dominant_scenario を表示する
+- confidence を表示する
+- watchpoints を表示する
+- early warning status を表示する
+- history を閲覧可能にする
+
+## 12.2 UI Forbidden
+
+UI 側で以下は禁止。
+
+- scenario を再計算する
+- risk を再判定する
+- confidence を再計算する
+- watchpoints を勝手に並び替えて意味変更する
+
+重要原則
+
+```text
+UI は prediction logic を持たない
+```
+
+---
+
+# 13. Failure Safety
+
+Prediction Runtime は日次運用のため、
+部分失敗時の振る舞いを明確にする。
+
+## 13.1 Failure Cases
+
+### Case 1: Signal build failure
+
+- scenario build を停止する
+- prediction build を停止する
+- runtime_status に失敗理由を残す
+- 前日 latest の無言流用はしない
+
+### Case 2: Scenario build failure
+
+- prediction build を停止する
+- early warning を暫定生成しない
+- UI に stale data を出す場合は stale 明示が必要
+
+### Case 3: Prediction build failure
+
+- signal / scenario を残して失敗を記録する
+- history freeze を停止する
+
+### Case 4: History freeze failure
+
+- latest は生成済みでも runtime warning を記録する
+- 研究ログ欠損として扱う
+
+## 13.2 Safety Principles
+
+```text
+失敗を隠さない
+```
+
+```text
+古い prediction を新しい prediction のふりをしない
+```
+
+```text
+部分成功と完全成功を区別する
+```
+
+---
+
+# 14. Runtime Status and Observability
+
+Prediction Runtime は自分自身の状態も観測可能にする。
+
+推奨成果物
+
+```text
+analysis/prediction/runtime_status.json
+```
+
+想定項目例
+
+```text
+as_of
+status
+steps_completed
+steps_failed
+input_checks
+output_checks
+duration_ms
+notes
+```
 
 これにより
 
-デバッグしやすい
+- Morning Ritual の末尾で確認しやすい
+- Prediction 系だけの失敗を切り分けやすい
+- UI / deploy 前に整合確認できる
 
-失敗箇所が明確
+重要原則
 
-将来 Prediction だけ再実行できる
+```text
+Prediction Runtime も観測対象にする
+```
 
-Morning Ritual の構造がきれいになる
+---
 
-15. Recommended Script Structure
+# 15. Minimal Runtime Contract
 
-将来の推奨構成
+Prediction Runtime の最低契約をここで固定する。
 
-scripts/
-  run_prediction_pipeline.py
-  build_trend.py
-  build_signal.py
-  build_scenario.py
-  build_prediction.py
+## 15.1 Input Contract
 
-役割
+```text
+trend_latest.json が存在すること
+health_latest.json が読めること
+as_of を取得できること
+```
 
-run_prediction_pipeline.py = orchestrator
-build_trend.py             = trend generator
-build_signal.py            = signal generator
-build_scenario.py          = scenario generator
-build_prediction.py        = final prediction generator
+## 15.2 Output Contract
 
-v1 では 1 file orchestrator + internal functions でもよい。
-
-16. CLI Design
-
-推奨 CLI 例
-
-python scripts/run_prediction_pipeline.py --date 2026-03-07
-
-オプション例
-
---date YYYY-MM-DD
---write-history
---strict
---debug
-
-意味
-
---date = 対象日
-
---write-history = history snapshot 保存
-
---strict = optional input 欠損も fail 扱い
-
---debug = 詳細ログ出力
-
-v1 では最小構成で始めてよい。
-
-17. Morning Ritual Integration Example
-
-将来の Morning Ritual での呼び出し例
-
-python scripts/run_prediction_pipeline.py --date (Get-Date -Format "yyyy-MM-dd")
-
-PowerShell 化する場合の候補
-
-scripts/run_prediction_pipeline.ps1
-
-ただし中核処理は Python 側に集約するのが望ましい。
-
-理由
-
-JSON 操作に強い
-
-ロジック分離しやすい
-
-backtest / reuse がしやすい
-
-18. Prediction Health Concept
-
-将来的に Prediction Layer 専用 health を持ってよい。
-
-例
-
-prediction input completeness
-trend build status
-signal count sanity
-scenario probability sum check
-prediction summary presence
-
-保存候補
-
-analysis/prediction/prediction_health_latest.json
-
-ただし v1 では必須ではない。
-まずは core pipeline 成功を優先する。
-
-19. Runtime Validation Rules
-
-Prediction Runtime 完了時の最低 validation
-
-trend_latest.json
-domains が存在する
-最低1件以上の trend entry がある
+```text
 signal_latest.json
-signals array が存在する
-空でもよいが JSON 構造は正しい
 scenario_latest.json
-best/base/worst のいずれかが存在する
-probability が使える
 prediction_latest.json
-overall_risk がある
-summary が空でない
-watchpoints が配列
-dominant_scenario が設定されている
-20. Runtime Philosophy
+early_warning_latest.json
+```
 
-Prediction Runtime の最重要思想
+が生成されること。
 
-観測の上に未来推定を積む
+## 15.3 Freeze Contract
+
+```text
+prediction history に日付付き成果物が保存されること
+```
+
+## 15.4 UI Contract
+
+```text
+UI は latest を読むだけで主要表示が成立すること
+```
+
+---
+
+# 16. Future Expansion
+
+Prediction Runtime は将来以下へ拡張可能である。
+
+- multi-horizon prediction
+- weekly scenario rollup
+- historical analog matching
+- prediction drift detection
+- pair-specific risk prediction
+- domain-specific scenario trees
+- decision support agent
+
+ただし初期段階では複雑化しすぎない。
+
+重要原則
+
+```text
+まずは日次で安定し、あとで拡張する
+```
+
+---
+
+# 17. Final Runtime Principle
+
+Prediction Runtime を一言で言うと次である。
+
+```text
+Signal から Scenario を作り、Scenario から Prediction を作り、Prediction を日次仮説として凍結する心拍エンジン
+```
+
+GenesisPrediction において重要なのは
+
+```text
+単発予測ではなく
+説明可能な危険分岐の継続監視
+```
 
 である。
 
-つまり
+そのため Prediction Runtime は
 
-Prediction は analysis の後段である
+- 観測を飛ばさない
+- Trend を飛ばさない
+- Signal を飛ばさない
+- Scenario を飛ばさない
+- Prediction を主役にしない
+- Early Warning を運用可能にする
+- History を研究資産として残す
 
-Prediction は analysis を壊さない
+という原則の上で動く。
 
-Prediction は UI で計算しない
+---
 
-Prediction は毎日同じ順序で生成する
+# 18. Final Summary
 
-これは GenesisPrediction の全体思想
+GenesisPrediction v2 の Prediction Runtime は次の流れで固定する。
 
-速度より再現性
-
-と一致する。
-
-21. Phase Strategy
-
-Prediction Runtime の段階導入
-
-Phase 1
-trend / signal / scenario / prediction latest のみ生成
-Phase 2
-history snapshot 追加
-Phase 3
-prediction health / debug artifacts 追加
-Phase 4
-multi-horizon support
-Phase 5
-backtest / drift detection / alert hooks
-
-最初から全部やらず、
-動く最小構成で入れる。
-
-22. Final Role
-
-Prediction Runtime は
-
-Prediction Layer の心拍
-
-である。
-
-Observation System が
-
-世界を観測する
-
-なら、
-
-Prediction Runtime は
-
-その観測から未来推定を毎日生成する
-
-役割を持つ。
-
-これにより GenesisPrediction は
-
-世界観測AI
+```text
+Trend
 ↓
-未来予測AI
+Signal
+↓
+Scenario
+↓
+Prediction
+↓
+Early Warning
+↓
+History Freeze
+↓
+UI
+```
 
-へ実際に進化する。
+重要なのは
+
+```text
+Prediction を当てものにしないこと
+```
+
+である。
+
+Prediction Runtime は
+
+```text
+危険を早く知るための説明可能な未来分岐運用エンジン
+```
+
+として設計する。
+
+---
 
 END OF DOCUMENT
