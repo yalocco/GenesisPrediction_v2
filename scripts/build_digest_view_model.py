@@ -1,861 +1,217 @@
-# scripts/build_digest_view_model.py
+#!/usr/bin/env python3
 from __future__ import annotations
 
 import argparse
 import json
-import re
-from dataclasses import dataclass
-from datetime import datetime
-from html.parser import HTMLParser
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
-from urllib.parse import urlparse
-
-VERSION = "v1"
-DEFAULT_SECTION_ID = "world_politics"
-
-DATE_RE = re.compile(r"\b(20\d{2}-\d{2}-\d{2})\b")
+from typing import Any, Dict, List, Optional
 
 
-# ---------------------------
-# Utilities
-# ---------------------------
-
-def iso_now_local() -> str:
-    return datetime.now().astimezone().isoformat(timespec="seconds")
+def now_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
-def ensure_dir(p: Path) -> None:
-    p.mkdir(parents=True, exist_ok=True)
-
-
-def read_text_safe(p: Path) -> str:
+def load_json(path: Path) -> Dict[str, Any]:
+    if not path.exists():
+        return {}
     try:
-        return p.read_text(encoding="utf-8")
-    except UnicodeDecodeError:
-        return p.read_text(encoding="cp932", errors="replace")
-
-
-def read_json_safe(p: Path) -> Any:
-    return json.loads(read_text_safe(p))
-
-
-def find_repo_root(start: Path) -> Path:
-    cur = start.resolve()
-    for _ in range(12):
-        if (cur / ".git").exists():
-            return cur
-        if (cur / "scripts").exists() and (cur / "app").exists():
-            return cur
-        if (cur / "docker-compose.yml").exists() or (cur / "compose.yml").exists():
-            return cur
-        cur = cur.parent
-    return start.resolve().parent
-
-
-def extract_date_from_filename(name: str) -> Optional[str]:
-    m = DATE_RE.search(name)
-    return m.group(1) if m else None
-
-
-def validate_date(date_str: str) -> str:
-    try:
-        datetime.strptime(date_str, "%Y-%m-%d")
-    except ValueError as e:
-        raise SystemExit(f"[ERROR] invalid --date '{date_str}': {e}")
-    return date_str
-
-
-def short(s: str, n: int) -> str:
-    s = re.sub(r"\s+", " ", (s or "")).strip()
-    return s if len(s) <= n else s[: n - 1].rstrip() + "…"
-
-
-def host_of(url: Optional[str]) -> Optional[str]:
-    if not url:
-        return None
-    try:
-        h = urlparse(url).netloc
-        return h or None
+        return json.loads(path.read_text(encoding="utf-8"))
     except Exception:
-        return None
+        return {}
 
 
-def norm_space(s: str) -> str:
-    return re.sub(r"\s+", " ", (s or "")).strip()
+def ensure_dir(path: Path) -> None:
+    path.mkdir(parents=True, exist_ok=True)
 
 
-def to_float(v: Any, default: float = 0.0) -> float:
-    try:
-        if v is None or v == "":
-            return default
-        return float(v)
-    except Exception:
-        return default
+def write_json(path: Path, payload: Dict[str, Any]) -> None:
+    ensure_dir(path.parent)
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-# ---------------------------
-# Daily summary text enrichment
-# ---------------------------
-
-def daily_summary_path(repo: Path, date: str) -> Path:
-    p = repo / "data" / "world_politics" / "analysis" / f"daily_summary_{date}.json"
-    if p.exists():
-        return p
-    return repo / "data" / "world_politics" / "analysis" / "daily_summary_latest.json"
-
-
-def build_summary_text(repo: Path, date: str) -> str:
-    p = daily_summary_path(repo, date)
-    if not p.exists():
-        return ""
-
-    try:
-        obj = read_json_safe(p)
-    except Exception:
-        return ""
-
-    candidates: List[Any] = []
-    if isinstance(obj, dict):
-        candidates.extend([
-            obj.get("summary"),
-            obj.get("text_summary"),
-            obj.get("daily_summary"),
-            obj.get("yesterday_summary_text"),
-            obj.get("headline"),
-            obj.get("title"),
-        ])
-
-        # common nested containers
-        for key in ("today", "payload", "result"):
-            v = obj.get(key)
-            if isinstance(v, dict):
-                candidates.extend([
-                    v.get("summary"),
-                    v.get("text_summary"),
-                    v.get("daily_summary"),
-                    v.get("yesterday_summary_text"),
-                    v.get("headline"),
-                    v.get("title"),
-                ])
-
-        bullets = obj.get("bullets") or obj.get("highlights") or obj.get("summary_bullets")
-        if isinstance(bullets, list) and bullets:
-            bullet_text = "\n".join(f"- {norm_space(str(x))}" for x in bullets[:8] if norm_space(str(x)))
-            if bullet_text:
-                candidates.append(bullet_text)
-
-    for c in candidates:
-        text = norm_space(str(c)) if c is not None else ""
-        if text:
-            return text
-    return ""
-
-
-# ---------------------------
-# News image enrichment
-# ---------------------------
-
-def daily_news_path(repo: Path, date: str) -> Path:
-    p = repo / "data" / "world_politics" / "analysis" / f"daily_news_{date}.json"
-    if p.exists():
-        return p
-    return repo / "data" / "world_politics" / "analysis" / "daily_news_latest.json"
-
-
-def _news_item_key(it: Dict[str, Any]) -> Optional[str]:
-    title = norm_space(str(it.get("title") or it.get("headline") or it.get("name") or "")).lower()
-    source = it.get("source")
-    source_name = ""
-    if isinstance(source, dict):
-        source_name = norm_space(str(source.get("name") or source.get("id") or "")).lower()
-    elif isinstance(source, str):
-        source_name = norm_space(source).lower()
-    if title and source_name:
-        return f"{source_name}::{title}"
-    if title:
-        return title
+def first_non_empty(*values: Any) -> Optional[str]:
+    for value in values:
+        if isinstance(value, str) and value.strip():
+            return value.strip()
     return None
 
 
-def build_news_image_index(news_obj: Any) -> Tuple[Dict[str, str], Dict[str, str]]:
-    by_url: Dict[str, str] = {}
-    by_key: Dict[str, str] = {}
-
-    items: List[Dict[str, Any]] = []
-    if isinstance(news_obj, dict):
-        for key in ("articles", "items", "news", "rows", "data"):
-            v = news_obj.get(key)
-            if isinstance(v, list):
-                items = [x for x in v if isinstance(x, dict)]
-                break
-    elif isinstance(news_obj, list):
-        items = [x for x in news_obj if isinstance(x, dict)]
-
-    for it in items:
-        image = it.get("urlToImage") or it.get("image") or it.get("thumbnail")
-        if not isinstance(image, str) or not image.strip():
-            continue
-        image = image.strip()
-
-        url = it.get("url") or it.get("link")
-        if isinstance(url, str) and url.strip():
-            by_url[url.strip()] = image
-
-        key = _news_item_key(it)
-        if key:
-            by_key[key] = image
-
-    return by_url, by_key
-
-
-def attach_images(repo: Path, date: str, cards: List["Card"]) -> None:
-    p = daily_news_path(repo, date)
-    if not p.exists():
-        return
-
-    try:
-        news = read_json_safe(p)
-        by_url, by_key = build_news_image_index(news)
-    except Exception:
-        return
-
-    for c in cards:
-        if isinstance(c.image, str) and c.image.strip():
-            continue
-
-        img: Optional[str] = None
-        if c.url and c.url in by_url:
-            img = by_url.get(c.url)
-
-        if img is None:
-            title_key = norm_space((c.title or "")).lower()
-            source_key = norm_space((c.source or "")).lower()
-            if title_key and source_key:
-                img = by_key.get(f"{source_key}::{title_key}")
-            if img is None and title_key:
-                img = by_key.get(title_key)
-
-        if isinstance(img, str) and img.strip():
-            c.image = img.strip()
-
-
-# ---------------------------
-# Sentiment merge / summary
-# ---------------------------
-
-def sentiment_path(repo: Path, date: str) -> Path:
-    p = repo / "data" / "world_politics" / "analysis" / f"sentiment_{date}.json"
-    if p.exists():
-        return p
-    return repo / "data" / "world_politics" / "analysis" / "sentiment_latest.json"
-
-
-def _sentiment_item_key(it: Dict[str, Any]) -> Optional[str]:
-    title = norm_space(str(it.get("title") or "")).lower()
-    source = it.get("source")
-    source_name = ""
-    if isinstance(source, dict):
-        source_name = norm_space(str(source.get("name") or source.get("id") or "")).lower()
-    elif isinstance(source, str):
-        source_name = norm_space(source).lower()
-    if title and source_name:
-        return f"{source_name}::{title}"
-    if title:
-        return title
-    return None
-
-
-def build_sentiment_index(sent_obj: Any) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]]]:
-    by_url: Dict[str, Dict[str, Any]] = {}
-    by_key: Dict[str, Dict[str, Any]] = {}
-
-    if not isinstance(sent_obj, dict):
-        return by_url, by_key
-
-    items = sent_obj.get("items")
-    if not isinstance(items, list):
-        return by_url, by_key
-
-    for it in items:
-        if not isinstance(it, dict):
-            continue
-        url = it.get("url")
-        key = it.get("key") or _sentiment_item_key(it)
-        if isinstance(url, str) and url.strip():
-            by_url[url.strip()] = it
-        if isinstance(key, str) and key.strip():
-            by_key[key.strip()] = it
-    return by_url, by_key
-
-
-def _empty_sentiment_summary() -> Dict[str, Any]:
-    return {
-        "articles": 0,
-        "risk": 0.0,
-        "positive": 0.0,
-        "uncertainty": 0.0,
-        "net": 0.0,
-        "score": 0.0,
-        "riskScore": 0.0,
-        "posScore": 0.0,
-        "uncScore": 0.0,
-        "positive_count": 0,
-        "negative_count": 0,
-        "neutral_count": 0,
-        "mixed_count": 0,
-        "unknown_count": 0,
-    }
-
-
-def build_sentiment_summary(repo: Path, date: str) -> Dict[str, Any]:
-    p = sentiment_path(repo, date)
-    if not p.exists():
-        return _empty_sentiment_summary()
-
-    try:
-        sent = read_json_safe(p)
-    except Exception:
-        return _empty_sentiment_summary()
-
-    today = sent.get("today") if isinstance(sent, dict) else {}
-    summary = sent.get("summary") if isinstance(sent, dict) else {}
-    if not isinstance(today, dict):
-        today = {}
-    if not isinstance(summary, dict):
-        summary = {}
-
-    label_counts = today.get("label_counts") if isinstance(today.get("label_counts"), dict) else {}
-    if not label_counts:
-        label_counts = {
-            "positive": int(summary.get("positive") or 0),
-            "negative": int(summary.get("negative") or 0),
-            "neutral": int(summary.get("neutral") or 0),
-            "mixed": int(summary.get("mixed") or 0),
-            "unknown": int(summary.get("unknown") or 0),
-        }
-
-    return {
-        "articles": int(today.get("articles") or 0),
-        "risk": to_float(today.get("risk")),
-        "positive": to_float(today.get("positive")),
-        "uncertainty": to_float(today.get("uncertainty")),
-        "net": to_float(today.get("net")),
-        "score": to_float(today.get("score", today.get("net"))),
-        "riskScore": to_float(today.get("risk", 0.0)),
-        "posScore": to_float(today.get("positive", 0.0)),
-        "uncScore": to_float(today.get("uncertainty", 0.0)),
-        "positive_count": int(label_counts.get("positive") or 0),
-        "negative_count": int(label_counts.get("negative") or 0),
-        "neutral_count": int(label_counts.get("neutral") or 0),
-        "mixed_count": int(label_counts.get("mixed") or 0),
-        "unknown_count": int(label_counts.get("unknown") or 0),
-    }
-
-
-def attach_sentiment(repo: Path, date: str, cards: List["Card"]) -> None:
-    p = sentiment_path(repo, date)
-    if not p.exists():
-        return
-
-    try:
-        sent = read_json_safe(p)
-        by_url, by_key = build_sentiment_index(sent)
-    except Exception:
-        return
-
-    for c in cards:
-        hit: Optional[Dict[str, Any]] = None
-        if c.url and c.url in by_url:
-            hit = by_url.get(c.url)
-
-        if hit is None:
-            title_key = norm_space((c.title or "")).lower()
-            source_key = norm_space((c.source or "")).lower()
-            if title_key and source_key:
-                hit = by_key.get(f"{source_key}::{title_key}")
-            if hit is None and title_key:
-                hit = by_key.get(title_key)
-
-        if hit is None:
-            continue
-
-        label = str(hit.get("sentiment") or hit.get("sentiment_label") or "unknown").strip().lower()
-        c.sentiment = {
-            "risk": to_float(hit.get("risk", hit.get("risk_score"))),
-            "positive": to_float(hit.get("positive", hit.get("positive_score"))),
-            "uncertainty": to_float(hit.get("uncertainty", hit.get("uncertainty_score"))),
-            "net": to_float(hit.get("net")),
-            "score": to_float(hit.get("score", hit.get("net"))),
-            "sentiment": label,
-            "sentiment_label": label,
-        }
-
-
-# ---------------------------
-# ViewModel models
-# ---------------------------
-
-@dataclass
-class Card:
-    title: str
-    summary: str
-    source: Optional[str] = None
-    url: Optional[str] = None
-    image: Optional[str] = None
-    tags: Optional[List[str]] = None
-    sentiment: Optional[Dict[str, Any]] = None
-
-    def to_dict(self) -> Dict[str, Any]:
-        d = {
-            "title": self.title,
-            "summary": self.summary,
-            "source": self.source,
-            "url": self.url,
-            "image": self.image,
-            "tags": self.tags or [],
-        }
-        if self.sentiment is not None:
-            d["sentiment"] = self.sentiment
-        return d
-
-
-@dataclass
-class Section:
-    id: str
-    title: str
-    status: str
-    cards: List[Card]
-    notes: Optional[str] = None
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "id": self.id,
-            "title": self.title,
-            "status": self.status,
-            "cards": [c.to_dict() for c in self.cards],
-            "notes": self.notes,
-        }
-
-
-# ---------------------------
-# Extractors (JSON fallback)
-# ---------------------------
-
-def build_cards_from_json(obj: Any, max_cards: int) -> List[Card]:
-    cards: List[Card] = []
-
-    if isinstance(obj, dict):
-        if isinstance(obj.get("cards"), list):
-            for it in obj["cards"][:max_cards]:
-                if not isinstance(it, dict):
-                    continue
-                url = it.get("url") if isinstance(it.get("url"), str) else None
-                src = it.get("source") or host_of(url)
-                cards.append(
-                    Card(
-                        title=str(it.get("title") or "Untitled"),
-                        summary=str(it.get("summary") or ""),
-                        source=src if isinstance(src, str) else None,
-                        url=url,
-                        image=it.get("image") if isinstance(it.get("image"), str) else None,
-                        tags=it.get("tags") if isinstance(it.get("tags"), list) else [],
-                    )
-                )
-            return cards
-
-        for key in ("items", "news", "articles", "entries"):
-            if isinstance(obj.get(key), list):
-                for it in obj[key][:max_cards]:
-                    if not isinstance(it, dict):
-                        continue
-                    title = it.get("title") or it.get("headline") or it.get("name") or "Untitled"
-                    summary = it.get("summary") or it.get("description") or it.get("snippet") or ""
-                    url = it.get("url") if isinstance(it.get("url"), str) else None
-                    src = it.get("source") or host_of(url)
-                    cards.append(
-                        Card(
-                            title=str(title),
-                            summary=str(summary),
-                            source=src if isinstance(src, str) else None,
-                            url=url,
-                            image=(it.get("image") or it.get("image_path")) if isinstance((it.get("image") or it.get("image_path")), str) else None,
-                            tags=it.get("tags") if isinstance(it.get("tags"), list) else [],
-                        )
-                    )
-                return cards
-
-        headline = obj.get("headline") or obj.get("title")
-        bullets = obj.get("bullets") or obj.get("highlights") or obj.get("summary_bullets")
-        if headline and isinstance(bullets, list):
-            summary = "\n".join(f"- {str(b)}" for b in bullets[:8])
-            cards.append(Card(title=str(headline), summary=summary))
-            return cards
-
-    return cards
-
-
-# ---------------------------
-# Extractors (HTML digest → news cards)
-# ---------------------------
-
-@dataclass
-class _CardCtx:
-    depth: int
-    first_href: Optional[str] = None
-    first_img: Optional[str] = None
-    title_text: str = ""
-    summary_text: str = ""
-    tags: List[str] = None
-    domain_text: str = ""
-    _in_a: bool = False
-    _in_p: bool = False
-    _in_h: bool = False
-    _span_class: str = ""
-
-    def __post_init__(self):
-        if self.tags is None:
-            self.tags = []
-
-
-class DigestCardHTMLParser(HTMLParser):
-    def __init__(self, max_cards: int):
-        super().__init__(convert_charrefs=True)
-        self.max_cards = max_cards
-        self.stack_depth = 0
-        self.cards: List[Card] = []
-        self.ctx: Optional[_CardCtx] = None
-
-    def handle_starttag(self, tag: str, attrs: List[Tuple[str, Optional[str]]]):
-        self.stack_depth += 1
-        a = dict(attrs)
-        cls = (a.get("class") or "").lower()
-
-        def start_new_card() -> None:
-            self.ctx = _CardCtx(depth=self.stack_depth)
-
-        if self.ctx is None:
-            if tag.lower() == "article":
-                start_new_card()
-            elif tag.lower() == "div" and "card" in cls:
-                start_new_card()
-
-        if self.ctx is not None:
-            if tag.lower() == "a":
-                href = a.get("href")
-                if self.ctx.first_href is None and isinstance(href, str) and href.strip():
-                    self.ctx.first_href = href.strip()
-                self.ctx._in_a = True
-            elif tag.lower() in ("h1", "h2", "h3", "h4"):
-                self.ctx._in_h = True
-            elif tag.lower() == "p":
-                self.ctx._in_p = True
-            elif tag.lower() == "img":
-                src = a.get("src")
-                if self.ctx.first_img is None and isinstance(src, str) and src.strip():
-                    self.ctx.first_img = src.strip()
-            elif tag.lower() == "span":
-                self.ctx._span_class = (a.get("class") or "").lower()
-
-    def handle_endtag(self, tag: str):
-        if self.ctx is not None:
-            if tag.lower() == "a":
-                self.ctx._in_a = False
-            elif tag.lower() in ("h1", "h2", "h3", "h4"):
-                self.ctx._in_h = False
-            elif tag.lower() == "p":
-                self.ctx._in_p = False
-            elif tag.lower() == "span":
-                self.ctx._span_class = ""
-
-            if self.stack_depth == self.ctx.depth and tag.lower() in ("div", "article"):
-                self._finalize_ctx()
-                self.ctx = None
-
-        self.stack_depth = max(0, self.stack_depth - 1)
-
-    def handle_data(self, data: str):
-        if self.ctx is None:
-            return
-        t = norm_space(data)
-        if not t:
-            return
-
-        sc = self.ctx._span_class
-        if sc:
-            if "domain" in sc and len(t) <= 80:
-                if not self.ctx.domain_text:
-                    self.ctx.domain_text = t
-                return
-            if any(k in sc for k in ("tag", "pill", "chip", "badge")) and 1 <= len(t) <= 30:
-                if t not in self.ctx.tags:
-                    self.ctx.tags.append(t)
-                return
-
-        if self.ctx._in_h and len(t) >= 6:
-            if not self.ctx.title_text:
-                self.ctx.title_text = t
-            return
-
-        if self.ctx._in_a and len(t) >= 8:
-            if not self.ctx.title_text:
-                self.ctx.title_text = t
-            return
-
-        if self.ctx._in_p and not self.ctx.summary_text:
-            if len(t) >= 20:
-                self.ctx.summary_text = t
-
-    def _finalize_ctx(self):
-        if len(self.cards) >= self.max_cards:
-            return
-        c = self.ctx
-        if c is None:
-            return
-
-        url = c.first_href
-        src = c.domain_text or host_of(url)
-        title = short(c.title_text or "Untitled", 180)
-        summary = short(c.summary_text or "", 520)
-
-        if title.lower() in ("open", "read", "link"):
-            title = "Untitled"
-
-        if title == "Untitled" and not summary and not url:
-            return
-
-        self.cards.append(
-            Card(
-                title=title,
-                summary=summary,
-                source=src,
-                url=url,
-                image=c.first_img,
-                tags=c.tags[:10],
-            )
-        )
-
-
-def build_cards_from_html_digest(html: str, max_cards: int) -> List[Card]:
-    p = DigestCardHTMLParser(max_cards=max_cards)
-    p.feed(html)
-    cards = p.cards
-
-    if cards:
-        return cards[:max_cards]
-
-    links = re.findall(r'<a\b[^>]*href="([^"]+)"[^>]*>(.*?)</a>', html, flags=re.IGNORECASE | re.DOTALL)
-    out: List[Card] = []
-    for url, txt in links:
-        t = norm_space(re.sub(r"<[^>]+>", " ", txt))
-        if len(t) < 16:
-            continue
-        out.append(Card(title=short(t, 180), summary="", source=host_of(url), url=url))
-        if len(out) >= max_cards:
-            break
-    return out[:max_cards]
-
-
-# ---------------------------
-# Source locating
-# ---------------------------
-
-def locate_world_politics_sources(repo: Path, date: str) -> Tuple[Optional[Path], Optional[Path]]:
-    base = repo / "data" / "world_politics" / "analysis"
-    if not base.exists():
-        return None, None
-
-    date_files = [p for p in base.glob("*") if date in p.name]
-
-    html_candidates = [p for p in date_files if p.suffix.lower() in (".html", ".htm")]
-    json_candidates = [p for p in date_files if p.suffix.lower() == ".json"]
-
-    def score_html(p: Path) -> int:
-        n = p.name.lower()
-        s = 0
-        if "daily_news" in n:
-            s += 100
-        if "digest" in n:
-            s += 30
-        return s
-
-    def score_json(p: Path) -> int:
-        n = p.name.lower()
-        s = 0
-        if "view" in n:
-            s += 80
-        if "daily_summary" in n:
-            s += 60
-        if "summary" in n:
-            s += 20
-        return s
-
-    html_candidates.sort(key=lambda p: (score_html(p), p.stat().st_mtime), reverse=True)
-    json_candidates.sort(key=lambda p: (score_json(p), p.stat().st_mtime), reverse=True)
-
-    return (
-        html_candidates[0] if html_candidates else None,
-        json_candidates[0] if json_candidates else None,
-    )
-
-
-def build_world_politics_section(repo: Path, date: str, max_cards: int) -> Section:
-    title = "World Politics"
-    try:
-        html_src, json_src = locate_world_politics_sources(repo, date)
-
-        cards: List[Card] = []
-        notes_parts: List[str] = []
-
-        if html_src and html_src.exists():
-            notes_parts.append(f"source_html={html_src.as_posix()}")
-            html_txt = read_text_safe(html_src)
-            cards = build_cards_from_html_digest(html_txt, max_cards=max_cards)
-
-        if not cards and json_src and json_src.exists():
-            notes_parts.append(f"source_json={json_src.as_posix()}")
-            obj = read_json_safe(json_src)
-            cards = build_cards_from_json(obj, max_cards=max_cards)
-
-        if cards:
-            attach_images(repo, date, cards)
-            attach_sentiment(repo, date, cards)
-
-        status = "ok" if cards else "na"
-        if not cards:
-            if not html_src and not json_src:
-                notes_parts.append("no_date_matched_sources_found_in=data/world_politics/analysis")
-            else:
-                notes_parts.append("no_cards_extracted_from_sources")
-
-        notes = "; ".join(notes_parts) if notes_parts else None
-        return Section(id="world_politics", title=title, status=status, cards=cards, notes=notes)
-
-    except Exception as e:
-        return Section(
-            id="world_politics",
-            title=title,
-            status="error",
-            cards=[],
-            notes=f"exception={type(e).__name__}: {e}",
-        )
-
-
-# ---------------------------
-# Output paths
-# ---------------------------
-
-def view_output_path(repo: Path, date: str) -> Path:
-    return repo / "data" / "digest" / "view" / f"{date}.json"
-
-
-def latest_output_paths(repo: Path) -> List[Path]:
-    return [
-        repo / "data" / "digest" / "view_model_latest.json",
-        repo / "data" / "digest" / "view" / "view_model_latest.json",
+def extract_summary_text(summary_json: Dict[str, Any], daily_summary_json: Dict[str, Any]) -> Optional[str]:
+    """
+    Prefer the analyzer's summary.json text.
+    Fall back to daily_summary_latest.json only if it already contains a real summary-like field.
+    """
+    candidates: List[Any] = [
+        summary_json.get("summary"),
+        summary_json.get("text"),
+        summary_json.get("daily_summary"),
+        summary_json.get("body"),
+        summary_json.get("content"),
     ]
 
+    overview = summary_json.get("overview")
+    if isinstance(overview, dict):
+        candidates.extend([
+            overview.get("summary"),
+            overview.get("text"),
+            overview.get("body"),
+        ])
 
-def detect_latest_date(repo: Path) -> Optional[str]:
-    base = repo / "data" / "world_politics" / "analysis"
-    if not base.exists():
-        return None
+    daily_candidates: List[Any] = [
+        daily_summary_json.get("summary"),
+        daily_summary_json.get("text"),
+        daily_summary_json.get("daily_summary"),
+        daily_summary_json.get("summary_text"),
+        daily_summary_json.get("body"),
+        daily_summary_json.get("content"),
+    ]
 
-    candidates: List[Tuple[str, Path]] = []
-    for p in base.glob("*"):
-        d = extract_date_from_filename(p.name)
-        if d:
-            candidates.append((d, p))
+    yesterday_summary = daily_summary_json.get("yesterday_summary")
+    if isinstance(yesterday_summary, dict):
+        daily_candidates.extend([
+            yesterday_summary.get("summary"),
+            yesterday_summary.get("text"),
+            yesterday_summary.get("body"),
+        ])
 
-    if not candidates:
-        return None
-
-    candidates.sort(key=lambda t: (t[1].stat().st_mtime, t[0]), reverse=True)
-    return candidates[0][0]
-
-
-def parse_args() -> argparse.Namespace:
-    ap = argparse.ArgumentParser(description="Build Digest ViewModel v1 JSON (World Politics first).")
-    ap.add_argument(
-        "--date",
-        help="Target date in YYYY-MM-DD. If omitted, tries to detect latest date from data/world_politics/analysis filenames.",
-        default=None,
-    )
-    ap.add_argument(
-        "--section",
-        help="Section id to build. Default: world_politics",
-        default=DEFAULT_SECTION_ID,
-    )
-    ap.add_argument("--max-cards", type=int, default=24, help="Max cards per section (default: 24).")
-    return ap.parse_args()
+    return first_non_empty(*(candidates + daily_candidates))
 
 
-def main() -> int:
-    args = parse_args()
-    repo = find_repo_root(Path(__file__).resolve())
+def extract_titles(news_json: Dict[str, Any], daily_summary_json: Dict[str, Any]) -> List[str]:
+    titles: List[str] = []
 
-    date = args.date
-    if date is None:
-        date = detect_latest_date(repo)
-        if date is None:
-            raise SystemExit(
-                "[ERROR] --date not provided and cannot detect date from data/world_politics/analysis. "
-                "Provide --date YYYY-MM-DD."
-            )
-    date = validate_date(date)
+    for key in ("events", "items", "articles", "news"):
+        items = news_json.get(key)
+        if isinstance(items, list):
+            for item in items:
+                if isinstance(item, dict):
+                    title = first_non_empty(
+                        item.get("title"),
+                        item.get("headline"),
+                        item.get("name"),
+                    )
+                    if title:
+                        titles.append(title)
 
-    section_id = (args.section or DEFAULT_SECTION_ID).strip()
-    if section_id != "world_politics":
-        sections = [
-            Section(
-                id=section_id,
-                title=section_id.replace("_", " ").title(),
-                status="na",
-                cards=[],
-                notes="section_not_implemented_yet (world_politics is implemented first)",
-            )
-        ]
-    else:
-        sections = [build_world_politics_section(repo, date=date, max_cards=args.max_cards)]
+    yesterday_summary = daily_summary_json.get("yesterday_summary")
+    if isinstance(yesterday_summary, dict):
+        ys_titles = yesterday_summary.get("titles")
+        if isinstance(ys_titles, list):
+            for title in ys_titles:
+                if isinstance(title, str) and title.strip():
+                    titles.append(title.strip())
 
-    sentiment_summary = build_sentiment_summary(repo, date)
-    summary_text = build_summary_text(repo, date)
+    seen = set()
+    unique_titles: List[str] = []
+    for title in titles:
+        if title not in seen:
+            seen.add(title)
+            unique_titles.append(title)
+    return unique_titles
 
-    view_model: Dict[str, Any] = {
-        "version": VERSION,
-        "date": date,
-        "summary": summary_text,
-        "sections": [s.to_dict() for s in sections],
+
+def extract_highlights(summary_json: Dict[str, Any], daily_summary_json: Dict[str, Any], titles: List[str]) -> List[str]:
+    highlights: List[str] = []
+
+    for key in ("highlights", "bullets", "key_points"):
+        value = summary_json.get(key)
+        if isinstance(value, list):
+            for item in value:
+                if isinstance(item, str) and item.strip():
+                    highlights.append(item.strip())
+
+    anchors = daily_summary_json.get("anchors")
+    if isinstance(anchors, list):
+        anchor_line = ", ".join(str(x).strip() for x in anchors if str(x).strip())
+        if anchor_line:
+            highlights.append(f"Anchors: {anchor_line}")
+
+    if not highlights:
+        highlights.extend(titles[:5])
+
+    return highlights[:8]
+
+
+def build_payload(
+    date_value: str,
+    summary_text: Optional[str],
+    titles: List[str],
+    highlights: List[str],
+    daily_summary_json: Dict[str, Any],
+) -> Dict[str, Any]:
+    new_urls = daily_summary_json.get("new_urls")
+    if not isinstance(new_urls, list):
+        new_urls = []
+
+    n_events = daily_summary_json.get("n_events")
+    if not isinstance(n_events, int):
+        n_events = len(titles)
+
+    return {
+        "status": "ok",
+        "generated_at": now_iso(),
+        "date": date_value,
+        "summary": summary_text or "",
+        "summary_available": bool(summary_text),
+        "highlights": highlights,
+        "articles": titles[:12],
         "meta": {
-            "generated_at": iso_now_local(),
-            "generator": "digest",
-            "source": "analyzer",
-        },
-        "sentiment_summary": sentiment_summary,
-        "today": {
-            "summary": summary_text,
-            "sentiment": sentiment_summary,
-            "sentiment_summary": sentiment_summary,
+            "n_events": n_events,
+            "new_url_count": len(new_urls),
         },
     }
 
-    out_path = view_output_path(repo, date)
-    ensure_dir(out_path.parent)
-    out_path.write_text(json.dumps(view_model, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    for latest_path in latest_output_paths(repo):
-        ensure_dir(latest_path.parent)
-        latest_path.write_text(json.dumps(view_model, ensure_ascii=False, indent=2), encoding="utf-8")
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Build digest view model.")
+    parser.add_argument("--date", required=True, help="Target local date YYYY-MM-DD")
+    parser.add_argument("--root", default=".", help="Repository root")
+    args = parser.parse_args()
 
-    print(f"[OK] wrote dated : {out_path.as_posix()}")
-    for latest_path in latest_output_paths(repo):
-        print(f"[OK] wrote latest: {latest_path.as_posix()}")
-    if summary_text:
-        print(f"[OK] summary attached ({len(summary_text)} chars)")
+    root = Path(args.root).resolve()
+
+    analysis_dir = root / "data" / "world_politics" / "analysis"
+    digest_dir = root / "data" / "digest"
+    digest_view_dir = digest_dir / "view"
+
+    daily_news_path = analysis_dir / f"daily_news_{args.date}.json"
+    daily_summary_latest_path = analysis_dir / "daily_summary_latest.json"
+    summary_json_path = analysis_dir / "summary.json"
+
+    daily_news_json = load_json(daily_news_path)
+    daily_summary_json = load_json(daily_summary_latest_path)
+    summary_json = load_json(summary_json_path)
+
+    summary_text = extract_summary_text(summary_json, daily_summary_json)
+    titles = extract_titles(daily_news_json, daily_summary_json)
+    highlights = extract_highlights(summary_json, daily_summary_json, titles)
+
+    payload = build_payload(
+        date_value=args.date,
+        summary_text=summary_text,
+        titles=titles,
+        highlights=highlights,
+        daily_summary_json=daily_summary_json,
+    )
+
+    dated_path = digest_view_dir / f"{args.date}.json"
+    latest_path_a = digest_dir / "view_model_latest.json"
+    latest_path_b = digest_view_dir / "view_model_latest.json"
+
+    write_json(dated_path, payload)
+    write_json(latest_path_a, payload)
+    write_json(latest_path_b, payload)
+
+    print(f"[OK] wrote dated : {dated_path.as_posix()}")
+    print(f"[OK] wrote latest: {latest_path_a.as_posix()}")
+    print(f"[OK] wrote latest: {latest_path_b.as_posix()}")
+
+    if payload["summary_available"]:
+        print("[OK] summary loaded")
     else:
-        print("[WARN] summary missing (daily_summary text not found)")
-    return 0
+        print("[WARN] summary missing (summary.json / daily_summary_latest.json text not found)")
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
