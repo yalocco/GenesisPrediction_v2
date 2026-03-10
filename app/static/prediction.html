@@ -1,687 +1,427 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Prediction - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260308-ui2" />
-  <script src="/static/common/layout.js?v=20260308-ui2"></script>
-  <script src="/static/common/global_status.js?v=20260308-ui2"></script>
+  <meta name="description" content="GenesisPrediction Prediction UI">
+  <link rel="stylesheet" href="./app.css">
   <style>
-    .pred-hero{margin-bottom:14px;}
-
-    .status-shell{
-      margin-top:14px;
-      padding:14px 16px;
-      border-radius:18px;
-      border:1px solid rgba(120,160,220,.18);
-      background:linear-gradient(180deg, rgba(10,16,30,.66), rgba(7,12,24,.48));
-      box-shadow:0 12px 30px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.04);
-    }
-    .status-top{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      flex-wrap:wrap;
-      margin-bottom:10px;
-    }
-    .status-title{
-      font-size:12px;
-      letter-spacing:.18em;
-      text-transform:uppercase;
-      opacity:.82;
-    }
-    .status-grid{
-      display:grid;
-      grid-template-columns:repeat(5,minmax(0,1fr));
-      gap:12px;
-    }
-    .status-item{
-      min-width:0;
-      border:1px solid rgba(120,160,220,.12);
-      border-radius:14px;
-      padding:12px 12px 10px;
-      background:rgba(8,14,28,.22);
-    }
-    .status-label{
-      font-size:11px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      opacity:.72;
-      margin-bottom:6px;
-    }
-    .status-value{
-      font-size:24px;
-      line-height:1.05;
-      font-weight:700;
-      letter-spacing:-.02em;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      color:#eef4ff;
-      transition:color .18s ease, text-shadow .18s ease;
-    }
-    .status-sub{
-      margin-top:4px;
-      font-size:12px;
-      opacity:.72;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .risk-low{color:#7eb6ff;text-shadow:0 0 18px rgba(126,182,255,.14);}
-    .risk-guarded,.risk-medium{color:#f6c760;text-shadow:0 0 18px rgba(246,199,96,.12);}
-    .risk-elevated{color:#ff9f5a;text-shadow:0 0 18px rgba(255,159,90,.14);}
-    .risk-high{color:#ff7d7d;text-shadow:0 0 18px rgba(255,125,125,.14);}
-    .risk-critical{color:#ff4d88;text-shadow:0 0 18px rgba(255,77,136,.14);}
-    .risk-missing{color:#d7ddeb;}
-
-    .pred-summary-grid{
-      display:grid;
-      grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);
-      gap:16px;
-      margin-top:14px;
-      align-items:stretch;
-    }
-    .pred-card{min-width:0;}
-    .pred-lead,
-    .pred-side-card{
-      height:100%;
-      display:flex;
-      flex-direction:column;
-    }
-    .pred-title{
-      font-size:12px;
-      letter-spacing:.12em;
-      text-transform:uppercase;
-      opacity:.75;
-      margin-bottom:8px;
-    }
-    .pred-headline{
-      font-size:34px;
-      line-height:1.08;
-      letter-spacing:-.03em;
-      font-weight:800;
-      margin:0 0 10px;
-    }
-    .pred-summary{
-      color:var(--soft,#c8d7f6);
-      font-size:15px;
-      line-height:1.8;
-      margin:0;
-      white-space:pre-wrap;
-      word-break:break-word;
-      flex:1;
-    }
-    .pred-pills{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      margin-top:16px;
-    }
-    .pred-pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:8px 12px;
-      border-radius:999px;
-      border:1px solid rgba(120,160,220,.14);
-      background:rgba(255,255,255,.025);
-      font-size:13px;
-      color:var(--soft,#c8d7f6);
-    }
-
-    .pred-side-stack{
-      display:flex;
-      flex-direction:column;
-      gap:14px;
-      flex:1;
-    }
-    .pred-metric{
-      padding:16px;
-      border-radius:18px;
-      border:1px solid rgba(120,160,220,.14);
-      background:rgba(8,14,28,.18);
-    }
-    .pred-metric .label{
-      font-size:12px;
-      letter-spacing:.1em;
-      text-transform:uppercase;
-      opacity:.72;
-      margin-bottom:8px;
-    }
-    .pred-metric .value{
-      font-size:30px;
-      line-height:1.02;
-      font-weight:800;
-      letter-spacing:-.03em;
-    }
-    .pred-metric .sub{
-      margin-top:8px;
-      font-size:13px;
-      color:var(--soft,#c8d7f6);
-    }
-    .confidence{
-      display:grid;
-      grid-template-columns:1fr auto;
-      gap:10px;
-      align-items:center;
-    }
-    .bar{
-      height:10px;
-      border-radius:999px;
-      background:rgba(255,255,255,.06);
-      overflow:hidden;
-      border:1px solid rgba(255,255,255,.03);
-    }
-    .bar > span{
-      display:block;
-      height:100%;
-      width:0%;
-      border-radius:999px;
-      background:linear-gradient(90deg,#81b7ff,#b29dff);
-      transition:width .35s ease;
-    }
-
-    .pred-kpis{
-      display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:12px;
-      margin-top:14px;
-    }
-    .pred-kpi{
-      border:1px solid rgba(120,160,220,.16);
-      border-radius:16px;
-      padding:14px 16px;
-      background:rgba(8,14,28,.18);
-      min-height:86px;
-    }
-    .pred-kpi .value{
-      font-size:31px;
-      line-height:1.05;
-      letter-spacing:-0.02em;
-      font-weight:600;
-    }
-
-    .grid2{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:16px;
-      margin-top:16px;
-    }
-    .sectionTitle{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      margin-bottom:12px;
-    }
-    .sectionTitle h2{
-      margin:0;
-      font-size:18px;
-      line-height:1.2;
-    }
-
-    .scenario-list,.list{
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-    }
-    .scenario{
-      padding:16px;
-      border-radius:18px;
-      border:1px solid rgba(120,160,220,.12);
-      background:rgba(255,255,255,.02);
-    }
-    .scenario-top{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      margin-bottom:10px;
-    }
-    .scenario-name{
-      font-size:15px;
-      font-weight:800;
-      letter-spacing:.02em;
-      text-transform:capitalize;
-    }
-    .scenario-prob{
-      color:var(--soft,#c8d7f6);
-      font-weight:700;
-      font-size:13px;
-    }
-    .scenario-summary{
-      color:var(--soft,#c8d7f6);
-      margin:0 0 12px;
-      white-space:pre-wrap;
-    }
-    .mini-bar{
-      height:8px;
-      border-radius:999px;
-      background:rgba(255,255,255,.05);
-      overflow:hidden;
-      margin-bottom:10px;
-    }
-    .mini-bar > span{
-      display:block;
-      height:100%;
-      width:0%;
-      border-radius:999px;
-      background:linear-gradient(90deg,#8cc0ff,#c1b8ff);
-      transition:width .35s ease;
-    }
-
-    .list-item{
-      display:flex;
-      gap:12px;
-      align-items:flex-start;
-      padding:12px;
-      border-radius:16px;
-      background:rgba(255,255,255,.02);
-      border:1px solid rgba(120,160,220,.12);
-    }
-    .bullet{
-      width:28px;
-      height:28px;
-      flex:0 0 28px;
-      border-radius:10px;
-      display:grid;
-      place-items:center;
-      color:#06111f;
-      font-size:12px;
-      font-weight:900;
-      background:linear-gradient(135deg,#9ec7ff,#c5b8ff);
-    }
-    .list-item strong{
-      display:block;
-      margin-bottom:2px;
-      font-size:13px;
-    }
-    .list-item span{
-      color:var(--soft,#c8d7f6);
-      font-size:13px;
-      white-space:pre-wrap;
-    }
-
-    .empty{
-      display:none;
-      padding:22px;
-      border-radius:22px;
-      border:1px dashed rgba(130,170,255,.24);
-      background:rgba(255,255,255,.02);
-      color:var(--soft,#c8d7f6);
-      margin-top:16px;
-    }
-
-    .pred-foot{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:12px;
-      color:var(--muted,#9db0d6);
-      font-size:12px;
-      padding:10px 2px 0;
-      margin-top:10px;
-      flex-wrap:wrap;
-    }
-
-    @media (max-width:1100px){
-      .status-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
-      .pred-summary-grid{grid-template-columns:1fr;}
-      .pred-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}
-      .grid2{grid-template-columns:1fr;}
-    }
-    @media (max-width:700px){
-      .status-grid{grid-template-columns:1fr;}
-      .pred-kpis{grid-template-columns:1fr;}
-      .pred-headline{font-size:28px;}
-    }
+    .prediction-page{display:grid;gap:18px;padding:20px 0 32px}
+    .hero-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(320px,.95fr);gap:16px;align-items:stretch}
+    .hero-copy,.hero-callout,.section-stack,.list-stack,.timeline-list,.probability-stack,.signal-grid,.trend-stack{display:grid;gap:12px}
+    .eyebrow,.meta-pill,.mini-pill,.risk-chip,.confidence-chip,.list-badge,.timeline-badge,.signal-badge,.trend-badge{display:inline-flex;align-items:center;justify-content:center;width:max-content}
+    .eyebrow{gap:8px;padding:6px 10px;border:1px solid rgba(255,255,255,.08);border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;opacity:.86;background:rgba(255,255,255,.03)}
+    .page-title,.hero-callout-title,.section-title,.metric-label,.detail-title,.scenario-title,.signal-title,.trend-title{margin:0}
+    .page-title{font-size:clamp(28px,4vw,42px);line-height:1.08}
+    .page-summary,.hero-callout-summary,.summary-text,.section-subtitle,.detail-text,.list-row p,.timeline-row p,.scenario-text,.empty-text,.signal-text,.trend-text{margin:0;color:var(--text-muted,rgba(255,255,255,.74));line-height:1.7}
+    .hero-meta,.pill-row{display:flex;flex-wrap:wrap;gap:10px}
+    .meta-pill,.mini-pill{gap:8px;min-height:36px;padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.035);font-size:13px}
+    .meta-pill strong,.mini-pill strong{font-size:12px;text-transform:uppercase;letter-spacing:.04em;opacity:.7}
+    .hero-side{display:grid;gap:14px;grid-template-rows:auto 1fr}
+    .risk-chip{min-width:110px;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.045)}
+    .risk-chip.risk-low{color:#7dd3fc}.risk-chip.risk-guarded{color:#c4b5fd}.risk-chip.risk-elevated{color:#facc15}.risk-chip.risk-high{color:#fb923c}.risk-chip.risk-critical{color:#f87171}
+    .hero-notice{display:grid;gap:10px;padding:14px 16px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.025)}
+    .hero-notice-label,.metric-label,.detail-eyebrow,.scenario-meta,.timeline-meta,.empty-meta,.signal-meta,.trend-meta{font-size:12px;text-transform:uppercase;letter-spacing:.05em;opacity:.68}
+    .hero-notice-value{font-size:18px;font-weight:700}
+    .kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .metric-card,.detail-card,.scenario-card,.empty-card,.signal-card,.trend-card{display:grid;gap:10px;align-content:start}
+    .metric-value{font-size:30px;line-height:1;font-weight:800;letter-spacing:-.03em}
+    .metric-sub{font-size:13px;line-height:1.6;color:var(--text-muted,rgba(255,255,255,.72))}
+    .content-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);gap:16px;align-items:stretch}
+    .section-header,.panel-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+    .summary-card{display:grid;gap:16px}.summary-text{line-height:1.85;font-size:15px;color:var(--text-muted,rgba(255,255,255,.78))}
+    .detail-grid,.scenario-grid,.bottom-grid,.mid-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+    .detail-card .detail-title,.scenario-card .scenario-title,.timeline-title,.signal-title,.trend-title{font-size:16px;font-weight:700}
+    .plain-list,.scenario-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+    .list-row,.plain-list li,.scenario-list li,.timeline-row,.probability-row,.signal-card,.trend-card{display:grid;gap:8px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.03)}
+    .list-row,.timeline-row,.probability-row{align-items:flex-start}
+    .list-row{grid-template-columns:auto 1fr}.timeline-row{grid-template-columns:auto 1fr;gap:12px}.probability-row{grid-template-columns:auto 1fr auto;align-items:center;gap:12px}
+    .list-badge,.timeline-badge,.signal-badge,.trend-badge{min-width:34px;height:28px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);font-size:12px;font-weight:700;line-height:1;letter-spacing:.03em}
+    .probability-label{font-weight:700}.progress-track{position:relative;height:10px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.08)}.progress-bar{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,rgba(96,165,250,.95),rgba(59,130,246,.55))}.probability-value{font-size:13px;font-weight:700;opacity:.86}
+    .scenario-card{grid-template-rows:auto auto 1fr auto}.scenario-meta,.signal-meta,.trend-meta,.scenario-title-row,.signal-title-row,.trend-title-row,.timeline-title-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.scenario-probability,.signal-strength,.trend-strength{font-size:13px;font-weight:700;opacity:.86}
+    .scenario-card.scenario-best{border-color:rgba(96,165,250,.28);box-shadow:inset 0 0 0 1px rgba(96,165,250,.08)}
+    .scenario-card.scenario-base{border-color:rgba(255,255,255,.10)}
+    .scenario-card.scenario-worst{border-color:rgba(248,113,113,.28);box-shadow:inset 0 0 0 1px rgba(248,113,113,.08)}
+    .scenario-card.scenario-best .scenario-meta span:first-child,.scenario-card.scenario-best .scenario-probability{color:#93c5fd}
+    .scenario-card.scenario-base .scenario-meta span:first-child,.scenario-card.scenario-base .scenario-probability{color:rgba(255,255,255,.9)}
+    .scenario-card.scenario-worst .scenario-meta span:first-child,.scenario-card.scenario-worst .scenario-probability{color:#fca5a5}
+    .confidence-chip{gap:8px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);font-size:12px;font-weight:700;color:#93c5fd}
+    .signal-card.signal-low,.signal-card.signal-stable{border-color:rgba(125,211,252,.24);box-shadow:inset 0 0 0 1px rgba(125,211,252,.07)}
+    .signal-card.signal-guarded{border-color:rgba(196,181,253,.24);box-shadow:inset 0 0 0 1px rgba(196,181,253,.07)}
+    .signal-card.signal-elevated,.signal-card.signal-warn{border-color:rgba(250,204,21,.24);box-shadow:inset 0 0 0 1px rgba(250,204,21,.07)}
+    .signal-card.signal-high{border-color:rgba(251,146,60,.24);box-shadow:inset 0 0 0 1px rgba(251,146,60,.07)}
+    .signal-card.signal-critical{border-color:rgba(248,113,113,.24);box-shadow:inset 0 0 0 1px rgba(248,113,113,.07)}
+    .signal-card.signal-low .signal-badge,.signal-card.signal-stable .signal-badge{color:#7dd3fc}.signal-card.signal-guarded .signal-badge{color:#c4b5fd}.signal-card.signal-elevated .signal-badge,.signal-card.signal-warn .signal-badge{color:#facc15}.signal-card.signal-high .signal-badge{color:#fb923c}.signal-card.signal-critical .signal-badge{color:#f87171}
+    .empty-card{min-height:160px;justify-content:center;text-align:center}.empty-text{max-width:56ch;justify-self:center}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:0}.muted{color:var(--text-muted,rgba(255,255,255,.72))}
+    @media (max-width:1100px){.hero-grid,.content-grid,.detail-grid,.scenario-grid,.bottom-grid,.mid-grid{grid-template-columns:1fr}}
+    @media (max-width:900px){.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:640px){.prediction-page{gap:14px;padding-top:14px}.kpi-grid,.detail-grid,.scenario-grid,.bottom-grid,.mid-grid{grid-template-columns:1fr}.section-header,.panel-header,.scenario-title-row,.timeline-title-row,.signal-title-row,.trend-title-row{flex-direction:column}.probability-row,.list-row,.timeline-row{grid-template-columns:1fr}}
   </style>
 </head>
-<body>
+<body data-page="prediction">
   <div id="site-header"></div>
-
-  <div class="page container">
-    <main class="gp-main">
-      <div class="gp-page">
-        <section class="panel">
-          <div class="pred-hero">
-            <div class="h1">Prediction</div>
-            <p class="sub">Prediction Runtime の最新出力を読み込み、シナリオ確率・リスク・監視項目を表示します。</p>
-
-            <div class="status-shell">
-              <div class="status-top">
-                <div class="status-title">Global Status</div>
-                <div class="pillrow">
-                  <span id="pillAsOfLocal" class="pill">as_of: --</span>
-                  <span id="pillReadyLocal" class="pill">loading…</span>
-                </div>
-              </div>
-
-              <div class="status-grid">
-                <div class="status-item">
-                  <div class="status-label">Global Risk</div>
-                  <div id="gsRisk" class="status-value risk-missing">—</div>
-                  <div id="gsRiskSub" class="status-sub">daily summary / sentiment</div>
-                </div>
-                <div class="status-item">
-                  <div class="status-label">Sentiment Balance</div>
-                  <div id="gsSentiment" class="status-value">—</div>
-                  <div id="gsSentimentSub" class="status-sub">article distribution</div>
-                </div>
-                <div class="status-item">
-                  <div class="status-label">FX Regime</div>
-                  <div id="gsFx" class="status-value">—</div>
-                  <div id="gsFxSub" class="status-sub">decision / fallback</div>
-                </div>
-                <div class="status-item">
-                  <div class="status-label">Articles</div>
-                  <div id="gsArticles" class="status-value">—</div>
-                  <div id="gsArticlesSub" class="status-sub">digest latest</div>
-                </div>
-                <div class="status-item">
-                  <div class="status-label">Updated</div>
-                  <div id="gsUpdated" class="status-value">—</div>
-                  <div id="gsUpdatedSub" class="status-sub">latest runtime stamp</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="pred-summary-grid">
-            <div class="card pred-card pred-lead">
-              <div class="pred-title">Prediction Dashboard</div>
-              <h2 class="pred-headline" id="summary-title">Future outlook is loading…</h2>
-              <p class="pred-summary" id="summary-text">Reading the latest prediction output and preparing the current risk outlook.</p>
-
-              <div class="pred-pills">
-                <span class="pred-pill"><strong>As of</strong> <span id="as-of">--</span></span>
-                <span class="pred-pill"><strong>Horizon</strong> <span id="horizon">--</span></span>
-                <span class="pred-pill"><strong>Dominant Scenario</strong> <span id="dominant">--</span></span>
-              </div>
-            </div>
-
-            <div class="card pred-card pred-side-card">
-              <div class="pred-side-stack">
-                <div class="pred-metric">
-                  <div class="label">Overall Risk</div>
-                  <div class="value risk-missing" id="overall-risk">--</div>
-                  <div class="sub" id="risk-sub">Waiting for prediction_latest.json</div>
-                </div>
-
-                <div class="pred-metric">
-                  <div class="label">Confidence</div>
-                  <div class="confidence">
-                    <div class="bar"><span id="confidence-bar"></span></div>
-                    <div id="confidence-value">--</div>
-                  </div>
-                </div>
-
-                <div class="pillrow">
-                  <a class="btn" id="json-link" href="/analysis/prediction/prediction_latest.json" target="_blank" rel="noopener noreferrer">Open JSON</a>
-                  <a class="btn" href="/static/prediction_history.html">Open History</a>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="pred-kpis">
-            <div class="pred-kpi">
-              <div class="hint">Best Case</div>
-              <div class="value" id="best-prob">--</div>
-            </div>
-            <div class="pred-kpi">
-              <div class="hint">Base Case</div>
-              <div class="value" id="base-prob">--</div>
-            </div>
-            <div class="pred-kpi">
-              <div class="hint">Worst Case</div>
-              <div class="value" id="worst-prob">--</div>
-            </div>
-            <div class="pred-kpi">
-              <div class="hint">Signal Count</div>
-              <div class="value" id="signal-count">--</div>
-            </div>
-          </div>
-
-          <div class="grid2">
-            <div class="card pred-card">
-              <div class="sectionTitle">
-                <h2>Scenario probabilities</h2>
-                <span class="hint">best / base / worst</span>
-              </div>
-              <div class="scenario-list">
-                <div class="scenario">
-                  <div class="scenario-top">
-                    <div class="scenario-name">Best case</div>
-                    <div class="scenario-prob" id="scenario-best-label">--</div>
-                  </div>
-                  <div class="mini-bar"><span id="scenario-best-bar"></span></div>
-                  <p class="scenario-summary" id="scenario-best-summary">No data yet.</p>
-                </div>
-
-                <div class="scenario">
-                  <div class="scenario-top">
-                    <div class="scenario-name">Base case</div>
-                    <div class="scenario-prob" id="scenario-base-label">--</div>
-                  </div>
-                  <div class="mini-bar"><span id="scenario-base-bar"></span></div>
-                  <p class="scenario-summary" id="scenario-base-summary">No data yet.</p>
-                </div>
-
-                <div class="scenario">
-                  <div class="scenario-top">
-                    <div class="scenario-name">Worst case</div>
-                    <div class="scenario-prob" id="scenario-worst-label">--</div>
-                  </div>
-                  <div class="mini-bar"><span id="scenario-worst-bar"></span></div>
-                  <p class="scenario-summary" id="scenario-worst-summary">No data yet.</p>
-                </div>
-              </div>
-            </div>
-
-            <div class="card pred-card">
-              <div class="sectionTitle">
-                <h2>What to watch</h2>
-                <span class="hint">watchpoints</span>
-              </div>
-              <div class="list" id="watchpoints-list"></div>
-            </div>
-          </div>
-
-          <div class="grid2">
-            <div class="card pred-card">
-              <div class="sectionTitle">
-                <h2>Primary drivers</h2>
-                <span class="hint">drivers</span>
-              </div>
-              <div class="list" id="drivers-list"></div>
-            </div>
-
-            <div class="card pred-card">
-              <div class="sectionTitle">
-                <h2>Invalidation conditions</h2>
-                <span class="hint">watch for breaks</span>
-              </div>
-              <div class="list" id="invalidations-list"></div>
-            </div>
-          </div>
-
-          <div class="card pred-card" style="margin-top:16px;">
-            <div class="sectionTitle">
-              <h2>Key implications</h2>
-              <span class="hint">read-only runtime view</span>
-            </div>
-            <div class="list" id="implications-list"></div>
-          </div>
-
-          <div class="empty" id="empty-state">
-            prediction_latest.json could not be loaded. Check the prediction runtime output and server mapping for <code>/analysis/prediction/prediction_latest.json</code>.
-          </div>
-
-          <div class="pred-foot">
-            <div>Prediction UI is read-only. Logic lives in scripts + prediction outputs.</div>
-            <div id="generated-at">generated_at: --</div>
-          </div>
-        </section>
+  <main class="container prediction-page">
+    <section class="panel global-status-panel" aria-labelledby="global-status-title">
+      <div class="panel-header"><h2 id="global-status-title" class="section-title">Global Status</h2></div>
+      <div class="global-status" data-role="global-status">
+        <article class="status-card" data-slot="1" data-state="loading"><div class="status-label" data-field="label">Date</div><div class="status-value" data-field="value">—</div><div class="status-sub" data-field="sub">loading</div></article>
+        <article class="status-card" data-slot="2" data-state="loading"><div class="status-label" data-field="label">Regime</div><div class="status-value" data-field="value">—</div><div class="status-sub" data-field="sub">loading</div></article>
+        <article class="status-card" data-slot="3" data-state="loading"><div class="status-label" data-field="label">Signal</div><div class="status-value" data-field="value">—</div><div class="status-sub" data-field="sub">loading</div></article>
+        <article class="status-card" data-slot="4" data-state="loading"><div class="status-label" data-field="label">Confidence</div><div class="status-value" data-field="value">—</div><div class="status-sub" data-field="sub">loading</div></article>
+        <article class="status-card" data-slot="5" data-state="loading"><div class="status-label" data-field="label">Health</div><div class="status-value" data-field="value">—</div><div class="status-sub" data-field="sub">loading</div></article>
       </div>
-    </main>
-  </div>
+    </section>
 
-  <div id="site-footer"></div>
+    <section class="hero-grid">
+      <article class="panel hero-copy">
+        <div class="eyebrow">Prediction Layer</div>
+        <h1 class="page-title">Trend / Signal / Scenario / Prediction</h1>
+        <p id="hero-summary" class="page-summary">Loading latest prediction summary...</p>
+        <div id="hero-meta" class="hero-meta">
+          <div class="meta-pill"><strong>As of</strong><span id="meta-asof">—</span></div>
+          <div class="meta-pill"><strong>Dominant</strong><span id="meta-dominant">—</span></div>
+          <div class="meta-pill"><strong>Confidence</strong><span id="meta-confidence">—</span></div>
+        </div>
+        <div id="hero-pill-row" class="pill-row"></div>
+      </article>
+      <aside class="hero-side">
+        <article class="panel hero-callout"><div id="hero-risk-chip" class="risk-chip risk-guarded">Loading</div><h2 class="hero-callout-title">Prediction Summary</h2><p id="prediction-summary-text" class="hero-callout-summary">Waiting for prediction_latest.json...</p></article>
+        <article class="panel hero-notice"><div class="hero-notice-label">Early Warning</div><div id="early-warning-status" class="hero-notice-value">checking...</div><div id="early-warning-note" class="metric-sub">warning pipeline loading</div></article>
+      </aside>
+    </section>
 
+    <section class="kpi-grid" aria-label="Prediction KPIs">
+      <article class="panel metric-card"><div class="metric-label">Signal Count</div><div id="metric-signal-count" class="metric-value">—</div><div id="metric-signal-sub" class="metric-sub">loading</div></article>
+      <article class="panel metric-card"><div class="metric-label">Scenario Count</div><div id="metric-scenario-count" class="metric-value">—</div><div id="metric-scenario-sub" class="metric-sub">loading</div></article>
+      <article class="panel metric-card"><div class="metric-label">Prediction Branch</div><div id="metric-branch" class="metric-value">—</div><div id="metric-branch-sub" class="metric-sub">loading</div></article>
+      <article class="panel metric-card"><div class="metric-label">Time Horizon</div><div id="metric-horizon" class="metric-value">—</div><div id="metric-horizon-sub" class="metric-sub">loading</div></article>
+    </section>
+
+    <section class="content-grid">
+      <article class="panel summary-card">
+        <div class="section-header"><div><h2 class="section-title">Prediction Summary</h2><p class="section-subtitle">Topline interpretation of the current observation state.</p></div><div id="confidence-chip" class="confidence-chip">Confidence —</div></div>
+        <p id="prediction-summary-main" class="summary-text">Loading prediction summary...</p>
+        <div class="detail-grid">
+          <article class="panel detail-card"><div class="detail-eyebrow">Confidence</div><h3 class="detail-title">Confidence Context</h3><p id="confidence-detail-text" class="detail-text">Loading...</p></article>
+          <article class="panel detail-card"><div class="detail-eyebrow">Scenario Probability</div><h3 class="detail-title">Relative Branch Weight</h3><div id="scenario-probability-list" class="probability-stack"></div></article>
+        </div>
+      </article>
+      <aside class="section-stack">
+        <article class="panel"><div class="section-header"><div><h2 class="section-title">Runtime Notes</h2><p class="section-subtitle">Quick operating context for today's output.</p></div></div><ul id="runtime-note-list" class="plain-list"></ul></article>
+        <article class="panel"><div class="section-header"><div><h2 class="section-title">Source Status</h2><p class="section-subtitle">Prediction artifacts load state.</p></div></div><div id="source-status-list" class="timeline-list"></div></article>
+      </aside>
+    </section>
+
+    <section class="mid-grid">
+      <article class="panel"><div class="section-header"><div><h2 class="section-title">Trend Summary</h2><p class="section-subtitle">Trend layer interpretation feeding the current prediction.</p></div></div><div id="trend-summary-list" class="trend-stack"></div></article>
+      <article class="panel"><div class="section-header"><div><h2 class="section-title">Signal List</h2><p class="section-subtitle">Current active signal inputs and related severity.</p></div></div><div id="signal-list" class="signal-grid"></div></article>
+    </section>
+
+    <section class="section-stack"><div class="section-header"><div><h2 class="section-title">Scenario Cards</h2><p class="section-subtitle">Best / base / worst style branches from scenario output.</p></div></div><div id="scenario-card-grid" class="scenario-grid"></div></section>
+
+    <section class="bottom-grid">
+      <article class="panel"><div class="section-header"><div><h2 class="section-title">Watchpoints</h2><p class="section-subtitle">Things to monitor closely in the next cycle.</p></div></div><div id="watchpoints-list" class="list-stack"></div></article>
+      <article class="panel"><div class="section-header"><div><h2 class="section-title">Drivers</h2><p class="section-subtitle">Key supporting factors behind the prediction.</p></div></div><div id="drivers-list" class="list-stack"></div></article>
+      <article class="panel"><div class="section-header"><div><h2 class="section-title">Invalidation Conditions</h2><p class="section-subtitle">What would make this view weaken or break.</p></div></div><div id="invalidation-list" class="list-stack"></div></article>
+      <article class="panel"><div class="section-header"><div><h2 class="section-title">Implications</h2><p class="section-subtitle">Operational or interpretive consequences.</p></div></div><div id="implications-list" class="list-stack"></div></article>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
   <script>
-  (function(){
-    "use strict";
+    const PREDICTION_SOURCES = {
+      trend: '/analysis/prediction/trend_latest.json',
+      signal: '/analysis/prediction/signal_latest.json',
+      warning: '/analysis/prediction/early_warning_latest.json',
+      scenario: '/analysis/prediction/scenario_latest.json',
+      prediction: '/analysis/prediction/prediction_latest.json',
+      health: '/analysis/health_latest.json'
+    };
 
-    var SOURCE_URL = "/analysis/prediction/prediction_latest.json";
-    var el = function(id){ return document.getElementById(id); };
+    const el = (id) => document.getElementById(id);
+    const safeArray = (v) => Array.isArray(v) ? v : [];
+    const firstNonEmpty = (...vals) => { for (const v of vals){ if (Array.isArray(v) && v.length) return v; if (v !== undefined && v !== null && v !== '') return v; } return null; };
+    const firstString = (...vals) => { for (const v of vals){ if (typeof v === 'string' && v.trim()) return v.trim(); } return ''; };
+    const pickNumber = (...vals) => { for (const v of vals){ const n = Number(v); if (Number.isFinite(n)) return n; } return null; };
+    const titleize = (v) => !v ? '—' : String(v).replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim().replace(/\b\w/g, (m) => m.toUpperCase());
+    const normalizePercentNumber = (v) => { const n = pickNumber(v); return n == null ? null : (n <= 1 ? n * 100 : n); };
+    const formatProbability = (v) => { const p = normalizePercentNumber(v); return p == null ? '—' : `${p.toFixed(0)}%`; };
+    const formatConfidence = (v) => { const p = normalizePercentNumber(v); return p == null ? (v == null || v === '' ? '—' : String(v)) : `${p.toFixed(0)}%`; };
+    const formatCount = (v) => { const n = pickNumber(v); return n == null ? '—' : n.toLocaleString('ja-JP'); };
+    const formatDate = (v) => { if (!v) return '—'; const d = new Date(v); if (Number.isNaN(d.getTime())) return String(v); return d.toLocaleString('ja-JP', {year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}); };
+    const escapeHtml = (v) => String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 
-    function setText(id, value){
-      var node = el(id);
-      if(node) node.textContent = value;
+    async function fetchJson(url){
+      try{ const res = await fetch(url, { cache:'no-store' }); if (!res.ok) throw new Error(`HTTP ${res.status}`); return { ok:true, data: await res.json(), url }; }
+      catch(err){ return { ok:false, error:String(err), url }; }
     }
 
-    function pct(value){
-      var n = Number(value);
-      if (!Number.isFinite(n)) return "--";
-      return (n * 100).toFixed(0) + "%";
+    function normalizeListItems(value){
+      return safeArray(value).map((item) => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object') return firstString(item.summary, item.label, item.name, item.title, item.description, item.message, item.text, item.signal, item.kind);
+        return '';
+      }).filter(Boolean);
     }
 
-    function confPct(value){
-      var n = Number(value);
-      if (!Number.isFinite(n)) return "--";
-      return (n * 100).toFixed(1) + "%";
+    function signalSeverityBadge(raw){
+      const value = firstString(raw).toLowerCase();
+      if (!value) return 'Signal';
+      if (value.includes('critical')) return 'Critical';
+      if (value.includes('high')) return 'High';
+      if (value.includes('warn')) return 'Warn';
+      if (value.includes('guard')) return 'Guarded';
+      if (value.includes('low')) return 'Low';
+      return titleize(value);
     }
 
-    function cap(text){
-      if (!text || typeof text !== "string") return "--";
-      return text.replaceAll("_"," ").replace(/\b\w/g, function(ch){ return ch.toUpperCase(); });
-    }
-
-    function riskClass(risk){
-      var key = String(risk || "").toLowerCase();
-      if (["low","guarded","elevated","high","critical"].includes(key)) return "risk-" + key;
-      if (key === "medium") return "risk-medium";
-      return "risk-missing";
-    }
-
-    function setScenarioBlock(prefix, prob, summary){
-      setText("scenario-" + prefix + "-label", pct(prob));
-      var bar = el("scenario-" + prefix + "-bar");
-      if (bar) bar.style.width = Number.isFinite(Number(prob)) ? Math.max(0, Math.min(100, prob * 100)) + "%" : "0%";
-      setText("scenario-" + prefix + "-summary", summary || "No summary");
-    }
-
-    function renderList(targetId, items, label){
-      var target = el(targetId);
-      if (!target) return;
-      target.innerHTML = "";
-
-      if (!Array.isArray(items) || items.length === 0){
-        var emptyNode = document.createElement("div");
-        emptyNode.className = "list-item";
-        emptyNode.innerHTML = '<div class="bullet">–</div><div><strong>' + label + '</strong><span>No data</span></div>';
-        target.appendChild(emptyNode);
-        return;
+    function normalizeScenarios(prediction, scenarioData){
+      const preferredList = safeArray(firstNonEmpty(prediction?.scenarios, prediction?.scenario_cards, scenarioData?.scenarios, scenarioData?.scenario_cards));
+      if (preferredList.length){
+        return preferredList.map((item, index) => ({
+          key: firstString(item.key, item.name, item.id, `scenario_${index + 1}`),
+          title: firstString(item.title, item.name, item.label, `Scenario ${index + 1}`),
+          summary: firstString(item.summary, item.description, item.outlook),
+          probability: firstNonEmpty(item.probability, item.weight, item.score),
+          confidence: firstString(item.confidence, item.confidence_label),
+          drivers: normalizeListItems(firstNonEmpty(item.drivers, item.key_drivers)),
+          watchpoints: normalizeListItems(firstNonEmpty(item.watchpoints, item.watch_points)),
+          invalidation: normalizeListItems(firstNonEmpty(item.invalidation_conditions, item.invalidation, item.invalidate_if))
+        }));
       }
 
-      items.forEach(function(item, idx){
-        var node = document.createElement("div");
-        node.className = "list-item";
-        node.innerHTML =
-          '<div class="bullet">' + (idx + 1) + '</div>' +
-          '<div><strong>' + label + ' ' + (idx + 1) + '</strong><span>' + item + '</span></div>';
-        target.appendChild(node);
+      const map = prediction?.scenario_probabilities || {};
+      const dominantBranch = firstString(prediction?.dominant_branch);
+      const dominantScenario = prediction?.dominant_scenario || {};
+      const fallbackSummaries = { best_case:'Favorable stabilization path.', base_case:'Most likely baseline continuation.', worst_case:'Downside destabilization path.' };
+      const fallbackTitles = { best_case:'Best Case', base_case:'Base Case', worst_case:'Worst Case' };
+
+      return ['best_case','base_case','worst_case'].map((key) => {
+        const sameAsDominant = dominantBranch && key === dominantBranch;
+        const source = sameAsDominant ? dominantScenario : null;
+        return {
+          key,
+          title: firstString(source?.label, source?.name, fallbackTitles[key]),
+          summary: firstString(source?.summary, prediction?.summary, fallbackSummaries[key]),
+          probability: map[key],
+          confidence: sameAsDominant ? formatConfidence(prediction?.confidence) : '',
+          drivers: sameAsDominant ? normalizeListItems(prediction?.drivers) : [],
+          watchpoints: sameAsDominant ? normalizeListItems(prediction?.watchpoints) : [],
+          invalidation: sameAsDominant ? normalizeListItems(prediction?.invalidation_conditions) : []
+        };
+      }).filter((item) => item.probability != null || item.summary);
+    }
+
+    function normalizeSignals(signalData, prediction){
+      const rawSignals = safeArray(firstNonEmpty(signalData?.signals, signalData?.items, signalData?.list));
+      if (rawSignals.length){
+        return rawSignals.map((item, index) => ({
+          title: firstString(item.title, item.name, item.label, item.kind, `Signal ${index + 1}`),
+          summary: firstString(item.summary, item.description, item.message, item.text, item.note),
+          severity: firstString(item.severity, item.level, item.status, item.signal_level),
+          strength: firstNonEmpty(item.score, item.weight, item.probability)
+        }));
+      }
+      const derived = [];
+      normalizeListItems(prediction?.drivers).slice(0, 4).forEach((text, index) => derived.push({ title:`Driver ${index + 1}`, summary:text, severity:prediction?.signal || prediction?.overall_risk_level || 'guarded', strength:prediction?.confidence }));
+      const warningText = firstString(prediction?.early_warning?.warning, prediction?.early_warning?.note, prediction?.early_warning?.summary);
+      if (warningText) derived.push({ title:'Early Warning', summary:warningText, severity:prediction?.early_warning?.warning_level || prediction?.overall_risk_level || 'guarded', strength:prediction?.early_warning?.warning_score });
+      const dominant = firstString(prediction?.dominant_branch, prediction?.dominant_scenario?.name, prediction?.dominant_scenario?.label);
+      if (dominant) derived.push({ title:'Dominant Branch', summary:`${titleize(dominant)} is currently the leading path.`, severity:prediction?.signal || 'guarded', strength:prediction?.dominant_probability });
+      return derived;
+    }
+
+    function normalizeTrendItems(trendData, prediction){
+      const raw = safeArray(firstNonEmpty(trendData?.trends, trendData?.items, trendData?.list));
+      if (raw.length){
+        return raw.map((item, index) => ({
+          title: firstString(item.title, item.name, item.label, `Trend ${index + 1}`),
+          summary: firstString(item.summary, item.description, item.message, item.text),
+          state: firstString(item.state, item.status, item.regime, item.direction),
+          score: firstNonEmpty(item.score, item.weight, item.strength)
+        }));
+      }
+      const items = [];
+      const regime = firstString(prediction?.regime, prediction?.dominant_scenario?.regime);
+      if (regime) items.push({ title:'Regime', summary:`Current regime is ${titleize(regime)}.`, state:regime, score:prediction?.overall_risk_score });
+      const risk = firstString(prediction?.overall_risk_level, prediction?.overall_risk);
+      if (risk) items.push({ title:'Overall Risk', summary:`Overall risk is assessed as ${titleize(risk)}.`, state:risk, score:prediction?.overall_risk_score });
+      const signal = firstString(prediction?.signal);
+      if (signal) items.push({ title:'Signal State', summary:`Signal layer currently reads ${titleize(signal)}.`, state:signal, score:prediction?.confidence });
+      return items;
+    }
+
+    function deriveRiskClass(prediction){
+      const raw = firstString(prediction?.overall_risk_level, prediction?.risk_level, prediction?.warning_level, prediction?.risk_state, prediction?.status).toLowerCase();
+      if (raw.includes('critical')) return ['Critical','risk-critical'];
+      if (raw.includes('high')) return ['High','risk-high'];
+      if (raw.includes('elevated') || raw.includes('warn')) return ['Elevated','risk-elevated'];
+      if (raw.includes('guard')) return ['Guarded','risk-guarded'];
+      if (raw.includes('low') || raw.includes('stable')) return ['Low','risk-low'];
+      return [titleize(raw || 'Guarded'),'risk-guarded'];
+    }
+
+    function renderGlobalStatus(cards){
+      const root = document.querySelector('[data-role="global-status"]');
+      if (!root) return;
+      Array.from(root.querySelectorAll('.status-card')).forEach((card, index) => {
+        const item = cards[index] || { label:'—', value:'—', sub:'—', state:'loading' };
+        card.dataset.state = item.state || 'loading';
+        card.querySelector('[data-field="label"]').textContent = item.label || '—';
+        card.querySelector('[data-field="value"]').textContent = item.value || '—';
+        card.querySelector('[data-field="sub"]').textContent = item.sub || '—';
       });
     }
 
-    function render(payload){
-      var risk = String(payload.overall_risk || "--");
-      var riskEl = el("overall-risk");
-      if (riskEl){
-        riskEl.textContent = cap(risk);
-        riskEl.className = "value " + riskClass(risk);
-      }
-
-      setText("risk-sub", "Dominant scenario: " + cap(payload.dominant_scenario || "--"));
-      setText("summary-title", cap(payload.dominant_scenario || "prediction outlook"));
-      setText("summary-text", payload.summary || "No summary available.");
-      setText("as-of", payload.as_of || "--");
-      setText("horizon", payload.horizon || "--");
-      setText("dominant", cap(payload.dominant_scenario || "--"));
-      setText("generated-at", "generated_at: " + (payload.generated_at || "--"));
-
-      var asOfText = payload.as_of || payload.generated_at || "--";
-      setText("pillAsOfLocal", "as_of: " + asOfText);
-      setText("pillReadyLocal", "Ready");
-      if (el("pillAsOf")) el("pillAsOf").textContent = "as_of: " + asOfText;
-      if (el("pillReady")) el("pillReady").textContent = "Ready";
-
-      var confidence = Number(payload.confidence);
-      setText("confidence-value", confPct(confidence));
-      var confidenceBar = el("confidence-bar");
-      if (confidenceBar) confidenceBar.style.width = Number.isFinite(confidence) ? Math.max(0, Math.min(100, confidence * 100)) + "%" : "0%";
-
-      var probs = payload.scenario_probabilities || {};
-      var best = Number(probs.best_case);
-      var base = Number(probs.base_case);
-      var worst = Number(probs.worst_case);
-
-      setText("best-prob", pct(best));
-      setText("base-prob", pct(base));
-      setText("worst-prob", pct(worst));
-      setText("signal-count", String((payload.meta && payload.meta.signal_count) ?? "--"));
-
-      setScenarioBlock("best", best, best > base && best > worst ? "Best case is currently dominant." : "Upside path if risk pressure softens.");
-      setScenarioBlock("base", base, payload.dominant_scenario === "base_case" ? (payload.summary || "Base case is dominant.") : "Central working scenario.");
-      setScenarioBlock("worst", worst, worst >= 0.25 ? "Adverse branch is meaningful and should be watched." : "Adverse branch exists but is not dominant.");
-
-      renderList("watchpoints-list", payload.watchpoints || [], "Watchpoint");
-      renderList("drivers-list", payload.drivers || [], "Driver");
-      renderList("invalidations-list", payload.invalidation_conditions || [], "Invalidation");
-      renderList("implications-list", payload.key_implications || [], "Implication");
-
-      var empty = el("empty-state");
-      if (empty) empty.style.display = "none";
+    function buildGlobalStatus(prediction, signalData, healthData){
+      const signalList = normalizeSignals(signalData, prediction);
+      const healthValue = firstString(healthData?.status, healthData?.overall, healthData?.state, healthData?.health) || 'unknown';
+      return [
+        { label:'Date', value:formatDate(firstString(prediction?.as_of, prediction?.date, prediction?.generated_at)), sub:firstString(prediction?.source?.source_file, prediction?.engine, 'prediction_latest.json'), state:'ok' },
+        { label:'Regime', value:titleize(firstString(prediction?.regime, prediction?.regime_label, prediction?.dominant_scenario?.regime)), sub:firstString(prediction?.dominant_scenario?.label, prediction?.phase, 'current branch'), state:'ok' },
+        { label:'Signal', value:formatCount(firstNonEmpty(prediction?.signal_count, signalList.length)), sub:firstString(prediction?.signal, signalData?.status, 'active inputs'), state:'ok' },
+        { label:'Confidence', value:formatConfidence(firstNonEmpty(prediction?.confidence, prediction?.confidence_score, prediction?.confidence_pct)), sub:firstString(prediction?.confidence_label, prediction?.confidence_note, 'model confidence'), state:'ok' },
+        { label:'Health', value:titleize(healthValue), sub:firstString(healthData?.note, healthData?.summary, 'pipeline health'), state:healthValue.toLowerCase().includes('ok') ? 'ok' : 'warn' }
+      ];
     }
 
-    async function loadPrediction(){
-      try{
-        var res = await fetch(SOURCE_URL + "?t=" + Date.now(), { cache: "no-store" });
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        var payload = await res.json();
-        render(payload);
-      }catch(err){
-        console.error(err);
-        setText("pillReadyLocal", "No data");
-        if (el("pillReady")) el("pillReady").textContent = "No data";
-        var empty = el("empty-state");
-        if (empty) empty.style.display = "block";
-        setText("summary-title", "Prediction output not available");
-        setText("summary-text", "Check prediction runtime output and server mapping.");
-      }
+    function renderHero(prediction){
+      const [riskLabel, riskClass] = deriveRiskClass(prediction);
+      const summary = firstString(prediction?.summary, prediction?.prediction_summary, prediction?.outlook, prediction?.narrative) || 'No prediction summary available.';
+      el('hero-summary').textContent = summary;
+      el('prediction-summary-text').textContent = summary;
+      el('prediction-summary-main').textContent = summary;
+      const chip = el('hero-risk-chip'); chip.textContent = riskLabel; chip.className = `risk-chip ${riskClass}`;
+      el('meta-asof').textContent = formatDate(firstString(prediction?.as_of, prediction?.date, prediction?.generated_at));
+      el('meta-dominant').textContent = titleize(firstString(prediction?.dominant_scenario?.label, prediction?.dominant_branch, prediction?.scenario, prediction?.regime));
+      el('meta-confidence').textContent = formatConfidence(firstNonEmpty(prediction?.confidence, prediction?.confidence_score, prediction?.confidence_pct));
+      el('confidence-chip').textContent = `Confidence ${formatConfidence(firstNonEmpty(prediction?.confidence, prediction?.confidence_score, prediction?.confidence_pct))}`;
+      el('early-warning-status').textContent = titleize(firstString(prediction?.early_warning?.warning_level, prediction?.early_warning_status, prediction?.warning_state, prediction?.warning_level, riskLabel));
+      el('early-warning-note').textContent = firstString(prediction?.early_warning?.warning, prediction?.early_warning_note, prediction?.warning_note, prediction?.watch_note, 'Monitoring early warning conditions.');
     }
 
-    async function main(){
-      try{
-        await window.GPGlobalStatus.load({
-          fxDecisionCandidates: [
-            "/data/fx/fx_decision_latest.json",
-            "/data/fx/fx_decision_latest_jpythb.json"
-          ]
-        });
-      }catch(e){
-        console.warn(e);
-      }
-
-      await loadPrediction();
+    function renderPills(prediction, signalData, warningData, scenarios){
+      const pills = [];
+      const trendSummary = firstString(prediction?.regime, prediction?.trend_summary, prediction?.trend_state, prediction?.trend);
+      if (trendSummary) pills.push(`<div class="mini-pill"><strong>Trend</strong><span>${escapeHtml(titleize(trendSummary))}</span></div>`);
+      const signalState = firstString(prediction?.signal, prediction?.signal_state, signalData?.status, signalData?.signal_state);
+      if (signalState) pills.push(`<div class="mini-pill"><strong>Signal</strong><span>${escapeHtml(titleize(signalState))}</span></div>`);
+      const warningState = firstString(prediction?.early_warning?.warning_level, warningData?.status, prediction?.early_warning_status, warningData?.warning_level);
+      if (warningState) pills.push(`<div class="mini-pill"><strong>Early Warning</strong><span>${escapeHtml(titleize(warningState))}</span></div>`);
+      if (scenarios.length) pills.push(`<div class="mini-pill"><strong>Scenarios</strong><span>${escapeHtml(String(scenarios.length))}</span></div>`);
+      el('hero-pill-row').innerHTML = pills.join('');
     }
 
-    main();
-  })();
+    function renderMetricCards(prediction, signalData, scenarios){
+      const signalCount = firstNonEmpty(prediction?.signal_count, normalizeSignals(signalData, prediction).length);
+      const horizonDays = pickNumber(prediction?.horizon_days, prediction?.time_horizon_days, prediction?.forecast_horizon_days);
+      el('metric-signal-count').textContent = formatCount(signalCount);
+      el('metric-signal-sub').textContent = firstString(prediction?.signal, prediction?.signal_state, signalData?.status, 'active inputs');
+      el('metric-scenario-count').textContent = formatCount(scenarios.length);
+      el('metric-scenario-sub').textContent = 'scenario branches';
+      el('metric-branch').textContent = titleize(firstString(prediction?.dominant_scenario?.label, prediction?.dominant_branch, prediction?.scenario, prediction?.regime));
+      el('metric-branch-sub').textContent = firstString(prediction?.phase, prediction?.mode, 'current branch');
+      el('metric-horizon').textContent = horizonDays == null ? '—' : `${horizonDays}d`;
+      el('metric-horizon-sub').textContent = 'forecast window';
+      el('confidence-detail-text').textContent = firstString(prediction?.dominant_scenario?.summary, prediction?.confidence_note, prediction?.confidence_text, prediction?.confidence_reason, prediction?.confidence_summary, 'Confidence reflects how strongly the current observation supports the displayed scenario structure.');
+    }
+
+    function renderProbabilityList(scenarios){
+      const root = el('scenario-probability-list');
+      if (!root) return;
+      if (!scenarios.length){ root.innerHTML = `<article class="empty-card panel"><div class="empty-meta">No scenario probabilities</div><p class="empty-text">scenario_latest.json または prediction_latest.json の scenario 情報が不足しています。</p></article>`; return; }
+      root.innerHTML = scenarios.map((scenario) => { const percent = normalizePercentNumber(scenario.probability); return `<div class="probability-row"><div class="probability-label">${escapeHtml(scenario.title)}</div><div class="progress-track"><div class="progress-bar" style="width:${percent == null ? 0 : Math.max(4, Math.min(percent, 100))}%"></div></div><div class="probability-value">${escapeHtml(formatProbability(scenario.probability))}</div></div>`; }).join('');
+    }
+
+    function renderInlineListPreview(label, items){
+      const list = safeArray(items);
+      if (!list.length) return `<li><strong>${escapeHtml(label)}:</strong> <span class="muted">—</span></li>`;
+      return `<li><strong>${escapeHtml(label)}:</strong> ${list.map((item) => escapeHtml(String(item))).join(' / ')}</li>`;
+    }
+
+    function renderScenarioCards(scenarios){
+      const root = el('scenario-card-grid');
+      if (!root) return;
+      if (!scenarios.length){ root.innerHTML = `<article class="panel empty-card"><div class="empty-meta">Scenario unavailable</div><p class="empty-text">best / base / worst または scenario list を取得できませんでした。</p></article>`; return; }
+      root.innerHTML = scenarios.map((scenario) => {
+        const key = String(scenario.key || '').toLowerCase();
+        let scenarioClass = 'scenario-base';
+        if (key.includes('best')) scenarioClass = 'scenario-best'; else if (key.includes('worst')) scenarioClass = 'scenario-worst';
+        return `<article class="panel scenario-card ${scenarioClass}"><div class="scenario-meta"><span>${escapeHtml(titleize(scenario.key))}</span><span>${escapeHtml(firstString(scenario.confidence,''))}</span></div><div class="scenario-title-row"><h2 class="scenario-title">${escapeHtml(scenario.title)}</h2><span class="scenario-probability">${escapeHtml(formatProbability(scenario.probability))}</span></div><p class="scenario-text">${escapeHtml(scenario.summary || 'No scenario summary.')}</p><ul class="scenario-list">${renderInlineListPreview('Drivers', scenario.drivers)}${renderInlineListPreview('Watchpoints', scenario.watchpoints)}${renderInlineListPreview('Invalidation', scenario.invalidation)}</ul></article>`;
+      }).join('');
+    }
+
+    function renderList(rootId, items, emptyLabel, badge){
+      const root = el(rootId);
+      if (!root) return;
+      const list = normalizeListItems(items);
+      if (!list.length){ root.innerHTML = `<article class="empty-card panel"><div class="empty-meta">${escapeHtml(emptyLabel)}</div><p class="empty-text">No items available.</p></article>`; return; }
+      root.innerHTML = list.map((item) => `<article class="list-row"><span class="list-badge">${escapeHtml(badge)}</span><div><p>${escapeHtml(String(item))}</p></div></article>`).join('');
+    }
+
+    function renderRuntimeNotes(prediction, signalData, warningData){
+      el('runtime-note-list').innerHTML = [
+        `As of: ${formatDate(firstString(prediction?.as_of, prediction?.date, prediction?.generated_at))}`,
+        `Signal count: ${formatCount(firstNonEmpty(prediction?.signal_count, normalizeSignals(signalData, prediction).length))}`,
+        `Warning count: ${formatCount(firstNonEmpty(warningData?.warning_count, warningData?.early_warning_count, prediction?.early_warning?.warning_score != null ? 1 : 0))}`,
+        `Dominant scenario: ${titleize(firstString(prediction?.dominant_scenario?.label, prediction?.dominant_branch, prediction?.scenario, prediction?.regime))}`
+      ].map((item) => `<li>${escapeHtml(item)}</li>`).join('');
+    }
+
+    function renderSourceStatus(results){
+      const rows = [['Trend',results.trend],['Signal',results.signal],['Early Warning',results.warning],['Scenario',results.scenario],['Prediction',results.prediction]];
+      el('source-status-list').innerHTML = rows.map(([name, result]) => `<article class="timeline-row"><span class="timeline-badge">${result?.ok ? 'OK' : '—'}</span><div><div class="timeline-title-row"><h3 class="timeline-title">${escapeHtml(name)}</h3><span class="timeline-date mono">${escapeHtml(result?.url || '')}</span></div><p>${result?.ok ? 'source loaded' : 'source unavailable'}</p></div></article>`).join('');
+    }
+
+    function renderSignalList(signals){
+      const root = el('signal-list');
+      if (!root) return;
+      if (!signals.length){ root.innerHTML = `<article class="empty-card panel"><div class="empty-meta">Signals unavailable</div><p class="empty-text">signal_latest.json の signal list を取得できませんでした。</p></article>`; return; }
+      root.innerHTML = signals.map((signal, index) => {
+        const severityRaw = firstString(signal.severity).toLowerCase();
+        let signalClass = 'signal-guarded';
+        if (severityRaw.includes('critical')) signalClass = 'signal-critical';
+        else if (severityRaw.includes('high')) signalClass = 'signal-high';
+        else if (severityRaw.includes('elevated')) signalClass = 'signal-elevated';
+        else if (severityRaw.includes('warn')) signalClass = 'signal-warn';
+        else if (severityRaw.includes('low')) signalClass = 'signal-low';
+        else if (severityRaw.includes('stable')) signalClass = 'signal-stable';
+        return `<article class="signal-card ${signalClass}"><div class="signal-meta"><span class="signal-badge">${escapeHtml(signalSeverityBadge(signal.severity))}</span><span class="signal-strength">${escapeHtml(formatConfidence(signal.strength))}</span></div><div class="signal-title-row"><h3 class="signal-title">${escapeHtml(signal.title || `Signal ${index + 1}`)}</h3></div><p class="signal-text">${escapeHtml(signal.summary || 'No signal summary.')}</p></article>`;
+      }).join('');
+    }
+
+    function renderTrendSummary(items){
+      const root = el('trend-summary-list');
+      if (!root) return;
+      if (!items.length){ root.innerHTML = `<article class="empty-card panel"><div class="empty-meta">Trend unavailable</div><p class="empty-text">trend_latest.json の trend 情報を取得できませんでした。</p></article>`; return; }
+      root.innerHTML = items.map((item, index) => `<article class="trend-card"><div class="trend-meta"><span class="trend-badge">${escapeHtml(titleize(item.state || 'trend'))}</span><span class="trend-strength">${escapeHtml(formatConfidence(item.score))}</span></div><div class="trend-title-row"><h3 class="trend-title">${escapeHtml(item.title || `Trend ${index + 1}`)}</h3></div><p class="trend-text">${escapeHtml(item.summary || 'No trend summary.')}</p></article>`).join('');
+    }
+
+    function fillUnavailableState(message){
+      renderGlobalStatus([{label:'Date',value:'—',sub:'unavailable',state:'unavailable'},{label:'Regime',value:'—',sub:'unavailable',state:'unavailable'},{label:'Signal',value:'—',sub:'unavailable',state:'unavailable'},{label:'Confidence',value:'—',sub:'unavailable',state:'unavailable'},{label:'Health',value:'—',sub:'unavailable',state:'unavailable'}]);
+      el('hero-summary').textContent = message; el('prediction-summary-text').textContent = message; el('prediction-summary-main').textContent = message; el('hero-risk-chip').textContent = 'Unavailable'; el('hero-risk-chip').className = 'risk-chip risk-guarded'; el('confidence-chip').textContent = 'Confidence —';
+      renderProbabilityList([]); renderScenarioCards([]); renderSignalList([]); renderTrendSummary([]); renderList('watchpoints-list', [], 'Watchpoints unavailable', 'W'); renderList('drivers-list', [], 'Drivers unavailable', 'D'); renderList('invalidation-list', [], 'Invalidation unavailable', 'I'); renderList('implications-list', [], 'Implications unavailable', 'M'); renderRuntimeNotes({}, {}, {});
+    }
+
+    async function init(){
+      const entries = await Promise.all(Object.entries(PREDICTION_SOURCES).map(async ([key, url]) => [key, await fetchJson(url)]));
+      const results = Object.fromEntries(entries);
+      renderSourceStatus(results);
+      if (!results.prediction?.ok || !results.prediction?.data){ fillUnavailableState('prediction_latest.json を取得できませんでした。Prediction 本体は fallback で捏造しません。'); return; }
+      const prediction = results.prediction.data;
+      const scenarios = normalizeScenarios(prediction, results.scenario?.data || {});
+      const signals = normalizeSignals(results.signal?.data || {}, prediction);
+      const trends = normalizeTrendItems(results.trend?.data || {}, prediction);
+      renderGlobalStatus(buildGlobalStatus(prediction, results.signal?.data || {}, results.health?.data || {}));
+      renderHero(prediction); renderPills(prediction, results.signal?.data || {}, results.warning?.data || {}, scenarios); renderMetricCards(prediction, results.signal?.data || {}, scenarios); renderProbabilityList(scenarios); renderScenarioCards(scenarios); renderSignalList(signals); renderTrendSummary(trends); renderRuntimeNotes(prediction, results.signal?.data || {}, results.warning?.data || {});
+      renderList('watchpoints-list', firstNonEmpty(prediction?.watchpoints, prediction?.watch_points, scenarios.flatMap((s) => s.watchpoints).filter(Boolean)), 'Watchpoints unavailable', 'W');
+      renderList('drivers-list', firstNonEmpty(prediction?.drivers, prediction?.key_drivers, scenarios.flatMap((s) => s.drivers).filter(Boolean)), 'Drivers unavailable', 'D');
+      renderList('invalidation-list', firstNonEmpty(prediction?.invalidation_conditions, prediction?.invalidation, prediction?.invalidate_if, scenarios.flatMap((s) => s.invalidation).filter(Boolean)), 'Invalidation unavailable', 'I');
+      renderList('implications-list', firstNonEmpty(prediction?.implications, prediction?.actions, prediction?.notes, prediction?.dominant_scenario?.summary), 'Implications unavailable', 'M');
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
 </html>
