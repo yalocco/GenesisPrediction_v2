@@ -168,6 +168,77 @@ try {
 
         Copy-IfExists -SourcePath $dailyNewsLatest -DestinationPath (Join-Path $analysisDir "daily_news_latest.json") | Out-Null
         Copy-IfExists -SourcePath $dailySummaryLatest -DestinationPath (Join-Path $analysisDir "daily_summary_latest.json") | Out-Null
+
+        if (Test-Path -LiteralPath $summaryJson) {
+            $summaryMaterializer = @'
+import json
+from pathlib import Path
+
+summary_path = Path(r"data\world_politics\analysis\summary.json")
+if not summary_path.exists():
+    raise SystemExit(0)
+
+data = json.loads(summary_path.read_text(encoding="utf-8"))
+
+def pick_text(obj):
+    if not isinstance(obj, dict):
+        return ""
+    for key in ("summary", "text", "daily_summary", "body", "overview"):
+        value = obj.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
+
+summary_text = pick_text(data)
+
+if not summary_text:
+    anchors = [str(x).strip() for x in data.get("anchors", []) if str(x).strip()]
+    urls = data.get("new_urls", []) if isinstance(data.get("new_urls"), list) else []
+    n_events = data.get("n_events", 0)
+    top_titles = []
+    ys = data.get("yesterday_summary", {})
+    if isinstance(ys, dict):
+        titles = ys.get("titles", [])
+        if isinstance(titles, list):
+            top_titles = [str(x).strip() for x in titles[:3] if str(x).strip()]
+
+    anchor_part = ", ".join(anchors[:5]) if anchors else "global developments"
+    title_part = "; ".join(top_titles) if top_titles else ""
+    pieces = [
+        f"Observed {n_events} events.",
+        f"Dominant anchors: {anchor_part}.",
+    ]
+    if title_part:
+        pieces.append(f"Representative headlines: {title_part}.")
+    if urls:
+        pieces.append(f"New URLs detected: {len(urls)}.")
+    summary_text = " ".join(pieces).strip()
+
+data["summary"] = summary_text
+data["text"] = summary_text
+summary_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+daily_summary_path = Path(r"data\world_politics\analysis\daily_summary_latest.json")
+if daily_summary_path.exists():
+    ds = json.loads(daily_summary_path.read_text(encoding="utf-8"))
+    if isinstance(ds, dict):
+        ds["summary"] = summary_text
+        ds["text"] = summary_text
+        daily_summary_path.write_text(json.dumps(ds, ensure_ascii=False, indent=2), encoding="utf-8")
+'@
+            $tempPy = Join-Path $env:TEMP "genesis_summary_materializer.py"
+            Set-Content -LiteralPath $tempPy -Value $summaryMaterializer -Encoding UTF8
+            Write-Host "CMD: $python $tempPy"
+            & $python $tempPy
+            $exitCode = $LASTEXITCODE
+            Remove-Item -LiteralPath $tempPy -Force -ErrorAction SilentlyContinue
+            if ($exitCode -ne 0) {
+                throw "summary materialization failed with exit code $exitCode."
+            }
+            Write-Log "[OK] summary text materialized into summary.json / daily_summary_latest.json"
+            Copy-IfExists -SourcePath $dailySummaryLatest -DestinationPath $dailySummaryDated | Out-Null
+            Copy-IfExists -SourcePath $dailySummaryLatest -DestinationPath (Join-Path $analysisDir "daily_summary_latest.json") | Out-Null
+        }
     }
 
     Invoke-Step -Name "2) Build daily sentiment" -Action {
