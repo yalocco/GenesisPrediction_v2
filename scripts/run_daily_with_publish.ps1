@@ -1,232 +1,254 @@
-[CmdletBinding()]
 param(
-    [string]$Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
-    [string]$Date = (Get-Date).ToString('yyyy-MM-dd'),
+    [string]$Date = "",
+    [string]$Root = "",
     [switch]$AllowDirtyRepo,
+    [switch]$SkipAnalyzer,
+    [switch]$SkipSentiment,
+    [switch]$SkipDigest,
+    [switch]$SkipPrediction,
     [switch]$ContinueOnError
 )
 
 Set-StrictMode -Version Latest
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = "Stop"
 
-function Write-Section([string]$Message) {
-    $ts = Get-Date -Format 'yyyy-MM-ddTHH:mm:ss'
-    Write-Host "[$ts] === $Message ==="
+function Write-Log {
+    param([string]$Message)
+    $ts = Get-Date -Format "yyyy-MM-ddTHH:mm:ss"
+    Write-Host "[$ts] $Message"
 }
 
-function Test-CommandExists([string]$Name) {
-    return $null -ne (Get-Command $Name -ErrorAction SilentlyContinue)
-}
+function Resolve-RepoRoot {
+    param([string]$ExplicitRoot)
 
-function Get-PythonExe([string]$RootPath) {
-    $candidates = @(
-        (Join-Path $RootPath '.venv\Scripts\python.exe'),
-        (Join-Path $RootPath 'venv\Scripts\python.exe'),
-        'python'
-    )
-    foreach ($candidate in $candidates) {
-        if ($candidate -eq 'python') {
-            if (Test-CommandExists 'python') { return 'python' }
-        } elseif (Test-Path $candidate) {
-            return $candidate
-        }
+    if (-not [string]::IsNullOrWhiteSpace($ExplicitRoot)) {
+        return (Resolve-Path $ExplicitRoot).Path
     }
-    throw 'python executable not found.'
+
+    if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
+        return (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+    }
+
+    if ($MyInvocation.MyCommand.Path) {
+        $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+        return (Resolve-Path (Join-Path $scriptDir "..")).Path
+    }
+
+    return (Get-Location).Path
 }
 
-function Invoke-Step {
+function Ensure-Dir {
+    param([string]$PathToEnsure)
+    if (-not (Test-Path -LiteralPath $PathToEnsure)) {
+        New-Item -ItemType Directory -Path $PathToEnsure -Force | Out-Null
+    }
+}
+
+function Copy-IfExists {
     param(
-        [Parameter(Mandatory=$true)][string]$Name,
-        [Parameter(Mandatory=$true)][string]$FilePath,
-        [string[]]$Arguments = @(),
-        [switch]$Optional
+        [string]$SourcePath,
+        [string]$DestinationPath
     )
-
-    if (-not (Test-Path $FilePath)) {
-        if ($Optional) {
-            Write-Host "[SKIP] $Name (missing: $FilePath)"
-            return
+    if (Test-Path -LiteralPath $SourcePath) {
+        $destDir = Split-Path -Parent $DestinationPath
+        if (-not [string]::IsNullOrWhiteSpace($destDir)) {
+            Ensure-Dir -PathToEnsure $destDir
         }
-        throw "$Name script not found: $FilePath"
-    }
-
-    $cmdText = @($script:PythonExe, $FilePath) + $Arguments
-    Write-Host ('CMD: ' + ($cmdText -join ' '))
-    & $script:PythonExe $FilePath @Arguments
-    $exitCode = $LASTEXITCODE
-    if ($exitCode -ne 0) {
-        if ($Optional -and $ContinueOnError) {
-            Write-Warning "$Name failed with exit code $exitCode. Continuing."
-            return
-        }
-        throw "$Name failed with exit code $exitCode."
-    }
-}
-
-function Invoke-PowerShellFile {
-    param(
-        [Parameter(Mandatory=$true)][string]$Name,
-        [Parameter(Mandatory=$true)][string]$FilePath,
-        [string[]]$Arguments = @(),
-        [switch]$Optional
-    )
-
-    if (-not (Test-Path $FilePath)) {
-        if ($Optional) {
-            Write-Host "[SKIP] $Name (missing: $FilePath)"
-            return
-        }
-        throw "$Name script not found: $FilePath"
-    }
-
-    $cmdText = @('powershell', '-ExecutionPolicy', 'Bypass', '-File', $FilePath) + $Arguments
-    Write-Host ('CMD: ' + ($cmdText -join ' '))
-    & powershell -ExecutionPolicy Bypass -File $FilePath @Arguments
-    $exitCode = $LASTEXITCODE
-    if ($exitCode -ne 0) {
-        if ($Optional -and $ContinueOnError) {
-            Write-Warning "$Name failed with exit code $exitCode. Continuing."
-            return
-        }
-        throw "$Name failed with exit code $exitCode."
-    }
-}
-
-function Ensure-Parent([string]$Path) {
-    $parent = Split-Path -Parent $Path
-    if ($parent -and -not (Test-Path $parent)) {
-        New-Item -ItemType Directory -Path $parent -Force | Out-Null
-    }
-}
-
-function Copy-IfExists([string]$Source, [string]$Destination) {
-    if (Test-Path $Source) {
-        Ensure-Parent $Destination
-        Copy-Item -Path $Source -Destination $Destination -Force
-        Write-Host "[OK] alias: $Destination <= $Source"
+        Copy-Item -LiteralPath $SourcePath -Destination $DestinationPath -Force
+        Write-Log "[OK] alias: $DestinationPath"
         return $true
     }
     return $false
 }
 
-function Ensure-AnalysisAliases([string]$RootPath, [string]$AsOfDate) {
-    $analysisDir = Join-Path $RootPath 'data\world_politics\analysis'
-    if (-not (Test-Path $analysisDir)) {
-        Write-Warning "analysis directory not found: $analysisDir"
-        return
-    }
-
-    $latestCandidates = @(
-        (Join-Path $analysisDir 'daily_news_latest.json'),
-        (Join-Path $analysisDir 'latest.json')
-    )
-    $summaryCandidates = @(
-        (Join-Path $analysisDir 'daily_summary_latest.json'),
-        (Join-Path $analysisDir 'summary.json')
+function Invoke-Step {
+    param(
+        [string]$Name,
+        [scriptblock]$Action
     )
 
-    $newsSource = $latestCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
-    $summarySource = $summaryCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
-
-    if ($newsSource) {
-        Copy-IfExists $newsSource (Join-Path $analysisDir 'daily_news_latest.json') | Out-Null
-        Copy-IfExists $newsSource (Join-Path $analysisDir ("daily_news_{0}.json" -f $AsOfDate)) | Out-Null
+    Write-Log "=== $Name ==="
+    try {
+        & $Action
     }
-    if ($summarySource) {
-        Copy-IfExists $summarySource (Join-Path $analysisDir 'daily_summary_latest.json') | Out-Null
-        Copy-IfExists $summarySource (Join-Path $analysisDir ("daily_summary_{0}.json" -f $AsOfDate)) | Out-Null
-    }
-}
-
-function Publish-PredictionSnapshot([string]$RootPath, [string]$AsOfDate) {
-    $predictionDir = Join-Path $RootPath 'analysis\prediction'
-    if (-not (Test-Path $predictionDir)) {
-        Write-Host "[SKIP] publish prediction snapshot (missing: $predictionDir)"
-        return
-    }
-
-    $historyDir = Join-Path $RootPath ("analysis\prediction_history\{0}" -f $AsOfDate)
-    New-Item -ItemType Directory -Path $historyDir -Force | Out-Null
-
-    $pairs = @(
-        @{ Source = 'trend_latest.json'; Target = 'trend.json' },
-        @{ Source = 'signal_latest.json'; Target = 'signal.json' },
-        @{ Source = 'early_warning_latest.json'; Target = 'early_warning.json' },
-        @{ Source = 'scenario_latest.json'; Target = 'scenario.json' },
-        @{ Source = 'prediction_latest.json'; Target = 'prediction.json' }
-    )
-
-    foreach ($pair in $pairs) {
-        $src = Join-Path $predictionDir $pair.Source
-        $dst = Join-Path $historyDir $pair.Target
-        if (Test-Path $src) {
-            Copy-Item -Path $src -Destination $dst -Force
-            Write-Host "[OK] publish: $dst"
+    catch {
+        if ($ContinueOnError) {
+            Write-Warning "$Name failed: $($_.Exception.Message)"
+        }
+        else {
+            throw
         }
     }
 }
 
+function Invoke-PythonScript {
+    param(
+        [string]$PythonExe,
+        [string]$ScriptPath,
+        [string[]]$Arguments = @()
+    )
+
+    if (-not (Test-Path -LiteralPath $ScriptPath)) {
+        Write-Log "[SKIP] missing script: $ScriptPath"
+        return
+    }
+
+    $argText = if ($Arguments.Count -gt 0) { $Arguments -join " " } else { "" }
+    Write-Host "CMD: $PythonExe $ScriptPath $argText"
+    & $PythonExe $ScriptPath @Arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "$([System.IO.Path]::GetFileName($ScriptPath)) failed with exit code $LASTEXITCODE."
+    }
+}
+
+$Root = Resolve-RepoRoot -ExplicitRoot $Root
+if ([string]::IsNullOrWhiteSpace($Date)) {
+    $Date = Get-Date -Format "yyyy-MM-dd"
+}
+
+$python = Join-Path $Root ".venv\Scripts\python.exe"
+$scriptsDir = Join-Path $Root "scripts"
+$dataDir = Join-Path $Root "data\world_politics"
+$dataAnalysisDir = Join-Path $dataDir "analysis"
+$analysisDir = Join-Path $Root "analysis"
+$predictionDir = Join-Path $analysisDir "prediction"
+$predictionHistoryDir = Join-Path $analysisDir "prediction_history"
+
+Ensure-Dir -PathToEnsure $analysisDir
+Ensure-Dir -PathToEnsure $predictionDir
+Ensure-Dir -PathToEnsure $predictionHistoryDir
+
+Write-Host "GenesisPrediction v2 - run_daily_with_publish"
+Write-Host "ROOT : $Root"
+Write-Host "DATE : $Date"
+Write-Host ("GUARD: " + ($(if ($AllowDirtyRepo) { "OFF" } else { "ON" })))
+
+Push-Location $Root
 try {
-    $Root = (Resolve-Path $Root).Path
-    Set-Location $Root
-    $script:PythonExe = Get-PythonExe $Root
-
-    Write-Host 'GenesisPrediction v2 - run_daily_with_publish'
-    Write-Host "ROOT : $Root"
-    Write-Host "DATE : $Date"
-    Write-Host ("GUARD: {0}" -f ($(if ($AllowDirtyRepo) { 'OFF' } else { 'ON' })))
-    Write-Host ''
-
-    if (-not $AllowDirtyRepo -and (Test-Path (Join-Path $Root '.git'))) {
-        $statusLines = git status --porcelain
-        if ($LASTEXITCODE -eq 0 -and $statusLines) {
-            throw 'Working tree is not clean. Commit/stash changes or rerun with -AllowDirtyRepo.'
+    if (-not $AllowDirtyRepo) {
+        $gitStatus = git status --porcelain 2>$null
+        if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace(($gitStatus | Out-String))) {
+            throw "Working tree is not clean. Commit/stash changes or rerun with -AllowDirtyRepo."
         }
     }
+    else {
+        Write-Log "Dirty repo allowed by flag."
+    }
 
-    Write-Section '1) Analyzer (docker compose run --rm analyzer)'
-    if (Test-Path (Join-Path $Root 'docker-compose.yml') -or Test-Path (Join-Path $Root 'compose.yml')) {
-        if (-not (Test-CommandExists 'docker')) {
-            throw 'docker command not found.'
+    Invoke-Step -Name "1) Analyzer (docker compose run --rm analyzer)" -Action {
+        if ($SkipAnalyzer) {
+            Write-Log "[SKIP] analyzer skipped by flag."
+            return
         }
-        Write-Host 'CMD: docker compose run --rm analyzer'
-        & docker compose run --rm analyzer
+
+        Write-Host "CMD: docker compose run --rm analyzer"
+        docker compose run --rm analyzer
         if ($LASTEXITCODE -ne 0) {
-            throw '1) Analyzer failed.'
+            throw "Analyzer failed with exit code $LASTEXITCODE."
         }
-    } else {
-        Write-Host '[SKIP] docker compose file not found'
+
+        $latestJson = Join-Path $dataAnalysisDir "latest.json"
+        $summaryJson = Join-Path $dataAnalysisDir "summary.json"
+
+        $dailyNewsLatest = Join-Path $dataAnalysisDir "daily_news_latest.json"
+        $dailyNewsDated  = Join-Path $dataAnalysisDir ("daily_news_{0}.json" -f $Date)
+
+        $dailySummaryLatest = Join-Path $dataAnalysisDir "daily_summary_latest.json"
+        $dailySummaryDated  = Join-Path $dataAnalysisDir ("daily_summary_{0}.json" -f $Date)
+
+        if (-not (Copy-IfExists -SourcePath $latestJson -DestinationPath $dailyNewsLatest)) {
+            Write-Warning "latest.json not found; daily_news alias was not created."
+        }
+        Copy-IfExists -SourcePath $dailyNewsLatest -DestinationPath $dailyNewsDated | Out-Null
+
+        if (-not (Copy-IfExists -SourcePath $summaryJson -DestinationPath $dailySummaryLatest)) {
+            Write-Warning "summary.json not found; daily_summary alias was not created."
+        }
+        Copy-IfExists -SourcePath $dailySummaryLatest -DestinationPath $dailySummaryDated | Out-Null
+
+        Copy-IfExists -SourcePath $dailyNewsLatest -DestinationPath (Join-Path $analysisDir "daily_news_latest.json") | Out-Null
+        Copy-IfExists -SourcePath $dailySummaryLatest -DestinationPath (Join-Path $analysisDir "daily_summary_latest.json") | Out-Null
     }
 
-    Write-Section '1.5) Normalize analysis aliases'
-    Ensure-AnalysisAliases -RootPath $Root -AsOfDate $Date
+    Invoke-Step -Name "2) Build daily sentiment" -Action {
+        if ($SkipSentiment) {
+            Write-Log "[SKIP] sentiment skipped by flag."
+            return
+        }
 
-    Write-Section '2) Build daily sentiment'
-    Invoke-Step -Name '2) Build daily sentiment' -FilePath (Join-Path $Root 'scripts\build_daily_sentiment.py') -Arguments @('--date', $Date)
+        Invoke-PythonScript -PythonExe $python `
+            -ScriptPath (Join-Path $scriptsDir "build_daily_sentiment.py") `
+            -Arguments @("--date", $Date)
+    }
 
-    Write-Section '3) Build digest view model'
-    Invoke-Step -Name '3) Build digest view model' -FilePath (Join-Path $Root 'scripts\build_digest_view_model.py') -Arguments @('--date', $Date) -Optional
+    Invoke-Step -Name "3) Build digest view model" -Action {
+        if ($SkipDigest) {
+            Write-Log "[SKIP] digest skipped by flag."
+            return
+        }
 
-    Write-Section '4) Trend engine'
-    Invoke-Step -Name '4) Trend engine' -FilePath (Join-Path $Root 'scripts\trend_engine.py') -Arguments @('--date', $Date) -Optional
+        $digestCandidates = @(
+            (Join-Path $scriptsDir "build_digest_view_model.py"),
+            (Join-Path $scriptsDir "build_digest.py")
+        )
 
-    Write-Section '5) Signal engine'
-    Invoke-Step -Name '5) Signal engine' -FilePath (Join-Path $Root 'scripts\signal_engine.py') -Arguments @('--date', $Date) -Optional
+        $digestScript = $digestCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+        if ($null -eq $digestScript -or [string]::IsNullOrWhiteSpace($digestScript)) {
+            Write-Log "[SKIP] digest builder not found."
+            return
+        }
 
-    Write-Section '6) Scenario engine'
-    Invoke-Step -Name '6) Scenario engine' -FilePath (Join-Path $Root 'scripts\scenario_engine.py') -Arguments @('--date', $Date) -Optional
+        Invoke-PythonScript -PythonExe $python -ScriptPath $digestScript -Arguments @("--date", $Date)
+    }
 
-    Write-Section '7) Prediction engine'
-    Invoke-Step -Name '7) Prediction engine' -FilePath (Join-Path $Root 'scripts\prediction_engine.py') -Arguments @('--date', $Date) -Optional
+    Invoke-Step -Name "4) Prediction pipeline" -Action {
+        if ($SkipPrediction) {
+            Write-Log "[SKIP] prediction skipped by flag."
+            return
+        }
 
-    Write-Section '8) Publish prediction history snapshot'
-    Publish-PredictionSnapshot -RootPath $Root -AsOfDate $Date
+        Invoke-PythonScript -PythonExe $python `
+            -ScriptPath (Join-Path $scriptsDir "trend_engine.py")
 
-    Write-Host 'run_daily_with_publish completed successfully.'
+        Invoke-PythonScript -PythonExe $python `
+            -ScriptPath (Join-Path $scriptsDir "signal_engine.py")
+
+        Invoke-PythonScript -PythonExe $python `
+            -ScriptPath (Join-Path $scriptsDir "scenario_engine.py")
+
+        Invoke-PythonScript -PythonExe $python `
+            -ScriptPath (Join-Path $scriptsDir "prediction_engine.py")
+    }
+
+    Invoke-Step -Name "5) Publish prediction snapshot" -Action {
+        $datedDir = Join-Path $predictionHistoryDir $Date
+        Ensure-Dir -PathToEnsure $datedDir
+
+        $predictionFiles = @(
+            "trend_latest.json",
+            "signal_latest.json",
+            "early_warning_latest.json",
+            "scenario_latest.json",
+            "prediction_latest.json"
+        )
+
+        foreach ($name in $predictionFiles) {
+            $src = Join-Path $predictionDir $name
+            if (Test-Path -LiteralPath $src) {
+                Copy-Item -LiteralPath $src -Destination (Join-Path $datedDir $name) -Force
+                Write-Log "[OK] snapshot: $name"
+            }
+        }
+    }
+
+    Write-Log "run_daily_with_publish completed successfully."
     exit 0
 }
 catch {
-    Write-Host 'run_daily_with_publish finished with warnings/errors.' -ForegroundColor Yellow
+    Write-Host "run_daily_with_publish finished with warnings/errors."
     Write-Error $_
     exit 1
+}
+finally {
+    Pop-Location
 }

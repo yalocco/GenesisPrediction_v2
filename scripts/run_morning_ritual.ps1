@@ -1,240 +1,215 @@
-[CmdletBinding()]
 param(
     [string]$Date = "",
-    [switch]$Guard,
+    [string]$Root = "",
+    [switch]$AllowDirtyRepo,
     [switch]$SkipMain,
     [switch]$SkipFx,
     [switch]$SkipHealth,
     [switch]$SkipRefresh,
-    [switch]$ContinueOnError,
-    [switch]$AllowDirtyRepo
+    [switch]$ContinueOnError
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Root = Split-Path -Parent $ScriptDir
-Set-Location $Root
-
 function Write-Log {
     param([string]$Message)
-    $ts = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss")
+    $ts = Get-Date -Format "yyyy-MM-ddTHH:mm:ss"
     Write-Host "[$ts] $Message"
 }
 
-function Resolve-Python {
-    $candidates = @(
-        (Join-Path $Root ".venv/Scripts/python.exe"),
-        (Join-Path $Root ".venv/bin/python"),
-        "python",
-        "py"
-    )
+function Resolve-RepoRoot {
+    param([string]$ExplicitRoot)
 
-    foreach ($candidate in $candidates) {
-        if ($candidate -eq "python" -or $candidate -eq "py") {
-            $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
-            if ($null -ne $cmd) {
-                return $candidate
-            }
-        }
-        elseif (Test-Path $candidate) {
-            return $candidate
-        }
+    if (-not [string]::IsNullOrWhiteSpace($ExplicitRoot)) {
+        return (Resolve-Path $ExplicitRoot).Path
     }
 
-    throw "Python runtime was not found. Expected .venv or PATH python."
+    if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
+        return (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+    }
+
+    if ($MyInvocation.MyCommand.Path) {
+        $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+        return (Resolve-Path (Join-Path $scriptDir "..")).Path
+    }
+
+    return (Get-Location).Path
 }
 
-function Fail-Or-Continue {
-    param([string]$Message)
-    if ($ContinueOnError) {
-        Write-Warning $Message
-    }
-    else {
-        throw $Message
-    }
-}
-
-function Invoke-External {
+function Invoke-Step {
     param(
-        [string]$Title,
-        [string[]]$Command,
-        [string]$WorkingDirectory = $Root,
-        [switch]$Optional
+        [string]$Name,
+        [scriptblock]$Action
     )
 
-    Write-Log "=== $Title ==="
-    Write-Host ("CMD: " + ($Command -join " "))
-
-    Push-Location $WorkingDirectory
+    Write-Log "=== $Name ==="
     try {
-        & $Command[0] @($Command[1..($Command.Length - 1)])
-        if ($LASTEXITCODE -ne 0) {
-            $message = "$Title failed with exit code $LASTEXITCODE."
-            if ($Optional) {
-                Fail-Or-Continue $message
-            }
-            else {
-                throw $message
-            }
-        }
+        & $Action
     }
-    finally {
-        Pop-Location
+    catch {
+        if ($ContinueOnError) {
+            Write-Warning "$Name failed: $($_.Exception.Message)"
+        }
+        else {
+            throw
+        }
     }
 }
 
-function Invoke-PythonScript {
+function Test-ScriptSupportsDate {
+    param([string]$ScriptPath)
+
+    if (-not (Test-Path -LiteralPath $ScriptPath)) {
+        return $false
+    }
+
+    try {
+        $text = Get-Content -LiteralPath $ScriptPath -Raw -Encoding UTF8
+        if ($text -match '(?is)param\s*\(' -and $text -match '(?i)\$Date\b') {
+            return $true
+        }
+    }
+    catch {
+        return $false
+    }
+
+    return $false
+}
+
+function Invoke-PowerShellFile {
     param(
-        [string]$Title,
+        [string]$Name,
         [string]$ScriptPath,
-        [string[]]$Arguments = @(),
-        [switch]$Optional
+        [string]$DateValue = "",
+        [switch]$PassAllowDirtyRepo
     )
 
-    if (-not (Test-Path $ScriptPath)) {
-        $message = "$Title skipped: script not found -> $ScriptPath"
-        if ($Optional) {
-            Write-Log $message
-            return
-        }
-        throw $message
+    if (-not (Test-Path -LiteralPath $ScriptPath)) {
+        Write-Log "[SKIP] missing script: $ScriptPath"
+        return
     }
 
-    $python = Resolve-Python
-    $cmd = @($python, $ScriptPath) + $Arguments
-    Invoke-External -Title $Title -Command $cmd -Optional:$Optional
-}
+    $args = @(
+        "-ExecutionPolicy", "Bypass",
+        "-File", $ScriptPath
+    )
 
-function Get-DefaultDate {
-    return (Get-Date).ToString("yyyy-MM-dd")
-}
-
-function Test-GitClean {
-    $git = Get-Command git -ErrorAction SilentlyContinue
-    if ($null -eq $git) {
-        Write-Log "git command not found; skip clean-check."
-        return $true
+    if (-not [string]::IsNullOrWhiteSpace($DateValue) -and (Test-ScriptSupportsDate -ScriptPath $ScriptPath)) {
+        $args += @("-Date", $DateValue)
     }
 
-    $status = & git status --porcelain 2>$null
+    if ($PassAllowDirtyRepo) {
+        $args += "-AllowDirtyRepo"
+    }
+
+    Write-Host ("CMD: powershell " + ($args -join " "))
+    & powershell @args
     if ($LASTEXITCODE -ne 0) {
-        Write-Log "git status check failed; skip clean-check."
-        return $true
+        throw "$Name failed with exit code $LASTEXITCODE."
     }
-
-    return [string]::IsNullOrWhiteSpace(($status | Out-String))
 }
 
+$Root = Resolve-RepoRoot -ExplicitRoot $Root
 if ([string]::IsNullOrWhiteSpace($Date)) {
-    $Date = Get-DefaultDate
+    $Date = Get-Date -Format "yyyy-MM-dd"
 }
 
-$mainEntry = Join-Path $ScriptDir "run_daily_with_publish.ps1"
-$healthScript = Join-Path $Root "scripts/build_data_health.py"
-$refreshScript = Join-Path $Root "scripts/refresh_latest_artifacts.py"
+$scriptsDir = Join-Path $Root "scripts"
 
-$fxSteps = @(
-    @{ Title = "FX Lane 1) Daily rates"; Script = (Join-Path $ScriptDir "run_daily_fx_rates.ps1"); Args = @("-Date", $Date) },
-    @{ Title = "FX Lane 2) Daily inputs"; Script = (Join-Path $ScriptDir "run_daily_fx_inputs.ps1"); Args = @("-Date", $Date) },
-    @{ Title = "FX Lane 3) Daily overlay"; Script = (Join-Path $ScriptDir "run_daily_fx_overlay.ps1"); Args = @("-Date", $Date) }
-)
-
-Write-Host ""
 Write-Host "Morning Ritual (single entrypoint)"
 Write-Host "ROOT      : $Root"
 Write-Host "DATE      : $Date"
-Write-Host "GUARD     : $([string]::new($(if ($Guard) { 'ON' } else { 'OFF' })))"
-Write-Host "MAIN      : $([string]::new($(if ($SkipMain) { 'SKIP' } else { 'RUN' })))"
-Write-Host "FX        : $([string]::new($(if ($SkipFx) { 'SKIP' } else { 'RUN' })))"
-Write-Host "HEALTH    : $([string]::new($(if ($SkipHealth) { 'SKIP' } else { 'RUN' })))"
-Write-Host "REFRESH   : $([string]::new($(if ($SkipRefresh) { 'SKIP' } else { 'RUN' })))"
+Write-Host ("GUARD     : " + ($(if ($AllowDirtyRepo) { "OFF" } else { "ON" })))
+Write-Host ("MAIN      : " + ($(if ($SkipMain) { "SKIP" } else { "RUN" })))
+Write-Host ("FX        : " + ($(if ($SkipFx) { "SKIP" } else { "RUN" })))
+Write-Host ("HEALTH    : " + ($(if ($SkipHealth) { "SKIP" } else { "RUN" })))
+Write-Host ("REFRESH   : " + ($(if ($SkipRefresh) { "SKIP" } else { "RUN" })))
 Write-Host ""
 
-if (-not $AllowDirtyRepo) {
-    if (-not (Test-GitClean)) {
-        throw "Working tree is not clean. Commit/stash changes or rerun with -AllowDirtyRepo."
-    }
-}
-else {
-    Write-Log "Dirty repo allowed by flag."
-}
-
-$pipelineFailed = $false
-
+Push-Location $Root
 try {
-    if (-not $SkipMain) {
-        if (-not (Test-Path $mainEntry)) {
-            throw "Main entrypoint not found: $mainEntry"
+    if (-not $AllowDirtyRepo) {
+        $gitStatus = git status --porcelain 2>$null
+        if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace(($gitStatus | Out-String))) {
+            throw "Working tree is not clean. Commit/stash changes or rerun with -AllowDirtyRepo."
         }
-
-        $mainCmd = @(
-            "powershell",
-            "-ExecutionPolicy", "Bypass",
-            "-File", $mainEntry,
-            "-Date", $Date
-        )
-
-        if ($Guard) {
-            $mainCmd += "-Guard"
-        }
-        if ($ContinueOnError) {
-            $mainCmd += "-ContinueOnError"
-        }
-
-        Invoke-External -Title "1) run_daily_with_publish" -Command $mainCmd
     }
     else {
-        Write-Log "Main lane skipped by flag."
+        Write-Log "Dirty repo allowed by flag."
+    }
+
+    if (-not $SkipMain) {
+        Invoke-Step -Name "1) run_daily_with_publish" -Action {
+            Invoke-PowerShellFile `
+                -Name "run_daily_with_publish" `
+                -ScriptPath (Join-Path $scriptsDir "run_daily_with_publish.ps1") `
+                -DateValue $Date `
+                -PassAllowDirtyRepo:$AllowDirtyRepo
+        }
     }
 
     if (-not $SkipFx) {
-        foreach ($step in $fxSteps) {
-            if (Test-Path $step.Script) {
-                $cmd = @(
-                    "powershell",
-                    "-ExecutionPolicy", "Bypass",
-                    "-File", $step.Script
-                ) + $step.Args
-                Invoke-External -Title $step.Title -Command $cmd -Optional
-            }
-            else {
-                Write-Log ($step.Title + " skipped: script not found -> " + $step.Script)
-            }
+        Invoke-Step -Name "FX Lane 1) Daily rates" -Action {
+            Invoke-PowerShellFile `
+                -Name "FX Lane 1) Daily rates" `
+                -ScriptPath (Join-Path $scriptsDir "run_daily_fx_rates.ps1") `
+                -DateValue $Date
         }
-    }
-    else {
-        Write-Log "FX lane skipped by flag."
+
+        Invoke-Step -Name "FX Lane 2) Daily inputs" -Action {
+            Invoke-PowerShellFile `
+                -Name "FX Lane 2) Daily inputs" `
+                -ScriptPath (Join-Path $scriptsDir "run_daily_fx_inputs.ps1") `
+                -DateValue $Date
+        }
+
+        Invoke-Step -Name "FX Lane 3) Daily overlay" -Action {
+            Invoke-PowerShellFile `
+                -Name "FX Lane 3) Daily overlay" `
+                -ScriptPath (Join-Path $scriptsDir "run_daily_fx_overlay.ps1") `
+                -DateValue $Date
+        }
     }
 
     if (-not $SkipHealth) {
-        Invoke-PythonScript -Title "2) Build data health" -ScriptPath $healthScript -Arguments @("--root", $Root) -Optional
-    }
-    else {
-        Write-Log "Health step skipped by flag."
+        Invoke-Step -Name "Health lane" -Action {
+            Invoke-PowerShellFile `
+                -Name "Health lane" `
+                -ScriptPath (Join-Path $scriptsDir "run_health_checks.ps1") `
+                -DateValue $Date
+        }
     }
 
     if (-not $SkipRefresh) {
-        Invoke-PythonScript -Title "3) Refresh latest artifacts" -ScriptPath $refreshScript -Arguments @() -Optional
-    }
-    else {
-        Write-Log "Refresh step skipped by flag."
+        Invoke-Step -Name "Refresh latest artifacts" -Action {
+            $refreshCandidates = @(
+                (Join-Path $scriptsDir "refresh_latest.ps1"),
+                (Join-Path $scriptsDir "refresh_latest_artifacts.ps1"),
+                (Join-Path $scriptsDir "materialize_latest.ps1")
+            )
+
+            $refreshScript = $refreshCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+            if ($null -eq $refreshScript -or [string]::IsNullOrWhiteSpace($refreshScript)) {
+                Write-Log "[SKIP] refresh script not found."
+                return
+            }
+
+            Invoke-PowerShellFile `
+                -Name "Refresh latest artifacts" `
+                -ScriptPath $refreshScript `
+                -DateValue $Date
+        }
     }
 
-    Write-Host ""
-    Write-Host "Morning Ritual completed."
-    Write-Host ""
+    Write-Log "Morning Ritual completed successfully."
+    exit 0
 }
 catch {
-    $pipelineFailed = $true
+    Write-Host "Morning Ritual finished with warnings/errors."
     Write-Error $_
-    if (-not $ContinueOnError) {
-        exit 1
-    }
+    exit 1
 }
 finally {
-    if ($pipelineFailed) {
-        Write-Host "Morning Ritual finished with warnings/errors."
-    }
+    Pop-Location
 }
