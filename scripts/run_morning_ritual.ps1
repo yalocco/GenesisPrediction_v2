@@ -1,223 +1,240 @@
-# scripts/run_morning_ritual.ps1
-# Morning Ritual (single entrypoint)
-#
-# Goal:
-#   One command to converge analysis health to OK with minimal, reproducible steps.
-#
-# Key policy (2026-03):
-#   When -Date is omitted, default to LOCAL yesterday for world/news pipeline consistency.
-#
-# Design:
-#   - WorldDate is the ritual's single truth (yyyy-MM-dd).
-#   - LOCAL YESTER is used as the default when -Date is omitted.
-#   - UTC NOW / UTC YESTER / LOCAL DATE are still logged for diagnostics.
-#   - LocalDate is used for FX artifact reconciliation only.
-#   - Observation Memory and Sentiment Trend are built after health/update steps.
-#   - Prediction Runtime is built after observation/trend steps and before finish.
-
 [CmdletBinding()]
 param(
-  [Parameter(Mandatory = $false)]
-  [string]$Date,
-
-  [switch]$RunGuard
+    [string]$Date = "",
+    [switch]$Guard,
+    [switch]$SkipMain,
+    [switch]$SkipFx,
+    [switch]$SkipHealth,
+    [switch]$SkipRefresh,
+    [switch]$ContinueOnError,
+    [switch]$AllowDirtyRepo
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-function NowIso() {
-  return (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss")
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$Root = Split-Path -Parent $ScriptDir
+Set-Location $Root
+
+function Write-Log {
+    param([string]$Message)
+    $ts = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss")
+    Write-Host "[$ts] $Message"
 }
 
-function Log([string]$msg) {
-  Write-Host ("[{0}] {1}" -f (NowIso), $msg)
+function Resolve-Python {
+    $candidates = @(
+        (Join-Path $Root ".venv/Scripts/python.exe"),
+        (Join-Path $Root ".venv/bin/python"),
+        "python",
+        "py"
+    )
+
+    foreach ($candidate in $candidates) {
+        if ($candidate -eq "python" -or $candidate -eq "py") {
+            $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
+            if ($null -ne $cmd) {
+                return $candidate
+            }
+        }
+        elseif (Test-Path $candidate) {
+            return $candidate
+        }
+    }
+
+    throw "Python runtime was not found. Expected .venv or PATH python."
 }
 
-function Fail([string]$step, [string]$detail, [int]$exitCode = 1) {
-  Log ("[ERROR] {0} failed (exit={1})" -f $step, $exitCode)
-  Log ("[ERROR] {0}" -f $detail)
-  exit $exitCode
-}
-
-function Run([string]$step, [scriptblock]$action) {
-  try {
-    & $action
-  }
-  catch {
-    Fail $step ($_.Exception.Message) 1
-  }
-}
-
-# --- Resolve dates ---
-$repoRoot = (Resolve-Path ".").Path
-
-$utcNow = (Get-Date).ToUniversalTime()
-$utcYesterday = $utcNow.AddDays(-1)
-$utcYesterdayStr = $utcYesterday.ToString("yyyy-MM-dd")
-
-$localNow = Get-Date
-$localDate = $localNow.ToString("yyyy-MM-dd")
-$localYesterday = $localNow.AddDays(-1).ToString("yyyy-MM-dd")
-
-if ([string]::IsNullOrWhiteSpace($Date)) {
-  $WorldDate = $localYesterday
-}
-else {
-  $WorldDate = $Date.Trim()
-}
-
-$LocalDate = $localDate
-
-Log "Morning Ritual (single entrypoint)"
-Write-Host ("ROOT : {0}" -f $repoRoot)
-Write-Host ("UTC NOW       : {0}" -f $utcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"))
-Write-Host ("UTC YESTER    : {0}" -f $utcYesterdayStr)
-Write-Host ("LOCAL DATE    : {0}" -f $LocalDate)
-Write-Host ("LOCAL YESTER  : {0}" -f $localYesterday)
-Write-Host ("WORLD DATE    : {0}" -f $WorldDate)
-
-# Common paths
-$py = Join-Path $repoRoot ".venv\Scripts\python.exe"
-
-# --- 1) Main pipeline ---
-Run "1) run_daily_with_publish" {
-  Log "=== 1) run_daily_with_publish ==="
-  $cmd = "powershell -ExecutionPolicy Bypass -File `"$repoRoot\scripts\run_daily_with_publish.ps1`" -Date $WorldDate"
-  if ($RunGuard) { $cmd += " -RunGuard" }
-  Log "CMD: $cmd"
-
-  if ($RunGuard) {
-    powershell -ExecutionPolicy Bypass -File "$repoRoot\scripts\run_daily_with_publish.ps1" -Date $WorldDate -RunGuard
-  }
-  else {
-    powershell -ExecutionPolicy Bypass -File "$repoRoot\scripts\run_daily_with_publish.ps1" -Date $WorldDate
-  }
-}
-
-# --- 1-1) Publish daily_summary_latest ---
-Run "1-1) Publish daily_summary_latest" {
-  Log "=== 1-1) Publish daily_summary_latest ==="
-  $cmd = "`"$py`" `"$repoRoot\scripts\publish_daily_summary_latest.py`" --date $WorldDate"
-  Log "CMD: $cmd"
-  & $py "$repoRoot\scripts\publish_daily_summary_latest.py" --date $WorldDate
-}
-
-# --- 1-2) Build daily sentiment ---
-Run "1-2) Build daily sentiment" {
-  Log "=== 1-2) Build daily sentiment ==="
-  $cmd = "`"$py`" `"$repoRoot\scripts\build_daily_sentiment.py`" --date $WorldDate"
-  Log "CMD: $cmd"
-  & $py "$repoRoot\scripts\build_daily_sentiment.py" --date $WorldDate
-}
-
-# --- 1-3) Build sentiment timeseries csv ---
-Run "1-3) Build sentiment timeseries csv" {
-  Log "=== 1-3) Build sentiment timeseries csv ==="
-  $cmd = "`"$py`" `"$repoRoot\scripts\build_sentiment_timeseries_csv.py`" --date $WorldDate"
-  Log "CMD: $cmd"
-  & $py "$repoRoot\scripts\build_sentiment_timeseries_csv.py" --date $WorldDate
-}
-
-# --- 2-1) FX Rates ---
-Run "2-1) FX Rates" {
-  Log "=== 2-1) FX Rates ==="
-  $cmd = "powershell -ExecutionPolicy Bypass -File `"$repoRoot\scripts\run_daily_fx_rates.ps1`""
-  Log "CMD: $cmd"
-  powershell -ExecutionPolicy Bypass -File "$repoRoot\scripts\run_daily_fx_rates.ps1"
-}
-
-# --- 2-2) FX Inputs ---
-Run "2-2) FX Inputs" {
-  Log "=== 2-2) FX Inputs ==="
-  $cmd = "powershell -ExecutionPolicy Bypass -File `"$repoRoot\scripts\run_daily_fx_inputs.ps1`""
-  Log "CMD: $cmd"
-  powershell -ExecutionPolicy Bypass -File "$repoRoot\scripts\run_daily_fx_inputs.ps1"
-}
-
-# --- 2-3) FX Overlay ---
-Run "2-3) FX Overlay" {
-  Log "=== 2-3) FX Overlay ==="
-  $cmd = "powershell -ExecutionPolicy Bypass -File `"$repoRoot\scripts\run_daily_fx_overlay.ps1`""
-  Log "CMD: $cmd"
-  powershell -ExecutionPolicy Bypass -File "$repoRoot\scripts\run_daily_fx_overlay.ps1"
-}
-
-# --- 2-4) Reconcile FX dated artifacts for WorldDate and publish legacy ---
-Run "2-4) Publish FX overlay legacy (converge)" {
-  Log "=== 2-4) Publish FX overlay legacy (converge) ==="
-
-  $analysisDir = Join-Path $repoRoot "data\world_politics\analysis"
-  $srcWorld = Join-Path $analysisDir ("fx_jpy_thb_overlay_{0}.png" -f $WorldDate)
-  $srcLocal = Join-Path $analysisDir ("fx_jpy_thb_overlay_{0}.png" -f $LocalDate)
-
-  if (-not (Test-Path $srcWorld)) {
-    if (Test-Path $srcLocal) {
-      Log ("[WARN] missing {0} ; copying from local-dated {1}" -f (Split-Path $srcWorld -Leaf), (Split-Path $srcLocal -Leaf))
-      Copy-Item -Force $srcLocal $srcWorld
-      Log ("[OK] created missing world-dated overlay: {0}" -f (Split-Path $srcWorld -Leaf))
+function Fail-Or-Continue {
+    param([string]$Message)
+    if ($ContinueOnError) {
+        Write-Warning $Message
     }
     else {
-      Log ("[WARN] missing both world/local source overlays: {0} / {1}" -f (Split-Path $srcWorld -Leaf), (Split-Path $srcLocal -Leaf))
+        throw $Message
     }
-  }
-
-  $cmd = "`"$py`" `"$repoRoot\scripts\publish_fx_overlay_legacy.py`" --date $WorldDate"
-  Log "CMD: $cmd"
-  & $py "$repoRoot\scripts\publish_fx_overlay_legacy.py" --date $WorldDate
 }
 
-# --- 3) Observation artifacts ---
-Run "3) Build observation artifacts" {
-  Log "=== 3) Build observation artifacts ==="
-  $script = Join-Path $repoRoot "scripts\build_observation_artifacts.py"
-  if (Test-Path $script) {
-    $cmd = "`"$py`" `"$script`" --date $WorldDate"
-    Log "CMD: $cmd"
-    & $py $script --date $WorldDate
-  }
-  else {
-    Log "[WARN] scripts\build_observation_artifacts.py not found; skipping"
-  }
+function Invoke-External {
+    param(
+        [string]$Title,
+        [string[]]$Command,
+        [string]$WorkingDirectory = $Root,
+        [switch]$Optional
+    )
+
+    Write-Log "=== $Title ==="
+    Write-Host ("CMD: " + ($Command -join " "))
+
+    Push-Location $WorkingDirectory
+    try {
+        & $Command[0] @($Command[1..($Command.Length - 1)])
+        if ($LASTEXITCODE -ne 0) {
+            $message = "$Title failed with exit code $LASTEXITCODE."
+            if ($Optional) {
+                Fail-Or-Continue $message
+            }
+            else {
+                throw $message
+            }
+        }
+    }
+    finally {
+        Pop-Location
+    }
 }
 
-# --- 4) Data Health update ---
-Run "4) Data Health update" {
-  Log "=== 4) Data Health update ==="
-  $cmd = "`"$py`" `"$repoRoot\scripts\build_data_health.py`" --date $WorldDate"
-  Log "CMD: $cmd"
-  & $py "$repoRoot\scripts\build_data_health.py" --date $WorldDate
+function Invoke-PythonScript {
+    param(
+        [string]$Title,
+        [string]$ScriptPath,
+        [string[]]$Arguments = @(),
+        [switch]$Optional
+    )
+
+    if (-not (Test-Path $ScriptPath)) {
+        $message = "$Title skipped: script not found -> $ScriptPath"
+        if ($Optional) {
+            Write-Log $message
+            return
+        }
+        throw $message
+    }
+
+    $python = Resolve-Python
+    $cmd = @($python, $ScriptPath) + $Arguments
+    Invoke-External -Title $Title -Command $cmd -Optional:$Optional
 }
 
-# --- 5) Save observation memory ---
-Run "5) Save observation memory" {
-  Log "=== 5) Save observation memory ==="
-  $cmd = "powershell -ExecutionPolicy Bypass -File `"$repoRoot\scripts\run_save_observation_memory.ps1`" -Date $WorldDate"
-  Log "CMD: $cmd"
-  powershell -ExecutionPolicy Bypass -File "$repoRoot\scripts\run_save_observation_memory.ps1" -Date $WorldDate
+function Get-DefaultDate {
+    return (Get-Date).ToString("yyyy-MM-dd")
 }
 
-# --- 6) Build sentiment trend ---
-Run "6) Build sentiment trend" {
-  Log "=== 6) Build sentiment trend ==="
-  $cmd = "powershell -ExecutionPolicy Bypass -File `"$repoRoot\scripts\run_build_sentiment_trend.ps1`" -AsOf $WorldDate"
-  Log "CMD: $cmd"
-  powershell -ExecutionPolicy Bypass -File "$repoRoot\scripts\run_build_sentiment_trend.ps1" -AsOf $WorldDate
+function Test-GitClean {
+    $git = Get-Command git -ErrorAction SilentlyContinue
+    if ($null -eq $git) {
+        Write-Log "git command not found; skip clean-check."
+        return $true
+    }
+
+    $status = & git status --porcelain 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Log "git status check failed; skip clean-check."
+        return $true
+    }
+
+    return [string]::IsNullOrWhiteSpace(($status | Out-String))
 }
 
-# --- 7) Prediction Runtime ---
-Run "7) Prediction Runtime" {
-  Log "=== 7) Prediction Runtime ==="
-  $script = Join-Path $repoRoot "scripts\run_prediction_pipeline.py"
-  if (Test-Path $script) {
-    $cmd = "`"$py`" `"$script`" --date $WorldDate --write-history"
-    Log "CMD: $cmd"
-    & $py $script --date $WorldDate --write-history
-  }
-  else {
-    Log "[WARN] scripts\run_prediction_pipeline.py not found; skipping"
-  }
+if ([string]::IsNullOrWhiteSpace($Date)) {
+    $Date = Get-DefaultDate
 }
 
-Log "DONE (Morning Ritual)"
-exit 0
+$mainEntry = Join-Path $ScriptDir "run_daily_with_publish.ps1"
+$healthScript = Join-Path $Root "scripts/build_data_health.py"
+$refreshScript = Join-Path $Root "scripts/refresh_latest_artifacts.py"
+
+$fxSteps = @(
+    @{ Title = "FX Lane 1) Daily rates"; Script = (Join-Path $ScriptDir "run_daily_fx_rates.ps1"); Args = @("-Date", $Date) },
+    @{ Title = "FX Lane 2) Daily inputs"; Script = (Join-Path $ScriptDir "run_daily_fx_inputs.ps1"); Args = @("-Date", $Date) },
+    @{ Title = "FX Lane 3) Daily overlay"; Script = (Join-Path $ScriptDir "run_daily_fx_overlay.ps1"); Args = @("-Date", $Date) }
+)
+
+Write-Host ""
+Write-Host "Morning Ritual (single entrypoint)"
+Write-Host "ROOT      : $Root"
+Write-Host "DATE      : $Date"
+Write-Host "GUARD     : $([string]::new($(if ($Guard) { 'ON' } else { 'OFF' })))"
+Write-Host "MAIN      : $([string]::new($(if ($SkipMain) { 'SKIP' } else { 'RUN' })))"
+Write-Host "FX        : $([string]::new($(if ($SkipFx) { 'SKIP' } else { 'RUN' })))"
+Write-Host "HEALTH    : $([string]::new($(if ($SkipHealth) { 'SKIP' } else { 'RUN' })))"
+Write-Host "REFRESH   : $([string]::new($(if ($SkipRefresh) { 'SKIP' } else { 'RUN' })))"
+Write-Host ""
+
+if (-not $AllowDirtyRepo) {
+    if (-not (Test-GitClean)) {
+        throw "Working tree is not clean. Commit/stash changes or rerun with -AllowDirtyRepo."
+    }
+}
+else {
+    Write-Log "Dirty repo allowed by flag."
+}
+
+$pipelineFailed = $false
+
+try {
+    if (-not $SkipMain) {
+        if (-not (Test-Path $mainEntry)) {
+            throw "Main entrypoint not found: $mainEntry"
+        }
+
+        $mainCmd = @(
+            "powershell",
+            "-ExecutionPolicy", "Bypass",
+            "-File", $mainEntry,
+            "-Date", $Date
+        )
+
+        if ($Guard) {
+            $mainCmd += "-Guard"
+        }
+        if ($ContinueOnError) {
+            $mainCmd += "-ContinueOnError"
+        }
+
+        Invoke-External -Title "1) run_daily_with_publish" -Command $mainCmd
+    }
+    else {
+        Write-Log "Main lane skipped by flag."
+    }
+
+    if (-not $SkipFx) {
+        foreach ($step in $fxSteps) {
+            if (Test-Path $step.Script) {
+                $cmd = @(
+                    "powershell",
+                    "-ExecutionPolicy", "Bypass",
+                    "-File", $step.Script
+                ) + $step.Args
+                Invoke-External -Title $step.Title -Command $cmd -Optional
+            }
+            else {
+                Write-Log ($step.Title + " skipped: script not found -> " + $step.Script)
+            }
+        }
+    }
+    else {
+        Write-Log "FX lane skipped by flag."
+    }
+
+    if (-not $SkipHealth) {
+        Invoke-PythonScript -Title "2) Build data health" -ScriptPath $healthScript -Arguments @("--root", $Root) -Optional
+    }
+    else {
+        Write-Log "Health step skipped by flag."
+    }
+
+    if (-not $SkipRefresh) {
+        Invoke-PythonScript -Title "3) Refresh latest artifacts" -ScriptPath $refreshScript -Arguments @() -Optional
+    }
+    else {
+        Write-Log "Refresh step skipped by flag."
+    }
+
+    Write-Host ""
+    Write-Host "Morning Ritual completed."
+    Write-Host ""
+}
+catch {
+    $pipelineFailed = $true
+    Write-Error $_
+    if (-not $ContinueOnError) {
+        exit 1
+    }
+}
+finally {
+    if ($pipelineFailed) {
+        Write-Host "Morning Ritual finished with warnings/errors."
+    }
+}

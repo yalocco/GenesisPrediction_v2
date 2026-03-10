@@ -1,157 +1,256 @@
-# scripts/run_daily_with_publish.ps1
-# GenesisPrediction v2 - run_daily_with_publish
-# - Runs analyzer
-# - Publishes daily_news_latest (for sentiment pipeline) WITHOUT interactive prompts
-# - Ensures dated daily_news_YYYY-MM-DD.html exists (self-healing)
-# - Normalizes "latest" artifacts (self-healing)
-# - Optional: run guard after publish
-#
-# IMPORTANT (Quota-friendly design):
-# - FX / API-consuming routines are NOT executed here.
-# - FX pipeline must be executed by run_morning_ritual.ps1 (single entrypoint) or dedicated FX runners.
-#
-# Usage:
-#   powershell -ExecutionPolicy Bypass -File scripts/run_daily_with_publish.ps1
-#   powershell -ExecutionPolicy Bypass -File scripts/run_daily_with_publish.ps1 -Date 2026-02-15
-#   powershell -ExecutionPolicy Bypass -File scripts/run_daily_with_publish.ps1 -Guard
-#
-# Notes:
-# - DATE default is UTC today (to match existing behavior/logs)
-# - publish_daily_news_latest is executed via Python script:
-#     scripts/publish_daily_news_latest.py --date YYYY-MM-DD
-#   so it never prompts "Date:".
-
 [CmdletBinding()]
 param(
-  [string]$Date,
-  [switch]$Guard
+    [string]$Date = "",
+    [switch]$Guard,
+    [switch]$SkipAnalyze,
+    [switch]$SkipPrediction,
+    [switch]$SkipPublish,
+    [switch]$ContinueOnError
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-function NowStamp { (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss") }
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$Root = Split-Path -Parent $ScriptDir
+Set-Location $Root
 
-function Run-Step {
-  param(
-    [Parameter(Mandatory=$true)][string]$Title,
-    [Parameter(Mandatory=$true)][string]$CommandLine
-  )
-  Write-Host ""
-  Write-Host ("[{0}] === {1} ===" -f (NowStamp), $Title)
-  Write-Host ("CMD: {0}" -f $CommandLine)
-
-  # Use powershell invocation so quoting stays consistent
-  & powershell -NoProfile -ExecutionPolicy Bypass -Command $CommandLine
-  $code = $LASTEXITCODE
-  if ($code -ne 0) {
-    throw ("[ERROR] step failed (exit={0}): {1}" -f $code, $Title)
-  }
+function Write-Log {
+    param([string]$Message)
+    $ts = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss")
+    Write-Host "[$ts] $Message"
 }
 
-# ----------------------------
-# Context
-# ----------------------------
-$ROOT = (Resolve-Path ".").Path
+function Fail-Or-Continue {
+    param([string]$Message)
+    if ($ContinueOnError) {
+        Write-Warning $Message
+    }
+    else {
+        throw $Message
+    }
+}
 
-# Match previous log line: "DATE : YYYY-MM-DD (default=UTC today)"
+function Resolve-Python {
+    $candidates = @(
+        (Join-Path $Root ".venv/Scripts/python.exe"),
+        (Join-Path $Root ".venv/bin/python"),
+        "python",
+        "py"
+    )
+
+    foreach ($candidate in $candidates) {
+        if ($candidate -eq "python" -or $candidate -eq "py") {
+            $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
+            if ($null -ne $cmd) {
+                return $candidate
+            }
+        }
+        elseif (Test-Path $candidate) {
+            return $candidate
+        }
+    }
+
+    throw "Python runtime was not found. Expected .venv or PATH python."
+}
+
+function Resolve-DockerComposeCommand {
+    $docker = Get-Command docker -ErrorAction SilentlyContinue
+    if ($null -eq $docker) {
+        return $null
+    }
+
+    $composeCheck = & docker compose version 2>$null
+    if ($LASTEXITCODE -eq 0) {
+        return @("docker", "compose")
+    }
+
+    $dockerCompose = Get-Command docker-compose -ErrorAction SilentlyContinue
+    if ($null -ne $dockerCompose) {
+        return @("docker-compose")
+    }
+
+    return $null
+}
+
+function Invoke-External {
+    param(
+        [string]$Title,
+        [string[]]$Command,
+        [string]$WorkingDirectory = $Root,
+        [switch]$Optional
+    )
+
+    Write-Log "=== $Title ==="
+    Write-Host ("CMD: " + ($Command -join " "))
+
+    Push-Location $WorkingDirectory
+    try {
+        & $Command[0] @($Command[1..($Command.Length - 1)])
+        if ($LASTEXITCODE -ne 0) {
+            $message = "$Title failed with exit code $LASTEXITCODE."
+            if ($Optional) {
+                Fail-Or-Continue $message
+            }
+            else {
+                throw $message
+            }
+        }
+    }
+    finally {
+        Pop-Location
+    }
+}
+
+function Invoke-PythonScript {
+    param(
+        [string]$Title,
+        [string]$ScriptPath,
+        [string[]]$Arguments = @(),
+        [switch]$Optional
+    )
+
+    if (-not (Test-Path $ScriptPath)) {
+        $message = "$Title skipped: script not found -> $ScriptPath"
+        if ($Optional) {
+            Write-Log $message
+            return
+        }
+        throw $message
+    }
+
+    $python = Resolve-Python
+    $cmd = @($python, $ScriptPath) + $Arguments
+    Invoke-External -Title $Title -Command $cmd -Optional:$Optional
+}
+
+function Ensure-Directory {
+    param([string]$Path)
+    if (-not (Test-Path $Path)) {
+        New-Item -ItemType Directory -Path $Path -Force | Out-Null
+    }
+}
+
+function Copy-IfExists {
+    param(
+        [string]$Source,
+        [string]$Destination
+    )
+
+    if (Test-Path $Source) {
+        Copy-Item -Path $Source -Destination $Destination -Force
+        return $true
+    }
+
+    return $false
+}
+
+function Get-DefaultDate {
+    return ([DateTime]::UtcNow.ToString("yyyy-MM-dd"))
+}
+
 if ([string]::IsNullOrWhiteSpace($Date)) {
-  $Date = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd")
-  $dateNote = " (default=UTC today)"
-} else {
-  $dateNote = ""
+    $Date = Get-DefaultDate
 }
 
-# Prefer venv python if exists
-$PY = Join-Path $ROOT ".venv\Scripts\python.exe"
-if (-not (Test-Path $PY)) {
-  # fallback
-  $PY = "python"
-}
+$PredictionDir = Join-Path $Root "analysis/prediction"
+$PredictionHistoryDir = Join-Path $Root "analysis/prediction_history/$Date"
+Ensure-Directory -Path $PredictionDir
+Ensure-Directory -Path $PredictionHistoryDir
 
 Write-Host ""
 Write-Host "GenesisPrediction v2 - run_daily_with_publish"
-Write-Host ("ROOT : {0}" -f $ROOT)
-Write-Host ("DATE : {0}{1}" -f $Date, $dateNote)
-Write-Host ("GUARD: {0}" -f ($(if ($Guard) { "ON" } else { "OFF" })))
-
-# ----------------------------
-# 1) Analyzer
-# ----------------------------
-Run-Step `
-  -Title "1) Analyzer (docker compose run --rm analyzer)" `
-  -CommandLine "cd `"$ROOT`"; docker compose run --rm analyzer"
-
-# ----------------------------
-# 2) Publish daily_news_latest (for sentiment pipeline)
-#    IMPORTANT: call PY script with --date to avoid interactive prompts
-# ----------------------------
-$publishPy = Join-Path $ROOT "scripts\publish_daily_news_latest.py"
-if (-not (Test-Path $publishPy)) {
-  throw ("[ERROR] missing file: {0}" -f $publishPy)
-}
-
-Run-Step `
-  -Title "2) Publish daily_news_latest (for sentiment pipeline)" `
-  -CommandLine "cd `"$ROOT`"; `"$PY`" `"$publishPy`" --date $Date"
-
-# ----------------------------
-# 3) Ensure dated daily_news_YYYY-MM-DD.html exists (self-healing)
-#    - Fixes Health WARN: daily_news_YYYY-MM-DD.html (missing)
-# ----------------------------
-$ensureDatedPy = Join-Path $ROOT "scripts\ensure_daily_news_dated.py"
-if (-not (Test-Path $ensureDatedPy)) {
-  throw ("[ERROR] missing file: {0}" -f $ensureDatedPy)
-}
-
-Run-Step `
-  -Title "3) Ensure daily_news_YYYY-MM-DD.html exists" `
-  -CommandLine "cd `"$ROOT`"; `"$PY`" `"$ensureDatedPy`" --date $Date"
-
-# ----------------------------
-# 4) Normalize "latest" artifacts (self-healing; no manual ops)
-#    - daily_summary_latest.json must always track the newest dated summary
-# ----------------------------
+Write-Host "ROOT : $Root"
+Write-Host "DATE : $Date"
+Write-Host "GUARD: $([string]::new($(if ($Guard) { 'ON' } else { 'OFF' })))"
 Write-Host ""
-Write-Host ("[{0}] === 4) Normalize latest artifacts ===" -f (NowStamp))
 
-$summaryDirs = @(
-  (Join-Path $PSScriptRoot "..\data\world_politics\analysis"),
-  (Join-Path $PSScriptRoot "..\data\world_politics")
-) | ForEach-Object { (Resolve-Path $_ -ErrorAction SilentlyContinue).Path } | Where-Object { $_ }
+$pipelineFailed = $false
 
-$latestSummary = $null
-foreach ($dir in $summaryDirs) {
-  $cand = Get-ChildItem -Path $dir -Filter "daily_summary_*.json" -File -ErrorAction SilentlyContinue |
-    Where-Object { $_.Name -match "^daily_summary_\d{4}-\d{2}-\d{2}\.json$" } |
-    Sort-Object Name -Descending |
-    Select-Object -First 1
+try {
+    if (-not $SkipAnalyze) {
+        $compose = Resolve-DockerComposeCommand
+        if ($null -ne $compose) {
+            $analyzerCmd = $compose + @("run", "--rm", "analyzer")
+            Invoke-External -Title "1) Analyzer (docker compose run --rm analyzer)" -Command $analyzerCmd
+        }
+        else {
+            Write-Log "Analyzer step skipped: docker compose command not found."
+        }
 
-  if ($cand) { $latestSummary = $cand; break }
+        $optionalPythonSteps = @(
+            @{ Title = "2) Build daily sentiment"; Script = (Join-Path $Root "scripts/build_daily_sentiment.py"); Args = @() },
+            @{ Title = "3) Build digest view model"; Script = (Join-Path $Root "scripts/build_digest_view_model.py"); Args = @() },
+            @{ Title = "4) Refresh latest artifacts"; Script = (Join-Path $Root "scripts/refresh_latest_artifacts.py"); Args = @() }
+        )
+
+        foreach ($step in $optionalPythonSteps) {
+            Invoke-PythonScript -Title $step.Title -ScriptPath $step.Script -Arguments $step.Args -Optional
+        }
+    }
+
+    if (-not $SkipPrediction) {
+        $trendScript = Join-Path $Root "scripts/trend_engine.py"
+        $signalScript = Join-Path $Root "scripts/signal_engine.py"
+        $scenarioScript = Join-Path $Root "scripts/scenario_engine.py"
+        $predictionScript = Join-Path $Root "scripts/prediction_engine.py"
+
+        Invoke-PythonScript -Title "5) Trend Engine" -ScriptPath $trendScript -Arguments @("--date", $Date) -Optional
+        Invoke-PythonScript -Title "6) Signal Engine" -ScriptPath $signalScript -Arguments @("--date", $Date)
+        Invoke-PythonScript -Title "7) Scenario Engine" -ScriptPath $scenarioScript -Arguments @("--date", $Date)
+        Invoke-PythonScript -Title "8) Prediction Engine" -ScriptPath $predictionScript -Arguments @("--date", $Date)
+    }
+
+    if (-not $SkipPublish) {
+        Write-Log "=== 9) Publish prediction artifacts ==="
+
+        $published = @()
+        $filesToPublish = @(
+            @{ Name = "trend_latest.json"; Source = (Join-Path $PredictionDir "trend_latest.json"); Destination = (Join-Path $PredictionHistoryDir "trend.json") },
+            @{ Name = "signal_latest.json"; Source = (Join-Path $PredictionDir "signal_latest.json"); Destination = (Join-Path $PredictionHistoryDir "signal.json") },
+            @{ Name = "early_warning_latest.json"; Source = (Join-Path $PredictionDir "early_warning_latest.json"); Destination = (Join-Path $PredictionHistoryDir "early_warning.json") },
+            @{ Name = "scenario_latest.json"; Source = (Join-Path $PredictionDir "scenario_latest.json"); Destination = (Join-Path $PredictionHistoryDir "scenario.json") },
+            @{ Name = "prediction_latest.json"; Source = (Join-Path $PredictionDir "prediction_latest.json"); Destination = (Join-Path $PredictionHistoryDir "prediction.json") }
+        )
+
+        foreach ($item in $filesToPublish) {
+            if (Copy-IfExists -Source $item.Source -Destination $item.Destination) {
+                $published += $item.Name
+                Write-Log ("Published: " + $item.Name)
+            }
+            else {
+                Write-Log ("Missing (skip publish): " + $item.Name)
+            }
+        }
+
+        $manifest = [ordered]@{
+            date = $Date
+            published_at = (Get-Date).ToUniversalTime().ToString("o")
+            root = $Root
+            prediction_dir = $PredictionDir
+            history_dir = $PredictionHistoryDir
+            published_files = $published
+            prediction_available = (Test-Path (Join-Path $PredictionDir "prediction_latest.json"))
+        }
+
+        $manifestPath = Join-Path $PredictionHistoryDir "manifest.json"
+        $manifest | ConvertTo-Json -Depth 6 | Set-Content -Path $manifestPath -Encoding UTF8
+        Write-Log "Manifest written: $manifestPath"
+    }
+
+    Write-Host ""
+    Write-Host "run_daily_with_publish completed."
+    Write-Host ""
 }
-
-if ($latestSummary) {
-  $dest = Join-Path $latestSummary.DirectoryName "daily_summary_latest.json"
-  Copy-Item -Path $latestSummary.FullName -Destination $dest -Force
-  Write-Host ("[OK] normalized daily_summary_latest.json <- {0}" -f $latestSummary.Name)
-} else {
-  Write-Host "[WARN] no dated daily_summary_YYYY-MM-DD.json found; cannot normalize daily_summary_latest.json"
+catch {
+    $pipelineFailed = $true
+    Write-Error $_
+    if (-not $ContinueOnError) {
+        exit 1
+    }
 }
-
-# ----------------------------
-# 5) Optional Guard
-# ----------------------------
-if ($Guard) {
-  $guardPs1 = Join-Path $ROOT "scripts\run_daily_guard.ps1"
-  if (-not (Test-Path $guardPs1)) {
-    throw ("[ERROR] missing file: {0}" -f $guardPs1)
-  }
-
-  Run-Step `
-    -Title "5) Guard (materialize dated + refresh latest where possible)" `
-    -CommandLine "cd `"$ROOT`"; powershell -ExecutionPolicy Bypass -File `"$guardPs1`""
+finally {
+    if ($pipelineFailed) {
+        Write-Host "run_daily_with_publish finished with warnings/errors."
+    }
 }
-
-Write-Host ""
-Write-Host ("[{0}] DONE (run_daily_with_publish)" -f (NowStamp))
-exit 0
