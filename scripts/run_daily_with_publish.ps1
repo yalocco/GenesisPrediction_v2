@@ -146,7 +146,7 @@ function Copy-IfExists {
 }
 
 function Get-DefaultDate {
-    return ([DateTime]::UtcNow.ToString("yyyy-MM-dd"))
+    return (Get-Date).ToString("yyyy-MM-dd")
 }
 
 if ([string]::IsNullOrWhiteSpace($Date)) {
@@ -179,8 +179,8 @@ try {
         }
 
         $optionalPythonSteps = @(
-            @{ Title = "2) Build daily sentiment"; Script = (Join-Path $Root "scripts/build_daily_sentiment.py"); Args = @() },
-            @{ Title = "3) Build digest view model"; Script = (Join-Path $Root "scripts/build_digest_view_model.py"); Args = @() },
+            @{ Title = "2) Build daily sentiment"; Script = (Join-Path $Root "scripts/build_daily_sentiment.py"); Args = @("--date", $Date) },
+            @{ Title = "3) Build digest view model"; Script = (Join-Path $Root "scripts/build_digest_view_model.py"); Args = @("--date", $Date) },
             @{ Title = "4) Refresh latest artifacts"; Script = (Join-Path $Root "scripts/refresh_latest_artifacts.py"); Args = @() }
         )
 
