@@ -1,256 +1,232 @@
 [CmdletBinding()]
 param(
-    [string]$Date = "",
-    [switch]$Guard,
-    [switch]$SkipAnalyze,
-    [switch]$SkipPrediction,
-    [switch]$SkipPublish,
+    [string]$Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path,
+    [string]$Date = (Get-Date).ToString('yyyy-MM-dd'),
+    [switch]$AllowDirtyRepo,
     [switch]$ContinueOnError
 )
 
 Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = 'Stop'
 
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Root = Split-Path -Parent $ScriptDir
-Set-Location $Root
-
-function Write-Log {
-    param([string]$Message)
-    $ts = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss")
-    Write-Host "[$ts] $Message"
+function Write-Section([string]$Message) {
+    $ts = Get-Date -Format 'yyyy-MM-ddTHH:mm:ss'
+    Write-Host "[$ts] === $Message ==="
 }
 
-function Fail-Or-Continue {
-    param([string]$Message)
-    if ($ContinueOnError) {
-        Write-Warning $Message
-    }
-    else {
-        throw $Message
-    }
+function Test-CommandExists([string]$Name) {
+    return $null -ne (Get-Command $Name -ErrorAction SilentlyContinue)
 }
 
-function Resolve-Python {
+function Get-PythonExe([string]$RootPath) {
     $candidates = @(
-        (Join-Path $Root ".venv/Scripts/python.exe"),
-        (Join-Path $Root ".venv/bin/python"),
-        "python",
-        "py"
+        (Join-Path $RootPath '.venv\Scripts\python.exe'),
+        (Join-Path $RootPath 'venv\Scripts\python.exe'),
+        'python'
     )
-
     foreach ($candidate in $candidates) {
-        if ($candidate -eq "python" -or $candidate -eq "py") {
-            $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
-            if ($null -ne $cmd) {
-                return $candidate
-            }
-        }
-        elseif (Test-Path $candidate) {
+        if ($candidate -eq 'python') {
+            if (Test-CommandExists 'python') { return 'python' }
+        } elseif (Test-Path $candidate) {
             return $candidate
         }
     }
-
-    throw "Python runtime was not found. Expected .venv or PATH python."
+    throw 'python executable not found.'
 }
 
-function Resolve-DockerComposeCommand {
-    $docker = Get-Command docker -ErrorAction SilentlyContinue
-    if ($null -eq $docker) {
-        return $null
-    }
-
-    $composeCheck = & docker compose version 2>$null
-    if ($LASTEXITCODE -eq 0) {
-        return @("docker", "compose")
-    }
-
-    $dockerCompose = Get-Command docker-compose -ErrorAction SilentlyContinue
-    if ($null -ne $dockerCompose) {
-        return @("docker-compose")
-    }
-
-    return $null
-}
-
-function Invoke-External {
+function Invoke-Step {
     param(
-        [string]$Title,
-        [string[]]$Command,
-        [string]$WorkingDirectory = $Root,
-        [switch]$Optional
-    )
-
-    Write-Log "=== $Title ==="
-    Write-Host ("CMD: " + ($Command -join " "))
-
-    Push-Location $WorkingDirectory
-    try {
-        & $Command[0] @($Command[1..($Command.Length - 1)])
-        if ($LASTEXITCODE -ne 0) {
-            $message = "$Title failed with exit code $LASTEXITCODE."
-            if ($Optional) {
-                Fail-Or-Continue $message
-            }
-            else {
-                throw $message
-            }
-        }
-    }
-    finally {
-        Pop-Location
-    }
-}
-
-function Invoke-PythonScript {
-    param(
-        [string]$Title,
-        [string]$ScriptPath,
+        [Parameter(Mandatory=$true)][string]$Name,
+        [Parameter(Mandatory=$true)][string]$FilePath,
         [string[]]$Arguments = @(),
         [switch]$Optional
     )
 
-    if (-not (Test-Path $ScriptPath)) {
-        $message = "$Title skipped: script not found -> $ScriptPath"
+    if (-not (Test-Path $FilePath)) {
         if ($Optional) {
-            Write-Log $message
+            Write-Host "[SKIP] $Name (missing: $FilePath)"
             return
         }
-        throw $message
+        throw "$Name script not found: $FilePath"
     }
 
-    $python = Resolve-Python
-    $cmd = @($python, $ScriptPath) + $Arguments
-    Invoke-External -Title $Title -Command $cmd -Optional:$Optional
-}
-
-function Ensure-Directory {
-    param([string]$Path)
-    if (-not (Test-Path $Path)) {
-        New-Item -ItemType Directory -Path $Path -Force | Out-Null
+    $cmdText = @($script:PythonExe, $FilePath) + $Arguments
+    Write-Host ('CMD: ' + ($cmdText -join ' '))
+    & $script:PythonExe $FilePath @Arguments
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0) {
+        if ($Optional -and $ContinueOnError) {
+            Write-Warning "$Name failed with exit code $exitCode. Continuing."
+            return
+        }
+        throw "$Name failed with exit code $exitCode."
     }
 }
 
-function Copy-IfExists {
+function Invoke-PowerShellFile {
     param(
-        [string]$Source,
-        [string]$Destination
+        [Parameter(Mandatory=$true)][string]$Name,
+        [Parameter(Mandatory=$true)][string]$FilePath,
+        [string[]]$Arguments = @(),
+        [switch]$Optional
     )
 
-    if (Test-Path $Source) {
-        Copy-Item -Path $Source -Destination $Destination -Force
-        return $true
+    if (-not (Test-Path $FilePath)) {
+        if ($Optional) {
+            Write-Host "[SKIP] $Name (missing: $FilePath)"
+            return
+        }
+        throw "$Name script not found: $FilePath"
     }
 
+    $cmdText = @('powershell', '-ExecutionPolicy', 'Bypass', '-File', $FilePath) + $Arguments
+    Write-Host ('CMD: ' + ($cmdText -join ' '))
+    & powershell -ExecutionPolicy Bypass -File $FilePath @Arguments
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0) {
+        if ($Optional -and $ContinueOnError) {
+            Write-Warning "$Name failed with exit code $exitCode. Continuing."
+            return
+        }
+        throw "$Name failed with exit code $exitCode."
+    }
+}
+
+function Ensure-Parent([string]$Path) {
+    $parent = Split-Path -Parent $Path
+    if ($parent -and -not (Test-Path $parent)) {
+        New-Item -ItemType Directory -Path $parent -Force | Out-Null
+    }
+}
+
+function Copy-IfExists([string]$Source, [string]$Destination) {
+    if (Test-Path $Source) {
+        Ensure-Parent $Destination
+        Copy-Item -Path $Source -Destination $Destination -Force
+        Write-Host "[OK] alias: $Destination <= $Source"
+        return $true
+    }
     return $false
 }
 
-function Get-DefaultDate {
-    return (Get-Date).ToString("yyyy-MM-dd")
+function Ensure-AnalysisAliases([string]$RootPath, [string]$AsOfDate) {
+    $analysisDir = Join-Path $RootPath 'data\world_politics\analysis'
+    if (-not (Test-Path $analysisDir)) {
+        Write-Warning "analysis directory not found: $analysisDir"
+        return
+    }
+
+    $latestCandidates = @(
+        (Join-Path $analysisDir 'daily_news_latest.json'),
+        (Join-Path $analysisDir 'latest.json')
+    )
+    $summaryCandidates = @(
+        (Join-Path $analysisDir 'daily_summary_latest.json'),
+        (Join-Path $analysisDir 'summary.json')
+    )
+
+    $newsSource = $latestCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+    $summarySource = $summaryCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+    if ($newsSource) {
+        Copy-IfExists $newsSource (Join-Path $analysisDir 'daily_news_latest.json') | Out-Null
+        Copy-IfExists $newsSource (Join-Path $analysisDir ("daily_news_{0}.json" -f $AsOfDate)) | Out-Null
+    }
+    if ($summarySource) {
+        Copy-IfExists $summarySource (Join-Path $analysisDir 'daily_summary_latest.json') | Out-Null
+        Copy-IfExists $summarySource (Join-Path $analysisDir ("daily_summary_{0}.json" -f $AsOfDate)) | Out-Null
+    }
 }
 
-if ([string]::IsNullOrWhiteSpace($Date)) {
-    $Date = Get-DefaultDate
+function Publish-PredictionSnapshot([string]$RootPath, [string]$AsOfDate) {
+    $predictionDir = Join-Path $RootPath 'analysis\prediction'
+    if (-not (Test-Path $predictionDir)) {
+        Write-Host "[SKIP] publish prediction snapshot (missing: $predictionDir)"
+        return
+    }
+
+    $historyDir = Join-Path $RootPath ("analysis\prediction_history\{0}" -f $AsOfDate)
+    New-Item -ItemType Directory -Path $historyDir -Force | Out-Null
+
+    $pairs = @(
+        @{ Source = 'trend_latest.json'; Target = 'trend.json' },
+        @{ Source = 'signal_latest.json'; Target = 'signal.json' },
+        @{ Source = 'early_warning_latest.json'; Target = 'early_warning.json' },
+        @{ Source = 'scenario_latest.json'; Target = 'scenario.json' },
+        @{ Source = 'prediction_latest.json'; Target = 'prediction.json' }
+    )
+
+    foreach ($pair in $pairs) {
+        $src = Join-Path $predictionDir $pair.Source
+        $dst = Join-Path $historyDir $pair.Target
+        if (Test-Path $src) {
+            Copy-Item -Path $src -Destination $dst -Force
+            Write-Host "[OK] publish: $dst"
+        }
+    }
 }
-
-$PredictionDir = Join-Path $Root "analysis/prediction"
-$PredictionHistoryDir = Join-Path $Root "analysis/prediction_history/$Date"
-Ensure-Directory -Path $PredictionDir
-Ensure-Directory -Path $PredictionHistoryDir
-
-Write-Host ""
-Write-Host "GenesisPrediction v2 - run_daily_with_publish"
-Write-Host "ROOT : $Root"
-Write-Host "DATE : $Date"
-Write-Host "GUARD: $([string]::new($(if ($Guard) { 'ON' } else { 'OFF' })))"
-Write-Host ""
-
-$pipelineFailed = $false
 
 try {
-    if (-not $SkipAnalyze) {
-        $compose = Resolve-DockerComposeCommand
-        if ($null -ne $compose) {
-            $analyzerCmd = $compose + @("run", "--rm", "analyzer")
-            Invoke-External -Title "1) Analyzer (docker compose run --rm analyzer)" -Command $analyzerCmd
-        }
-        else {
-            Write-Log "Analyzer step skipped: docker compose command not found."
-        }
+    $Root = (Resolve-Path $Root).Path
+    Set-Location $Root
+    $script:PythonExe = Get-PythonExe $Root
 
-        $optionalPythonSteps = @(
-            @{ Title = "2) Build daily sentiment"; Script = (Join-Path $Root "scripts/build_daily_sentiment.py"); Args = @("--date", $Date) },
-            @{ Title = "3) Build digest view model"; Script = (Join-Path $Root "scripts/build_digest_view_model.py"); Args = @("--date", $Date) },
-            @{ Title = "4) Refresh latest artifacts"; Script = (Join-Path $Root "scripts/refresh_latest_artifacts.py"); Args = @() }
-        )
+    Write-Host 'GenesisPrediction v2 - run_daily_with_publish'
+    Write-Host "ROOT : $Root"
+    Write-Host "DATE : $Date"
+    Write-Host ("GUARD: {0}" -f ($(if ($AllowDirtyRepo) { 'OFF' } else { 'ON' })))
+    Write-Host ''
 
-        foreach ($step in $optionalPythonSteps) {
-            Invoke-PythonScript -Title $step.Title -ScriptPath $step.Script -Arguments $step.Args -Optional
+    if (-not $AllowDirtyRepo -and (Test-Path (Join-Path $Root '.git'))) {
+        $statusLines = git status --porcelain
+        if ($LASTEXITCODE -eq 0 -and $statusLines) {
+            throw 'Working tree is not clean. Commit/stash changes or rerun with -AllowDirtyRepo.'
         }
     }
 
-    if (-not $SkipPrediction) {
-        $trendScript = Join-Path $Root "scripts/trend_engine.py"
-        $signalScript = Join-Path $Root "scripts/signal_engine.py"
-        $scenarioScript = Join-Path $Root "scripts/scenario_engine.py"
-        $predictionScript = Join-Path $Root "scripts/prediction_engine.py"
-
-        Invoke-PythonScript -Title "5) Trend Engine" -ScriptPath $trendScript -Arguments @("--date", $Date) -Optional
-        Invoke-PythonScript -Title "6) Signal Engine" -ScriptPath $signalScript -Arguments @("--date", $Date)
-        Invoke-PythonScript -Title "7) Scenario Engine" -ScriptPath $scenarioScript -Arguments @("--date", $Date)
-        Invoke-PythonScript -Title "8) Prediction Engine" -ScriptPath $predictionScript -Arguments @("--date", $Date)
+    Write-Section '1) Analyzer (docker compose run --rm analyzer)'
+    if (Test-Path (Join-Path $Root 'docker-compose.yml') -or Test-Path (Join-Path $Root 'compose.yml')) {
+        if (-not (Test-CommandExists 'docker')) {
+            throw 'docker command not found.'
+        }
+        Write-Host 'CMD: docker compose run --rm analyzer'
+        & docker compose run --rm analyzer
+        if ($LASTEXITCODE -ne 0) {
+            throw '1) Analyzer failed.'
+        }
+    } else {
+        Write-Host '[SKIP] docker compose file not found'
     }
 
-    if (-not $SkipPublish) {
-        Write-Log "=== 9) Publish prediction artifacts ==="
+    Write-Section '1.5) Normalize analysis aliases'
+    Ensure-AnalysisAliases -RootPath $Root -AsOfDate $Date
 
-        $published = @()
-        $filesToPublish = @(
-            @{ Name = "trend_latest.json"; Source = (Join-Path $PredictionDir "trend_latest.json"); Destination = (Join-Path $PredictionHistoryDir "trend.json") },
-            @{ Name = "signal_latest.json"; Source = (Join-Path $PredictionDir "signal_latest.json"); Destination = (Join-Path $PredictionHistoryDir "signal.json") },
-            @{ Name = "early_warning_latest.json"; Source = (Join-Path $PredictionDir "early_warning_latest.json"); Destination = (Join-Path $PredictionHistoryDir "early_warning.json") },
-            @{ Name = "scenario_latest.json"; Source = (Join-Path $PredictionDir "scenario_latest.json"); Destination = (Join-Path $PredictionHistoryDir "scenario.json") },
-            @{ Name = "prediction_latest.json"; Source = (Join-Path $PredictionDir "prediction_latest.json"); Destination = (Join-Path $PredictionHistoryDir "prediction.json") }
-        )
+    Write-Section '2) Build daily sentiment'
+    Invoke-Step -Name '2) Build daily sentiment' -FilePath (Join-Path $Root 'scripts\build_daily_sentiment.py') -Arguments @('--date', $Date)
 
-        foreach ($item in $filesToPublish) {
-            if (Copy-IfExists -Source $item.Source -Destination $item.Destination) {
-                $published += $item.Name
-                Write-Log ("Published: " + $item.Name)
-            }
-            else {
-                Write-Log ("Missing (skip publish): " + $item.Name)
-            }
-        }
+    Write-Section '3) Build digest view model'
+    Invoke-Step -Name '3) Build digest view model' -FilePath (Join-Path $Root 'scripts\build_digest_view_model.py') -Arguments @('--date', $Date) -Optional
 
-        $manifest = [ordered]@{
-            date = $Date
-            published_at = (Get-Date).ToUniversalTime().ToString("o")
-            root = $Root
-            prediction_dir = $PredictionDir
-            history_dir = $PredictionHistoryDir
-            published_files = $published
-            prediction_available = (Test-Path (Join-Path $PredictionDir "prediction_latest.json"))
-        }
+    Write-Section '4) Trend engine'
+    Invoke-Step -Name '4) Trend engine' -FilePath (Join-Path $Root 'scripts\trend_engine.py') -Arguments @('--date', $Date) -Optional
 
-        $manifestPath = Join-Path $PredictionHistoryDir "manifest.json"
-        $manifest | ConvertTo-Json -Depth 6 | Set-Content -Path $manifestPath -Encoding UTF8
-        Write-Log "Manifest written: $manifestPath"
-    }
+    Write-Section '5) Signal engine'
+    Invoke-Step -Name '5) Signal engine' -FilePath (Join-Path $Root 'scripts\signal_engine.py') -Arguments @('--date', $Date) -Optional
 
-    Write-Host ""
-    Write-Host "run_daily_with_publish completed."
-    Write-Host ""
+    Write-Section '6) Scenario engine'
+    Invoke-Step -Name '6) Scenario engine' -FilePath (Join-Path $Root 'scripts\scenario_engine.py') -Arguments @('--date', $Date) -Optional
+
+    Write-Section '7) Prediction engine'
+    Invoke-Step -Name '7) Prediction engine' -FilePath (Join-Path $Root 'scripts\prediction_engine.py') -Arguments @('--date', $Date) -Optional
+
+    Write-Section '8) Publish prediction history snapshot'
+    Publish-PredictionSnapshot -RootPath $Root -AsOfDate $Date
+
+    Write-Host 'run_daily_with_publish completed successfully.'
+    exit 0
 }
 catch {
-    $pipelineFailed = $true
+    Write-Host 'run_daily_with_publish finished with warnings/errors.' -ForegroundColor Yellow
     Write-Error $_
-    if (-not $ContinueOnError) {
-        exit 1
-    }
-}
-finally {
-    if ($pipelineFailed) {
-        Write-Host "run_daily_with_publish finished with warnings/errors."
-    }
+    exit 1
 }
