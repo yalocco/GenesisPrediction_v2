@@ -1,150 +1,317 @@
-# Docs Index (GenesisPrediction v2)
+# GenesisPrediction Documentation Index
 
-このファイルは **docs ディレクトリのナビゲーション（目次）** です。
+GenesisPrediction v2
 
-GenesisPrediction v2 のドキュメントは
+This document provides a quick navigation map for the documentation.
+
+If you are unsure where to start, use this index to locate the correct documents.
+
+---
+
+# Core Architecture
+
+Long-term structural documents defining the GenesisPrediction system.
+
+Location
 
 ```
-Human Operation
-AI Design
-Project Architecture
-```
 
-の **3つの役割**で整理されています。
-
----
-
-# 🤖 AI Bootstrap
-
-新しい AI を起動する場合は **最初に読む**
+docs/core/
 
 ```
-ai_bootstrap_prompt.md
-```
 
-AIの初期化と Repository Memory の読み込みを行う。
-
----
-
-# 🧠 Repository Architecture
-
-プロジェクトの設計構造。
-
-| File                 | Purpose                           |
-| -------------------- | --------------------------------- |
-| repo_architecture.md | Chat / Repository / Project の三層構造 |
-| repo_map.md          | リポジトリ構造の地図                        |
-| project_status.md    | 現在の状態 / 作業中テーマ                    |
-
----
-
-# ⚙ Pipeline System
-
-GenesisPrediction のデータ生成構造。
-
-| File               | Purpose   |
-| ------------------ | --------- |
-| pipeline_system.md | パイプライン構造  |
-| runbook_morning.md | 毎日の正式運用手順 |
-
----
-
-# 🖥 UI System
-
-GUIの設計。
-
-| File                        | Purpose                |
-| --------------------------- | ---------------------- |
-| ui_system.md                | UI構造 / HTML依存 / JSON依存 |
-| gui_phase2_working_rules.md | GUI運用ルール               |
-
----
-
-# 🤖 AI Collaboration Rules
-
-AIと人間の共同開発ルール。
-
-| File                    | Purpose |
-| ----------------------- | ------- |
-| chat_operating_rules.md | AI作業ルール |
-| working_agreement.md    | 共同開発ルール |
-
----
-
-# 🧩 Design Philosophy
-
-GenesisPrediction の思想。
-
-| File             | Purpose                 |
-| ---------------- | ----------------------- |
-| genesis_brain.md | 設計思想 / SST / Pipeline哲学 |
-
----
-
-# 🧭 Human Operation Docs
-
-人間運用用ドキュメント。
-
-| File              | Purpose |
-| ----------------- | ------- |
-| observation.md    | 観測ログ    |
-| assumptions.md    | 分析前提    |
-| diff_schema.md    | データ構造説明 |
-| fragile_points.md | 壊れやすい箇所 |
-
----
-
-# 🧠 Knowledge Architecture
-
-GenesisPrediction v2 は以下の **三層構造**で知識を管理する。
+Key documents
 
 ```
-Chat Memory
-↓
-Repository Memory (docs)
-↓
-Project Knowledge
+
+core/genesis_brain.md
+core/project_status.md
+core/system_history.md
+core/decision_log.md
+core/prediction_layer_design_principles.md
+
+```
+
+UI architecture
+
+```
+
+core/ui/ui_design_philosophy.md
+core/ui/ui_layout_standard.md
+core/ui/ui_component_catalog.md
+core/ui/ui_index.md
+
 ```
 
 ---
 
-# 📌 最重要ルール
+# Active System Design
 
-GenesisPrediction v2 の **Single Source of Truth**
+Current working architecture and system design.
 
-```
-analysis/
-```
-
-構造
+Location
 
 ```
-scripts → analysis を生成
-analysis → 唯一の真実
-UI → analysis を表示
+
+docs/active/
+
+```
+
+System layers
+
+```
+
+active/observation.md
+active/trend_layer_design.md
+active/signal_layer_design.md
+active/scenario_layer_design.md
+active/prediction_layer_design.md
+
+```
+
+Prediction system
+
+```
+
+active/prediction_pipeline_design.md
+active/prediction_runtime.md
+active/prediction_system_overview.md
+active/prediction_data_schema.md
+
+```
+
+Engines
+
+```
+
+active/trend_engine.md
+active/signal_engine.md
+active/scenario_engine.md
+active/prediction_engine.md
+
+```
+
+History / UI
+
+```
+
+active/prediction_history.md
+active/prediction_history_ui.md
+
 ```
 
 ---
 
-# 🧩 この docs の役割
+# Operational Runbooks
 
-この docs は
+Operational procedures for running GenesisPrediction.
+
+Location
 
 ```
-AI変更
-PC変更
-スレ変更
+
+docs/runbook/
+
 ```
 
-が起きても
+Examples
 
-* プロジェクト構造を即復元
-* 作業ルールを保持
-* 開発継続可能
+```
 
-にするための **Repository Memory** です。
+runbook/runbook.md
+runbook/runbook_morning.md
+runbook/ops_runbook.md
+runbook/runbook_openwebui_company_pc.md
+
+```
+
+These documents explain how to operate the system safely.
 
 ---
 
-GenesisPrediction v2 は
-**AIと人間の共同開発プロジェクト**である。
+# Reference Materials
+
+Supporting documentation and contextual materials.
+
+Location
+
+```
+
+docs/reference/
+
+```
+
+Examples
+
+```
+
+reference/ai_bootstrap.md
+reference/ai_quick_context.md
+reference/ai_rules.md
+reference/debug_playbook.md
+reference/repository_memory_index.md
+reference/working_agreement.md
+
+```
+
+These documents support development and AI interaction.
+
+---
+
+# Architecture Decision Records
+
+Major design decisions preserved as ADRs.
+
+Location
+
+```
+
+docs/ADR/
+
+```
+
+Examples
+
+```
+
+ADR/0001-repository-memory.md
+ADR/0002-analysis-as-sst.md
+
+```
+
+These explain **why important design choices were made**.
+
+---
+
+# Archived Documents
+
+Historical documentation preserved for reference.
+
+Location
+
+```
+
+docs/archive/
+
+```
+
+Examples
+
+```
+
+archive/specs/
+archive/constitution/
+
+```
+
+Archived documents are not part of the current architecture.
+
+---
+
+# Obsolete Documents
+
+Deprecated documents.
+
+Location
+
+```
+
+docs/obsolete/
+
+```
+
+These documents are kept only for historical completeness.
+
+---
+
+# Documentation Structure
+
+```
+
+docs
+├ core
+├ active
+├ reference
+├ runbook
+├ ADR
+├ archive
+└ obsolete
+
+```
+
+Each folder serves a distinct purpose to maintain clarity.
+
+---
+
+# Recommended Reading Order
+
+For understanding the system:
+
+1
+
+```
+
+docs/active/genesis_system_map.md
+
+```
+
+2
+
+```
+
+docs/active/pipeline_system.md
+
+```
+
+3
+
+```
+
+docs/active/prediction_architecture.md
+
+```
+
+4
+
+```
+
+docs/active/prediction_pipeline_design.md
+
+```
+
+5
+
+```
+
+docs/core/genesis_brain.md
+
+```
+
+---
+
+# Additional Documentation
+
+Documentation structure rules
+
+```
+
+docs/docs_inventory.md
+docs/docs_reorganization_plan.md
+
+```
+
+These explain how documentation is organized and maintained.
+
+---
+
+# Summary
+
+GenesisPrediction documentation is structured to provide:
+
+- clear architecture
+- operational guidance
+- historical traceability
+- AI-friendly knowledge structure
+
+Use this index to quickly locate the documents you need.
+```

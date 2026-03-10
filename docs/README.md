@@ -1,195 +1,201 @@
 # GenesisPrediction Documentation
 
-GenesisPrediction v2 のドキュメント構造。
+GenesisPrediction v2
 
-この README は **AI / Human が docs を理解するための入口**である。
+This directory contains the full documentation for the GenesisPrediction system.
 
----
+The documentation is organized to make the system architecture, operational procedures,
+and reference materials easy to locate for both humans and AI instances.
 
-# Docs Structure
-
-docs は以下の構造に整理されている。
-
-```
-
-docs/
-
-core/
-active/
-reference/
-archive/
-obsolete/
-
-```
+The structure separates **core architecture**, **active system design**, **reference material**,
+and **operational runbooks**.
 
 ---
 
-# 1. core
-
-最重要ドキュメント。
-
-GenesisPrediction の **設計思想・原則**。
+# Documentation Structure
 
 ```
 
-core/
-
-genesis_brain.md
-decision_log.md
-system_history.md
-project_status.md
-prediction_layer_design_principles.md
-
-ui_design_philosophy.md
-ui_component_catalog.md
-GenesisPrediction_UI_Work_Rules.md
+docs
+├ core
+├ active
+├ reference
+├ runbook
+├ ADR
+├ archive
+└ obsolete
 
 ```
 
-特徴
-
-- 削除禁止
-- システムの根幹
-- AIが必ず理解すべき文書
+Each folder has a specific role.
 
 ---
 
-# 2. active
+# docs/core
 
-**現行システム仕様**
+Core architectural foundation of GenesisPrediction.
 
-現在の GenesisPrediction v2 実装に直接対応する。
+These documents define long-term system identity and design principles.
 
-```
+Examples:
 
-active/
+- system history
+- core architecture
+- decision logs
+- UI design philosophy
+- prediction layer principles
 
-genesis_system_map.md
-repo_map.md
-pipeline_system.md
-
-analysis_data_schema.md
-
-ui_system.md
-ui_data_dependencies.md
-
-prediction_architecture.md
-genesis_prediction_roadmap.md
-
-```
-
-特徴
-
-- 実装変更と同期する
-- 現在の仕様
+These documents should change rarely.
 
 ---
 
-# 3. reference
+# docs/active
 
-作業補助ドキュメント。
+Current system design and implementation targets.
 
-AIや開発作業の補助。
+This folder contains the working architecture of GenesisPrediction.
 
-```
+Examples:
 
-reference/
+- Observation Layer design
+- Trend Layer design
+- Signal Layer design
+- Scenario Layer design
+- Prediction Layer design
+- Prediction runtime and pipeline
+- active data schemas
 
-ai_bootstrap.md
-ai_quick_context.md
-repository_memory_index.md
-
-ai_rules.md
-working_agreement.md
-chat_operating_rules.md
-
-debug_playbook.md
-
-```
-
-特徴
-
-- 開発補助
-- AI作業ルール
+If you want to understand **how the system currently works**, start here.
 
 ---
 
-# 4. archive
+# docs/reference
 
-過去設計・履歴。
+Supporting documentation and AI operational references.
 
-```
+These documents provide context and assistance but are not part of the core architecture.
 
-archive/
+Examples:
 
-archive/
-constitution/
-specs/
+- AI bootstrap guides
+- system assumptions
+- helper documentation
+- checklists
+- business model notes
+- GUI planning notes
 
-```
-
-特徴
-
-- 歴史資料
-- 旧設計
-- 削除しない
+Reference materials support development and operations.
 
 ---
 
-# 5. obsolete
+# docs/runbook
 
-完全廃止ドキュメント。
+Operational procedures.
 
-```
+These documents explain **how to run the system**.
 
-obsolete/
+Examples:
 
-contracts/
+- Morning Ritual operation
+- environment setup
+- verification procedures
+- operational checklists
 
-```
-
-特徴
-
-- 現在使用しない
-- 将来削除可能
+If you need to operate the system, start here.
 
 ---
 
-# How AI Should Read Docs
+# docs/ADR
 
-AIは以下の順番で読む。
+Architecture Decision Records.
 
-```
+These documents record major design decisions.
 
-1 core/genesis_brain.md
+Each ADR describes:
 
-2 core/decision_log.md
-3 core/system_history.md
+- the problem
+- the decision made
+- the reasoning behind the decision
 
-4 active/genesis_system_map.md
-5 active/repo_map.md
-6 active/pipeline_system.md
-
-7 active/prediction_architecture.md
-
-```
-
-その後必要に応じて
-
-```
-
-reference/
-archive/
-
-```
-
-を参照する。
+ADR files provide historical context for architectural choices.
 
 ---
 
-# Design Philosophy
+# docs/archive
 
-GenesisPrediction は
+Historical documents preserved for reference.
+
+Examples include:
+
+- old specifications
+- retired system designs
+- historical snapshots
+
+Archive material is not part of the active architecture.
+
+---
+
+# docs/obsolete
+
+Deprecated documents that should no longer be used.
+
+These files remain only for historical completeness.
+
+They should not influence current development decisions.
+
+---
+
+# Entry Points for Understanding the System
+
+If you are new to the repository, start with the following documents.
+
+Recommended reading order:
+
+1.
+
+```
+
+docs/active/genesis_system_map.md
+
+```
+
+System overview.
+
+2.
+
+```
+
+docs/active/prediction_architecture.md
+
+```
+
+Prediction system structure.
+
+3.
+
+```
+
+docs/active/pipeline_system.md
+
+```
+
+Pipeline execution design.
+
+4.
+
+```
+
+docs/core/genesis_brain.md
+
+```
+
+Core design philosophy.
+
+---
+
+# Prediction System Architecture
+
+GenesisPrediction uses a layered analysis model.
 
 ```
 
@@ -199,57 +205,107 @@ Trend
 ↓
 Signal
 ↓
+Early Warning
+↓
 Scenario
 ↓
 Prediction
 
 ```
 
-という構造を持つ。
+Prediction is not generated directly from raw data.
 
-Prediction は主役ではない。
+Instead the system interprets the world through structured layers.
 
-```
-
-Observation / Trend / Signal / Scenario
-
-```
-
-が本体である。
+This approach improves stability and explainability.
 
 ---
 
-# Key Principle
+# Key Principles
 
-GenesisPrediction は
+GenesisPrediction follows several design principles.
 
-```
-
-Explainable Forecast System
-
-```
-
-である。
-
-目的
-
-```
-
-未来を当てること
-
-```
-
-ではなく
-
-```
-
-危険を早く知ること
-
-```
-
-である。
+- layered interpretation instead of direct prediction
+- explainable system behavior
+- stable pipeline execution
+- separation of architecture and operations
+- preservation of historical design decisions
 
 ---
 
-# End
+# Documentation Maintenance
+
+When adding new documentation:
+
+1.
+
+Active system design → `docs/active`
+
+2.
+
+Operational procedures → `docs/runbook`
+
+3.
+
+Reference materials → `docs/reference`
+
+4.
+
+Core architecture → `docs/core`
+
+5.
+
+Historical material → `docs/archive`
+
+6.
+
+Deprecated material → `docs/obsolete`
+
+7.
+
+Major architectural decisions → `docs/ADR`
+
+---
+
+# Repository Context
+
+GenesisPrediction is a structured analysis system combining:
+
+- world event observation
+- signal detection
+- scenario modeling
+- prediction synthesis
+- visualization through UI dashboards
+
+The documentation in this folder reflects the system's architecture
+and operational procedures.
+
+---
+
+# Related Documents
+
+Additional structural guides:
+
+```
+
+docs/docs_inventory.md
+docs/docs_reorganization_plan.md
+docs/INDEX.md
+
+```
+
+These documents explain documentation structure and organization.
+
+---
+
+# Summary
+
+The GenesisPrediction documentation is designed to be:
+
+- structured
+- understandable
+- maintainable
+- useful for both humans and AI tools
+
+Use the folder structure to quickly locate the type of information you need.
 ```
