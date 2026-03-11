@@ -1,47 +1,130 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Prediction History - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260311-ui-history2" />
+  <meta name="description" content="GenesisPrediction Prediction History UI">
+  <link rel="stylesheet" href="/static/app.css?v=20260311-ui-pred-history-theme2">
   <style>
-    .pred-hero{margin-bottom:14px;}
-
-    .status-shell{
-      margin-top:14px;
-      padding:14px 16px;
-      border-radius:18px;
-      border:1px solid rgba(120,160,220,.18);
-      background:linear-gradient(180deg, rgba(10,16,30,.66), rgba(7,12,24,.48));
-      box-shadow:0 12px 30px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.04);
+    .history-page{
+      display:grid;
+      gap:16px;
     }
-    .status-top{
+
+    .history-shell{
+      display:grid;
+      gap:16px;
+    }
+
+    .hero-panel{
+      display:grid;
+      gap:16px;
+    }
+
+    .hero-grid{
+      display:grid;
+      grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);
+      gap:16px;
+      align-items:stretch;
+    }
+
+    .hero-card,
+    .hero-side-card{
+      min-width:0;
+      height:100%;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .hero-title{
+      font-size:34px;
+      line-height:1.08;
+      letter-spacing:-.03em;
+      font-weight:800;
+      margin:0 0 10px;
+      color:#eef4ff;
+    }
+
+    .hero-summary{
+      color:#c8d7f6;
+      font-size:15px;
+      line-height:1.8;
+      margin:0;
+      flex:1;
+    }
+
+    .hero-side-stack{
+      display:grid;
+      gap:12px;
+      height:100%;
+    }
+
+    .hero-metric{
+      border:1px solid rgba(120,160,220,.12);
+      border-radius:14px;
+      padding:12px 14px;
+      background:rgba(8,14,28,.18);
+    }
+
+    .hero-metric .metric-label{
+      font-size:11px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      opacity:.72;
+      margin-bottom:6px;
+    }
+
+    .hero-metric .metric-value{
+      font-size:26px;
+      line-height:1.05;
+      font-weight:700;
+      letter-spacing:-.02em;
+      color:#eef4ff;
+    }
+
+    .hero-metric .metric-sub{
+      margin-top:4px;
+      font-size:12px;
+      opacity:.72;
+      color:#c8d7f6;
+      line-height:1.5;
+    }
+
+    .global-status-panel{
+      display:grid;
+      gap:12px;
+    }
+
+    .global-status-head{
       display:flex;
       align-items:center;
       justify-content:space-between;
       gap:12px;
       flex-wrap:wrap;
-      margin-bottom:10px;
     }
-    .status-title{
+
+    .global-status-title{
       font-size:12px;
       letter-spacing:.18em;
       text-transform:uppercase;
       opacity:.82;
     }
-    .status-grid{
+
+    .global-status{
       display:grid;
       grid-template-columns:repeat(5,minmax(0,1fr));
       gap:12px;
     }
-    .status-item{
+
+    .status-card{
       min-width:0;
       border:1px solid rgba(120,160,220,.12);
       border-radius:14px;
       padding:12px 12px 10px;
       background:rgba(8,14,28,.22);
     }
+
     .status-label{
       font-size:11px;
       letter-spacing:.08em;
@@ -49,6 +132,7 @@
       opacity:.72;
       margin-bottom:6px;
     }
+
     .status-value{
       font-size:24px;
       line-height:1.05;
@@ -59,6 +143,7 @@
       text-overflow:ellipsis;
       color:#eef4ff;
     }
+
     .status-sub{
       margin-top:4px;
       font-size:12px;
@@ -66,209 +151,70 @@
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
-    }
-
-    .pred-summary-grid{
-      display:grid;
-      grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);
-      gap:16px;
-      margin-top:14px;
-      align-items:stretch;
-    }
-    .pred-card{min-width:0;}
-    .pred-lead,
-    .pred-side-card{
-      height:100%;
-      display:flex;
-      flex-direction:column;
-    }
-
-    .pred-title{
-      font-size:12px;
-      letter-spacing:.12em;
-      text-transform:uppercase;
-      opacity:.75;
-      margin-bottom:8px;
-    }
-    .pred-headline{
-      font-size:34px;
-      line-height:1.08;
-      letter-spacing:-.03em;
-      font-weight:800;
-      margin:0 0 10px;
-    }
-    .pred-summary{
-      color:#c8d7f6;
-      font-size:15px;
-      line-height:1.8;
-      margin:0;
-      flex:1;
-    }
-
-    .pred-pills{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      margin-top:16px;
-    }
-    .pred-pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:8px 12px;
-      border-radius:999px;
-      border:1px solid rgba(120,160,220,.14);
-      background:rgba(255,255,255,.025);
-      font-size:13px;
       color:#c8d7f6;
     }
 
-    .pred-side-stack{
+    .kpi-grid{
       display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
       gap:12px;
-      height:100%;
     }
-    .pred-metric{
+
+    .metric-card{
       border:1px solid rgba(120,160,220,.12);
-      border-radius:14px;
+      border-radius:16px;
       padding:12px 14px;
       background:rgba(8,14,28,.18);
+      min-width:0;
     }
-    .pred-metric .label{
+
+    .metric-label{
       font-size:11px;
       letter-spacing:.08em;
       text-transform:uppercase;
       opacity:.72;
       margin-bottom:6px;
     }
-    .pred-metric .value{
-      font-size:26px;
+
+    .metric-value{
+      font-size:28px;
       line-height:1.05;
-      font-weight:700;
-      letter-spacing:-.02em;
-      color:#eef4ff;
-    }
-    .pred-metric .sub{
-      margin-top:4px;
-      font-size:12px;
-      opacity:.72;
-      color:#c8d7f6;
-    }
-
-    .history-shell{
-      display:grid;
-      grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);
-      gap:16px;
-      margin-top:16px;
-      align-items:start;
-    }
-
-    .timeline-list{
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-    }
-    .timeline-row{
-      border:1px solid rgba(130,170,255,.12);
-      background:rgba(255,255,255,.02);
-      border-radius:18px;
-      display:grid;
-      grid-template-columns:110px 130px minmax(0,1fr) 96px;
-      gap:12px;
-      align-items:center;
-      padding:14px;
-    }
-    .timeline-date{
-      font-size:13px;
-      font-weight:700;
-      color:#eef4ff;
-      line-height:1.35;
-      white-space:nowrap;
-    }
-    .timeline-dom{
-      display:grid;
-      gap:6px;
-      min-width:0;
-    }
-    .timeline-badge,
-    .risk-badge{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      width:max-content;
-      min-height:24px;
-      padding:0 10px;
-      border-radius:999px;
-      font-size:11px;
-      line-height:1;
-      font-weight:700;
-      border:1px solid rgba(255,255,255,.1);
-      background:rgba(255,255,255,.04);
-    }
-    .timeline-badge.best{color:#93c5fd;border-color:rgba(96,165,250,.28);}
-    .timeline-badge.base{color:#eef4ff;border-color:rgba(255,255,255,.14);}
-    .timeline-badge.worst{color:#fca5a5;border-color:rgba(248,113,113,.28);}
-    .timeline-badge.other{color:#c4b5fd;border-color:rgba(196,181,253,.24);}
-
-    .risk-badge.low{color:#7dd3fc;}
-    .risk-badge.guarded{color:#c4b5fd;}
-    .risk-badge.elevated{color:#facc15;}
-    .risk-badge.high{color:#fb923c;}
-    .risk-badge.critical{color:#f87171;}
-
-    .timeline-summary{
-      font-size:14px;
-      line-height:1.7;
-      color:#c8d7f6;
-      min-width:0;
-    }
-    .timeline-small{
-      font-size:12px;
-      opacity:.72;
-      color:#c8d7f6;
-      margin-top:4px;
-    }
-    .timeline-conf{
-      text-align:right;
-      display:grid;
-      gap:6px;
-      justify-items:end;
-    }
-    .timeline-conf .value{
-      font-size:18px;
       font-weight:800;
-      color:#93c5fd;
-      line-height:1;
-    }
-    .timeline-conf .sub{
-      font-size:12px;
-      opacity:.72;
-      color:#c8d7f6;
+      letter-spacing:-.03em;
+      color:#eef4ff;
     }
 
-    .chart-stack{
-      display:grid;
-      gap:12px;
+    .metric-sub{
+      margin-top:4px;
+      font-size:12px;
+      color:#c8d7f6;
+      opacity:.78;
+      line-height:1.5;
     }
+
     .chart-grid{
       display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
+      grid-template-columns:repeat(3,minmax(0,1fr));
       gap:12px;
     }
+
     .chart-card{
       border:1px solid rgba(120,160,220,.12);
       border-radius:16px;
       padding:12px 14px;
       background:rgba(8,14,28,.18);
+      min-width:0;
     }
-    .chart-card .label{
+
+    .chart-card .chart-label{
       font-size:11px;
       letter-spacing:.08em;
       text-transform:uppercase;
       opacity:.72;
       margin-bottom:6px;
     }
-    .chart-card .value{
+
+    .chart-card .chart-value{
       font-size:24px;
       line-height:1.05;
       font-weight:700;
@@ -276,53 +222,224 @@
       color:#eef4ff;
       margin-bottom:10px;
     }
-    .chart-card .value.pos{color:#7dd3fc;}
-    .chart-card .value.neg{color:#fca5a5;}
-    .chart-card .value.neu{color:#eef4ff;}
+
+    .chart-card .chart-value.pos{color:#7dd3fc}
+    .chart-card .chart-value.neg{color:#fca5a5}
+    .chart-card .chart-value.neu{color:#eef4ff}
+
     .chart-card svg{
       width:100%;
-      height:90px;
+      height:92px;
       display:block;
       border-radius:12px;
       background:rgba(255,255,255,.02);
       border:1px solid rgba(255,255,255,.06);
     }
+
     .chart-note{
       margin-top:8px;
       font-size:12px;
+      line-height:1.5;
       color:#c8d7f6;
       opacity:.8;
-      line-height:1.5;
     }
 
+    .content-grid{
+      display:grid;
+      grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);
+      gap:16px;
+      align-items:start;
+    }
+
+    .stack{
+      display:grid;
+      gap:12px;
+    }
+
+    .section-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      margin-bottom:12px;
+    }
+
+    .section-title{
+      margin:0;
+      font-size:22px;
+      line-height:1.2;
+      letter-spacing:-.02em;
+    }
+
+    .section-subtitle{
+      margin:4px 0 0;
+      color:#c8d7f6;
+      line-height:1.65;
+      font-size:14px;
+    }
+
+    .window-chip{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:34px;
+      min-height:28px;
+      padding:0 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.04);
+      font-size:12px;
+      font-weight:700;
+      line-height:1;
+      letter-spacing:.03em;
+      color:#93c5fd;
+      width:max-content;
+    }
+
+    .summary-text,
+    .detail-text,
+    .timeline-summary,
+    .inline-text{
+      margin:0;
+      color:#c8d7f6;
+      line-height:1.8;
+      font-size:15px;
+    }
+
+    .detail-grid,
     .notes-grid{
       display:grid;
       grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:12px;
-      margin-top:12px;
+      gap:16px;
     }
+
+    .detail-card,
     .note-card{
-      border:1px solid rgba(120,160,220,.12);
+      border:1px solid rgba(120,160,220,.14);
       border-radius:16px;
       padding:12px 14px;
-      background:rgba(8,14,28,.18);
+      background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));
+      display:grid;
+      gap:10px;
       min-width:0;
     }
-    .note-title{
+
+    .detail-eyebrow,
+    .timeline-meta,
+    .empty-meta{
       font-size:11px;
       letter-spacing:.08em;
       text-transform:uppercase;
-      opacity:.72;
-      margin-bottom:8px;
+      opacity:.7;
     }
-    .note-card ul{
+
+    .detail-title,
+    .timeline-title{
+      margin:0;
+      font-size:16px;
+      line-height:1.35;
+      font-weight:700;
+      color:#eef4ff;
+    }
+
+    .timeline-list{
+      display:grid;
+      gap:12px;
+    }
+
+    .timeline-row{
+      display:grid;
+      grid-template-columns:110px 150px minmax(0,1fr) 96px;
+      gap:12px;
+      align-items:center;
+      padding:14px;
+      border-radius:16px;
+      border:1px solid rgba(120,160,220,.14);
+      background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));
+      min-width:0;
+    }
+
+    .timeline-date{
+      font-size:13px;
+      font-weight:700;
+      color:#eef4ff;
+      line-height:1.35;
+      white-space:nowrap;
+    }
+
+    .timeline-state{
+      display:grid;
+      gap:6px;
+      min-width:0;
+    }
+
+    .timeline-badge,
+    .risk-badge,
+    .list-badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:max-content;
+      min-width:34px;
+      min-height:28px;
+      padding:0 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.04);
+      font-size:12px;
+      font-weight:700;
+      line-height:1;
+      letter-spacing:.03em;
+    }
+
+    .timeline-badge.best{color:#93c5fd;border-color:rgba(96,165,250,.28)}
+    .timeline-badge.base{color:#eef4ff;border-color:rgba(255,255,255,.14)}
+    .timeline-badge.worst{color:#fca5a5;border-color:rgba(248,113,113,.28)}
+    .timeline-badge.other{color:#c4b5fd;border-color:rgba(196,181,253,.24)}
+
+    .risk-badge.low{color:#7dd3fc}
+    .risk-badge.guarded{color:#c4b5fd}
+    .risk-badge.elevated{color:#facc15}
+    .risk-badge.high{color:#fb923c}
+    .risk-badge.critical{color:#f87171}
+
+    .timeline-small{
+      font-size:12px;
+      opacity:.72;
+      color:#c8d7f6;
+      margin-top:4px;
+      line-height:1.5;
+    }
+
+    .timeline-conf{
+      text-align:right;
+      display:grid;
+      gap:6px;
+      justify-items:end;
+    }
+
+    .timeline-conf .value{
+      font-size:18px;
+      font-weight:800;
+      color:#93c5fd;
+      line-height:1;
+    }
+
+    .timeline-conf .sub{
+      font-size:12px;
+      opacity:.72;
+      color:#c8d7f6;
+    }
+
+    .plain-list{
       list-style:none;
       margin:0;
       padding:0;
       display:grid;
       gap:8px;
     }
-    .note-card li{
+
+    .plain-list li{
       border:1px solid rgba(120,160,220,.1);
       border-radius:12px;
       padding:8px 10px;
@@ -332,29 +449,79 @@
       line-height:1.55;
     }
 
-    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;}
-    .empty{
+    .list-stack{
+      display:grid;
+      gap:12px;
+    }
+
+    .list-row{
+      display:grid;
+      grid-template-columns:auto 1fr;
+      align-items:flex-start;
+      gap:10px;
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid rgba(120,160,220,.14);
+      background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));
+      min-width:0;
+    }
+
+    .empty-card{
+      min-height:160px;
+      justify-content:center;
+      text-align:center;
+      border:1px solid rgba(120,160,220,.14);
+      border-radius:16px;
+      padding:14px;
+      background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));
+      display:grid;
+      gap:8px;
+    }
+
+    .empty-text{
+      max-width:56ch;
+      justify-self:center;
       color:#c8d7f6;
-      opacity:.72;
-      font-size:13px;
-      line-height:1.6;
+      line-height:1.7;
+      margin:0;
+    }
+
+    .mono{
+      font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing:0;
     }
 
     @media (max-width:1100px){
-      .status-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
-      .pred-summary-grid,
-      .history-shell,
+      .hero-grid,
+      .content-grid,
       .chart-grid,
+      .kpi-grid,
+      .detail-grid,
       .notes-grid{
         grid-template-columns:1fr;
       }
-    }
-    @media (max-width:700px){
-      .status-grid{grid-template-columns:1fr;}
-      .timeline-row{grid-template-columns:1fr;}
+
+      .global-status{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+      }
+
+      .timeline-row{
+        grid-template-columns:1fr;
+      }
+
       .timeline-conf{
         justify-items:start;
         text-align:left;
+      }
+    }
+
+    @media (max-width:700px){
+      .global-status{
+        grid-template-columns:1fr;
+      }
+
+      .section-header{
+        flex-direction:column;
       }
     }
   </style>
@@ -364,158 +531,242 @@
 
   <div class="page container">
     <main class="gp-main">
-      <div class="gp-page">
-        <section class="panel">
+      <div class="gp-page history-page">
+        <section class="panel history-shell">
 
-          <div class="pred-hero">
-            <div class="h1">Prediction History</div>
-            <p class="sub">Prediction drift / risk evolution / confidence change を時系列で表示します。</p>
+          <section class="hero-panel">
+            <div class="hero-grid">
+              <article class="card hero-card">
+                <h1 id="heroHeadline" class="hero-title">Prediction History</h1>
+                <p id="heroSummary" class="hero-summary">Loading prediction history drift summary...</p>
 
-            <div class="status-shell">
-              <div class="status-top">
-                <div class="status-title">Global Status</div>
-                <div class="pillrow">
-                  <span id="pillAsOfLocal" class="pill">as_of: --</span>
-                  <span id="pillReadyLocal" class="pill">loading...</span>
+                <div class="pillrow" style="margin-top:16px;">
+                  <span class="pill"><strong>Window</strong><span id="windowLabel" style="margin-left:8px;">30d</span></span>
+                  <span class="pill"><strong>Latest Date</strong><span id="latestDate" style="margin-left:8px;">—</span></span>
+                  <span class="pill"><strong>Latest Dominant</strong><span id="latestDominant" style="margin-left:8px;">—</span></span>
+                  <span class="pill"><strong>Signals</strong><span id="latestSignals" style="margin-left:8px;">—</span></span>
                 </div>
-              </div>
+              </article>
 
-              <div class="status-grid">
-                <div class="status-item">
-                  <div class="status-label">Latest Date</div>
-                  <div id="gsDate" class="status-value">—</div>
-                  <div id="gsDateSub" class="status-sub">history latest</div>
-                </div>
+              <aside class="card hero-side-card">
+                <div class="hero-side-stack">
+                  <div class="hero-metric">
+                    <div class="metric-label">Risk Drift</div>
+                    <div id="riskDrift" class="metric-value">—</div>
+                    <div id="riskDriftSub" class="metric-sub">waiting for history</div>
+                  </div>
 
-                <div class="status-item">
-                  <div class="status-label">Global Risk</div>
-                  <div id="gsRisk" class="status-value">—</div>
-                  <div id="gsRiskSub" class="status-sub">history latest</div>
-                </div>
+                  <div class="hero-metric">
+                    <div class="metric-label">Confidence Drift</div>
+                    <div id="confidenceDrift" class="metric-value">—</div>
+                    <div id="confidenceDriftSub" class="metric-sub">waiting for history</div>
+                  </div>
 
-                <div class="status-item">
-                  <div class="status-label">Dominant</div>
-                  <div id="gsDominant" class="status-value">—</div>
-                  <div id="gsDominantSub" class="status-sub">dominant scenario</div>
+                  <div class="hero-metric">
+                    <div class="metric-label">Scenario Shift</div>
+                    <div id="scenarioShift" class="metric-value" style="font-size:20px;line-height:1.2;">—</div>
+                    <div id="scenarioShiftSub" class="metric-sub">waiting for history</div>
+                  </div>
                 </div>
-
-                <div class="status-item">
-                  <div class="status-label">Confidence</div>
-                  <div id="gsConfidence" class="status-value">—</div>
-                  <div id="gsConfidenceSub" class="status-sub">history latest</div>
-                </div>
-
-                <div class="status-item">
-                  <div class="status-label">Snapshots</div>
-                  <div id="gsSnapshots" class="status-value">—</div>
-                  <div id="gsSnapshotsSub" class="status-sub">30d scan</div>
-                </div>
-              </div>
+              </aside>
             </div>
-          </div>
+          </section>
 
-          <div class="pred-summary-grid">
-            <div class="card pred-card pred-lead">
-              <div class="pred-title">Prediction History Dashboard</div>
-              <h2 id="heroHeadline" class="pred-headline">Prediction drift is loading...</h2>
-              <p id="heroSummary" class="pred-summary">
-                Reading prediction history to show how risk, confidence, and scenario balance have been moving over time.
-              </p>
-
-              <div class="pred-pills">
-                <span class="pred-pill"><strong>Window</strong><span id="windowLabel">30d</span></span>
-                <span class="pred-pill"><strong>Latest Date</strong><span id="latestDate">--</span></span>
-                <span class="pred-pill"><strong>Latest Dominant</strong><span id="latestDominant">--</span></span>
-                <span class="pred-pill"><strong>Signals</strong><span id="latestSignals">--</span></span>
+          <section class="card global-status-panel">
+            <div class="global-status-head">
+              <div class="global-status-title">Global Status</div>
+              <div class="pillrow">
+                <span id="pillAsOfLocal" class="pill">as_of: --</span>
+                <span id="pillReadyLocal" class="pill">loading...</span>
               </div>
             </div>
 
-            <div class="card pred-card pred-side-card">
-              <div class="pred-side-stack">
-                <div class="pred-metric">
-                  <div class="label">Risk Drift</div>
-                  <div id="riskDrift" class="value">--</div>
-                  <div id="riskDriftSub" class="sub">Waiting for history</div>
-                </div>
+            <div class="global-status">
+              <div class="status-card">
+                <div class="status-label">Latest Date</div>
+                <div id="gsDate" class="status-value">—</div>
+                <div id="gsDateSub" class="status-sub">history latest</div>
+              </div>
 
-                <div class="pred-metric">
-                  <div class="label">Confidence Drift</div>
-                  <div id="confidenceDrift" class="value">--</div>
-                  <div id="confidenceDriftSub" class="sub">Waiting for history</div>
-                </div>
+              <div class="status-card">
+                <div class="status-label">Global Risk</div>
+                <div id="gsRisk" class="status-value">—</div>
+                <div id="gsRiskSub" class="status-sub">history latest</div>
+              </div>
 
-                <div class="pred-metric">
-                  <div class="label">Scenario Shift</div>
-                  <div id="scenarioShift" class="value" style="font-size:20px;">--</div>
-                  <div id="scenarioShiftSub" class="sub">Waiting for history</div>
-                </div>
+              <div class="status-card">
+                <div class="status-label">Dominant</div>
+                <div id="gsDominant" class="status-value">—</div>
+                <div id="gsDominantSub" class="status-sub">dominant scenario</div>
+              </div>
+
+              <div class="status-card">
+                <div class="status-label">Confidence</div>
+                <div id="gsConfidence" class="status-value">—</div>
+                <div id="gsConfidenceSub" class="status-sub">history latest</div>
+              </div>
+
+              <div class="status-card">
+                <div class="status-label">Snapshots</div>
+                <div id="gsSnapshots" class="status-value">—</div>
+                <div id="gsSnapshotsSub" class="status-sub">30d scan</div>
               </div>
             </div>
-          </div>
+          </section>
 
-          <div class="history-shell">
-            <div class="card">
-              <div class="sectionTitle">
-                <h2>History Timeline</h2>
-                <span id="timelineHint" class="hint">loading...</span>
-              </div>
-              <div id="timelineList" class="timeline-list"></div>
+          <section class="card">
+            <div class="sectionTitle">
+              <h2>History KPIs</h2>
+              <span class="hint">latest vs oldest in window</span>
             </div>
 
-            <div class="chart-stack">
-              <div class="card">
-                <div class="sectionTitle">
-                  <h2>History Charts</h2>
-                  <span class="hint">recent drift</span>
-                </div>
-
-                <div class="chart-grid">
-                  <div class="chart-card">
-                    <div class="label">Risk Trend</div>
-                    <div id="riskChartValue" class="value neu">—</div>
-                    <svg id="riskChart" viewBox="0 0 320 90" preserveAspectRatio="none" aria-label="risk trend"></svg>
-                    <div class="chart-note">Low → Guarded → Elevated → High → Critical</div>
-                  </div>
-
-                  <div class="chart-card">
-                    <div class="label">Confidence Trend</div>
-                    <div id="confidenceChartValue" class="value neu">—</div>
-                    <svg id="confidenceChart" viewBox="0 0 320 90" preserveAspectRatio="none" aria-label="confidence trend"></svg>
-                    <div class="chart-note">Snapshot confidence across recent history.</div>
-                  </div>
-                </div>
+            <div class="kpi-grid">
+              <div class="metric-card">
+                <div class="metric-label">Latest Risk</div>
+                <div id="metricLatestRisk" class="metric-value">—</div>
+                <div id="metricLatestRiskSub" class="metric-sub">loading</div>
               </div>
 
-              <div class="card">
-                <div class="sectionTitle">
-                  <h2>History Notes</h2>
-                  <span class="hint">latest snapshot</span>
-                </div>
+              <div class="metric-card">
+                <div class="metric-label">Oldest Risk</div>
+                <div id="metricOldestRisk" class="metric-value">—</div>
+                <div id="metricOldestRiskSub" class="metric-sub">loading</div>
+              </div>
 
-                <div class="notes-grid">
-                  <div class="note-card">
-                    <div class="note-title">Drivers</div>
-                    <ul id="driversList"></ul>
-                  </div>
+              <div class="metric-card">
+                <div class="metric-label">Latest Confidence</div>
+                <div id="metricLatestConfidence" class="metric-value">—</div>
+                <div id="metricLatestConfidenceSub" class="metric-sub">loading</div>
+              </div>
 
-                  <div class="note-card">
-                    <div class="note-title">Watchpoints</div>
-                    <ul id="watchpointsList"></ul>
-                  </div>
-
-                  <div class="note-card">
-                    <div class="note-title">Invalidation</div>
-                    <ul id="invalidationList"></ul>
-                  </div>
-
-                  <div class="note-card">
-                    <div class="note-title">Implications</div>
-                    <ul id="implicationsList"></ul>
-                  </div>
-                </div>
+              <div class="metric-card">
+                <div class="metric-label">Oldest Confidence</div>
+                <div id="metricOldestConfidence" class="metric-value">—</div>
+                <div id="metricOldestConfidenceSub" class="metric-sub">loading</div>
               </div>
             </div>
-          </div>
+          </section>
+
+          <section class="card">
+            <div class="sectionTitle">
+              <h2>History Trend</h2>
+              <span class="hint">recent drift</span>
+            </div>
+
+            <div class="chart-grid">
+              <div class="chart-card">
+                <div class="chart-label">Risk Trend</div>
+                <div id="riskChartValue" class="chart-value neu">—</div>
+                <svg id="riskChart" viewBox="0 0 320 92" preserveAspectRatio="none" aria-label="risk trend"></svg>
+                <div class="chart-note">Low → Guarded → Elevated → High → Critical</div>
+              </div>
+
+              <div class="chart-card">
+                <div class="chart-label">Confidence Trend</div>
+                <div id="confidenceChartValue" class="chart-value neu">—</div>
+                <svg id="confidenceChart" viewBox="0 0 320 92" preserveAspectRatio="none" aria-label="confidence trend"></svg>
+                <div class="chart-note">Snapshot confidence across recent history.</div>
+              </div>
+
+              <div class="chart-card">
+                <div class="chart-label">Scenario Shift</div>
+                <div id="scenarioChartValue" class="chart-value neu">—</div>
+                <svg id="scenarioChart" viewBox="0 0 320 92" preserveAspectRatio="none" aria-label="scenario change"></svg>
+                <div class="chart-note">Branch change over the latest snapshots.</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="content-grid">
+            <article class="card">
+              <div class="section-header">
+                <div>
+                  <h2 class="section-title">History Summary</h2>
+                  <p class="section-subtitle">Topline interpretation of recent prediction drift.</p>
+                </div>
+                <div id="windowChip" class="window-chip">30d</div>
+              </div>
+
+              <p id="historySummaryMain" class="summary-text">Loading history summary...</p>
+
+              <div class="detail-grid" style="margin-top:14px;">
+                <article class="detail-card">
+                  <div class="detail-eyebrow">Drift Interpretation</div>
+                  <h3 class="detail-title">Risk / Confidence Read</h3>
+                  <p id="historyDriftText" class="detail-text">Loading...</p>
+                </article>
+
+                <article class="detail-card">
+                  <div class="detail-eyebrow">Latest Snapshot</div>
+                  <h3 class="detail-title">Current History Anchor</h3>
+                  <p id="latestAnchorText" class="detail-text">Loading...</p>
+                </article>
+              </div>
+            </article>
+
+            <aside class="stack">
+              <article class="card">
+                <div class="section-header">
+                  <div>
+                    <h2 class="section-title">Runtime Notes</h2>
+                    <p class="section-subtitle">Quick operating context for history scan.</p>
+                  </div>
+                </div>
+                <ul id="runtimeNoteList" class="plain-list"></ul>
+              </article>
+
+              <article class="card">
+                <div class="section-header">
+                  <div>
+                    <h2 class="section-title">History Scan Status</h2>
+                    <p class="section-subtitle">Daily snapshot scan results.</p>
+                  </div>
+                </div>
+                <div id="sourceStatusList" class="list-stack"></div>
+              </article>
+            </aside>
+          </section>
+
+          <section class="card">
+            <div class="section-header">
+              <div>
+                <h2 class="section-title">History Timeline</h2>
+                <p class="section-subtitle">Recent snapshots in reverse chronological order.</p>
+              </div>
+            </div>
+            <div id="timelineList" class="timeline-list"></div>
+          </section>
+
+          <section class="card">
+            <div class="section-header">
+              <div>
+                <h2 class="section-title">Latest Snapshot Notes</h2>
+                <p class="section-subtitle">Key lists from the latest history prediction.</p>
+              </div>
+            </div>
+
+            <div class="notes-grid">
+              <div class="note-card">
+                <div class="detail-eyebrow">Drivers</div>
+                <ul id="driversList" class="plain-list"></ul>
+              </div>
+
+              <div class="note-card">
+                <div class="detail-eyebrow">Watchpoints</div>
+                <ul id="watchpointsList" class="plain-list"></ul>
+              </div>
+
+              <div class="note-card">
+                <div class="detail-eyebrow">Invalidation</div>
+                <ul id="invalidationList" class="plain-list"></ul>
+              </div>
+
+              <div class="note-card">
+                <div class="detail-eyebrow">Implications</div>
+                <ul id="implicationsList" class="plain-list"></ul>
+              </div>
+            </div>
+          </section>
 
         </section>
       </div>
@@ -524,7 +775,7 @@
 
   <div id="site-footer"></div>
 
-  <script src="/static/common/layout.js?v=20260311-ui-history2"></script>
+  <script src="/static/common/layout.js?v=20260311-ui-pred-history-theme2"></script>
   <script>
     (function(){
       "use strict";
@@ -673,7 +924,7 @@
           drivers: Array.isArray(raw.drivers) ? raw.drivers : [],
           watchpoints: Array.isArray(raw.watchpoints) ? raw.watchpoints : [],
           invalidation_conditions: Array.isArray(raw.invalidation_conditions) ? raw.invalidation_conditions : [],
-          key_implications: Array.isArray(raw.key_implications) ? raw.key_implications : [],
+          key_implications: Array.isArray(raw.key_implications) ? raw.key_implications : (Array.isArray(raw.implications) ? raw.implications : []),
           signal_count: firstNumber(raw.signal_count, raw.meta && raw.meta.signal_count),
           url: url
         };
@@ -706,10 +957,11 @@
         setText("pillReadyLocal", "Ready");
       }
 
-      function renderHero(latest, snapshots){
-        setText("heroHeadline", "Risk drift / confidence drift / scenario shift");
+      function renderHero(latest){
+        setText("heroHeadline", "Prediction History");
         setText("heroSummary", latest.summary || "Prediction history loaded.");
         setText("windowLabel", SCAN_DAYS + "d");
+        setText("windowChip", SCAN_DAYS + "d");
         setText("latestDate", formatDate(latest.as_of));
         setText("latestDominant", titleize(latest.dominant_scenario));
         setText("latestSignals", latest.signal_count != null ? String(latest.signal_count) : "—");
@@ -730,6 +982,34 @@
         var shifted = firstString(latest.dominant_scenario) !== firstString(oldest.dominant_scenario);
         setText("scenarioShift", shifted ? "Shifted" : "Stable");
         setText("scenarioShiftSub", titleize(oldest.dominant_scenario) + " → " + titleize(latest.dominant_scenario));
+
+        setText("metricLatestRisk", titleize(latest.overall_risk));
+        setText("metricLatestRiskSub", formatDate(latest.as_of));
+
+        setText("metricOldestRisk", titleize(oldest.overall_risk));
+        setText("metricOldestRiskSub", formatDate(oldest.as_of));
+
+        setText("metricLatestConfidence", formatPercent(latest.confidence));
+        setText("metricLatestConfidenceSub", formatDate(latest.as_of));
+
+        setText("metricOldestConfidence", formatPercent(oldest.confidence));
+        setText("metricOldestConfidenceSub", formatDate(oldest.as_of));
+
+        var driftText = "Latest risk is " + titleize(latest.overall_risk) + " and confidence is " + formatPercent(latest.confidence) + ". ";
+        driftText += "Compared with the oldest snapshot in the current window, risk moved " + ((riskDiff > 0 ? "up" : riskDiff < 0 ? "down" : "sideways")) + " and confidence moved " + (confDiff == null ? "unknown" : (confDiff > 0 ? "up" : confDiff < 0 ? "down" : "sideways")) + ".";
+        setText("historyDriftText", driftText);
+
+        var anchorText = "Latest snapshot on " + formatDate(latest.as_of) + " shows dominant scenario " + titleize(latest.dominant_scenario) + ", risk " + titleize(latest.overall_risk) + ", confidence " + formatPercent(latest.confidence) + ".";
+        setText("latestAnchorText", anchorText);
+
+        var summaryText = "Across the last " + SCAN_DAYS + " days, prediction history shows "
+          + (shifted ? "a scenario shift" : "relative scenario stability")
+          + ", risk drift of "
+          + ((riskDiff > 0 ? "+" : "") + riskDiff + " level")
+          + " and confidence drift of "
+          + (confDiff == null ? "—" : ((confDiff > 0 ? "+" : "") + confDiff + "pt"))
+          + ".";
+        setText("historySummaryMain", summaryText);
       }
 
       function renderTimeline(list){
@@ -737,30 +1017,28 @@
         if(!root) return;
 
         if(!list.length){
-          root.innerHTML = '<div class="empty">history not found.</div>';
-          setText("timelineHint", "missing");
+          root.innerHTML = '<article class="empty-card"><div class="empty-meta">History unavailable</div><p class="empty-text">history not found.</p></article>';
           return;
         }
 
-        setText("timelineHint", "OK");
-
         root.innerHTML = list.map(function(item){
-          return '' +
-            '<div class="timeline-row">' +
-              '<div class="timeline-date mono">' + esc(formatDate(item.as_of)) + '</div>' +
-              '<div class="timeline-dom">' +
-                '<span class="timeline-badge ' + esc(domClass(item.dominant_scenario)) + '">' + esc(titleize(item.dominant_scenario)) + '</span>' +
-                '<span class="risk-badge ' + esc(riskClass(item.overall_risk)) + '">' + esc(titleize(item.overall_risk)) + '</span>' +
-              '</div>' +
-              '<div>' +
-                '<div class="timeline-summary">' + esc(item.summary || "Prediction snapshot") + '</div>' +
-                '<div class="timeline-small">Generated: ' + esc(formatDateTime(item.generated_at)) + '</div>' +
-              '</div>' +
-              '<div class="timeline-conf">' +
-                '<div class="value">' + esc(formatPercent(item.confidence)) + '</div>' +
-                '<div class="sub">' + esc(item.horizon || "horizon n/a") + '</div>' +
-              '</div>' +
-            '</div>';
+          return ''
+            + '<article class="timeline-row">'
+            +   '<div class="timeline-date mono">' + esc(formatDate(item.as_of)) + '</div>'
+            +   '<div class="timeline-state">'
+            +     '<span class="timeline-badge ' + esc(domClass(item.dominant_scenario)) + '">' + esc(titleize(item.dominant_scenario)) + '</span>'
+            +     '<span class="risk-badge ' + esc(riskClass(item.overall_risk)) + '">' + esc(titleize(item.overall_risk)) + '</span>'
+            +   '</div>'
+            +   '<div>'
+            +     '<h3 class="timeline-title">' + esc(titleize(item.dominant_scenario || "snapshot")) + '</h3>'
+            +     '<p class="timeline-summary">' + esc(item.summary || "Prediction snapshot") + '</p>'
+            +     '<div class="timeline-small">Generated: ' + esc(formatDateTime(item.generated_at)) + '</div>'
+            +   '</div>'
+            +   '<div class="timeline-conf">'
+            +     '<div class="value">' + esc(formatPercent(item.confidence)) + '</div>'
+            +     '<div class="sub">' + esc(item.horizon || "horizon n/a") + '</div>'
+            +   '</div>'
+            + '</article>';
         }).join("");
       }
 
@@ -777,6 +1055,43 @@
         }).join("");
       }
 
+      function renderRuntimeNotes(latest, oldest, count){
+        var root = $("runtimeNoteList");
+        if(!root) return;
+
+        var items = [
+          "Window: " + SCAN_DAYS + "d",
+          "Snapshots loaded: " + count,
+          "Latest date: " + formatDate(latest.as_of),
+          "Oldest date: " + formatDate(oldest.as_of)
+        ];
+
+        root.innerHTML = items.map(function(item){
+          return "<li>" + esc(item) + "</li>";
+        }).join("");
+      }
+
+      function renderSourceStatus(list){
+        var root = $("sourceStatusList");
+        if(!root) return;
+
+        if(!list.length){
+          root.innerHTML = '<article class="empty-card"><div class="empty-meta">Scan unavailable</div><p class="empty-text">No history files loaded.</p></article>';
+          return;
+        }
+
+        root.innerHTML = list.slice(0, 6).map(function(item, index){
+          return ''
+            + '<article class="list-row">'
+            +   '<span class="list-badge">' + esc(String(index + 1)) + '</span>'
+            +   '<div>'
+            +     '<div class="timeline-meta mono">' + esc(item.url || "") + '</div>'
+            +     '<p class="inline-text">' + esc(formatDate(item.as_of)) + " / " + esc(titleize(item.dominant_scenario)) + " / " + esc(formatPercent(item.confidence)) + '</p>'
+            +   '</div>'
+            + '</article>';
+        }).join("");
+      }
+
       function polyline(svgId, values, min, max){
         var svg = $(svgId);
         if(!svg) return;
@@ -785,7 +1100,7 @@
           return;
         }
         var width = 320;
-        var height = 90;
+        var height = 92;
         var pad = 10;
         var range = (max - min) || 1;
         var pts = values.map(function(v, i){
@@ -803,6 +1118,30 @@
           dots;
       }
 
+      function bars(svgId, values, labels){
+        var svg = $(svgId);
+        if(!svg) return;
+
+        var width = 320;
+        var height = 92;
+        var pad = 14;
+        var barGap = 18;
+        var count = values.length || 1;
+        var totalGap = barGap * (count - 1);
+        var barWidth = (width - pad * 2 - totalGap) / count;
+
+        svg.innerHTML = values.map(function(value, i){
+          var percent = Math.max(0, Math.min(100, value));
+          var x = pad + i * (barWidth + barGap);
+          var h = (height - 26) * (percent / 100);
+          var y = height - 18 - h;
+          var label = labels[i] || "";
+          return ''
+            + '<rect x="' + x + '" y="' + y + '" width="' + barWidth + '" height="' + h + '" rx="8" ry="8" fill="rgba(147,197,253,.85)"></rect>'
+            + '<text x="' + (x + barWidth / 2) + '" y="' + (height - 4) + '" text-anchor="middle" font-size="11" fill="rgba(200,215,246,.9)">' + label + '</text>';
+        }).join("");
+      }
+
       function renderCharts(list){
         var chronological = list.slice().reverse();
 
@@ -813,32 +1152,61 @@
           return n <= 1 ? n * 100 : n;
         });
 
+        var lastBranch = "";
+        var changeCount = 0;
+        chronological.forEach(function(item){
+          var branch = firstString(item.dominant_scenario);
+          if(lastBranch && branch && branch !== lastBranch) changeCount += 1;
+          lastBranch = branch;
+        });
+
         polyline("riskChart", riskValues, 0, 5);
         polyline("confidenceChart", confValues, 0, 100);
+        bars("scenarioChart", [
+          Math.min(100, changeCount * 20),
+          chronological.length ? 100 : 0,
+          chronological.length ? Math.max(10, Math.min(100, (changeCount / Math.max(chronological.length - 1, 1)) * 100)) : 0
+        ], ["Shift", "Load", "Rate"]);
 
         var riskDelta = (riskValues.length >= 2) ? (riskValues[riskValues.length-1] - riskValues[0]) : 0;
         var confDelta = (confValues.length >= 2) ? Math.round(confValues[confValues.length-1] - confValues[0]) : 0;
 
         var riskValue = $("riskChartValue");
         var confValue = $("confidenceChartValue");
+        var scenarioValue = $("scenarioChartValue");
 
         if(riskValue){
           riskValue.textContent = (riskDelta > 0 ? "+" : "") + riskDelta + " lvl";
-          riskValue.className = "value " + (riskDelta > 0 ? "neg" : riskDelta < 0 ? "pos" : "neu");
+          riskValue.className = "chart-value " + (riskDelta > 0 ? "neg" : riskDelta < 0 ? "pos" : "neu");
         }
 
         if(confValue){
           confValue.textContent = (confDelta > 0 ? "+" : "") + confDelta + "pt";
-          confValue.className = "value " + (confDelta > 0 ? "pos" : confDelta < 0 ? "neg" : "neu");
+          confValue.className = "chart-value " + (confDelta > 0 ? "pos" : confDelta < 0 ? "neg" : "neu");
+        }
+
+        if(scenarioValue){
+          scenarioValue.textContent = changeCount > 0 ? ("Shift x" + changeCount) : "Stable";
+          scenarioValue.className = "chart-value " + (changeCount > 0 ? "neg" : "neu");
         }
       }
 
+      function activateNav(){
+        document.querySelectorAll(".nav-link").forEach(function(node){
+          if(node.dataset.page === "prediction_history") node.classList.add("active");
+        });
+      }
+
       async function main(){
+        activateNav();
+
         try{
           var list = await loadSnapshots();
           if(!list.length){
             setText("pillReadyLocal", "Missing");
+            setText("heroSummary", "prediction history files were not found.");
             renderTimeline([]);
+            renderSourceStatus([]);
             return;
           }
 
@@ -846,10 +1214,12 @@
           var oldest = list[list.length - 1];
 
           renderGlobal(latest, list.length);
-          renderHero(latest, list);
+          renderHero(latest);
           renderDrift(latest, oldest);
           renderTimeline(list);
           renderCharts(list);
+          renderRuntimeNotes(latest, oldest, list.length);
+          renderSourceStatus(list);
 
           renderList("driversList", latest.drivers, "No drivers");
           renderList("watchpointsList", latest.watchpoints, "No watchpoints");

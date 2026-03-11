@@ -5,44 +5,126 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Prediction - GenesisPrediction v2</title>
   <meta name="description" content="GenesisPrediction Prediction UI">
-  <link rel="stylesheet" href="/static/app.css?v=20260311-ui-pred4">
+  <link rel="stylesheet" href="/static/app.css?v=20260311-ui-pred-theme1">
   <style>
-    .prediction-page{display:grid;gap:16px}
-
-    .status-shell{
-      margin-top:14px;
-      padding:14px 16px;
-      border-radius:18px;
-      border:1px solid rgba(120,160,220,.18);
-      background:linear-gradient(180deg, rgba(10,16,30,.66), rgba(7,12,24,.48));
-      box-shadow:0 12px 30px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.04);
+    .prediction-page{
+      display:grid;
+      gap:16px;
     }
-    .status-top{
+
+    .prediction-shell{
+      display:grid;
+      gap:16px;
+    }
+
+    .hero-panel{
+      display:grid;
+      gap:16px;
+    }
+
+    .hero-grid{
+      display:grid;
+      grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);
+      gap:16px;
+      align-items:stretch;
+    }
+
+    .hero-card,
+    .hero-side-card{
+      min-width:0;
+      height:100%;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .hero-title{
+      font-size:34px;
+      line-height:1.08;
+      letter-spacing:-.03em;
+      font-weight:800;
+      margin:0 0 10px;
+      color:#eef4ff;
+    }
+
+    .hero-summary{
+      color:#c8d7f6;
+      font-size:15px;
+      line-height:1.8;
+      margin:0;
+      flex:1;
+    }
+
+    .hero-side-stack{
+      display:grid;
+      gap:12px;
+      height:100%;
+    }
+
+    .hero-metric{
+      border:1px solid rgba(120,160,220,.12);
+      border-radius:14px;
+      padding:12px 14px;
+      background:rgba(8,14,28,.18);
+    }
+
+    .hero-metric .metric-label{
+      font-size:11px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      opacity:.72;
+      margin-bottom:6px;
+    }
+
+    .hero-metric .metric-value{
+      font-size:26px;
+      line-height:1.05;
+      font-weight:700;
+      letter-spacing:-.02em;
+      color:#eef4ff;
+    }
+
+    .hero-metric .metric-sub{
+      margin-top:4px;
+      font-size:12px;
+      opacity:.72;
+      color:#c8d7f6;
+      line-height:1.5;
+    }
+
+    .global-status-panel{
+      display:grid;
+      gap:12px;
+    }
+
+    .global-status-head{
       display:flex;
       align-items:center;
       justify-content:space-between;
       gap:12px;
       flex-wrap:wrap;
-      margin-bottom:10px;
     }
-    .status-title{
+
+    .global-status-title{
       font-size:12px;
       letter-spacing:.18em;
       text-transform:uppercase;
       opacity:.82;
     }
-    .status-grid{
+
+    .global-status{
       display:grid;
       grid-template-columns:repeat(5,minmax(0,1fr));
       gap:12px;
     }
-    .status-item{
+
+    .status-card{
       min-width:0;
       border:1px solid rgba(120,160,220,.12);
       border-radius:14px;
       padding:12px 12px 10px;
       background:rgba(8,14,28,.22);
     }
+
     .status-label{
       font-size:11px;
       letter-spacing:.08em;
@@ -50,6 +132,7 @@
       opacity:.72;
       margin-bottom:6px;
     }
+
     .status-value{
       font-size:24px;
       line-height:1.05;
@@ -60,6 +143,7 @@
       text-overflow:ellipsis;
       color:#eef4ff;
     }
+
     .status-sub{
       margin-top:4px;
       font-size:12px;
@@ -67,91 +151,6 @@
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
-      color:#c8d7f6;
-    }
-
-    .pred-summary-grid{
-      display:grid;
-      grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);
-      gap:16px;
-      align-items:stretch;
-    }
-    .pred-card{min-width:0}
-    .pred-lead,
-    .pred-side-card{
-      height:100%;
-      display:flex;
-      flex-direction:column;
-    }
-
-    .pred-headline{
-      font-size:34px;
-      line-height:1.08;
-      letter-spacing:-.03em;
-      font-weight:800;
-      margin:0 0 10px;
-      color:#eef4ff;
-    }
-    .pred-summary{
-      color:#c8d7f6;
-      font-size:15px;
-      line-height:1.8;
-      margin:0;
-      flex:1;
-    }
-    .pred-pills{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      margin-top:16px;
-    }
-    .pred-pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:8px 12px;
-      border-radius:999px;
-      border:1px solid rgba(120,160,220,.14);
-      background:rgba(255,255,255,.025);
-      font-size:13px;
-      color:#c8d7f6;
-    }
-    .pred-pill strong{
-      font-size:11px;
-      text-transform:uppercase;
-      letter-spacing:.06em;
-      opacity:.72;
-    }
-
-    .pred-side-stack{
-      display:grid;
-      gap:12px;
-      height:100%;
-    }
-    .pred-metric{
-      border:1px solid rgba(120,160,220,.12);
-      border-radius:14px;
-      padding:12px 14px;
-      background:rgba(8,14,28,.18);
-    }
-    .pred-metric .label{
-      font-size:11px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      opacity:.72;
-      margin-bottom:6px;
-    }
-    .pred-metric .value{
-      font-size:26px;
-      line-height:1.05;
-      font-weight:700;
-      letter-spacing:-.02em;
-      color:#eef4ff;
-    }
-    .pred-metric .sub{
-      margin-top:4px;
-      font-size:12px;
-      opacity:.72;
       color:#c8d7f6;
     }
 
@@ -168,6 +167,7 @@
       background:rgba(8,14,28,.18);
       min-width:0;
     }
+
     .metric-label{
       font-size:11px;
       letter-spacing:.08em;
@@ -175,6 +175,7 @@
       opacity:.72;
       margin-bottom:6px;
     }
+
     .metric-value{
       font-size:28px;
       line-height:1.05;
@@ -182,6 +183,7 @@
       letter-spacing:-.03em;
       color:#eef4ff;
     }
+
     .metric-sub{
       margin-top:4px;
       font-size:12px;
@@ -190,11 +192,12 @@
       line-height:1.5;
     }
 
-    .chart-shell{
+    .chart-grid{
       display:grid;
       grid-template-columns:repeat(3,minmax(0,1fr));
       gap:12px;
     }
+
     .chart-card{
       border:1px solid rgba(120,160,220,.12);
       border-radius:16px;
@@ -202,14 +205,16 @@
       background:rgba(8,14,28,.18);
       min-width:0;
     }
-    .chart-card .label{
+
+    .chart-card .chart-label{
       font-size:11px;
       letter-spacing:.08em;
       text-transform:uppercase;
       opacity:.72;
       margin-bottom:6px;
     }
-    .chart-card .value{
+
+    .chart-card .chart-value{
       font-size:24px;
       line-height:1.05;
       font-weight:700;
@@ -217,9 +222,11 @@
       color:#eef4ff;
       margin-bottom:10px;
     }
-    .chart-card .value.pos{color:#7dd3fc}
-    .chart-card .value.neg{color:#fca5a5}
-    .chart-card .value.neu{color:#eef4ff}
+
+    .chart-card .chart-value.pos{color:#7dd3fc}
+    .chart-card .chart-value.neg{color:#fca5a5}
+    .chart-card .chart-value.neu{color:#eef4ff}
+
     .chart-card svg{
       width:100%;
       height:92px;
@@ -228,6 +235,7 @@
       background:rgba(255,255,255,.02);
       border:1px solid rgba(255,255,255,.06);
     }
+
     .chart-note{
       margin-top:8px;
       font-size:12px;
@@ -242,11 +250,8 @@
       gap:16px;
       align-items:start;
     }
-    .section-stack,
-    .list-stack,
-    .signal-grid,
-    .trend-stack,
-    .probability-stack{
+
+    .stack{
       display:grid;
       gap:12px;
     }
@@ -258,18 +263,21 @@
       gap:12px;
       margin-bottom:12px;
     }
+
     .section-title{
       margin:0;
       font-size:22px;
       line-height:1.2;
       letter-spacing:-.02em;
     }
+
     .section-subtitle{
       margin:4px 0 0;
       color:#c8d7f6;
       line-height:1.65;
       font-size:14px;
     }
+
     .confidence-chip{
       display:inline-flex;
       align-items:center;
@@ -332,6 +340,7 @@
       text-transform:uppercase;
       opacity:.7;
     }
+
     .detail-title,
     .scenario-title,
     .signal-title,
@@ -364,6 +373,14 @@
       padding:0;
       display:grid;
       gap:10px;
+    }
+
+    .list-stack,
+    .signal-grid,
+    .trend-stack,
+    .probability-stack{
+      display:grid;
+      gap:12px;
     }
 
     .list-row,
@@ -418,6 +435,7 @@
     }
 
     .probability-label{font-weight:700;color:#eef4ff}
+
     .progress-track{
       position:relative;
       height:10px;
@@ -425,6 +443,7 @@
       overflow:hidden;
       background:rgba(255,255,255,.08);
     }
+
     .progress-bar{
       position:absolute;
       left:0;
@@ -433,6 +452,7 @@
       border-radius:999px;
       background:linear-gradient(90deg, rgba(96,165,250,.95), rgba(59,130,246,.55));
     }
+
     .probability-value,
     .scenario-probability,
     .signal-strength,
@@ -480,6 +500,7 @@
       display:grid;
       gap:8px;
     }
+
     .empty-text{
       max-width:56ch;
       justify-self:center;
@@ -488,25 +509,43 @@
       margin:0;
     }
 
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:0}
-    .muted{color:var(--text-muted, rgba(255,255,255,.72))}
+    .mono{
+      font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing:0;
+    }
+
+    .muted{
+      color:var(--text-muted, rgba(255,255,255,.72));
+    }
+
+    .inline-text{
+      margin:0;
+      color:#c8d7f6;
+      line-height:1.7;
+    }
 
     @media (max-width:1100px){
-      .status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .pred-summary-grid,
+      .hero-grid,
       .content-grid,
       .mid-grid,
       .bottom-grid,
       .detail-grid,
       .scenario-grid,
-      .chart-shell,
+      .chart-grid,
       .kpi-grid{
         grid-template-columns:1fr;
+      }
+
+      .global-status{
+        grid-template-columns:repeat(2,minmax(0,1fr));
       }
     }
 
     @media (max-width:700px){
-      .status-grid{grid-template-columns:1fr}
+      .global-status{
+        grid-template-columns:1fr;
+      }
+
       .section-header,
       .scenario-title-row,
       .signal-title-row,
@@ -514,6 +553,7 @@
       .timeline-title-row{
         flex-direction:column;
       }
+
       .probability-row,
       .list-row,
       .timeline-row{
@@ -528,145 +568,152 @@
   <div class="page container">
     <main class="gp-main">
       <div class="gp-page prediction-page">
-        <section class="panel">
+        <section class="panel prediction-shell">
 
-          <div class="pred-summary-grid">
-            <div class="card pred-card pred-lead">
-              <h1 id="heroHeadline" class="pred-headline">Trend / Signal / Scenario / Prediction</h1>
-              <p id="heroSummary" class="pred-summary">Loading latest prediction summary...</p>
+          <section class="hero-panel">
+            <div class="hero-grid">
+              <article class="card hero-card">
+                <h1 id="heroHeadline" class="hero-title">Trend / Signal / Scenario / Prediction</h1>
+                <p id="heroSummary" class="hero-summary">Loading latest prediction summary...</p>
 
-              <div class="pred-pills">
-                <span class="pred-pill"><strong>As of</strong><span id="metaAsof">—</span></span>
-                <span class="pred-pill"><strong>Dominant</strong><span id="metaDominant">—</span></span>
-                <span class="pred-pill"><strong>Confidence</strong><span id="metaConfidence">—</span></span>
-                <span class="pred-pill"><strong>Early Warning</strong><span id="metaWarning">—</span></span>
-              </div>
+                <div class="pillrow" style="margin-top:16px;">
+                  <span class="pill"><strong>As of</strong><span id="metaAsof" style="margin-left:8px;">—</span></span>
+                  <span class="pill"><strong>Dominant</strong><span id="metaDominant" style="margin-left:8px;">—</span></span>
+                  <span class="pill"><strong>Confidence</strong><span id="metaConfidence" style="margin-left:8px;">—</span></span>
+                  <span class="pill"><strong>Early Warning</strong><span id="metaWarning" style="margin-left:8px;">—</span></span>
+                </div>
+              </article>
+
+              <aside class="card hero-side-card">
+                <div class="hero-side-stack">
+                  <div class="hero-metric">
+                    <div class="metric-label">Overall Risk</div>
+                    <div id="riskChipText" class="metric-value">—</div>
+                    <div id="riskChipSub" class="metric-sub">prediction latest</div>
+                  </div>
+
+                  <div class="hero-metric">
+                    <div class="metric-label">Prediction Summary</div>
+                    <div id="summaryMini" class="metric-value" style="font-size:20px;line-height:1.2;">—</div>
+                    <div id="summaryMiniSub" class="metric-sub">latest summary</div>
+                  </div>
+
+                  <div class="hero-metric">
+                    <div class="metric-label">Runtime Status</div>
+                    <div id="runtimeMini" class="metric-value" style="font-size:20px;line-height:1.2;">Loading</div>
+                    <div id="runtimeMiniSub" class="metric-sub">artifact check</div>
+                  </div>
+                </div>
+              </aside>
             </div>
+          </section>
 
-            <div class="card pred-card pred-side-card">
-              <div class="pred-side-stack">
-                <div class="pred-metric">
-                  <div class="label">Overall Risk</div>
-                  <div id="riskChipText" class="value">—</div>
-                  <div id="riskChipSub" class="sub">prediction latest</div>
-                </div>
-
-                <div class="pred-metric">
-                  <div class="label">Prediction Summary</div>
-                  <div id="summaryMini" class="value" style="font-size:20px;line-height:1.2;">—</div>
-                  <div id="summaryMiniSub" class="sub">latest summary</div>
-                </div>
-
-                <div class="pred-metric">
-                  <div class="label">Runtime Status</div>
-                  <div id="runtimeMini" class="value" style="font-size:20px;line-height:1.2;">Loading</div>
-                  <div id="runtimeMiniSub" class="sub">artifact check</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="status-shell">
-            <div class="status-top">
-              <div class="status-title">Global Status</div>
+          <section class="card global-status-panel">
+            <div class="global-status-head">
+              <div class="global-status-title">Global Status</div>
               <div class="pillrow">
                 <span id="pillAsOfLocal" class="pill">as_of: --</span>
                 <span id="pillReadyLocal" class="pill">loading...</span>
               </div>
             </div>
 
-            <div class="status-grid">
-              <div class="status-item">
+            <div class="global-status">
+              <div class="status-card">
                 <div class="status-label">Date</div>
                 <div id="gsDate" class="status-value">—</div>
                 <div id="gsDateSub" class="status-sub">loading</div>
               </div>
 
-              <div class="status-item">
+              <div class="status-card">
                 <div class="status-label">Regime</div>
                 <div id="gsRegime" class="status-value">—</div>
                 <div id="gsRegimeSub" class="status-sub">loading</div>
               </div>
 
-              <div class="status-item">
+              <div class="status-card">
                 <div class="status-label">Signal</div>
                 <div id="gsSignal" class="status-value">—</div>
                 <div id="gsSignalSub" class="status-sub">loading</div>
               </div>
 
-              <div class="status-item">
+              <div class="status-card">
                 <div class="status-label">Confidence</div>
                 <div id="gsConfidence" class="status-value">—</div>
                 <div id="gsConfidenceSub" class="status-sub">loading</div>
               </div>
 
-              <div class="status-item">
+              <div class="status-card">
                 <div class="status-label">Health</div>
                 <div id="gsHealth" class="status-value">—</div>
                 <div id="gsHealthSub" class="status-sub">loading</div>
               </div>
             </div>
-          </div>
+          </section>
 
-          <div class="card" style="margin-top:16px;">
+          <section class="card">
             <div class="sectionTitle">
               <h2>Prediction KPIs</h2>
               <span class="hint">latest snapshot</span>
             </div>
+
             <div class="kpi-grid">
               <div class="metric-card">
                 <div class="metric-label">Signal Count</div>
                 <div id="metricSignalCount" class="metric-value">—</div>
                 <div id="metricSignalSub" class="metric-sub">loading</div>
               </div>
+
               <div class="metric-card">
                 <div class="metric-label">Scenario Count</div>
                 <div id="metricScenarioCount" class="metric-value">—</div>
                 <div id="metricScenarioSub" class="metric-sub">loading</div>
               </div>
+
               <div class="metric-card">
                 <div class="metric-label">Prediction Branch</div>
                 <div id="metricBranch" class="metric-value">—</div>
                 <div id="metricBranchSub" class="metric-sub">loading</div>
               </div>
+
               <div class="metric-card">
                 <div class="metric-label">Time Horizon</div>
                 <div id="metricHorizon" class="metric-value">—</div>
                 <div id="metricHorizonSub" class="metric-sub">loading</div>
               </div>
             </div>
-          </div>
+          </section>
 
-          <div class="card" style="margin-top:16px;">
+          <section class="card">
             <div class="sectionTitle">
               <h2>Prediction Trend</h2>
               <span class="hint">quick visual summary</span>
             </div>
-            <div class="chart-shell">
+
+            <div class="chart-grid">
               <div class="chart-card">
-                <div class="label">Confidence Trend</div>
-                <div id="confidenceChartValue" class="value neu">—</div>
+                <div class="chart-label">Confidence Trend</div>
+                <div id="confidenceChartValue" class="chart-value neu">—</div>
                 <svg id="confidenceChart" viewBox="0 0 320 92" preserveAspectRatio="none" aria-label="confidence trend"></svg>
                 <div class="chart-note">Recent confidence drift from prediction history.</div>
               </div>
 
               <div class="chart-card">
-                <div class="label">Scenario Probability</div>
-                <div id="scenarioChartValue" class="value neu">—</div>
+                <div class="chart-label">Scenario Probability</div>
+                <div id="scenarioChartValue" class="chart-value neu">—</div>
                 <svg id="scenarioChart" viewBox="0 0 320 92" preserveAspectRatio="none" aria-label="scenario probability"></svg>
                 <div class="chart-note">Best / Base / Worst branch weight from latest prediction.</div>
               </div>
 
               <div class="chart-card">
-                <div class="label">Risk Regime</div>
-                <div id="riskChartValue" class="value neu">—</div>
+                <div class="chart-label">Risk Regime</div>
+                <div id="riskChartValue" class="chart-value neu">—</div>
                 <svg id="riskChart" viewBox="0 0 320 92" preserveAspectRatio="none" aria-label="risk regime trend"></svg>
                 <div class="chart-note">Recent risk movement using prediction history snapshots.</div>
               </div>
             </div>
-          </div>
+          </section>
 
-          <div class="content-grid" style="margin-top:16px;">
+          <section class="content-grid">
             <article class="card">
               <div class="section-header">
                 <div>
@@ -693,7 +740,7 @@
               </div>
             </article>
 
-            <aside class="section-stack">
+            <aside class="stack">
               <article class="card">
                 <div class="section-header">
                   <div>
@@ -714,9 +761,9 @@
                 <div id="sourceStatusList" class="list-stack"></div>
               </article>
             </aside>
-          </div>
+          </section>
 
-          <div class="mid-grid" style="margin-top:16px;">
+          <section class="mid-grid">
             <article class="card">
               <div class="section-header">
                 <div>
@@ -736,9 +783,9 @@
               </div>
               <div id="signalList" class="signal-grid"></div>
             </article>
-          </div>
+          </section>
 
-          <div class="card" style="margin-top:16px;">
+          <section class="card">
             <div class="section-header">
               <div>
                 <h2 class="section-title">Scenario Cards</h2>
@@ -746,9 +793,9 @@
               </div>
             </div>
             <div id="scenarioCardGrid" class="scenario-grid"></div>
-          </div>
+          </section>
 
-          <div class="bottom-grid" style="margin-top:16px;">
+          <section class="bottom-grid">
             <article class="card">
               <div class="section-header">
                 <div>
@@ -788,9 +835,9 @@
               </div>
               <div id="implicationsList" class="list-stack"></div>
             </article>
-          </div>
+          </section>
 
-          <div class="card" style="margin-top:16px;">
+          <section class="card">
             <div class="section-header">
               <div>
                 <h2 class="section-title">Prediction History</h2>
@@ -798,7 +845,7 @@
               </div>
             </div>
             <div id="predictionHistoryList" class="list-stack"></div>
-          </div>
+          </section>
 
         </section>
       </div>
@@ -807,7 +854,7 @@
 
   <div id="site-footer"></div>
 
-  <script src="/static/common/layout.js?v=20260311-ui-pred4"></script>
+  <script src="/static/common/layout.js?v=20260311-ui-pred-theme1"></script>
   <script>
     const PREDICTION_SOURCES = {
       trend: "/analysis/prediction/trend_latest.json",
@@ -1322,7 +1369,7 @@
       root.innerHTML = list.map((item) => `
         <article class="list-row">
           <span class="list-badge">${escapeHtml(badge)}</span>
-          <div><p style="margin:0;color:#c8d7f6;line-height:1.7;">${escapeHtml(String(item))}</p></div>
+          <div><p class="inline-text">${escapeHtml(String(item))}</p></div>
         </article>
       `).join("");
     }
@@ -1353,7 +1400,7 @@
               <h3 class="timeline-title">${escapeHtml(name)}</h3>
               <span class="timeline-meta mono">${escapeHtml(result?.url || "")}</span>
             </div>
-            <p style="margin:0;color:#c8d7f6;line-height:1.7;">${result?.ok ? "source loaded" : "source unavailable"}</p>
+            <p class="inline-text">${result?.ok ? "source loaded" : "source unavailable"}</p>
           </div>
         </article>
       `).join("");
@@ -1433,7 +1480,7 @@
               <h3 class="timeline-title">${escapeHtml(titleize(item.dominant_scenario || "snapshot"))}</h3>
               <span class="timeline-meta mono">${escapeHtml(formatShortDate(item.as_of))}</span>
             </div>
-            <p style="margin:0;color:#c8d7f6;line-height:1.7;">${escapeHtml(item.summary || "Prediction snapshot")} / Confidence ${escapeHtml(formatConfidence(item.confidence))} / ${escapeHtml(titleize(item.overall_risk))}</p>
+            <p class="inline-text">${escapeHtml(item.summary || "Prediction snapshot")} / Confidence ${escapeHtml(formatConfidence(item.confidence))} / ${escapeHtml(titleize(item.overall_risk))}</p>
           </div>
         </article>
       `).join("");
@@ -1530,18 +1577,18 @@
       if (confidenceValueEl){
         const text = latestConfidence == null ? "—" : `${formatConfidence(latestConfidence)} / ${confidenceDelta > 0 ? "+" : ""}${confidenceDelta}pt`;
         confidenceValueEl.textContent = text;
-        confidenceValueEl.className = `value ${confidenceDelta > 0 ? "pos" : confidenceDelta < 0 ? "neg" : "neu"}`;
+        confidenceValueEl.className = `chart-value ${confidenceDelta > 0 ? "pos" : confidenceDelta < 0 ? "neg" : "neu"}`;
       }
 
       if (riskValueEl){
         const text = `${latestRiskText} / ${riskDelta > 0 ? "+" : ""}${riskDelta} lvl`;
         riskValueEl.textContent = text;
-        riskValueEl.className = `value ${riskDelta > 0 ? "neg" : riskDelta < 0 ? "pos" : "neu"}`;
+        riskValueEl.className = `chart-value ${riskDelta > 0 ? "neg" : riskDelta < 0 ? "pos" : "neu"}`;
       }
 
       if (scenarioValueEl){
         scenarioValueEl.textContent = dominantTitle || "—";
-        scenarioValueEl.className = "value neu";
+        scenarioValueEl.className = "chart-value neu";
       }
     }
 
