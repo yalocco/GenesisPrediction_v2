@@ -1,241 +1,184 @@
+# GenesisPrediction UI Work Rules
 
-# GenesisPrediction UI 作業ルール
+GenesisPrediction の UI 作業では  
+HTML / CSS / JS が大型化しやすく、  
+ChatGPT のストリームエラーやコピー事故が発生しやすい。
 
-## 目的
-GenesisPrediction の UI 作業において
+そのため UI 作業では  
+**ファイル受け渡し方法の優先順位を固定する。**
 
-- スレッド破損
-- ストリームエラー
-- コピー貼り付け事故
-- 差分混入
-
-を防ぎ、安全に UI ファイルを修正するためのルール。
-
-このルールは **GenesisPrediction v2 UI 開発の標準作業手順**とする。
-
+このルールは  
+GenesisPrediction UI 作業スレで常に適用する。
 
 ---
 
-# 1. 基本原則
+# UI File Delivery Protocol
+（UIファイル受け渡しルール）
 
-GenesisPrediction UI は
+UIファイル生成時は  
+以下の優先順位で提示する。
 
-- HTML
-- CSS
-- JavaScript
+```
 
-が **1000行級の単一ファイル**になることが多い。
+① ダウンロード
+② ZIP
+③ 本文
+④ Canvas（最終手段）
+
+```
+
+この順序は **必ず守る。**
+
+---
+
+# ① Download（最優先）
+
+通常は **ダウンロードリンク方式**を使用する。
+
+理由
+
+- 長文 HTML でも安全
+- コピー事故を防げる
+- スレッド消費を防ぐ
+- UI作業の速度が最も安定する
+
+対象ファイル例
+
+```
+
+prediction.html
+sentiment.html
+digest.html
+overlay.html
+prediction_history.html
+
+```
+
+UI修正では  
+**原則 Download を使用する。**
+
+---
+
+# ② ZIP
+
+ダウンロードリンクが反応しない場合は  
+**ZIPでまとめて提供する。**
+
+対象例
+
+```
+
+prediction_ui_package.zip
+ui_fix_package.zip
+ui_patch_package.zip
+
+```
+
+ZIPはブラウザのダウンロード失敗に強いため  
+Download が使えない場合の **第2選択肢とする。**
+
+---
+
+# ③ 本文
+
+Download / ZIP が使用できない場合のみ  
+**本文で提示する。**
+
+注意
+
+- HTML / CSS は非常に長くなる
+- スレッドが急速に消費される
+- コピー事故が起きやすい
+
+そのため **通常は推奨しない。**
+
+---
+
+# ④ Canvas（最終手段）
+
+Canvas は以下の理由で  
+**最終手段とする。**
+
+問題点
+
+- 生成速度が遅い
+- ストリームエラーが起きやすい
+- UI作業では試行回数が多く効率が悪い
+- 途中保存が不安定な場合がある
 
 そのため
 
-**長文貼り付けは禁止**とする。
+```
 
+Download → ZIP → 本文 → Canvas
 
----
+```
 
-# 2. ファイル生成ルール
-
-UIコード生成は以下の順番で行う。
-
-① ダウンロードファイル生成（標準）
-
-必ず最初に
-
-.html  
-.css  
-.js  
-.md  
-
-の **ダウンロードファイル形式**で生成する。
-
-
-② ダウンロード不可の場合
-
-zip形式で生成する。
-
-
-③ 最終手段
-
-上記が両方失敗した場合のみ
-
-**長文完全ファイル**を使用する。
-
+の順序を厳守する。
 
 ---
 
-# 3. 差分禁止ルール
+# UI Work Principle
 
-GenesisPrediction UI では
+UI作業では以下のサイクルが何度も発生する。
 
-差分パッチ  
-部分修正  
-行番号修正  
+```
 
-は禁止。
+生成 → 確認 → 修正 → 再生成
 
-必ず
+```
 
-**完全ファイル（Full File）**
-
-のみ生成する。
-
-
-理由
-
-UIファイルは
-
-- インデント崩れ
-- 括弧不一致
-- CSS破損
-
-が起きやすいため。
-
+この作業を高速に回すため  
+**最も安全で高速なファイル受け渡し方法を優先する。**
 
 ---
 
-# 4. UIスレッド運用ルール
+# Purpose
 
-UI作業スレッドでは
+このルールの目的
 
-禁止
-
-- 長文HTML貼り付け
-- 長文CSS貼り付け
-- 長文JS貼り付け
-
-許可
-
-- ダウンロード生成
-- zip生成
-- 短い説明
-
+- UI作業の速度を落とさない
+- スレッド消費を抑える
+- コピー事故を防ぐ
+- UI修正サイクルを高速化する
+- AI / 人間の作業効率を維持する
 
 ---
 
-# 5. UIファイルサイズ基準
-
-以下を基準とする
-
-0〜200行 → 通常生成可  
-200〜500行 → ダウンロード推奨  
-500行以上 → 必ずダウンロード生成
+GenesisPrediction UI作業では  
+このプロトコルを **標準ルールとして使用する。**
+```
 
 ---
 
-# 6. UI構造統一ルール
+# この `.md` はとても良いです
 
-GenesisPrediction UI は以下の構造を統一する。
+理由はシンプルで、あなたのプロジェクトでは
 
-ページ構造
+* HTML 800〜1500行
+* CSS 600〜1000行
+* JS 500〜900行
 
-Header  
-Global Status  
-Hero  
-Cards  
-Timeline  
+普通に出るので、
+
+**このルールがないと毎回スレが壊れます。**
+
+これは **GenesisPrediction専用の重要運用ルール**です。
+
+---
+
+もしよければですが、
+UI系 `.md` に **あと1つだけ入れるとさらに強くなります。**
+
+それは
+
+**UI Layout Standard**
+
+```
+Header
+Global Status
+Hero
+Main Panels
+Cards
 Footer
-
-
----
-
-# 7. Prediction系UI統一
-
-以下のページはデザイン統一対象
-
-prediction.html  
-prediction_history.html  
-digest.html  
-sentiment.html  
-overlay.html  
-
-統一対象
-
-- Header
-- Card構造
-- Status表示
-- Color theme
-- Fontサイズ
-
-
----
-
-# 8. UI作業フロー
-
-UI作業は以下の手順で行う
-
-① UI修正スレ作成  
-② 対象HTML確認  
-③ ダウンロード生成  
-④ VSCode上書き  
-⑤ ローカル確認  
-⑥ git commit  
-⑦ git push  
-
-
----
-
-# 9. Gitルール
-
-UI変更時
-
-git add  
-git commit  
-git push  
-
-commit例
-
-UI: prediction history layout fix
-
-
----
-
-# 10. スレッド保護ルール
-
-UIスレは
-
-**重くなったら即終了**
-
-新スレを作る。
-
-理由
-
-ChatGPTは
-
-- 長文
-- HTML
-- CSS
-
-が増えると
-
-**ストリームエラーが発生するため。**
-
-
----
-
-# 11. 推奨スレタイトル
-
-UI作業スレは以下の形式にする
-
-GenesisPrediction UI 修正  
-（対象ファイル名）
-
-例
-
-GenesisPrediction UI 修正  
-(prediction_history.html)
-
-
----
-
-# 12. 最重要ルール
-
-UI修正は
-
-**必ずダウンロード生成で行う。**
-
-長文貼り付けは禁止。
-
-
----
-
-# End
+```
