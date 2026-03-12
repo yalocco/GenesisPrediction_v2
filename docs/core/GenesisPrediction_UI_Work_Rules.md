@@ -1,184 +1,264 @@
 # GenesisPrediction UI Work Rules
 
-GenesisPrediction の UI 作業では  
-HTML / CSS / JS が大型化しやすく、  
-ChatGPT のストリームエラーやコピー事故が発生しやすい。
+この文書は GenesisPrediction UI 作業の運用ルールを定義する。
 
-そのため UI 作業では  
-**ファイル受け渡し方法の優先順位を固定する。**
+目的
 
-このルールは  
-GenesisPrediction UI 作業スレで常に適用する。
+- UI破壊事故の防止
+- レイアウト崩れの防止
+- AIと人間の役割分離
+- UIテーマ方式の維持
 
----
-
-# UI File Delivery Protocol
-（UIファイル受け渡しルール）
-
-UIファイル生成時は  
-以下の優先順位で提示する。
-
-```
-
-① ダウンロード
-② ZIP
-③ 本文
-④ Canvas（最終手段）
-
-```
-
-この順序は **必ず守る。**
 
 ---
 
-# ① Download（最優先）
+# 基本原則
 
-通常は **ダウンロードリンク方式**を使用する。
+GenesisPrediction UI は
+
+Theme System
+
+で構築されている。
+
+UIは以下の3層構造で管理する。
+
+Theme Layer  
+Layout Layer  
+Page Layer
+
+
+```
+
+app/static/app.css
+app/static/common/layout.js
+app/static/*.html
+
+```
+
+役割
+
+Theme  
+UIデザイン全体
+
+Layout  
+header / nav / footer
+
+Page  
+各ページの内容のみ
+
+
+---
+
+# UI編集ルール
+
+## 1  
+人間によるHTML直接編集は禁止
 
 理由
 
-- 長文 HTML でも安全
-- コピー事故を防げる
-- スレッド消費を防ぐ
-- UI作業の速度が最も安定する
+- コピー事故
+- CSS崩壊
+- navズレ
+- UI統一破壊
 
-対象ファイル例
+UI変更は **AIが完全ファイル生成**する。
 
-```
-
-prediction.html
-sentiment.html
-digest.html
-overlay.html
-prediction_history.html
-
-```
-
-UI修正では  
-**原則 Download を使用する。**
 
 ---
 
-# ② ZIP
+## 2  
+差分編集は禁止
 
-ダウンロードリンクが反応しない場合は  
-**ZIPでまとめて提供する。**
+必ず
 
-対象例
+完全ファイル
 
-```
+で更新する。
 
-prediction_ui_package.zip
-ui_fix_package.zip
-ui_patch_package.zip
+理由
 
-```
+- HTMLは差分ミスが発生しやすい
+- indentation崩れ
+- style破壊
+- script破壊
 
-ZIPはブラウザのダウンロード失敗に強いため  
-Download が使えない場合の **第2選択肢とする。**
-
----
-
-# ③ 本文
-
-Download / ZIP が使用できない場合のみ  
-**本文で提示する。**
-
-注意
-
-- HTML / CSS は非常に長くなる
-- スレッドが急速に消費される
-- コピー事故が起きやすい
-
-そのため **通常は推奨しない。**
 
 ---
 
-# ④ Canvas（最終手段）
+## 3  
+CSSはテーマのみ変更可能
 
-Canvas は以下の理由で  
-**最終手段とする。**
-
-問題点
-
-- 生成速度が遅い
-- ストリームエラーが起きやすい
-- UI作業では試行回数が多く効率が悪い
-- 途中保存が不安定な場合がある
-
-そのため
+変更可能ファイル
 
 ```
 
-Download → ZIP → 本文 → Canvas
+app/static/app.css
 
 ```
 
-の順序を厳守する。
+禁止
+
+```
+
+styleタグでのCSS追加
+HTML個別CSS
+ページ単位CSS
+
+```
+
+理由
+
+UIはテーマ方式で統一する。
+
 
 ---
 
-# UI Work Principle
-
-UI作業では以下のサイクルが何度も発生する。
-
-```
-
-生成 → 確認 → 修正 → 再生成
+## 4  
+Header / Nav / Footer は layout.js が生成する
 
 ```
 
-この作業を高速に回すため  
-**最も安全で高速なファイル受け渡し方法を優先する。**
-
----
-
-# Purpose
-
-このルールの目的
-
-- UI作業の速度を落とさない
-- スレッド消費を抑える
-- コピー事故を防ぐ
-- UI修正サイクルを高速化する
-- AI / 人間の作業効率を維持する
-
----
-
-GenesisPrediction UI作業では  
-このプロトコルを **標準ルールとして使用する。**
-```
-
----
-
-# この `.md` はとても良いです
-
-理由はシンプルで、あなたのプロジェクトでは
-
-* HTML 800〜1500行
-* CSS 600〜1000行
-* JS 500〜900行
-
-普通に出るので、
-
-**このルールがないと毎回スレが壊れます。**
-
-これは **GenesisPrediction専用の重要運用ルール**です。
-
----
-
-もしよければですが、
-UI系 `.md` に **あと1つだけ入れるとさらに強くなります。**
-
-それは
-
-**UI Layout Standard**
+app/static/common/layout.js
 
 ```
+
+HTML側で
+
+header
+nav
+footer
+
+を個別に書いてはいけない。
+
+
+---
+
+## 5  
+UIはテーマ方式で管理する
+
+UI変更は必ず
+
+```
+
+app.css
+
+```
+
+から行う。
+
+
+---
+
+# レイアウト統一原則
+
+全ページ共通
+
+```
+
+Home
+Overlay
+Sentiment
+Digest
+Prediction
+Prediction History
+
+```
+
+レイアウト構造
+
+```
+
 Header
-Global Status
 Hero
-Main Panels
-Cards
+Panel
+Grid
 Footer
+
+```
+
+すべてのページで同一構造を維持する。
+
+
+---
+
+# ページHTMLの責務
+
+HTMLは
+
+**contentのみを書く**
+
+例
+
+```
+
+hero
+content
+panel
+list
+timeline
+
+```
+
+レイアウトは
+
+theme / layout
+
+が管理する。
+
+
+---
+
+# UIトラブル時
+
+優先確認
+
+1  
+app.css
+
+2  
+layout.js
+
+3  
+ページHTML
+
+
+ページHTMLから疑うのは最後。
+
+
+---
+
+# AI作業ルール
+
+UI修正時は必ず
+
+```
+
+完全ファイル
+
+```
+
+で出力する。
+
+
+---
+
+# このルールの目的
+
+GenesisPrediction UI を
+
+長期運用可能な構造
+
+に保つため。
+
+
+---
+
+# 関連ドキュメント
+
+```
+
+docs/core/ui/ui_layout_standard.md
+docs/core/ui/ui_design_system.md
+
+```
 ```

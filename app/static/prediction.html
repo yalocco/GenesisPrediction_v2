@@ -5,560 +5,74 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Prediction - GenesisPrediction v2</title>
   <meta name="description" content="GenesisPrediction Prediction UI">
-  <link rel="stylesheet" href="/static/app.css?v=20260311-ui-pred-theme1">
+  <link rel="stylesheet" href="/static/app.css?v=20260312-ui-pred-final2">
   <style>
-    .prediction-page{
-      display:grid;
-      gap:16px;
+    .prediction-page{display:grid;gap:16px}
+    .prediction-shell{display:grid;gap:16px}
+    .hero-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:16px;align-items:stretch}
+    .hero-card,.hero-side-card{min-width:0;height:100%;display:flex;flex-direction:column}
+    .hero-side-stack{display:grid;gap:12px;height:100%}
+
+    .hero-intro-card{
+      padding:0;
+      border:none;
+      background:transparent;
+      box-shadow:none;
     }
 
-    .prediction-shell{
-      display:grid;
-      gap:16px;
-    }
-
-    .hero-panel{
-      display:grid;
-      gap:16px;
-    }
-
-    .hero-grid{
-      display:grid;
-      grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);
-      gap:16px;
-      align-items:stretch;
-    }
-
-    .hero-card,
-    .hero-side-card{
-      min-width:0;
-      height:100%;
-      display:flex;
-      flex-direction:column;
-    }
-
-    .hero-title{
-      font-size:34px;
-      line-height:1.08;
-      letter-spacing:-.03em;
-      font-weight:800;
-      margin:0 0 10px;
-      color:#eef4ff;
-    }
-
-    .hero-summary{
-      color:#c8d7f6;
-      font-size:15px;
-      line-height:1.8;
-      margin:0;
-      flex:1;
-    }
-
-    .hero-side-stack{
-      display:grid;
-      gap:12px;
-      height:100%;
-    }
-
-    .hero-metric{
-      border:1px solid rgba(120,160,220,.12);
-      border-radius:14px;
-      padding:12px 14px;
-      background:rgba(8,14,28,.18);
-    }
-
-    .hero-metric .metric-label{
-      font-size:11px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      opacity:.72;
-      margin-bottom:6px;
-    }
-
-    .hero-metric .metric-value{
-      font-size:26px;
-      line-height:1.05;
-      font-weight:700;
-      letter-spacing:-.02em;
-      color:#eef4ff;
-    }
-
-    .hero-metric .metric-sub{
-      margin-top:4px;
-      font-size:12px;
-      opacity:.72;
-      color:#c8d7f6;
-      line-height:1.5;
-    }
-
-    .global-status-panel{
-      display:grid;
-      gap:12px;
-    }
-
-    .global-status-head{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      flex-wrap:wrap;
-    }
-
-    .global-status-title{
-      font-size:12px;
-      letter-spacing:.18em;
-      text-transform:uppercase;
-      opacity:.82;
-    }
-
-    .global-status{
-      display:grid;
-      grid-template-columns:repeat(5,minmax(0,1fr));
-      gap:12px;
-    }
-
-    .status-card{
-      min-width:0;
-      border:1px solid rgba(120,160,220,.12);
-      border-radius:14px;
-      padding:12px 12px 10px;
-      background:rgba(8,14,28,.22);
-    }
-
-    .status-label{
-      font-size:11px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      opacity:.72;
-      margin-bottom:6px;
-    }
-
-    .status-value{
-      font-size:24px;
-      line-height:1.05;
-      font-weight:700;
-      letter-spacing:-.02em;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      color:#eef4ff;
-    }
-
-    .status-sub{
-      margin-top:4px;
-      font-size:12px;
-      opacity:.72;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      color:#c8d7f6;
-    }
-
-    .kpi-grid{
-      display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:12px;
-    }
-
-    .metric-card{
-      border:1px solid rgba(120,160,220,.12);
-      border-radius:16px;
-      padding:12px 14px;
-      background:rgba(8,14,28,.18);
-      min-width:0;
-    }
-
-    .metric-label{
-      font-size:11px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      opacity:.72;
-      margin-bottom:6px;
-    }
-
-    .metric-value{
-      font-size:28px;
-      line-height:1.05;
-      font-weight:800;
-      letter-spacing:-.03em;
-      color:#eef4ff;
-    }
-
-    .metric-sub{
-      margin-top:4px;
-      font-size:12px;
-      color:#c8d7f6;
-      opacity:.78;
-      line-height:1.5;
-    }
-
-    .chart-grid{
-      display:grid;
-      grid-template-columns:repeat(3,minmax(0,1fr));
-      gap:12px;
-    }
-
-    .chart-card{
-      border:1px solid rgba(120,160,220,.12);
-      border-radius:16px;
-      padding:12px 14px;
-      background:rgba(8,14,28,.18);
-      min-width:0;
-    }
-
-    .chart-card .chart-label{
-      font-size:11px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      opacity:.72;
-      margin-bottom:6px;
-    }
-
-    .chart-card .chart-value{
-      font-size:24px;
-      line-height:1.05;
-      font-weight:700;
-      letter-spacing:-.02em;
-      color:#eef4ff;
-      margin-bottom:10px;
-    }
-
+    .hero-metric{border:1px solid rgba(120,160,220,.12);border-radius:14px;padding:12px 14px;background:rgba(8,14,28,.18)}
+    .hero-metric .metric-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.72;margin-bottom:6px}
+    .hero-metric .metric-value{font-size:26px;line-height:1.05;font-weight:700;letter-spacing:-.02em;color:#eef4ff}
+    .hero-metric .metric-sub{margin-top:4px;font-size:12px;opacity:.72;color:#c8d7f6;line-height:1.5}
+    .chart-card{border:1px solid rgba(120,160,220,.12);border-radius:16px;padding:12px 14px;background:rgba(8,14,28,.18);min-width:0}
+    .chart-card .chart-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.72;margin-bottom:6px}
+    .chart-card .chart-value{font-size:24px;line-height:1.05;font-weight:700;letter-spacing:-.02em;color:#eef4ff;margin-bottom:10px}
     .chart-card .chart-value.pos{color:#7dd3fc}
     .chart-card .chart-value.neg{color:#fca5a5}
     .chart-card .chart-value.neu{color:#eef4ff}
-
-    .chart-card svg{
-      width:100%;
-      height:92px;
-      display:block;
-      border-radius:12px;
-      background:rgba(255,255,255,.02);
-      border:1px solid rgba(255,255,255,.06);
-    }
-
-    .chart-note{
-      margin-top:8px;
-      font-size:12px;
-      line-height:1.5;
-      color:#c8d7f6;
-      opacity:.8;
-    }
-
-    .content-grid{
-      display:grid;
-      grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);
-      gap:16px;
-      align-items:start;
-    }
-
-    .stack{
-      display:grid;
-      gap:12px;
-    }
-
-    .section-header{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      gap:12px;
-      margin-bottom:12px;
-    }
-
-    .section-title{
-      margin:0;
-      font-size:22px;
-      line-height:1.2;
-      letter-spacing:-.02em;
-    }
-
-    .section-subtitle{
-      margin:4px 0 0;
-      color:#c8d7f6;
-      line-height:1.65;
-      font-size:14px;
-    }
-
-    .confidence-chip{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      min-width:34px;
-      min-height:28px;
-      padding:0 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(255,255,255,.04);
-      font-size:12px;
-      font-weight:700;
-      line-height:1;
-      letter-spacing:.03em;
-      color:#93c5fd;
-      width:max-content;
-    }
-
-    .summary-text,
-    .detail-text,
-    .scenario-text,
-    .signal-text,
-    .trend-text{
-      margin:0;
-      color:#c8d7f6;
-      line-height:1.8;
-      font-size:15px;
-    }
-
-    .detail-grid,
-    .mid-grid,
-    .bottom-grid,
-    .scenario-grid{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:16px;
-    }
-
-    .detail-card,
-    .scenario-card,
-    .signal-card,
-    .trend-card{
-      border:1px solid rgba(120,160,220,.14);
-      border-radius:16px;
-      padding:12px 14px;
-      background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));
-      display:grid;
-      gap:10px;
-      min-width:0;
-    }
-
-    .detail-eyebrow,
-    .scenario-meta,
-    .signal-meta,
-    .trend-meta,
-    .timeline-meta,
-    .empty-meta{
-      font-size:11px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      opacity:.7;
-    }
-
-    .detail-title,
-    .scenario-title,
-    .signal-title,
-    .trend-title,
-    .timeline-title{
-      margin:0;
-      font-size:16px;
-      line-height:1.35;
-      font-weight:700;
-      color:#eef4ff;
-    }
-
-    .scenario-meta,
-    .signal-meta,
-    .trend-meta,
-    .scenario-title-row,
-    .signal-title-row,
-    .trend-title-row,
-    .timeline-title-row{
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      align-items:flex-start;
-    }
-
-    .plain-list,
-    .scenario-list{
-      list-style:none;
-      margin:0;
-      padding:0;
-      display:grid;
-      gap:10px;
-    }
-
-    .list-stack,
-    .signal-grid,
-    .trend-stack,
-    .probability-stack{
-      display:grid;
-      gap:12px;
-    }
-
-    .list-row,
-    .plain-list li,
-    .scenario-list li,
-    .timeline-row,
-    .probability-row{
-      display:grid;
-      gap:8px;
-      padding:12px 14px;
-      border-radius:14px;
-      border:1px solid rgba(120,160,220,.14);
-      background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));
-      min-width:0;
-    }
-
-    .list-row{
-      grid-template-columns:auto 1fr;
-      align-items:flex-start;
-    }
-
-    .timeline-row{
-      grid-template-columns:auto 1fr;
-      align-items:flex-start;
-      gap:12px;
-    }
-
-    .probability-row{
-      grid-template-columns:auto 1fr auto;
-      align-items:center;
-      gap:12px;
-    }
-
-    .list-badge,
-    .timeline-badge,
-    .signal-badge,
-    .trend-badge{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      min-width:34px;
-      min-height:28px;
-      padding:0 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(255,255,255,.04);
-      font-size:12px;
-      font-weight:700;
-      line-height:1;
-      letter-spacing:.03em;
-      width:max-content;
-    }
-
-    .probability-label{font-weight:700;color:#eef4ff}
-
-    .progress-track{
-      position:relative;
-      height:10px;
-      border-radius:999px;
-      overflow:hidden;
-      background:rgba(255,255,255,.08);
-    }
-
-    .progress-bar{
-      position:absolute;
-      left:0;
-      top:0;
-      bottom:0;
-      border-radius:999px;
-      background:linear-gradient(90deg, rgba(96,165,250,.95), rgba(59,130,246,.55));
-    }
-
-    .probability-value,
-    .scenario-probability,
-    .signal-strength,
-    .trend-strength{
-      font-size:13px;
-      font-weight:700;
-      opacity:.86;
-      color:#c8d7f6;
-    }
-
+    .chart-card svg{width:100%;height:92px;display:block;border-radius:12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06)}
+    .chart-note{margin-top:8px;font-size:12px;line-height:1.5;color:#c8d7f6;opacity:.8}
+    .confidence-chip{display:inline-flex;align-items:center;justify-content:center;min-width:34px;min-height:28px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);font-size:12px;font-weight:700;line-height:1;letter-spacing:.03em;color:#93c5fd;width:max-content}
+    .summary-text,.detail-text,.scenario-text,.signal-text,.trend-text{margin:0;color:#c8d7f6;line-height:1.8;font-size:15px}
+    .detail-card,.scenario-card,.signal-card,.trend-card{border:1px solid rgba(120,160,220,.14);border-radius:16px;padding:12px 14px;background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));display:grid;gap:10px;min-width:0}
+    .detail-eyebrow,.scenario-meta,.signal-meta,.trend-meta,.timeline-meta,.empty-meta{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.7}
+    .detail-title,.scenario-title,.signal-title,.trend-title,.timeline-title{margin:0;font-size:16px;line-height:1.35;font-weight:700;color:#eef4ff}
+    .scenario-meta,.signal-meta,.trend-meta,.scenario-title-row,.signal-title-row,.trend-title-row,.timeline-title-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+    .scenario-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+    .signal-grid,.trend-stack,.probability-stack{display:grid;gap:12px}
+    .scenario-list li,.probability-row{display:grid;gap:8px;padding:12px 14px;border-radius:14px;border:1px solid rgba(120,160,220,.14);background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));min-width:0}
+    .probability-row{grid-template-columns:auto 1fr auto;align-items:center;gap:12px}
+    .signal-badge,.trend-badge{display:inline-flex;align-items:center;justify-content:center;min-width:34px;min-height:28px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);font-size:12px;font-weight:700;line-height:1;letter-spacing:.03em;width:max-content}
+    .progress-track{position:relative;height:10px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.08)}
+    .progress-bar{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg, rgba(96,165,250,.95), rgba(59,130,246,.55))}
+    .probability-value,.scenario-probability,.signal-strength,.trend-strength{font-size:13px;font-weight:700;opacity:.86;color:#c8d7f6}
     .scenario-card.scenario-best{border-color:rgba(96,165,250,.28);box-shadow:inset 0 0 0 1px rgba(96,165,250,.08)}
     .scenario-card.scenario-base{border-color:rgba(255,255,255,.10)}
     .scenario-card.scenario-worst{border-color:rgba(248,113,113,.28);box-shadow:inset 0 0 0 1px rgba(248,113,113,.08)}
-    .scenario-card.scenario-best .scenario-meta span:first-child,
-    .scenario-card.scenario-best .scenario-probability{color:#93c5fd}
-    .scenario-card.scenario-base .scenario-meta span:first-child,
-    .scenario-card.scenario-base .scenario-probability{color:#eef4ff}
-    .scenario-card.scenario-worst .scenario-meta span:first-child,
-    .scenario-card.scenario-worst .scenario-probability{color:#fca5a5}
-
-    .signal-card.signal-low,
-    .signal-card.signal-stable{border-color:rgba(125,211,252,.24);box-shadow:inset 0 0 0 1px rgba(125,211,252,.07)}
+    .scenario-card.scenario-best .scenario-meta span:first-child,.scenario-card.scenario-best .scenario-probability{color:#93c5fd}
+    .scenario-card.scenario-base .scenario-meta span:first-child,.scenario-card.scenario-base .scenario-probability{color:#eef4ff}
+    .scenario-card.scenario-worst .scenario-meta span:first-child,.scenario-card.scenario-worst .scenario-probability{color:#fca5a5}
+    .signal-card.signal-low,.signal-card.signal-stable{border-color:rgba(125,211,252,.24);box-shadow:inset 0 0 0 1px rgba(125,211,252,.07)}
     .signal-card.signal-guarded{border-color:rgba(196,181,253,.24);box-shadow:inset 0 0 0 1px rgba(196,181,253,.07)}
-    .signal-card.signal-elevated,
-    .signal-card.signal-warn{border-color:rgba(250,204,21,.24);box-shadow:inset 0 0 0 1px rgba(250,204,21,.07)}
+    .signal-card.signal-elevated,.signal-card.signal-warn{border-color:rgba(250,204,21,.24);box-shadow:inset 0 0 0 1px rgba(250,204,21,.07)}
     .signal-card.signal-high{border-color:rgba(251,146,60,.24);box-shadow:inset 0 0 0 1px rgba(251,146,60,.07)}
     .signal-card.signal-critical{border-color:rgba(248,113,113,.24);box-shadow:inset 0 0 0 1px rgba(248,113,113,.07)}
-
-    .signal-card.signal-low .signal-badge,
-    .signal-card.signal-stable .signal-badge{color:#7dd3fc}
+    .signal-card.signal-low .signal-badge,.signal-card.signal-stable .signal-badge{color:#7dd3fc}
     .signal-card.signal-guarded .signal-badge{color:#c4b5fd}
-    .signal-card.signal-elevated .signal-badge,
-    .signal-card.signal-warn .signal-badge{color:#facc15}
+    .signal-card.signal-elevated .signal-badge,.signal-card.signal-warn .signal-badge{color:#facc15}
     .signal-card.signal-high .signal-badge{color:#fb923c}
     .signal-card.signal-critical .signal-badge{color:#f87171}
-
-    .empty-card{
-      min-height:160px;
-      justify-content:center;
-      text-align:center;
-      border:1px solid rgba(120,160,220,.14);
-      border-radius:16px;
-      padding:14px;
-      background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));
-      display:grid;
-      gap:8px;
-    }
-
-    .empty-text{
-      max-width:56ch;
-      justify-self:center;
-      color:#c8d7f6;
-      line-height:1.7;
-      margin:0;
-    }
-
-    .mono{
-      font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      letter-spacing:0;
-    }
-
-    .muted{
-      color:var(--text-muted, rgba(255,255,255,.72));
-    }
-
-    .inline-text{
-      margin:0;
-      color:#c8d7f6;
-      line-height:1.7;
-    }
-
+    .empty-card{min-height:160px;justify-content:center;text-align:center;border:1px solid rgba(120,160,220,.14);border-radius:16px;padding:14px;background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));display:grid;gap:8px}
+    .empty-text{max-width:56ch;justify-self:center;color:#c8d7f6;line-height:1.7;margin:0}
+    .muted{color:var(--text-muted, rgba(255,255,255,.72))}
     @media (max-width:1100px){
-      .hero-grid,
-      .content-grid,
-      .mid-grid,
-      .bottom-grid,
-      .detail-grid,
-      .scenario-grid,
-      .chart-grid,
-      .kpi-grid{
-        grid-template-columns:1fr;
-      }
-
-      .global-status{
-        grid-template-columns:repeat(2,minmax(0,1fr));
-      }
+      .hero-grid{grid-template-columns:1fr}
+      .global-status{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
-
     @media (max-width:700px){
-      .global-status{
-        grid-template-columns:1fr;
-      }
-
-      .section-header,
-      .scenario-title-row,
-      .signal-title-row,
-      .trend-title-row,
-      .timeline-title-row{
-        flex-direction:column;
-      }
-
-      .probability-row,
-      .list-row,
-      .timeline-row{
-        grid-template-columns:1fr;
-      }
+      .global-status{grid-template-columns:1fr}
+      .scenario-title-row,.signal-title-row,.trend-title-row,.timeline-title-row{flex-direction:column}
+      .probability-row{grid-template-columns:1fr}
     }
   </style>
 </head>
@@ -570,42 +84,40 @@
       <div class="gp-page prediction-page">
         <section class="panel prediction-shell">
 
-          <section class="hero-panel">
-            <div class="hero-grid">
-              <article class="card hero-card">
-                <h1 id="heroHeadline" class="hero-title">Trend / Signal / Scenario / Prediction</h1>
-                <p id="heroSummary" class="hero-summary">Loading latest prediction summary...</p>
+          <section class="hero-grid">
+            <article class="hero-card hero-intro-card">
+              <h1 id="heroHeadline" class="hero-title">Trend / Signal / Scenario / Prediction</h1>
+              <p id="heroSummary" class="hero-summary">Loading latest prediction summary...</p>
 
-                <div class="pillrow" style="margin-top:16px;">
-                  <span class="pill"><strong>As of</strong><span id="metaAsof" style="margin-left:8px;">—</span></span>
-                  <span class="pill"><strong>Dominant</strong><span id="metaDominant" style="margin-left:8px;">—</span></span>
-                  <span class="pill"><strong>Confidence</strong><span id="metaConfidence" style="margin-left:8px;">—</span></span>
-                  <span class="pill"><strong>Early Warning</strong><span id="metaWarning" style="margin-left:8px;">—</span></span>
+              <div class="pillrow" style="margin-top:16px;">
+                <span class="pill"><strong>As of</strong><span id="metaAsof" style="margin-left:8px;">—</span></span>
+                <span class="pill"><strong>Dominant</strong><span id="metaDominant" style="margin-left:8px;">—</span></span>
+                <span class="pill"><strong>Confidence</strong><span id="metaConfidence" style="margin-left:8px;">—</span></span>
+                <span class="pill"><strong>Early Warning</strong><span id="metaWarning" style="margin-left:8px;">—</span></span>
+              </div>
+            </article>
+
+            <aside class="card hero-side-card">
+              <div class="hero-side-stack">
+                <div class="hero-metric">
+                  <div class="metric-label">Overall Risk</div>
+                  <div id="riskChipText" class="metric-value">—</div>
+                  <div id="riskChipSub" class="metric-sub">prediction latest</div>
                 </div>
-              </article>
 
-              <aside class="card hero-side-card">
-                <div class="hero-side-stack">
-                  <div class="hero-metric">
-                    <div class="metric-label">Overall Risk</div>
-                    <div id="riskChipText" class="metric-value">—</div>
-                    <div id="riskChipSub" class="metric-sub">prediction latest</div>
-                  </div>
-
-                  <div class="hero-metric">
-                    <div class="metric-label">Prediction Summary</div>
-                    <div id="summaryMini" class="metric-value" style="font-size:20px;line-height:1.2;">—</div>
-                    <div id="summaryMiniSub" class="metric-sub">latest summary</div>
-                  </div>
-
-                  <div class="hero-metric">
-                    <div class="metric-label">Runtime Status</div>
-                    <div id="runtimeMini" class="metric-value" style="font-size:20px;line-height:1.2;">Loading</div>
-                    <div id="runtimeMiniSub" class="metric-sub">artifact check</div>
-                  </div>
+                <div class="hero-metric">
+                  <div class="metric-label">Prediction Summary</div>
+                  <div id="summaryMini" class="metric-value" style="font-size:20px;line-height:1.2;">—</div>
+                  <div id="summaryMiniSub" class="metric-sub">latest summary</div>
                 </div>
-              </aside>
-            </div>
+
+                <div class="hero-metric">
+                  <div class="metric-label">Runtime Status</div>
+                  <div id="runtimeMini" class="metric-value" style="font-size:20px;line-height:1.2;">Loading</div>
+                  <div id="runtimeMiniSub" class="metric-sub">artifact check</div>
+                </div>
+              </div>
+            </aside>
           </section>
 
           <section class="card global-status-panel">
@@ -763,7 +275,7 @@
             </aside>
           </section>
 
-          <section class="mid-grid">
+          <section class="content-grid">
             <article class="card">
               <div class="section-header">
                 <div>
@@ -792,10 +304,10 @@
                 <p class="section-subtitle">Best / base / worst style branches from scenario output.</p>
               </div>
             </div>
-            <div id="scenarioCardGrid" class="scenario-grid"></div>
+            <div id="scenarioCardGrid" class="chart-grid"></div>
           </section>
 
-          <section class="bottom-grid">
+          <section class="chart-grid">
             <article class="card">
               <div class="section-header">
                 <div>
@@ -854,7 +366,7 @@
 
   <div id="site-footer"></div>
 
-  <script src="/static/common/layout.js?v=20260311-ui-pred-theme1"></script>
+  <script src="/static/common/layout.js?v=20260312-ui-pred-final2"></script>
   <script>
     const PREDICTION_SOURCES = {
       trend: "/analysis/prediction/trend_latest.json",
@@ -1368,7 +880,7 @@
 
       root.innerHTML = list.map((item) => `
         <article class="list-row">
-          <span class="list-badge">${escapeHtml(badge)}</span>
+          <span class="pill">${escapeHtml(badge)}</span>
           <div><p class="inline-text">${escapeHtml(String(item))}</p></div>
         </article>
       `).join("");
@@ -1394,11 +906,11 @@
 
       el("sourceStatusList").innerHTML = rows.map(([name, result]) => `
         <article class="list-row">
-          <span class="timeline-badge">${result?.ok ? "OK" : "—"}</span>
+          <span class="pill">${result?.ok ? "OK" : "—"}</span>
           <div>
-            <div class="timeline-title-row">
-              <h3 class="timeline-title">${escapeHtml(name)}</h3>
-              <span class="timeline-meta mono">${escapeHtml(result?.url || "")}</span>
+            <div class="sectionTitle" style="margin-bottom:6px;">
+              <h2 style="font-size:16px;margin:0;">${escapeHtml(name)}</h2>
+              <span class="hint mono">${escapeHtml(result?.url || "")}</span>
             </div>
             <p class="inline-text">${result?.ok ? "source loaded" : "source unavailable"}</p>
           </div>
@@ -1474,11 +986,11 @@
 
       root.innerHTML = history.slice(0, 10).map((item, index) => `
         <article class="list-row">
-          <span class="timeline-badge">${escapeHtml(String(index + 1))}</span>
+          <span class="pill">${escapeHtml(String(index + 1))}</span>
           <div>
-            <div class="timeline-title-row">
-              <h3 class="timeline-title">${escapeHtml(titleize(item.dominant_scenario || "snapshot"))}</h3>
-              <span class="timeline-meta mono">${escapeHtml(formatShortDate(item.as_of))}</span>
+            <div class="sectionTitle" style="margin-bottom:6px;">
+              <h2 style="font-size:16px;margin:0;">${escapeHtml(titleize(item.dominant_scenario || "snapshot"))}</h2>
+              <span class="hint mono">${escapeHtml(formatShortDate(item.as_of))}</span>
             </div>
             <p class="inline-text">${escapeHtml(item.summary || "Prediction snapshot")} / Confidence ${escapeHtml(formatConfidence(item.confidence))} / ${escapeHtml(titleize(item.overall_risk))}</p>
           </div>
@@ -1592,41 +1104,9 @@
       }
     }
 
-    function updateTopbarPills(prediction, health){
-      const pillReady = el("pillReady");
-      const pillHealth = el("pillHealth");
-      const pillAsOf = el("pillAsOf");
-
-      if (pillReady) pillReady.textContent = "Ready";
-      if (pillHealth) pillHealth.textContent = `Health: ${titleize(firstString(health?.status, health?.overall, health?.state, health?.health) || "Unknown")}`;
-      if (pillAsOf) pillAsOf.textContent = `as_of: ${formatDate(firstString(prediction?.as_of, prediction?.date, prediction?.generated_at))}`;
-
+    function updateTopbarPills(prediction){
       el("pillAsOfLocal").textContent = `as_of: ${formatDate(firstString(prediction?.as_of, prediction?.date, prediction?.generated_at))}`;
       el("pillReadyLocal").textContent = "Ready";
-    }
-
-    function activateNav(){
-      document.querySelectorAll(".nav-link").forEach((node) => {
-        if (node.dataset.page === "prediction") node.classList.add("active");
-      });
-    }
-
-    function fillUnavailableState(message){
-      renderGlobalStatus([
-        { value:"—", sub:"unavailable" },
-        { value:"—", sub:"unavailable" },
-        { value:"—", sub:"unavailable" },
-        { value:"—", sub:"unavailable" },
-        { value:"—", sub:"unavailable" }
-      ]);
-
-      el("heroSummary").textContent = message;
-      el("predictionSummaryMain").textContent = message;
-      el("riskChipText").textContent = "Unavailable";
-      el("summaryMini").textContent = "Unavailable";
-      el("runtimeMini").textContent = "Missing";
-      el("confidenceChip").textContent = "Confidence —";
-      el("pillReadyLocal").textContent = "Missing";
     }
 
     async function init(){
@@ -1634,10 +1114,9 @@
         Object.entries(PREDICTION_SOURCES).map(async ([key, url]) => [key, await fetchJson(url)])
       );
       const results = Object.fromEntries(entries);
-      activateNav();
 
       if (!results.prediction?.ok || !results.prediction?.data){
-        fillUnavailableState("prediction_latest.json を取得できませんでした。Prediction 本体は fallback で捏造しません。");
+        el("heroSummary").textContent = "prediction_latest.json を取得できませんでした。Prediction 本体は fallback で捏造しません。";
         return;
       }
 
@@ -1664,36 +1143,13 @@
       renderPredictionHistory(history);
       renderCharts(prediction, scenarios, history);
 
-      renderList(
-        "watchpointsList",
-        firstNonEmpty(prediction?.watchpoints, prediction?.watch_points, scenarios.flatMap((s) => s.watchpoints).filter(Boolean)),
-        "Watchpoints unavailable",
-        "W"
-      );
-
-      renderList(
-        "driversList",
-        firstNonEmpty(prediction?.drivers, prediction?.key_drivers, scenarios.flatMap((s) => s.drivers).filter(Boolean)),
-        "Drivers unavailable",
-        "D"
-      );
-
-      renderList(
-        "invalidationList",
-        firstNonEmpty(prediction?.invalidation_conditions, prediction?.invalidation, prediction?.invalidate_if, scenarios.flatMap((s) => s.invalidation).filter(Boolean)),
-        "Invalidation unavailable",
-        "I"
-      );
-
-      renderList(
-        "implicationsList",
-        firstNonEmpty(prediction?.implications, prediction?.actions, prediction?.notes, prediction?.dominant_scenario?.summary),
-        "Implications unavailable",
-        "M"
-      );
+      renderList("watchpointsList", firstNonEmpty(prediction?.watchpoints, prediction?.watch_points, scenarios.flatMap((s) => s.watchpoints).filter(Boolean)), "Watchpoints unavailable", "W");
+      renderList("driversList", firstNonEmpty(prediction?.drivers, prediction?.key_drivers, scenarios.flatMap((s) => s.drivers).filter(Boolean)), "Drivers unavailable", "D");
+      renderList("invalidationList", firstNonEmpty(prediction?.invalidation_conditions, prediction?.invalidation, prediction?.invalidate_if, scenarios.flatMap((s) => s.invalidation).filter(Boolean)), "Invalidation unavailable", "I");
+      renderList("implicationsList", firstNonEmpty(prediction?.implications, prediction?.actions, prediction?.notes, prediction?.dominant_scenario?.summary), "Implications unavailable", "M");
 
       renderSourceStatus(results);
-      updateTopbarPills(prediction, healthData);
+      updateTopbarPills(prediction);
     }
 
     window.addEventListener("DOMContentLoaded", init);

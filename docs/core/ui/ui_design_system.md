@@ -1,474 +1,503 @@
-# UI Design System
-GenesisPrediction v2
+# GenesisPrediction UI Design System
 
-Status: Core  
-Location: docs/core/ui/  
-Purpose: Define the complete UI design system used by GenesisPrediction.
-
----
-
-# 1. Purpose
-
-この文書は
-
-**GenesisPrediction UI の設計システム全体を定義する。**
+この文書は GenesisPrediction UI のデザインシステムを定義する。
 
 目的
 
-- UI設計の全体構造を1枚で示す
-- UI関連ドキュメントの役割を整理する
-- AI / 開発者がUIを理解する入口を提供する
-- UI設計の長期一貫性を維持する
+- UIデザインの統一
+- CSS設計の標準化
+- AI作業時の参照仕様
+- 新規ページ作成時のデザイン指針
 
-GenesisPrediction UI は
-
-```
-
-Research Dashboard
-Observation Dashboard
-
-```
-
-として設計されている。
 
 ---
 
-# 2. UI Design System Layers
+# Theme System
 
-GenesisPrediction UI は  
-次の **4層構造**で設計されている。
+GenesisPrediction UI は **Theme System** で管理される。
 
-```
-
-Layer 1
-Design Philosophy
-
-Layer 2
-Component Catalog
-
-Layer 3
-Layout Standard
-
-Layer 4
-Component Standards
+Core Theme File
 
 ```
 
-それぞれの役割は次の通り。
-
-| Layer | Document | Role |
-|-----|-----|-----|
-| Philosophy | ui_design_philosophy.md | UI思想 |
-| Components | ui_component_catalog.md | UI部品 |
-| Layout | ui_layout_standard.md | ページ骨格 |
-| Standards | global_status_* | コンポーネント仕様 |
-
----
-
-# 3. Core Design Principle
-
-GenesisPrediction UI の最重要原則
-
-```
-
-Clarity over decoration
-装飾より可読性
-
-```
-
-目的は
-
-```
-
-世界の状況を理解すること
-危険信号を早く見つけること
-判断を助けること
-
-```
-
-である。
-
-UIは派手さではなく
-
-- 可読性
-- 情報密度
-- 状態把握
-
-を優先する。
-
----
-
-# 4. Dashboard Concept
-
-GenesisPrediction UI は
-
-```
-
-ニュースサイト
-ブログ
-SNS
-
-```
-
-ではない。
-
-これは
-
-```
-
-Observation Dashboard
-Research Dashboard
-
-```
-
-である。
-
-そのため
-
-- 高情報密度
-- 状態把握優先
-- 落ち着いたダークテーマ
-
-を採用する。
-
----
-
-# 5. Standard Page Structure
-
-すべてのページは  
-以下の **共通骨格**を持つ。
-
-```
-
-Header
-Global Status
-Hero
-Primary Summary
-KPI Layer
-Main Content
-History / Lists
-Footer
-
-```
-
-この構造は  
-**すべてのページで固定される。**
-
-対象ページ
-
-```
-
-Home
-Overlay
-Sentiment
-Digest
-Prediction
-Prediction History
-
-```
-
----
-
-# 6. Shared Layout System
-
-GenesisPrediction UI は  
-**共通レイアウトシェル**を使用する。
-
-共通ファイル
-
-```
-
-app/static/common/header.html
-app/static/common/footer.html
-app/static/common/layout.js
 app/static/app.css
 
 ```
 
-各ページ HTML の責務
+このファイルが UI デザインの中心となる。
 
-```
-
-ページ固有コンテンツのみ
-
-```
-
-禁止
-
-```
-
-独自 header 実装
-独自 footer 実装
-layout.js 不使用
-
-```
 
 ---
 
-# 7. Core UI Components
+# Theme構造
 
-UIは再利用コンポーネントで構成される。
-
-主要コンポーネント
+Theme は以下の要素で構成される。
 
 ```
 
+Variables
+Typography
+Layout
+Components
+Grid
+Utilities
+
+```
+
+
+---
+
+# Variables
+
+デザイン変数は CSS Variables で管理する。
+
+例
+
+```
+
+--bg
+--bg-elevated
+
+--panel-bg
+--panel-bg-soft
+
+--border-color
+--border-strong
+
+--text-main
+--text-muted
+--text-dim
+
+--accent
+--accent-soft
+
+```
+
+Spacing
+
+```
+
+--space-1
+--space-2
+--space-3
+--space-4
+--space-5
+--space-6
+
+```
+
+Radius
+
+```
+
+--radius-sm
+--radius-md
+--radius-lg
+--radius-xl
+
+```
+
+Shadow
+
+```
+
+--shadow-sm
+--shadow-md
+--shadow-lg
+
+```
+
+
+---
+
+# Typography
+
+基本フォント
+
+```
+
+system-ui
+Segoe UI
+Roboto
+Helvetica
+Arial
+
+```
+
+基本スタイル
+
+```
+
+.h1
+.hero-title
+.section-title
+.metric-value
+.small
+.hint
+.mono
+
+```
+
+
+---
+
+# Layout Components
+
+UIの基本構造
+
+```
+
+container
 panel
 card
 hero
-status-shell
+section
+footer
+
+```
+
+container
+
+ページ幅管理
+
+panel
+
+UIの基本ブロック
+
+card
+
+panel内のコンテンツ要素
+
+
+---
+
+# Navigation Components
+
+```
+
+topbar
+nav
+nav-link
+brand
+health-line
+
+```
+
+nav-link
+
+```
+
+hover
+active
+
+```
+
+を持つ。
+
+
+---
+
+# Grid System
+
+レスポンシブレイアウトの基本。
+
+```
+
+grid-2
+grid-3
+stack
+
+```
+
+grid-2
+
+```
+
+2 column
+
+```
+
+grid-3
+
+```
+
+3 column
+
+```
+
+stack
+
+```
+
+vertical layout
+
+```
+
+
+---
+
+# Status Components
+
+システム状態表示。
+
+```
+
+global-status
+status-grid
+status-card
+status-label
+status-value
+status-sub
+
+```
+
+例
+
+```
+
+News
+Sentiment
+Prediction
+FX
+System
+
+```
+
+
+---
+
+# KPI Components
+
+数値表示コンポーネント。
+
+```
+
+metric-card
+metric-label
+metric-value
+metric-sub
+
+```
+
+用途
+
+```
+
+FX Rate
+Sentiment Score
+Risk Index
+
+```
+
+---
+
+# Lists / Timeline
+
+記事やイベント表示。
+
+```
+
 timeline
-list-stack
-sparkline
+timeline-card
+timeline-title
+timeline-summary
+plain-list
 
 ```
 
-新しいページは  
-必ず既存コンポーネントを再利用する。
+用途
+
+```
+
+news
+events
+signals
+scenarios
+
+```
+
 
 ---
 
-# 8. Information Hierarchy
-
-UIは次の情報階層を持つ。
+# Buttons
 
 ```
 
-Global Status
-↓
-Page Summary
-↓
-Key Metrics
-↓
-Main Content
-↓
-Historical Context
+btn
+pill
+pillrow
 
 ```
 
-この順序は
+UI操作に使用。
 
-```
-
-全体理解 → 詳細理解
-
-```
-
-を可能にする。
 
 ---
 
-# 9. Grid System
-
-GenesisPrediction UI は  
-**grid layout** を基本とする。
-
-代表例
-
-Global Status
+# Form Components
 
 ```
 
-5 columns
+select
+input
+textarea
 
 ```
 
-Hero
+データ選択・入力。
 
-```
-
-2 columns desktop
-1 column mobile
-
-```
-
-History Cards
-
-```
-
-2 columns desktop
-1 column mobile
-
-```
 
 ---
 
-# 10. Reusability Principle
+# UI設計原則
 
-UI設計では
+GenesisPrediction UI は以下の原則で設計する。
+
+
+## 1  
+Theme First
+
+UI変更は **app.css から行う。**
+
+
+## 2  
+Layout Separation
+
+レイアウトは
 
 ```
 
-Reuse > Reinvent
+layout.js
 
 ```
 
-を守る。
+が管理する。
 
-新しい構造を作る前に  
-既存コンポーネントを確認する。
+
+## 3  
+Content Only HTML
+
+HTMLは
+
+**contentのみ**
+
+を書く。
+
+
+## 4  
+CSS Local禁止
+
+HTML内
+
+```
+
+style
+
+```
+
+は禁止。
+
 
 ---
 
-# 11. Error Tolerance
-
-UIは壊れない設計にする。
-
-想定問題
-
-```
-
-JSON欠損
-API停止
-画像404
-データ遅延
-
-```
-
-対策
-
-```
-
-fallback
-placeholder
-safe empty state
-
-```
-
----
-
-# 12. Performance Philosophy
+# UIの役割
 
 GenesisPrediction UI は
 
 ```
 
-軽量
-高速
-シンプル
+Observation
+Trend
+Signal
+Scenario
+Prediction
 
 ```
 
-を優先する。
+を可視化するための
 
-そのため
+**Visualization Layer**
 
-```
+である。
 
-重いフレームワークを使わない
-不要なJavaScriptを避ける
-静的HTML中心
-
-```
-
-を維持する。
 
 ---
 
-# 13. Long-Term Maintainability
-
-GenesisPrediction は
-
-```
-
-10年以上続く研究プロジェクト
-
-```
-
-を想定している。
-
-そのため UI は
-
-```
-
-シンプル
-理解しやすい
-修正しやすい
-
-```
-
-設計である必要がある。
-
----
-
-# 14. Relationship with Other UI Documents
-
-UI設計は次の文書群で構成される。
-
-## Philosophy
-
-```
-
-ui_design_philosophy.md
-
-```
-
----
-
-## Components
-
-```
-
-ui_component_catalog.md
-
-```
-
----
-
-## Layout
-
-```
-
-ui_layout_standard.md
-
-```
-
----
-
-## Component Standards
-
-```
-
-global_status_component_standard.md
-global_status_html_standard.md
-global_status_css_standard.md
-global_status_data_mapping.md
-
-```
-
----
-
-# 15. Design Goal
-
-GenesisPrediction UI の最終目的
-
-```
-
-世界の状況を理解する
-危険信号を早く見つける
-判断を助ける
-
-```
+# UIの性質
 
 UIは
 
 ```
 
-装飾
-
-```
-
-ではなく
-
-```
-
-理解のためのツール
+Read Only
 
 ```
 
 である。
 
+データは
+
+```
+
+analysis
+
+```
+
+ディレクトリから読み取る。
+
+
 ---
 
-# End
+# SST
+
+Single Source of Truth
+
+```
+
+analysis/
+
+```
+
+UIは分析結果を表示するのみ。
+
+
+---
+
+# 対象ページ
+
+GenesisPrediction UI
+
+```
+
+index
+overlay
+sentiment
+digest
+prediction
+prediction_history
+
+```
+
+
+---
+
+# この文書の役割
+
+GenesisPrediction UI の
+
+**Design System 仕様**
+
+を定義する。
+
+
+---
+
+# 関連ドキュメント
+
+```
+
+docs/core/ui/ui_layout_standard.md
+docs/core/GenesisPrediction_UI_Work_Rules.md
+
+```
 ```

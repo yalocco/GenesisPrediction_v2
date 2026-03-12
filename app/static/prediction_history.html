@@ -5,524 +5,66 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Prediction History - GenesisPrediction v2</title>
   <meta name="description" content="GenesisPrediction Prediction History UI">
-  <link rel="stylesheet" href="/static/app.css?v=20260311-ui-pred-history-theme2">
+  <link rel="stylesheet" href="/static/app.css?v=20260312-ui-pred-history-final2">
   <style>
-    .history-page{
-      display:grid;
-      gap:16px;
+    .history-page{display:grid;gap:16px}
+    .history-shell{display:grid;gap:16px}
+    .hero-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:16px;align-items:stretch}
+    .hero-card,.hero-side-card{min-width:0;height:100%;display:flex;flex-direction:column}
+    .hero-side-stack{display:grid;gap:12px;height:100%}
+
+    .hero-intro-card{
+      padding:0;
+      border:none;
+      background:transparent;
+      box-shadow:none;
     }
 
-    .history-shell{
-      display:grid;
-      gap:16px;
-    }
-
-    .hero-panel{
-      display:grid;
-      gap:16px;
-    }
-
-    .hero-grid{
-      display:grid;
-      grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);
-      gap:16px;
-      align-items:stretch;
-    }
-
-    .hero-card,
-    .hero-side-card{
-      min-width:0;
-      height:100%;
-      display:flex;
-      flex-direction:column;
-    }
-
-    .hero-title{
-      font-size:34px;
-      line-height:1.08;
-      letter-spacing:-.03em;
-      font-weight:800;
-      margin:0 0 10px;
-      color:#eef4ff;
-    }
-
-    .hero-summary{
-      color:#c8d7f6;
-      font-size:15px;
-      line-height:1.8;
-      margin:0;
-      flex:1;
-    }
-
-    .hero-side-stack{
-      display:grid;
-      gap:12px;
-      height:100%;
-    }
-
-    .hero-metric{
-      border:1px solid rgba(120,160,220,.12);
-      border-radius:14px;
-      padding:12px 14px;
-      background:rgba(8,14,28,.18);
-    }
-
-    .hero-metric .metric-label{
-      font-size:11px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      opacity:.72;
-      margin-bottom:6px;
-    }
-
-    .hero-metric .metric-value{
-      font-size:26px;
-      line-height:1.05;
-      font-weight:700;
-      letter-spacing:-.02em;
-      color:#eef4ff;
-    }
-
-    .hero-metric .metric-sub{
-      margin-top:4px;
-      font-size:12px;
-      opacity:.72;
-      color:#c8d7f6;
-      line-height:1.5;
-    }
-
-    .global-status-panel{
-      display:grid;
-      gap:12px;
-    }
-
-    .global-status-head{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      flex-wrap:wrap;
-    }
-
-    .global-status-title{
-      font-size:12px;
-      letter-spacing:.18em;
-      text-transform:uppercase;
-      opacity:.82;
-    }
-
-    .global-status{
-      display:grid;
-      grid-template-columns:repeat(5,minmax(0,1fr));
-      gap:12px;
-    }
-
-    .status-card{
-      min-width:0;
-      border:1px solid rgba(120,160,220,.12);
-      border-radius:14px;
-      padding:12px 12px 10px;
-      background:rgba(8,14,28,.22);
-    }
-
-    .status-label{
-      font-size:11px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      opacity:.72;
-      margin-bottom:6px;
-    }
-
-    .status-value{
-      font-size:24px;
-      line-height:1.05;
-      font-weight:700;
-      letter-spacing:-.02em;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      color:#eef4ff;
-    }
-
-    .status-sub{
-      margin-top:4px;
-      font-size:12px;
-      opacity:.72;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      color:#c8d7f6;
-    }
-
-    .kpi-grid{
-      display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:12px;
-    }
-
-    .metric-card{
-      border:1px solid rgba(120,160,220,.12);
-      border-radius:16px;
-      padding:12px 14px;
-      background:rgba(8,14,28,.18);
-      min-width:0;
-    }
-
-    .metric-label{
-      font-size:11px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      opacity:.72;
-      margin-bottom:6px;
-    }
-
-    .metric-value{
-      font-size:28px;
-      line-height:1.05;
-      font-weight:800;
-      letter-spacing:-.03em;
-      color:#eef4ff;
-    }
-
-    .metric-sub{
-      margin-top:4px;
-      font-size:12px;
-      color:#c8d7f6;
-      opacity:.78;
-      line-height:1.5;
-    }
-
-    .chart-grid{
-      display:grid;
-      grid-template-columns:repeat(3,minmax(0,1fr));
-      gap:12px;
-    }
-
-    .chart-card{
-      border:1px solid rgba(120,160,220,.12);
-      border-radius:16px;
-      padding:12px 14px;
-      background:rgba(8,14,28,.18);
-      min-width:0;
-    }
-
-    .chart-card .chart-label{
-      font-size:11px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      opacity:.72;
-      margin-bottom:6px;
-    }
-
-    .chart-card .chart-value{
-      font-size:24px;
-      line-height:1.05;
-      font-weight:700;
-      letter-spacing:-.02em;
-      color:#eef4ff;
-      margin-bottom:10px;
-    }
-
+    .hero-metric{border:1px solid rgba(120,160,220,.12);border-radius:14px;padding:12px 14px;background:rgba(8,14,28,.18)}
+    .hero-metric .metric-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.72;margin-bottom:6px}
+    .hero-metric .metric-value{font-size:26px;line-height:1.05;font-weight:700;letter-spacing:-.02em;color:#eef4ff}
+    .hero-metric .metric-sub{margin-top:4px;font-size:12px;opacity:.72;color:#c8d7f6;line-height:1.5}
+    .chart-card{border:1px solid rgba(120,160,220,.12);border-radius:16px;padding:12px 14px;background:rgba(8,14,28,.18);min-width:0}
+    .chart-card .chart-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.72;margin-bottom:6px}
+    .chart-card .chart-value{font-size:24px;line-height:1.05;font-weight:700;letter-spacing:-.02em;color:#eef4ff;margin-bottom:10px}
     .chart-card .chart-value.pos{color:#7dd3fc}
     .chart-card .chart-value.neg{color:#fca5a5}
     .chart-card .chart-value.neu{color:#eef4ff}
-
-    .chart-card svg{
-      width:100%;
-      height:92px;
-      display:block;
-      border-radius:12px;
-      background:rgba(255,255,255,.02);
-      border:1px solid rgba(255,255,255,.06);
-    }
-
-    .chart-note{
-      margin-top:8px;
-      font-size:12px;
-      line-height:1.5;
-      color:#c8d7f6;
-      opacity:.8;
-    }
-
-    .content-grid{
-      display:grid;
-      grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);
-      gap:16px;
-      align-items:start;
-    }
-
-    .stack{
-      display:grid;
-      gap:12px;
-    }
-
-    .section-header{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      gap:12px;
-      margin-bottom:12px;
-    }
-
-    .section-title{
-      margin:0;
-      font-size:22px;
-      line-height:1.2;
-      letter-spacing:-.02em;
-    }
-
-    .section-subtitle{
-      margin:4px 0 0;
-      color:#c8d7f6;
-      line-height:1.65;
-      font-size:14px;
-    }
-
-    .window-chip{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      min-width:34px;
-      min-height:28px;
-      padding:0 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(255,255,255,.04);
-      font-size:12px;
-      font-weight:700;
-      line-height:1;
-      letter-spacing:.03em;
-      color:#93c5fd;
-      width:max-content;
-    }
-
-    .summary-text,
-    .detail-text,
-    .timeline-summary,
-    .inline-text{
-      margin:0;
-      color:#c8d7f6;
-      line-height:1.8;
-      font-size:15px;
-    }
-
-    .detail-grid,
-    .notes-grid{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:16px;
-    }
-
-    .detail-card,
-    .note-card{
-      border:1px solid rgba(120,160,220,.14);
-      border-radius:16px;
-      padding:12px 14px;
-      background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));
-      display:grid;
-      gap:10px;
-      min-width:0;
-    }
-
-    .detail-eyebrow,
-    .timeline-meta,
-    .empty-meta{
-      font-size:11px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      opacity:.7;
-    }
-
-    .detail-title,
-    .timeline-title{
-      margin:0;
-      font-size:16px;
-      line-height:1.35;
-      font-weight:700;
-      color:#eef4ff;
-    }
-
-    .timeline-list{
-      display:grid;
-      gap:12px;
-    }
-
-    .timeline-row{
-      display:grid;
-      grid-template-columns:110px 150px minmax(0,1fr) 96px;
-      gap:12px;
-      align-items:center;
-      padding:14px;
-      border-radius:16px;
-      border:1px solid rgba(120,160,220,.14);
-      background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));
-      min-width:0;
-    }
-
-    .timeline-date{
-      font-size:13px;
-      font-weight:700;
-      color:#eef4ff;
-      line-height:1.35;
-      white-space:nowrap;
-    }
-
-    .timeline-state{
-      display:grid;
-      gap:6px;
-      min-width:0;
-    }
-
-    .timeline-badge,
-    .risk-badge,
-    .list-badge{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      width:max-content;
-      min-width:34px;
-      min-height:28px;
-      padding:0 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(255,255,255,.04);
-      font-size:12px;
-      font-weight:700;
-      line-height:1;
-      letter-spacing:.03em;
-    }
-
+    .chart-card svg{width:100%;height:92px;display:block;border-radius:12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06)}
+    .chart-note{margin-top:8px;font-size:12px;line-height:1.5;color:#c8d7f6;opacity:.8}
+    .window-chip{display:inline-flex;align-items:center;justify-content:center;min-width:34px;min-height:28px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);font-size:12px;font-weight:700;line-height:1;letter-spacing:.03em;color:#93c5fd;width:max-content}
+    .summary-text,.detail-text,.timeline-summary,.inline-text{margin:0;color:#c8d7f6;line-height:1.8;font-size:15px}
+    .detail-card,.note-card{border:1px solid rgba(120,160,220,.14);border-radius:16px;padding:12px 14px;background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));display:grid;gap:10px;min-width:0}
+    .detail-eyebrow,.timeline-meta,.empty-meta{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.7}
+    .detail-title,.timeline-title{margin:0;font-size:16px;line-height:1.35;font-weight:700;color:#eef4ff}
+    .timeline-row{display:grid;grid-template-columns:110px 150px minmax(0,1fr) 96px;gap:12px;align-items:center;padding:14px;border-radius:16px;border:1px solid rgba(120,160,220,.14);background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));min-width:0}
+    .timeline-date{font-size:13px;font-weight:700;color:#eef4ff;line-height:1.35;white-space:nowrap}
+    .timeline-state{display:grid;gap:6px;min-width:0}
+    .timeline-badge,.risk-badge{display:inline-flex;align-items:center;justify-content:center;width:max-content;min-width:34px;min-height:28px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);font-size:12px;font-weight:700;line-height:1;letter-spacing:.03em}
     .timeline-badge.best{color:#93c5fd;border-color:rgba(96,165,250,.28)}
     .timeline-badge.base{color:#eef4ff;border-color:rgba(255,255,255,.14)}
     .timeline-badge.worst{color:#fca5a5;border-color:rgba(248,113,113,.28)}
     .timeline-badge.other{color:#c4b5fd;border-color:rgba(196,181,253,.24)}
-
     .risk-badge.low{color:#7dd3fc}
     .risk-badge.guarded{color:#c4b5fd}
     .risk-badge.elevated{color:#facc15}
     .risk-badge.high{color:#fb923c}
     .risk-badge.critical{color:#f87171}
-
-    .timeline-small{
-      font-size:12px;
-      opacity:.72;
-      color:#c8d7f6;
-      margin-top:4px;
-      line-height:1.5;
-    }
-
-    .timeline-conf{
-      text-align:right;
-      display:grid;
-      gap:6px;
-      justify-items:end;
-    }
-
-    .timeline-conf .value{
-      font-size:18px;
-      font-weight:800;
-      color:#93c5fd;
-      line-height:1;
-    }
-
-    .timeline-conf .sub{
-      font-size:12px;
-      opacity:.72;
-      color:#c8d7f6;
-    }
-
-    .plain-list{
-      list-style:none;
-      margin:0;
-      padding:0;
-      display:grid;
-      gap:8px;
-    }
-
-    .plain-list li{
-      border:1px solid rgba(120,160,220,.1);
-      border-radius:12px;
-      padding:8px 10px;
-      background:rgba(255,255,255,.015);
-      color:#c8d7f6;
-      font-size:13px;
-      line-height:1.55;
-    }
-
-    .list-stack{
-      display:grid;
-      gap:12px;
-    }
-
-    .list-row{
-      display:grid;
-      grid-template-columns:auto 1fr;
-      align-items:flex-start;
-      gap:10px;
-      padding:12px 14px;
-      border-radius:14px;
-      border:1px solid rgba(120,160,220,.14);
-      background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));
-      min-width:0;
-    }
-
-    .empty-card{
-      min-height:160px;
-      justify-content:center;
-      text-align:center;
-      border:1px solid rgba(120,160,220,.14);
-      border-radius:16px;
-      padding:14px;
-      background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));
-      display:grid;
-      gap:8px;
-    }
-
-    .empty-text{
-      max-width:56ch;
-      justify-self:center;
-      color:#c8d7f6;
-      line-height:1.7;
-      margin:0;
-    }
-
-    .mono{
-      font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      letter-spacing:0;
-    }
-
+    .timeline-small{font-size:12px;opacity:.72;color:#c8d7f6;margin-top:4px;line-height:1.5}
+    .timeline-conf{text-align:right;display:grid;gap:6px;justify-items:end}
+    .timeline-conf .value{font-size:18px;font-weight:800;color:#93c5fd;line-height:1}
+    .timeline-conf .sub{font-size:12px;opacity:.72;color:#c8d7f6}
+    .empty-card{min-height:160px;justify-content:center;text-align:center;border:1px solid rgba(120,160,220,.14);border-radius:16px;padding:14px;background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));display:grid;gap:8px}
+    .empty-text{max-width:56ch;justify-self:center;color:#c8d7f6;line-height:1.7;margin:0}
     @media (max-width:1100px){
-      .hero-grid,
-      .content-grid,
-      .chart-grid,
-      .kpi-grid,
-      .detail-grid,
-      .notes-grid{
-        grid-template-columns:1fr;
-      }
-
-      .global-status{
-        grid-template-columns:repeat(2,minmax(0,1fr));
-      }
-
-      .timeline-row{
-        grid-template-columns:1fr;
-      }
-
-      .timeline-conf{
-        justify-items:start;
-        text-align:left;
-      }
+      .hero-grid{grid-template-columns:1fr}
+      .global-status{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .timeline-row{grid-template-columns:1fr}
+      .timeline-conf{justify-items:start;text-align:left}
     }
-
     @media (max-width:700px){
-      .global-status{
-        grid-template-columns:1fr;
-      }
-
-      .section-header{
-        flex-direction:column;
-      }
+      .global-status{grid-template-columns:1fr}
+      .section-header{flex-direction:column}
     }
   </style>
 </head>
@@ -534,42 +76,40 @@
       <div class="gp-page history-page">
         <section class="panel history-shell">
 
-          <section class="hero-panel">
-            <div class="hero-grid">
-              <article class="card hero-card">
-                <h1 id="heroHeadline" class="hero-title">Prediction History</h1>
-                <p id="heroSummary" class="hero-summary">Loading prediction history drift summary...</p>
+          <section class="hero-grid">
+            <article class="hero-card hero-intro-card">
+              <h1 id="heroHeadline" class="hero-title">Prediction History</h1>
+              <p id="heroSummary" class="hero-summary">Loading prediction history drift summary...</p>
 
-                <div class="pillrow" style="margin-top:16px;">
-                  <span class="pill"><strong>Window</strong><span id="windowLabel" style="margin-left:8px;">30d</span></span>
-                  <span class="pill"><strong>Latest Date</strong><span id="latestDate" style="margin-left:8px;">—</span></span>
-                  <span class="pill"><strong>Latest Dominant</strong><span id="latestDominant" style="margin-left:8px;">—</span></span>
-                  <span class="pill"><strong>Signals</strong><span id="latestSignals" style="margin-left:8px;">—</span></span>
+              <div class="pillrow" style="margin-top:16px;">
+                <span class="pill"><strong>Window</strong><span id="windowLabel" style="margin-left:8px;">30d</span></span>
+                <span class="pill"><strong>Latest Date</strong><span id="latestDate" style="margin-left:8px;">—</span></span>
+                <span class="pill"><strong>Latest Dominant</strong><span id="latestDominant" style="margin-left:8px;">—</span></span>
+                <span class="pill"><strong>Signals</strong><span id="latestSignals" style="margin-left:8px;">—</span></span>
+              </div>
+            </article>
+
+            <aside class="card hero-side-card">
+              <div class="hero-side-stack">
+                <div class="hero-metric">
+                  <div class="metric-label">Risk Drift</div>
+                  <div id="riskDrift" class="metric-value">—</div>
+                  <div id="riskDriftSub" class="metric-sub">waiting for history</div>
                 </div>
-              </article>
 
-              <aside class="card hero-side-card">
-                <div class="hero-side-stack">
-                  <div class="hero-metric">
-                    <div class="metric-label">Risk Drift</div>
-                    <div id="riskDrift" class="metric-value">—</div>
-                    <div id="riskDriftSub" class="metric-sub">waiting for history</div>
-                  </div>
-
-                  <div class="hero-metric">
-                    <div class="metric-label">Confidence Drift</div>
-                    <div id="confidenceDrift" class="metric-value">—</div>
-                    <div id="confidenceDriftSub" class="metric-sub">waiting for history</div>
-                  </div>
-
-                  <div class="hero-metric">
-                    <div class="metric-label">Scenario Shift</div>
-                    <div id="scenarioShift" class="metric-value" style="font-size:20px;line-height:1.2;">—</div>
-                    <div id="scenarioShiftSub" class="metric-sub">waiting for history</div>
-                  </div>
+                <div class="hero-metric">
+                  <div class="metric-label">Confidence Drift</div>
+                  <div id="confidenceDrift" class="metric-value">—</div>
+                  <div id="confidenceDriftSub" class="metric-sub">waiting for history</div>
                 </div>
-              </aside>
-            </div>
+
+                <div class="hero-metric">
+                  <div class="metric-label">Scenario Shift</div>
+                  <div id="scenarioShift" class="metric-value" style="font-size:20px;line-height:1.2;">—</div>
+                  <div id="scenarioShiftSub" class="metric-sub">waiting for history</div>
+                </div>
+              </div>
+            </aside>
           </section>
 
           <section class="card global-status-panel">
@@ -775,7 +315,7 @@
 
   <div id="site-footer"></div>
 
-  <script src="/static/common/layout.js?v=20260311-ui-pred-history-theme2"></script>
+  <script src="/static/common/layout.js?v=20260312-ui-pred-history-final2"></script>
   <script>
     (function(){
       "use strict";
@@ -784,9 +324,7 @@
 
       function $(id){ return document.getElementById(id); }
 
-      function safeText(x){
-        return (x == null) ? "" : String(x);
-      }
+      function safeText(x){ return (x == null) ? "" : String(x); }
 
       function setText(id, v){
         var node = $(id);
@@ -1083,9 +621,9 @@
         root.innerHTML = list.slice(0, 6).map(function(item, index){
           return ''
             + '<article class="list-row">'
-            +   '<span class="list-badge">' + esc(String(index + 1)) + '</span>'
+            +   '<span class="pill">' + esc(String(index + 1)) + '</span>'
             +   '<div>'
-            +     '<div class="timeline-meta mono">' + esc(item.url || "") + '</div>'
+            +     '<div class="hint mono">' + esc(item.url || "") + '</div>'
             +     '<p class="inline-text">' + esc(formatDate(item.as_of)) + " / " + esc(titleize(item.dominant_scenario)) + " / " + esc(formatPercent(item.confidence)) + '</p>'
             +   '</div>'
             + '</article>';
@@ -1191,15 +729,7 @@
         }
       }
 
-      function activateNav(){
-        document.querySelectorAll(".nav-link").forEach(function(node){
-          if(node.dataset.page === "prediction_history") node.classList.add("active");
-        });
-      }
-
       async function main(){
-        activateNav();
-
         try{
           var list = await loadSnapshots();
           if(!list.length){
