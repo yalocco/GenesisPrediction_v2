@@ -46,6 +46,8 @@ Core Theme File
   --card-gap: 14px;
   --section-gap: 34px;
 
+  --topbar-min-height: 76px;
+  --topbar-status-width: 320px;
   --topbar-health-width: 320px;
 }
 
@@ -60,6 +62,12 @@ body {
   padding: 0;
 }
 
+html {
+  background: var(--bg);
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
 body {
   background: var(--bg);
   color: var(--text-main);
@@ -72,6 +80,7 @@ body {
     Arial,
     sans-serif;
   line-height: 1.6;
+  min-height: 100vh;
 }
 
 a {
@@ -79,6 +88,7 @@ a {
 }
 
 img {
+  display: block;
   max-width: 100%;
 }
 
@@ -93,6 +103,24 @@ textarea {
 .gp-main,
 .gp-page {
   min-width: 0;
+}
+
+/* Layout mount stability */
+#site-header {
+  display: block;
+  min-height: var(--topbar-min-height);
+}
+
+#site-footer {
+  display: block;
+}
+
+html[data-layout-ready="0"] #site-header {
+  visibility: hidden;
+}
+
+html[data-layout-ready="1"] #site-header {
+  visibility: visible;
 }
 
 /* Typography */
@@ -142,17 +170,27 @@ textarea {
 .topbar {
   background: var(--bg-elevated);
   border-bottom: 1px solid var(--border-color);
+  min-height: var(--topbar-min-height);
 }
 
 .topbar-inner {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) var(--topbar-health-width);
+  grid-template-columns: auto minmax(0, 1fr) var(--topbar-status-width);
   align-items: center;
   gap: 18px;
+  min-height: var(--topbar-min-height);
   padding: 12px 0;
 }
 
+.topbar-inner--three {
+  grid-template-columns: auto minmax(0, 1fr) var(--topbar-status-width);
+}
+
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
   font-size: 15px;
   font-weight: 600;
   letter-spacing: .2px;
@@ -160,13 +198,37 @@ textarea {
   white-space: nowrap;
 }
 
-nav {
+.brand-dot {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 10px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 35% 35%, #9fd0ff 0%, #69a9ff 45%, #2f5fa2 100%);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.08),
+    0 0 14px rgba(105, 169, 255, .35);
+}
+
+.brand-title {
+  display: inline-block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+nav,
+.topnav {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   flex-wrap: wrap;
   min-width: 0;
+}
+
+.topnav--center {
+  justify-content: center;
 }
 
 nav a,
@@ -177,21 +239,18 @@ nav a,
   min-width: 0;
   height: 32px;
   padding: 6px 12px;
-
   color: var(--text-muted);
   text-decoration: none;
-
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
-
   font-size: 14px;
   line-height: 20px;
   white-space: nowrap;
-
   transition:
     color .18s ease,
     border-color .18s ease,
-    background-color .18s ease;
+    background-color .18s ease,
+    box-shadow .18s ease;
 }
 
 nav a:hover,
@@ -201,6 +260,23 @@ nav a.active,
   color: var(--text-main);
   border-color: var(--accent);
   background: rgba(105, 169, 255, .05);
+}
+
+.nav-link[aria-current="page"] {
+  color: var(--text-main);
+  border-color: rgba(105, 169, 255, .55);
+  background: rgba(105, 169, 255, .10);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+}
+
+.topbar-status {
+  width: var(--topbar-status-width);
+  min-width: var(--topbar-status-width);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: nowrap;
 }
 
 .health-line {
@@ -568,18 +644,37 @@ textarea {
 
 /* Responsive */
 @media (max-width: 1180px) {
-  .topbar-inner {
+  #site-header {
+    min-height: 116px;
+  }
+
+  .topbar {
+    min-height: 116px;
+  }
+
+  .topbar-inner,
+  .topbar-inner--three {
     grid-template-columns: 1fr;
     align-items: flex-start;
+    min-height: 116px;
   }
 
   .brand {
     width: 100%;
   }
 
-  nav {
+  nav,
+  .topnav,
+  .topnav--center {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .topbar-status {
+    width: 100%;
+    min-width: 0;
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
   .health-line {
@@ -614,6 +709,14 @@ textarea {
 }
 
 @media (max-width: 700px) {
+  #site-header {
+    min-height: 148px;
+  }
+
+  .topbar {
+    min-height: 148px;
+  }
+
   .container {
     padding-left: 14px;
     padding-right: 14px;

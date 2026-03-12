@@ -1,6 +1,43 @@
 (function () {
   "use strict";
 
+  const HEADER_HTML = `
+<header class="topbar">
+  <div class="container">
+    <div class="topbar-inner topbar-inner--three">
+      <div class="brand">
+        <span class="brand-dot" aria-hidden="true"></span>
+        <span class="brand-title">GenesisPrediction v2</span>
+      </div>
+
+      <nav class="topnav topnav--center" aria-label="Primary Navigation">
+        <a class="pill nav-link" data-page="home" href="/static/index.html">Home</a>
+        <a class="pill nav-link" data-page="overlay" href="/static/overlay.html">Overlay</a>
+        <a class="pill nav-link" data-page="sentiment" href="/static/sentiment.html">Sentiment</a>
+        <a class="pill nav-link" data-page="digest" href="/static/digest.html">Digest</a>
+        <a class="pill nav-link" data-page="prediction" href="/static/prediction.html">Prediction</a>
+        <a class="pill nav-link" data-page="prediction_history" href="/static/prediction_history.html">Prediction History</a>
+      </nav>
+
+      <div class="topbar-status" aria-label="Runtime Status">
+        <span id="pillReady" class="pill">Ready</span>
+        <span id="pillHealth" class="pill">Health: --</span>
+        <span id="pillAsOf" class="pill">as_of: --</span>
+      </div>
+    </div>
+  </div>
+</header>
+`.trim();
+
+  const FOOTER_HTML = `
+<footer class="footer">
+  <div class="container">
+    GenesisPrediction v2<br>
+    UI is read-only / analysis is SST
+  </div>
+</footer>
+`.trim();
+
   function currentPageKey() {
     const path = (window.location.pathname || "").toLowerCase();
 
@@ -12,57 +49,52 @@
     return "home";
   }
 
-  function navLink(pageKey, href, label, activeKey) {
-    const activeClass = pageKey === activeKey ? " active" : "";
-    return `<a href="${href}" class="nav-link${activeClass}" data-page="${pageKey}">${label}</a>`;
+  function ensureLayoutStateFlag() {
+    document.documentElement.setAttribute("data-layout-ready", "0");
   }
 
-  function buildHeader(activeKey) {
-    return `
-<header class="topbar">
-  <div class="container">
-    <div class="topbar-inner">
-      <div class="brand">GenesisPrediction v2</div>
-
-      <nav>
-        ${navLink("home", "/static/index.html", "Home", activeKey)}
-        ${navLink("overlay", "/static/overlay.html", "Overlay", activeKey)}
-        ${navLink("sentiment", "/static/sentiment.html", "Sentiment", activeKey)}
-        ${navLink("digest", "/static/digest.html", "Digest", activeKey)}
-        ${navLink("prediction", "/static/prediction.html", "Prediction", activeKey)}
-        ${navLink("prediction_history", "/static/prediction_history.html", "Prediction History", activeKey)}
-      </nav>
-
-      <div id="global-health" class="health-line">Ready Health: -- as_of: --</div>
-    </div>
-  </div>
-</header>
-`;
+  function markLayoutReady() {
+    window.requestAnimationFrame(function () {
+      document.documentElement.setAttribute("data-layout-ready", "1");
+    });
   }
 
-  function buildFooter() {
-    return `
-<footer class="footer">
-  <div class="container">
-    GenesisPrediction v2<br>
-    UI is read-only / analysis is SST
-  </div>
-</footer>
-`;
+  function mountIntoTarget(target, html) {
+    if (!target) return;
+
+    if (target.dataset.layoutMounted === "1" && target.innerHTML.trim() === html) {
+      return;
+    }
+
+    target.innerHTML = html;
+    target.dataset.layoutMounted = "1";
+  }
+
+  function applyActiveNav(activeKey) {
+    const links = document.querySelectorAll(".nav-link[data-page]");
+    links.forEach(function (link) {
+      const key = (link.getAttribute("data-page") || "").trim();
+      const isActive = key === activeKey;
+      link.classList.toggle("active", isActive);
+
+      if (isActive) {
+        link.setAttribute("aria-current", "page");
+      } else {
+        link.removeAttribute("aria-current");
+      }
+    });
   }
 
   function mountSharedLayout() {
     const activeKey = currentPageKey();
 
     const headerTarget = document.getElementById("site-header");
-    if (headerTarget) {
-      headerTarget.innerHTML = buildHeader(activeKey);
-    }
-
     const footerTarget = document.getElementById("site-footer");
-    if (footerTarget) {
-      footerTarget.innerHTML = buildFooter();
-    }
+
+    mountIntoTarget(headerTarget, HEADER_HTML);
+    mountIntoTarget(footerTarget, FOOTER_HTML);
+
+    applyActiveNav(activeKey);
   }
 
   async function fetchJson(url) {
@@ -95,25 +127,51 @@
     return `${y}-${m}-${day}`;
   }
 
+  function setHealthText(status, asOf) {
+    const safeStatus = status || "--";
+    const safeAsOf = asOf || "--";
+
+    const pillReady = document.getElementById("pillReady");
+    const pillHealth = document.getElementById("pillHealth");
+    const pillAsOf = document.getElementById("pillAsOf");
+    const legacyHealth = document.getElementById("global-health");
+
+    if (pillReady) {
+      pillReady.textContent = "Ready";
+    }
+
+    if (pillHealth) {
+      pillHealth.textContent = `Health: ${safeStatus}`;
+    }
+
+    if (pillAsOf) {
+      pillAsOf.textContent = `as_of: ${safeAsOf}`;
+    }
+
+    if (legacyHealth) {
+      legacyHealth.textContent = `Ready Health: ${safeStatus} as_of: ${safeAsOf}`;
+    }
+  }
+
   async function updateGlobalHealth() {
-    const target = document.getElementById("global-health");
-    if (!target) return;
+    setHealthText("--", "--");
 
     const health =
       await fetchJson("/analysis/health_latest.json") ||
       await fetchJson("/data/digest/health_latest.json");
 
     if (!health) {
-      target.textContent = "Ready Health: -- as_of: --";
+      setHealthText("--", "--");
       return;
     }
 
-    const status = firstString(
-      health.status,
-      health.overall,
-      health.state,
-      health.health
-    ) || "--";
+    const status =
+      firstString(
+        health.status,
+        health.overall,
+        health.state,
+        health.health
+      ) || "--";
 
     const asOf = formatAsOf(
       firstString(
@@ -124,16 +182,18 @@
       )
     );
 
-    target.textContent = `Ready Health: ${status} as_of: ${asOf}`;
+    setHealthText(status, asOf);
   }
 
   async function initLayout() {
+    ensureLayoutStateFlag();
     mountSharedLayout();
+    markLayoutReady();
     await updateGlobalHealth();
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initLayout);
+    document.addEventListener("DOMContentLoaded", initLayout, { once: true });
   } else {
     initLayout();
   }
