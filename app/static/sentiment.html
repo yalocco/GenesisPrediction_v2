@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sentiment - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260308-ui8" />
-  <script src="/static/common/global_status.js?v=20260308-ui8"></script>
+  <link rel="stylesheet" href="/static/app.css?v=20260312-ui-sentiment-final1" />
+  <script src="/static/common/global_status.js?v=20260312-ui-sentiment-final1"></script>
   <style>
     body{margin:0;}
 
@@ -322,6 +322,8 @@
       display:flex;
       align-items:center;
       justify-content:center;
+      color:rgba(255,255,255,.72);
+      font-size:18px;
     }
 
     .thumb img{
@@ -355,6 +357,13 @@
     .mPos{border-color:rgba(120,255,200,.32);background:rgba(120,255,200,.10);}
     .mUnc{border-color:rgba(255,220,120,.34);background:rgba(255,220,120,.10);}
     .mNet{border-color:rgba(160,140,255,.32);background:rgba(160,140,255,.10);}
+
+    .emptyRow{
+      text-align:center;
+      padding:22px 16px;
+      opacity:.78;
+      line-height:1.7;
+    }
 
     @media (max-width:1100px){
       .kpiGrid{grid-template-columns:repeat(2,minmax(0,1fr));}
@@ -475,7 +484,7 @@
                 </label>
               </div>
 
-              <div class="debugBox" id="dbg">loading…</div>
+              <div class="debugBox" id="dbg">loading...</div>
             </div>
 
             <div class="card trendCardMain">
@@ -545,7 +554,7 @@
 
   <div id="site-footer"></div>
 
-  <script src="/static/common/layout.js?v=20260308-ui8"></script>
+  <script src="/static/common/layout.js?v=20260312-ui-final4"></script>
   <script>
     (function(){
       "use strict";
@@ -564,7 +573,7 @@
 
       function safeSetHref(id, href){
         var el = $(id);
-        if(el) el.setAttribute("href", href);
+        if(el) el.setAttribute("href", href || "#");
       }
 
       function setLocalPill(id, mode, text){
@@ -601,7 +610,9 @@
         if(Array.isArray(root.items)) return root.items;
         if(Array.isArray(root.articles)) return root.articles;
         if(Array.isArray(root.rows)) return root.rows;
+        if(root.today && Array.isArray(root.today.items)) return root.today.items;
         if(root.yesterday_summary && Array.isArray(root.yesterday_summary.items)) return root.yesterday_summary.items;
+        if(root.sentiment_summary && Array.isArray(root.sentiment_summary.items)) return root.sentiment_summary.items;
         return [];
       }
 
@@ -640,6 +651,50 @@
           unc: unc,
           net: net
         };
+      }
+
+      function deriveOverview(root, items){
+        root = root || {};
+        items = items || [];
+
+        var today = root.today || {};
+        var summary = root.summary || {};
+        var sentSummary = root.sentiment_summary || {};
+
+        var out = {
+          asOf: safeText(root.as_of || root.date || root.base || root.base_date || "").slice(0, 10) || "-",
+          risk: NaN,
+          pos: NaN,
+          unc: NaN,
+          articles: 0
+        };
+
+        if(items.length){
+          var r = 0, p = 0, u = 0;
+          items.forEach(function(it){
+            r += Number(it.risk) || 0;
+            p += Number(it.pos) || 0;
+            u += Number(it.unc) || 0;
+          });
+          out.risk = r / items.length;
+          out.pos = p / items.length;
+          out.unc = u / items.length;
+          out.articles = items.length;
+          return out;
+        }
+
+        out.risk = Number(pickFirst(today, ["risk","risk_score","riskAvg","risk_mean"]));
+        out.pos = Number(pickFirst(today, ["positive","pos","positive_score","pos_score"]));
+        out.unc = Number(pickFirst(today, ["uncertainty","unc","uncertainty_score","unc_score"]));
+        out.articles = Number(pickFirst(today, ["articles","count","items"])) || 0;
+
+        if(!isFinite(out.risk)) out.risk = Number(pickFirst(sentSummary, ["risk","risk_score"]));
+        if(!isFinite(out.pos)) out.pos = Number(pickFirst(sentSummary, ["positive","pos"]));
+        if(!isFinite(out.unc)) out.unc = Number(pickFirst(sentSummary, ["uncertainty","unc"]));
+        if(!out.articles) out.articles = Number(pickFirst(sentSummary, ["articles","count","items"])) || 0;
+        if(!out.articles) out.articles = Number(pickFirst(summary, ["count","articles","items"])) || 0;
+
+        return out;
       }
 
       function guessFaviconFromUrl(url){
@@ -746,6 +801,16 @@
         });
       }
 
+      function makeFlatSeriesFromOverview(asOf, risk, pos, unc){
+        if(!asOf || asOf === "-") return [];
+        return [{
+          date: asOf,
+          risk: clamp01(risk),
+          pos: clamp01(pos),
+          unc: clamp01(unc)
+        }];
+      }
+
       function drawCombined(canvas, series){
         var ctx = canvas.getContext("2d");
         var ratio = window.devicePixelRatio || 1;
@@ -776,7 +841,7 @@
         safeSetText("uncNow", fmt3(last.unc));
 
         function xAt(i){
-          if(series.length <= 1) return 10;
+          if(series.length <= 1) return 10 + ((w - 20) / 2);
           return 10 + (w - 20) * (i / (series.length - 1));
         }
 
@@ -793,11 +858,13 @@
             if(j === 0) ctx.moveTo(xx, yy);
             else ctx.lineTo(xx, yy);
           }
-          ctx.lineTo(w - 10, h - 10);
-          ctx.lineTo(10, h - 10);
-          ctx.closePath();
-          ctx.fillStyle = fill;
-          ctx.fill();
+          if(series.length > 1){
+            ctx.lineTo(w - 10, h - 10);
+            ctx.lineTo(10, h - 10);
+            ctx.closePath();
+            ctx.fillStyle = fill;
+            ctx.fill();
+          }
 
           ctx.beginPath();
           for(var k = 0; k < series.length; k++){
@@ -809,6 +876,15 @@
           ctx.strokeStyle = stroke;
           ctx.lineWidth = 2 * ratio;
           ctx.stroke();
+
+          if(series.length === 1){
+            var dotX = xAt(0);
+            var dotY = yAt(pick(series[0]));
+            ctx.beginPath();
+            ctx.arc(dotX, dotY, 4 * ratio, 0, Math.PI * 2);
+            ctx.fillStyle = stroke;
+            ctx.fill();
+          }
         }
 
         drawOne(function(x){ return x.risk; }, "rgba(255,120,120,.95)", "rgba(255,120,120,.08)");
@@ -885,6 +961,17 @@
         var tbody = $("rows");
         tbody.innerHTML = "";
 
+        if(!arr.length){
+          var trEmpty = document.createElement("tr");
+          var tdEmpty = document.createElement("td");
+          tdEmpty.colSpan = 4;
+          tdEmpty.className = "emptyRow";
+          tdEmpty.innerHTML = "No article items in sentiment_latest.json.<br>JSON summary is loaded, but per-article rows are empty.";
+          trEmpty.appendChild(tdEmpty);
+          tbody.appendChild(trEmpty);
+          return;
+        }
+
         arr.forEach(function(it){
           var tr = document.createElement("tr");
 
@@ -892,16 +979,22 @@
           var dv = document.createElement("div");
           dv.className = "thumb";
 
-          var img = document.createElement("img");
-          img.loading = "lazy";
-          img.referrerPolicy = "no-referrer";
-          img.alt = "";
-          img.src = it.urlToImage || guessFaviconFromUrl(it.url);
-          img.onerror = function(){
-            var fb = guessFaviconFromUrl(it.url);
-            if(fb && img.src !== fb) img.src = fb;
-          };
-          dv.appendChild(img);
+          if(it.urlToImage || it.url){
+            var img = document.createElement("img");
+            img.loading = "lazy";
+            img.referrerPolicy = "no-referrer";
+            img.alt = "";
+            img.src = it.urlToImage || guessFaviconFromUrl(it.url);
+            img.onerror = function(){
+              var fb = guessFaviconFromUrl(it.url);
+              if(fb && img.src !== fb) img.src = fb;
+              else dv.textContent = "•";
+            };
+            dv.appendChild(img);
+          }else{
+            dv.textContent = "•";
+          }
+
           td0.appendChild(dv);
           tr.appendChild(td0);
 
@@ -974,7 +1067,8 @@
         tsPath: "-",
         items: [],
         series: [],
-        asOf: "-"
+        asOf: "-",
+        overview: null
       };
 
       function updateDebug(text){
@@ -982,12 +1076,14 @@
       }
 
       function updateLocalPills(){
-        var readyMode = (state.items && state.items.length) ? "good" : "";
+        var itemsMode = (state.items && state.items.length) ? "good" : "warn";
         var asofMode = (state.asOf && state.asOf !== "-") ? "good" : "";
+        var trendMode = (state.series && state.series.length) ? "good" : "warn";
+
         setLocalPill("localPillAsOf", asofMode, "as_of: " + (state.asOf || "-"));
-        setLocalPill("localPillItems", readyMode, "items: " + String(state.items ? state.items.length : 0));
-        setLocalPill("localPillRendered", readyMode, "rendered: " + ($("renderedN") ? $("renderedN").textContent : "--"));
-        setLocalPill("localPillTrend", (state.series && state.series.length) ? "good" : "", "trend_points: " + String(state.series ? state.series.length : 0));
+        setLocalPill("localPillItems", itemsMode, "items: " + String(state.items ? state.items.length : 0));
+        setLocalPill("localPillRendered", itemsMode, "rendered: " + ($("renderedN") ? $("renderedN").textContent : "--"));
+        setLocalPill("localPillTrend", trendMode, "trend_points: " + String(state.series ? state.series.length : 0));
       }
 
       function drawAll(){
@@ -999,33 +1095,18 @@
 
         return fetchJsonFirst(SENT_JSON_CAND).then(function(res){
           state.sentPath = res.path;
-          var root = res.json;
+          var root = res.json || {};
           var items = normalizeItems(root).map(normalizeOne);
           state.items = items;
 
-          var asof = safeText(root.as_of || root.date || root.asof || "").slice(0,10);
-          if(!asof && items.length){
-            var d = items.map(function(x){ return (x.publishedAt || "").slice(0,10); }).filter(Boolean).sort().pop();
-            asof = d || "-";
-          }
-          state.asOf = asof || "-";
+          var overview = deriveOverview(root, items);
+          state.overview = overview;
+          state.asOf = overview.asOf || "-";
+
           safeSetText("kAsOf", state.asOf);
-
-          var avgRisk = 0, avgPos = 0, avgUnc = 0;
-          if(items.length){
-            items.forEach(function(it){
-              avgRisk += it.risk;
-              avgPos += it.pos;
-              avgUnc += it.unc;
-            });
-            avgRisk /= items.length;
-            avgPos /= items.length;
-            avgUnc /= items.length;
-          }
-
-          $("kRisk").textContent = fmt3(avgRisk);
-          $("kPos").textContent = fmt3(avgPos);
-          $("kUnc").textContent = fmt3(avgUnc);
+          safeSetText("kRisk", fmt3(overview.risk));
+          safeSetText("kPos", fmt3(overview.pos));
+          safeSetText("kUnc", fmt3(overview.unc));
 
           safeSetText("kSrc", state.sentPath);
           safeSetText("kSrcInline", state.sentPath);
@@ -1041,6 +1122,7 @@
 
             var series = parseTimeseriesCsv(ts.text);
             if(!series.length) series = aggregateFromItems(items);
+            if(!series.length) series = makeFlatSeriesFromOverview(state.asOf, overview.risk, overview.pos, overview.unc);
             state.series = series;
 
             render(items);
@@ -1060,7 +1142,8 @@
               "debug: ok\n" +
               "sentiment: " + state.sentPath + "\n" +
               "trend: " + state.tsPath + "\n" +
-              "items=" + items.length + " trend_points=" + series.length
+              "items=" + items.length + " trend_points=" + series.length + "\n" +
+              "today.articles=" + (overview.articles || 0)
             );
           }).catch(function(){
             state.tsPath = "(missing)";
@@ -1070,6 +1153,7 @@
             safeSetHref("btnOpenTSTop", "#");
 
             var series2 = aggregateFromItems(items);
+            if(!series2.length) series2 = makeFlatSeriesFromOverview(state.asOf, overview.risk, overview.pos, overview.unc);
             state.series = series2;
 
             render(items);
@@ -1088,14 +1172,16 @@
             updateDebug(
               "debug: ok (trend fallback)\n" +
               "sentiment: " + state.sentPath + "\n" +
-              "trend: (fallback from items)\n" +
-              "items=" + items.length + " trend_points=" + series2.length
+              "trend: (fallback)\n" +
+              "items=" + items.length + " trend_points=" + series2.length + "\n" +
+              "today.articles=" + (overview.articles || 0)
             );
           });
         }).catch(function(e){
           state.items = [];
           state.series = [];
           state.asOf = "-";
+          state.overview = null;
           updateDebug("failed to load sentiment: " + safeText(e && e.message));
           updateLocalPills();
           drawAll();

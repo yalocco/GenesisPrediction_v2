@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Overlay - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260312-ui-theme-final3" />
-  <script src="/static/common/global_status.js?v=20260312-ui-theme-final3"></script>
+  <link rel="stylesheet" href="/static/app.css?v=20260312-ui-theme-final4" />
+  <script src="/static/common/global_status.js?v=20260312-ui-theme-final4"></script>
   <style>
     .overlay-hero{margin-bottom:14px;}
     .overlay-pills{margin-top:10px;}
@@ -169,8 +169,8 @@
               <div class="status-top">
                 <div class="status-title">Global Status</div>
                 <div class="pillrow">
-                  <span id="pillAsOf" class="pill">as_of: --</span>
-                  <span id="pillReady" class="pill">loading…</span>
+                  <span id="overlayAsOf" class="pill">as_of: --</span>
+                  <span id="overlayReady" class="pill">loading...</span>
                 </div>
               </div>
 
@@ -224,7 +224,7 @@
 
             <div class="pillrow overlay-pills">
               <span id="pairPill" class="pill">pair: JPYTHB</span>
-              <span id="statePill" class="pill">loading…</span>
+              <span id="statePill" class="pill">loading...</span>
               <span id="sourcePill" class="pill">source: --</span>
             </div>
           </div>
@@ -267,7 +267,7 @@
                 <span id="srcDecision" class="pill">source: --</span>
               </div>
 
-              <div id="pairNote" class="overlay-note mono small">Loading pair status…</div>
+              <div id="pairNote" class="overlay-note mono small">Loading pair status...</div>
             </div>
 
             <div class="card overlay-card">
@@ -293,7 +293,7 @@
 
   <div id="site-footer"></div>
 
-  <script src="/static/common/layout.js?v=20260312-ui-theme-final3"></script>
+  <script src="/static/common/layout.js?v=20260312-ui-final4"></script>
   <script>
     (function(){
       "use strict";
@@ -421,6 +421,7 @@
 
         setText("pairPill", "pair: " + conf.pairLabel);
         setText("pairNote", conf.note);
+        setText("overlayReady", "loading...");
 
         var imagePicked = await pickFirstImage(conf.imgCandidates);
         if(imagePicked){
@@ -459,11 +460,19 @@
         }
 
         try{
-          await window.GPGlobalStatus.load({
+          var gs = await window.GPGlobalStatus.load({
             fxDecisionCandidates: conf.decisionCandidates
           });
+
+          if(gs && gs.updated){
+            setText("overlayAsOf", "as_of: " + gs.updated);
+          }else{
+            setText("overlayAsOf", "as_of: --");
+          }
+
+          setText("overlayReady", "Ready");
         }catch(e){
-          setText("pillReady", "Error");
+          setText("overlayReady", "Error");
           console.warn(e);
         }
       }

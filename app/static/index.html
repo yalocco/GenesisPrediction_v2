@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Home - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260312-ui-theme-final3" />
-  <script src="/static/common/global_status.js?v=20260312-ui-theme-final3"></script>
+  <link rel="stylesheet" href="/static/app.css?v=20260312-ui-final4" />
+  <script src="/static/common/global_status.js?v=20260312-ui-final4"></script>
   <style>
     .home-hero{margin-bottom:14px;}
     .status-shell{
@@ -121,8 +121,8 @@
               <div class="status-top">
                 <div class="status-title">Global Status</div>
                 <div class="pillrow">
-                  <span id="pillAsOf" class="pill">as_of: --</span>
-                  <span id="pillReady" class="pill">loading…</span>
+                  <span id="pillAsOfLocal" class="pill">as_of: --</span>
+                  <span id="pillReadyLocal" class="pill">loading…</span>
                 </div>
               </div>
 
@@ -235,7 +235,7 @@
 
   <div id="site-footer"></div>
 
-  <script src="/static/common/layout.js?v=20260312-ui-theme-final3"></script>
+  <script src="/static/common/layout.js?v=20260312-ui-final4"></script>
   <script>
     (function(){
       "use strict";
@@ -269,6 +269,11 @@
           if(typeof v === "string" && v.trim()) return v.trim();
         }
         return "";
+      }
+
+      function shortDate(value){
+        if(!value) return "--";
+        return String(value).slice(0, 10);
       }
 
       function renderKV(obj){
@@ -386,6 +391,17 @@
           var summary = gs.summary;
           var articles = gs.articles;
 
+          var localAsOf = firstString(
+            gs && gs.updated,
+            summary && (summary.generated_at || summary.as_of || summary.date),
+            vm && (vm.updated_at || vm.as_of || vm.date),
+            health && (health.date || health.as_of),
+            sentiment && (sentiment.date || sentiment.as_of)
+          );
+
+          setText("pillAsOfLocal", "as_of: " + shortDate(localAsOf || "--"));
+          setText("pillReadyLocal", "Ready");
+
           if(vm){
             setText("evHint", "OK");
             setText("evBody", renderKV(vm).slice(0, 1400));
@@ -403,6 +419,7 @@
           }else{
             setText("healthHint", "missing");
             setText("healthBody", "health_latest.json not available.");
+            setText("pillReadyLocal", "No data");
           }
 
           if(sentiment){
@@ -429,7 +446,7 @@
           setText("kpiSentimentItems", sentiment && Array.isArray(sentiment.items) ? String(sentiment.items.length) : (articles != null ? String(articles) : "—"));
           setText("kpiSummaryState", summary ? "OK" : "MISS");
         }catch(e){
-          setText("pillReady", "Error");
+          setText("pillReadyLocal", "Error");
           console.warn(e);
         }
       }

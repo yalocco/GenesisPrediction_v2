@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Digest - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260308-ui10" />
-  <script src="/static/common/global_status.js?v=20260308-ui10"></script>
+  <link rel="stylesheet" href="/static/app.css?v=20260312-ui-final4" />
+  <script src="/static/common/global_status.js?v=20260312-ui-final4"></script>
   <style>
     .digest-hero{margin-bottom:14px;}
 
@@ -447,7 +447,7 @@
 
   <div id="site-footer"></div>
 
-  <script src="/static/common/layout.js?v=20260308-ui10"></script>
+  <script src="/static/common/layout.js?v=20260312-ui-final4"></script>
   <script>
     (function(){
       "use strict";
@@ -512,6 +512,10 @@
         }catch(_e){
           return String(value);
         }
+      }
+      function shortDate(value){
+        if(!value) return "--";
+        return String(value).slice(0, 10);
       }
       function escapeHtml(value){
         return String(value == null ? "" : value)
@@ -726,6 +730,16 @@
           });
         });
       }
+      function resolveDigestLocalAsOf(digest, summaryData){
+        return firstDefined(
+          summaryData && summaryData.generated_at,
+          summaryData && summaryData.as_of,
+          summaryData && summaryData.date,
+          digest && digest.updated_at,
+          digest && digest.as_of,
+          digest && digest.date
+        );
+      }
       function applyStatus(summary, articleCount, digest, summaryData){
         var risk = riskLabelFromValue(firstDefined(summary.risk, summary.global_risk, digest && digest.global_risk));
         setText("gsRisk", risk.text);
@@ -741,15 +755,12 @@
         setText("gsArticles", String(articleCount));
         setText("gsArticlesSub", state.sourceMode === 'digest' ? 'digest latest' : (state.sourceMode === 'news-fallback' ? 'fallback news' : 'no data'));
 
-        var updated = firstDefined(digest && digest.updated_at, digest && digest.as_of, digest && digest.date, summaryData && summaryData.generated_at, summaryData && summaryData.as_of);
-        setText("gsUpdated", textOr(updated ? String(updated).slice(0, 10) : null, "—"));
-        setText("gsUpdatedSub", textOr(state.digestPath, 'latest runtime stamp'));
+        var updated = resolveDigestLocalAsOf(digest, summaryData);
+        setText("gsUpdated", textOr(updated ? shortDate(updated) : null, "—"));
+        setText("gsUpdatedSub", textOr(state.summaryPath, state.digestPath, 'latest runtime stamp'));
 
-        var asOf = textOr(firstDefined(digest && digest.as_of, digest && digest.date, summaryData && summaryData.as_of, summaryData && summaryData.date), '--');
-        setText("pillAsOfLocal", 'as_of: ' + asOf);
+        setText("pillAsOfLocal", 'as_of: ' + shortDate(updated || "--"));
         setText("pillReadyLocal", articleCount ? 'Ready' : 'No data');
-        if($('pillAsOf')) $('pillAsOf').textContent = 'as_of: ' + asOf;
-        if($('pillReady')) $('pillReady').textContent = articleCount ? 'Ready' : 'No data';
       }
       async function init(){
         wireToolbar();

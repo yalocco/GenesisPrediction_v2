@@ -130,9 +130,15 @@
       return { label: "—", detail: "fx decision missing" };
     }
 
+    var reasons = "";
+    if(Array.isArray(fx.fx_reasons) && fx.fx_reasons.length){
+      reasons = fx.fx_reasons.join(" / ");
+    }
+
     var label = firstString(
       fx.regime,
       fx.decision,
+      fx.fx_decision,
       fx.action,
       fx.status,
       fx.recommendation
@@ -140,6 +146,7 @@
 
     var detail = firstString(
       fx.reason,
+      reasons,
       fx.rationale,
       fx.message,
       fx.note
@@ -175,14 +182,14 @@
 
   function normalizeUpdated(vm, summary, sentiment, health){
     return firstString(
-      vm && vm.date,
-      vm && vm.as_of,
       summary && summary.date,
       summary && summary.as_of,
       sentiment && sentiment.date,
       sentiment && sentiment.as_of,
       health && health.date,
-      health && health.as_of
+      health && health.as_of,
+      vm && vm.date,
+      vm && vm.as_of
     ) || "--";
   }
 
@@ -195,12 +202,12 @@
         "/data/world_politics/analysis/view_model_latest.json"
       ],
       health: opts.healthCandidates || [
-        "/data/digest/health_latest.json",
-        "/data/world_politics/analysis/health_latest.json"
+        "/data/world_politics/analysis/health_latest.json",
+        "/data/digest/health_latest.json"
       ],
       summary: opts.summaryCandidates || [
-        "/data/digest/daily_summary_latest.json",
-        "/data/world_politics/analysis/daily_summary_latest.json"
+        "/data/world_politics/analysis/daily_summary_latest.json",
+        "/data/digest/daily_summary_latest.json"
       ],
       sentiment: opts.sentimentCandidates || [
         "/data/world_politics/analysis/sentiment_latest.json",
@@ -230,7 +237,6 @@
     var fxRegime = normalizeFxRegime(fxDecision);
     var articles = normalizeArticles(vm, sentiment);
 
-    setText("pillAsOf", "as_of: " + updated);
     setText("pillReady", "Ready");
 
     setText("gsRisk", riskLevel);
@@ -250,10 +256,10 @@
     setText(
       "gsUpdatedSub",
       firstString(
-        vmRes && vmRes.url,
         sumRes && sumRes.url,
         senRes && senRes.url,
         healthRes && healthRes.url,
+        vmRes && vmRes.url,
         fxRes && fxRes.url
       ) || "runtime latest"
     );

@@ -72,9 +72,11 @@
 
   function applyActiveNav(activeKey) {
     const links = document.querySelectorAll(".nav-link[data-page]");
+
     links.forEach(function (link) {
       const key = (link.getAttribute("data-page") || "").trim();
       const isActive = key === activeKey;
+
       link.classList.toggle("active", isActive);
 
       if (isActive) {
@@ -93,14 +95,15 @@
 
     mountIntoTarget(headerTarget, HEADER_HTML);
     mountIntoTarget(footerTarget, FOOTER_HTML);
-
     applyActiveNav(activeKey);
   }
 
   async function fetchJson(url) {
     try {
       const res = await fetch(url, { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        throw new Error("HTTP " + res.status);
+      }
       return await res.json();
     } catch (_err) {
       return null;
@@ -109,22 +112,64 @@
 
   function firstString() {
     for (let i = 0; i < arguments.length; i += 1) {
-      const v = arguments[i];
-      if (typeof v === "string" && v.trim()) return v.trim();
+      const value = arguments[i];
+      if (typeof value === "string" && value.trim()) {
+        return value.trim();
+      }
     }
     return "";
+  }
+
+  function normalizeHealthStatus(health) {
+    if (!health || typeof health !== "object") {
+      return "--";
+    }
+
+    const raw =
+      firstString(
+        health.status,
+        health.overall,
+        health.state,
+        health.health
+      ) || "--";
+
+    const lower = raw.toLowerCase();
+
+    if (lower === "ok" || lower === "ready" || lower === "healthy") {
+      return "OK";
+    }
+
+    if (lower === "warn" || lower === "warning") {
+      return "WARN";
+    }
+
+    if (lower === "error" || lower === "failed" || lower === "critical") {
+      return "ERROR";
+    }
+
+    return raw;
   }
 
   function formatAsOf(value) {
     if (!value) return "--";
 
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return String(value);
+    const text = String(value).trim();
+    if (!text) return "--";
+
+    const m = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) {
+      return `${m[1]}-${m[2]}-${m[3]}`;
+    }
+
+    const d = new Date(text);
+    if (Number.isNaN(d.getTime())) {
+      return text;
+    }
 
     const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const da = String(d.getDate()).padStart(2, "0");
+    return `${y}-${mo}-${da}`;
   }
 
   function setHealthText(status, asOf) {
@@ -156,23 +201,14 @@
   async function updateGlobalHealth() {
     setHealthText("--", "--");
 
-    const health =
-      await fetchJson("/analysis/health_latest.json") ||
-      await fetchJson("/data/digest/health_latest.json");
+    const health = await fetchJson("/analysis/health_latest.json");
 
     if (!health) {
       setHealthText("--", "--");
       return;
     }
 
-    const status =
-      firstString(
-        health.status,
-        health.overall,
-        health.state,
-        health.health
-      ) || "--";
-
+    const status = normalizeHealthStatus(health);
     const asOf = formatAsOf(
       firstString(
         health.as_of,
