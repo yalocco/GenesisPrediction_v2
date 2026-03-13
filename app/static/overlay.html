@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Overlay - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260313-overlay-economic1" />
-  <script src="/static/common/global_status.js?v=20260313-overlay-economic1"></script>
+  <link rel="stylesheet" href="/static/app.css?v=20260313-overlay-analysisfx" />
+  <script src="/static/common/global_status.js?v=20260313-overlay-analysisfx"></script>
   <style>
     .overlay-hero{margin-bottom:14px;}
     .overlay-pills{margin-top:10px;}
@@ -53,7 +53,13 @@
         <div class="h1">Overlay</div>
         <p class="sub">FX decision + remittance overlay + economic signals.</p>
         <div class="status-shell">
-          <div class="status-top"><div class="status-title">Global Status</div><div class="pillrow"><span id="overlayAsOf" class="pill">as_of: --</span><span id="overlayReady" class="pill">loading...</span></div></div>
+          <div class="status-top">
+            <div class="status-title">Global Status</div>
+            <div class="pillrow">
+              <span id="overlayAsOf" class="pill">as_of: --</span>
+              <span id="overlayReady" class="pill">loading...</span>
+            </div>
+          </div>
           <div class="status-grid">
             <div class="status-item"><div class="status-label">Global Risk</div><div id="gsRisk" class="status-value risk-missing">—</div><div id="gsRiskSub" class="status-sub">daily summary / sentiment</div></div>
             <div class="status-item"><div class="status-label">Sentiment Balance</div><div id="gsSentiment" class="status-value">—</div><div id="gsSentimentSub" class="status-sub">article distribution</div></div>
@@ -67,55 +73,380 @@
           <div class="overlay-kpi"><div class="hint">Image</div><div id="imageStateKpi" class="value">—</div></div>
           <div class="overlay-kpi"><div class="hint">Decision JSON</div><div id="jsonStateKpi" class="value">—</div></div>
         </div>
-        <div class="pillrow overlay-pills"><span id="pairPill" class="pill">pair: JPYTHB</span><span id="statePill" class="pill">loading...</span><span id="sourcePill" class="pill">source: --</span></div>
+        <div class="pillrow overlay-pills">
+          <span id="pairPill" class="pill">pair: JPYTHB</span>
+          <span id="statePill" class="pill">loading...</span>
+          <span id="sourcePill" class="pill">source: --</span>
+        </div>
       </div>
+
       <div class="grid2" style="margin-top:12px;">
         <div class="card overlay-card">
           <div class="sectionTitle"><h2>Controls</h2></div>
           <div style="display:flex; gap:12px; align-items:end; flex-wrap:wrap; margin-top:10px;">
-            <div style="min-width:240px;"><div class="hint" style="margin-bottom:6px;">Pair</div><select id="pair" class="select" style="width:240px;"><option value="JPYTHB">JPYTHB</option><option value="USDJPY">USDJPY</option><option value="USDTHB">USDTHB</option><option value="MULTI">MULTI</option></select></div>
-            <div class="pillrow"><a id="btnOpenDecision" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open decision JSON</a></div>
+            <div style="min-width:240px;">
+              <div class="hint" style="margin-bottom:6px;">Pair</div>
+              <select id="pair" class="select" style="width:240px;">
+                <option value="JPYTHB">JPYTHB</option>
+                <option value="USDJPY">USDJPY</option>
+                <option value="USDTHB">USDTHB</option>
+                <option value="MULTI">MULTI</option>
+              </select>
+            </div>
+            <div class="pillrow">
+              <a id="btnOpenDecision" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open decision JSON</a>
+            </div>
           </div>
-          <div class="overlay-meta"><div><div class="hint">Decision</div><div id="decision" class="mono">—</div></div><div><div class="hint">Reason</div><div id="reason" class="mono small">—</div></div></div>
-          <div class="pillrow" style="margin-top:12px;"><span id="srcDecision" class="pill">source: --</span></div>
+          <div class="overlay-meta">
+            <div><div class="hint">Decision</div><div id="decision" class="mono">—</div></div>
+            <div><div class="hint">Reason</div><div id="reason" class="mono small">—</div></div>
+          </div>
+          <div class="pillrow" style="margin-top:12px;">
+            <span id="srcDecision" class="pill">source: --</span>
+          </div>
           <div id="pairNote" class="overlay-note mono small">Loading pair status...</div>
         </div>
-        <div class="card overlay-card"><div class="sectionTitle"><h2>FX Overlay</h2><span class="hint">image preview</span></div><div class="pillrow" style="margin-top:10px;"><a id="btnOpenImage" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open image</a><span id="srcImage" class="pill">source: --</span></div><div class="overlay-img-frame"><img id="img" alt="FX overlay" /></div></div>
+
+        <div class="card overlay-card">
+          <div class="sectionTitle"><h2>FX Overlay</h2><span class="hint">image preview</span></div>
+          <div class="pillrow" style="margin-top:10px;">
+            <a id="btnOpenImage" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open image</a>
+            <span id="srcImage" class="pill">source: --</span>
+          </div>
+          <div class="overlay-img-frame"><img id="img" alt="FX overlay" /></div>
+        </div>
       </div>
+
       <div class="card signals-wrap">
         <div class="sectionTitle"><h2>Economic Signals</h2><span id="signalsHint" class="hint">world/economy article cards</span></div>
-        <div class="signals-toolbar"><div class="pillrow"><span id="signalsCount" class="pill">signals: --</span><span id="signalsSource" class="pill">source: --</span></div><div class="pillrow"><a id="btnOpenSignalsJson" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open source JSON</a></div></div>
+        <div class="signals-toolbar">
+          <div class="pillrow">
+            <span id="signalsCount" class="pill">signals: --</span>
+            <span id="signalsSource" class="pill">source: --</span>
+          </div>
+          <div class="pillrow">
+            <a id="btnOpenSignalsJson" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open source JSON</a>
+          </div>
+        </div>
         <div id="signalsEmpty" class="signals-empty">Economic signal articles are not available. world_view_model_latest.json を確認してください。</div>
         <div id="signalsGrid" class="signals-grid"></div>
       </div>
     </section></div></main>
   </div>
+
   <div id="site-footer"></div>
-  <script src="/static/common/layout.js?v=20260313-overlay-economic1"></script>
+  <script src="/static/common/layout.js?v=20260313-overlay-analysisfx"></script>
   <script>
     (function(){"use strict";
-      function safeText(x){return (x == null) ? "" : String(x);} function setText(id,v){var el=document.getElementById(id); if(el) el.textContent=safeText(v);} function setHref(id,v){var el=document.getElementById(id); if(el) el.href=v||"#";} function setImg(id,v){var el=document.getElementById(id); if(el) el.src=v||"";}
-      function escapeHtml(value){return String(value == null ? "" : value).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;").replace(/'/g,"&#39;");}
-      async function urlExists(url){try{var r=await fetch(url+(url.indexOf("?")>=0?"&":"?")+"_t="+Date.now(),{method:"HEAD",cache:"no-store"}); return r.ok;}catch(_e){return false;}}
-      async function pickFirstImage(urls){for(var i=0;i<urls.length;i++){var u=urls[i]; try{var ok=await urlExists(u); if(ok) return {url:u};}catch(_e){}} return null;}
-      async function pickFirstJson(urls){ if(window.GPGlobalStatus && window.GPGlobalStatus.pickFirstOk){ return await window.GPGlobalStatus.pickFirstOk(urls).then(function(res){ if(!res) return null; return {url:res.url,data:res.json};}); } for(var i=0;i<urls.length;i++){var u=urls[i]; try{var r=await fetch(u+(u.indexOf("?")>=0?"&":"?")+"_t="+Date.now(),{cache:"no-store"}); if(r.ok) return {url:u,data:await r.json()};}catch(_e){}} return null; }
-      function extractDecision(obj){ if(!obj){return {decision:"—",reason:"Decision JSON not available."};} var d=obj.decision||obj.action||obj.status||obj.recommendation||obj.fx_decision||"—"; var r=obj.reason||obj.rationale||obj.message||obj.note||""; if(!r && Array.isArray(obj.fx_reasons) && obj.fx_reasons.length) r=obj.fx_reasons[0]; return {decision:safeText(d).toUpperCase(), reason:safeText(r)||"Decision JSON loaded, but no reason field was found."}; }
-      var MAP={JPYTHB:{pairLabel:"JPYTHB",imgCandidates:["/data/fx/fx_overlay_latest_jpythb.png","/data/fx/jpy_thb_remittance_overlay.png","/data/fx/fx_jpy_thb_overlay.png"],decisionCandidates:["/data/fx/fx_decision_latest_jpythb.json","/data/fx/fx_decision_latest.json"],note:"Primary files exist in current FX lane. Remittance overlay should usually render."},USDJPY:{pairLabel:"USDJPY",imgCandidates:["/data/fx/fx_overlay_latest_usdjpy.png","/data/fx/fx_jpy_usd_overlay.png"],decisionCandidates:["/data/fx/fx_decision_latest_usdjpy.json","/data/fx/fx_decision_latest.json"],note:"USDJPY uses existing latest overlay image. Pair-specific decision may fall back to global decision JSON."},USDTHB:{pairLabel:"USDTHB",imgCandidates:["/data/fx/fx_overlay_latest_usdthb.png","/data/fx/fx_multi_usd_thb_overlay.png"],decisionCandidates:["/data/fx/fx_decision_latest_usdthb.json","/data/fx/fx_decision_latest.json"],note:"USDTHB pair-specific latest files are not present yet. This page falls back to existing multi overlay image and global decision JSON when available."},MULTI:{pairLabel:"MULTI",imgCandidates:["/data/fx/fx_overlay_multi_latest.png","/data/fx/fx_multi_overlay.png"],decisionCandidates:["/data/fx/fx_decision_latest_multi.json","/data/fx/fx_decision_latest.json"],note:"Multi overlay uses shared aggregate image. Pair-specific decision may not exist."}};
-      var SIGNALS_CANDIDATES=["/analysis/world_view_model_latest.json","/analysis/view_model_latest.json","/data/world_politics/analysis/view_model_latest.json","/data/digest/view/view_model_latest.json","/data/digest/view_model_latest.json"];
-      var ECONOMY_KEYWORDS=["inflation","interest","rate","rates","central bank","fed","ecb","boj","fomc","economy","economic","gdp","recession","debt","yield","bond","treasury","trade","tariff","sanction","sanctions","oil","gas","energy","price","prices","market","markets","currency","currencies","forex","fx","export","import","shipping","supply","shortage","reserve","reserves","stimulus","banking","manufacturing"];
-      function scoreEconomicSignal(card){ var text=[safeText(card.title),safeText(card.summary),safeText(card.source)].join(" ").toLowerCase(); var score=0; for(var i=0;i<ECONOMY_KEYWORDS.length;i++){ if(text.indexOf(ECONOMY_KEYWORDS[i])>=0) score+=1; } if(text.indexOf("oil")>=0||text.indexOf("energy")>=0||text.indexOf("gas")>=0) score+=2; if(text.indexOf("inflation")>=0||text.indexOf("interest")>=0||text.indexOf("fed")>=0||text.indexOf("boj")>=0) score+=2; if(text.indexOf("trade")>=0||text.indexOf("sanction")>=0||text.indexOf("tariff")>=0) score+=1; return score; }
-      function normalizeSignalCard(card){ card=card||{}; return {title:safeText(card.title||card.headline||"Untitled"), summary:safeText(card.summary||card.description||"Summary not available."), source:safeText(card.source||card.publisher||"Unknown source"), url:safeText(card.url||card.link||"#")||"#", image:safeText(card.image||card.urlToImage||card.thumbnail||""), score:scoreEconomicSignal(card)}; }
-      function classifySignal(card){ var text=(card.title+" "+card.summary).toLowerCase(); if(text.indexOf("oil")>=0||text.indexOf("gas")>=0||text.indexOf("energy")>=0) return "energy"; if(text.indexOf("trade")>=0||text.indexOf("tariff")>=0||text.indexOf("sanction")>=0) return "trade"; if(text.indexOf("risk")>=0||text.indexOf("war")>=0||text.indexOf("conflict")>=0||text.indexOf("crisis")>=0) return "risk"; return "macro"; }
-      function signalFallback(title){ var text=String(title||"E").trim(); return (text[0]||"E").toUpperCase(); }
-      function signalCardHtml(card){ var cls=classifySignal(card); var safeUrl=card.url && card.url!=="#" ? card.url : "#"; var target=safeUrl==="#" ? "" : ' target="_blank" rel="noopener noreferrer"'; var imageHtml=card.image ? '<img src="'+escapeHtml(card.image)+'" alt="" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';" /><div class="signal-fallback" style="display:none">'+escapeHtml(signalFallback(card.title))+'</div>' : '<div class="signal-fallback">'+escapeHtml(signalFallback(card.title))+'</div>'; return '<article class="signal-card"><div class="signal-thumb">'+imageHtml+'</div><div class="signal-body"><div class="signal-meta"><span class="signal-pill '+escapeHtml(cls)+'">'+escapeHtml(cls)+'</span><span class="signal-pill source">'+escapeHtml(card.source)+'</span><span class="signal-pill score">score '+escapeHtml(String(card.score))+'</span></div><h3 class="signal-title"><a href="'+escapeHtml(safeUrl)+'"'+target+'>'+escapeHtml(card.title)+'</a></h3><p class="signal-summary">'+escapeHtml(card.summary)+'</p></div></article>'; }
-      function extractSignalCards(doc){ var cards=[]; if(doc && Array.isArray(doc.sections)){ for(var i=0;i<doc.sections.length;i++){ var s=doc.sections[i]||{}; if(Array.isArray(s.cards)) cards=cards.concat(s.cards); } } else if(doc && Array.isArray(doc.cards)){ cards=doc.cards.slice(); } return cards.map(normalizeSignalCard).filter(function(card){ return card.score>0; }).sort(function(a,b){ return b.score-a.score; }).slice(0,6); }
-      function renderSignals(cards,src){ var grid=document.getElementById("signalsGrid"), empty=document.getElementById("signalsEmpty"); setText("signalsCount","signals: "+cards.length); setText("signalsSource","source: "+(src||"--")); setHref("btnOpenSignalsJson",src||"#"); if(!cards.length){ if(grid) grid.innerHTML=""; if(empty) empty.style.display="block"; setText("gsArticles","0"); setText("gsArticlesSub","economic signals"); return; } if(empty) empty.style.display="none"; if(grid) grid.innerHTML=cards.map(signalCardHtml).join(""); setText("gsArticles",String(cards.length)); setText("gsArticlesSub","economic signals"); }
-      async function loadSignals(){ var picked=await pickFirstJson(SIGNALS_CANDIDATES); if(!picked){ renderSignals([],null); return; } var cards=extractSignalCards(picked.data||{}); renderSignals(cards,picked.url); }
-      async function loadPair(pair){ var conf=MAP[pair]||MAP.JPYTHB; setText("pairPill","pair: "+conf.pairLabel); setText("pairNote",conf.note); setText("overlayReady","loading..."); var imagePicked=await pickFirstImage(conf.imgCandidates); if(imagePicked){ var imgUrl=imagePicked.url+"?t="+Date.now(); setImg("img",imgUrl); setHref("btnOpenImage",imgUrl); setText("srcImage","source: "+imagePicked.url); setText("imageStateKpi","OK"); } else { setImg("img",""); setHref("btnOpenImage","#"); setText("srcImage","source: missing"); setText("imageStateKpi","MISS"); }
-        var jsonPicked=await pickFirstJson(conf.decisionCandidates); if(jsonPicked){ var ex=extractDecision(jsonPicked.data); setText("decision",ex.decision); setText("reason",ex.reason); setText("decisionKpi",ex.decision); setText("gsFx",ex.decision); setText("gsFxSub",ex.reason); setHref("btnOpenDecision",jsonPicked.url); setText("srcDecision","source: "+jsonPicked.url); setText("jsonStateKpi","OK"); setText("statePill","OK"); setText("sourcePill",conf.pairLabel+" fallback-ready"); } else { setText("decision","—"); setText("reason","Decision JSON not found."); setText("decisionKpi","—"); setText("gsFx","—"); setText("gsFxSub","decision / fallback"); setHref("btnOpenDecision","#"); setText("srcDecision","source: missing"); setText("jsonStateKpi","MISS"); setText("statePill",imagePicked ? "partial" : "missing"); setText("sourcePill",conf.pairLabel+" files missing"); }
-        try{ if(window.GPGlobalStatus && window.GPGlobalStatus.load){ var gs=await window.GPGlobalStatus.load({fxDecisionCandidates:conf.decisionCandidates}); if(gs && gs.updated){ setText("overlayAsOf","as_of: "+gs.updated); } else { setText("overlayAsOf","as_of: --"); } setText("overlayReady","Ready"); } else { setText("overlayReady","Ready"); } }catch(e){ setText("overlayReady","Error"); console.warn(e);} }
-      var sel=document.getElementById("pair"); if(sel){ sel.addEventListener("change",function(){ loadPair(sel.value); }); }
-      loadPair("JPYTHB"); loadSignals();
+
+      function safeText(x){ return (x == null) ? "" : String(x); }
+      function setText(id,v){ var el=document.getElementById(id); if(el) el.textContent=safeText(v); }
+      function setHref(id,v){ var el=document.getElementById(id); if(el) el.href=v||"#"; }
+      function setImg(id,v){ var el=document.getElementById(id); if(el) el.src=v||""; }
+      function escapeHtml(value){
+        return String(value == null ? "" : value)
+          .replace(/&/g,"&amp;")
+          .replace(/</g,"&lt;")
+          .replace(/>/g,"&gt;")
+          .replace(/\"/g,"&quot;")
+          .replace(/'/g,"&#39;");
+      }
+
+      async function urlExists(url){
+        try{
+          var r=await fetch(url+(url.indexOf("?")>=0?"&":"?")+"_t="+Date.now(), {method:"HEAD", cache:"no-store"});
+          return r.ok;
+        }catch(_e){
+          return false;
+        }
+      }
+
+      async function pickFirstImage(urls){
+        for(var i=0;i<urls.length;i++){
+          var u=urls[i];
+          try{
+            var ok=await urlExists(u);
+            if(ok) return {url:u};
+          }catch(_e){}
+        }
+        return null;
+      }
+
+      async function pickFirstJson(urls){
+        if(window.GPGlobalStatus && window.GPGlobalStatus.pickFirstOk){
+          return await window.GPGlobalStatus.pickFirstOk(urls).then(function(res){
+            if(!res) return null;
+            return {url:res.url, data:res.json};
+          });
+        }
+        for(var i=0;i<urls.length;i++){
+          var u=urls[i];
+          try{
+            var r=await fetch(u+(u.indexOf("?")>=0?"&":"?")+"_t="+Date.now(), {cache:"no-store"});
+            if(r.ok) return {url:u, data:await r.json()};
+          }catch(_e){}
+        }
+        return null;
+      }
+
+      function extractDecision(obj){
+        if(!obj){
+          return {decision:"—", reason:"Decision JSON not available."};
+        }
+        var d=obj.state || obj.decision || obj.action || obj.status || obj.recommendation || obj.fx_decision || "—";
+        var r=obj.reason || obj.rationale || obj.message || obj.note || "";
+        if(!r && Array.isArray(obj.fx_reasons) && obj.fx_reasons.length) r=obj.fx_reasons[0];
+        return {
+          decision:safeText(d).toUpperCase(),
+          reason:safeText(r) || "Decision JSON loaded, but no reason field was found."
+        };
+      }
+
+      var MAP = {
+        JPYTHB: {
+          pairLabel:"JPYTHB",
+          imgCandidates:[
+            "/data/world_politics/analysis/fx_jpy_thb_overlay.png",
+            "/analysis/fx_jpy_thb_overlay.png",
+            "/data/world_politics/analysis/jpy_thb_remittance_overlay.png",
+            "/analysis/jpy_thb_remittance_overlay.png",
+            "/data/fx/fx_jpy_thb_overlay.png",
+            "/data/fx/jpy_thb_remittance_overlay.png"
+          ],
+          decisionCandidates:[
+            "/analysis/fx/fx_decision_latest_jpythb.json",
+            "/data/fx/fx_decision_latest_jpythb.json",
+            "/analysis/fx/fx_decision_latest.json",
+            "/data/fx/fx_decision_latest.json"
+          ],
+          note:"JPYTHB prefers the formal published overlay and pair decision under analysis/. Legacy files are fallback only."
+        },
+
+        USDJPY: {
+          pairLabel:"USDJPY",
+          imgCandidates:[
+            "/data/world_politics/analysis/fx_jpy_usd_overlay.png",
+            "/analysis/fx_jpy_usd_overlay.png",
+            "/data/fx/fx_jpy_usd_overlay.png"
+          ],
+          decisionCandidates:[
+            "/analysis/fx/fx_decision_latest_usdjpy.json",
+            "/data/fx/fx_decision_latest_usdjpy.json",
+            "/analysis/fx/fx_decision_latest.json",
+            "/data/fx/fx_decision_latest.json"
+          ],
+          note:"USDJPY prefers the formal published overlay and pair decision under analysis/. Global decision is fallback only."
+        },
+
+        USDTHB: {
+          pairLabel:"USDTHB",
+          imgCandidates:[
+            "/analysis/fx/fx_usd_thb_overlay.png",
+            "/data/world_politics/analysis/fx_usd_thb_overlay.png",
+            "/data/fx/fx_overlay_latest_usdthb.png",
+            "/data/fx/fx_multi_usd_thb_overlay.png",
+            "/data/fx/fx_multi_overlay.png"
+          ],
+          decisionCandidates:[
+            "/analysis/fx/fx_decision_latest_usdthb.json",
+            "/data/fx/fx_decision_latest_usdthb.json",
+            "/analysis/fx/fx_decision_latest.json",
+            "/data/fx/fx_decision_latest.json"
+          ],
+          note:"USDTHB is intentionally not implemented yet. This page falls back to multi overlay imagery and common decision JSON when pair-specific artifacts do not exist."
+        },
+
+        MULTI: {
+          pairLabel:"MULTI",
+          imgCandidates:[
+            "/data/fx/fx_multi_overlay.png",
+            "/data/fx/fx_overlay_multi_latest.png"
+          ],
+          decisionCandidates:[
+            "/analysis/fx/fx_decision_latest_multi.json",
+            "/data/fx/fx_decision_latest_multi.json",
+            "/analysis/fx/fx_decision_latest.json",
+            "/data/fx/fx_decision_latest.json"
+          ],
+          note:"Multi overlay uses the shared aggregate image from the FX lane. Pair-specific decision may not exist."
+        }
+      };
+
+      var SIGNALS_CANDIDATES = [
+        "/analysis/world_view_model_latest.json",
+        "/analysis/view_model_latest.json",
+        "/data/world_politics/analysis/view_model_latest.json",
+        "/data/digest/view/view_model_latest.json",
+        "/data/digest/view_model_latest.json"
+      ];
+
+      var ECONOMY_KEYWORDS = [
+        "inflation","interest","rate","rates","central bank","fed","ecb","boj","fomc","economy","economic","gdp","recession","debt","yield","bond","treasury","trade","tariff","sanction","sanctions","oil","gas","energy","price","prices","market","markets","currency","currencies","forex","fx","export","import","shipping","supply","shortage","reserve","reserves","stimulus","banking","manufacturing"
+      ];
+
+      function scoreEconomicSignal(card){
+        var text=[safeText(card.title),safeText(card.summary),safeText(card.source)].join(" ").toLowerCase();
+        var score=0;
+        for(var i=0;i<ECONOMY_KEYWORDS.length;i++){
+          if(text.indexOf(ECONOMY_KEYWORDS[i])>=0) score+=1;
+        }
+        if(text.indexOf("oil")>=0||text.indexOf("energy")>=0||text.indexOf("gas")>=0) score+=2;
+        if(text.indexOf("inflation")>=0||text.indexOf("interest")>=0||text.indexOf("fed")>=0||text.indexOf("boj")>=0) score+=2;
+        if(text.indexOf("trade")>=0||text.indexOf("sanction")>=0||text.indexOf("tariff")>=0) score+=1;
+        return score;
+      }
+
+      function normalizeSignalCard(card){
+        card=card||{};
+        return {
+          title:safeText(card.title||card.headline||"Untitled"),
+          summary:safeText(card.summary||card.description||"Summary not available."),
+          source:safeText(card.source||card.publisher||"Unknown source"),
+          url:safeText(card.url||card.link||"#")||"#",
+          image:safeText(card.image||card.urlToImage||card.thumbnail||""),
+          score:scoreEconomicSignal(card)
+        };
+      }
+
+      function classifySignal(card){
+        var text=(card.title+" "+card.summary).toLowerCase();
+        if(text.indexOf("oil")>=0||text.indexOf("gas")>=0||text.indexOf("energy")>=0) return "energy";
+        if(text.indexOf("trade")>=0||text.indexOf("tariff")>=0||text.indexOf("sanction")>=0) return "trade";
+        if(text.indexOf("risk")>=0||text.indexOf("war")>=0||text.indexOf("conflict")>=0||text.indexOf("crisis")>=0) return "risk";
+        return "macro";
+      }
+
+      function signalFallback(title){
+        var text=String(title||"E").trim();
+        return (text[0]||"E").toUpperCase();
+      }
+
+      function signalCardHtml(card){
+        var cls=classifySignal(card);
+        var safeUrl=card.url && card.url!=="#" ? card.url : "#";
+        var target=safeUrl==="#" ? "" : ' target="_blank" rel="noopener noreferrer"';
+        var imageHtml=card.image
+          ? '<img src="'+escapeHtml(card.image)+'" alt="" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';" /><div class="signal-fallback" style="display:none">'+escapeHtml(signalFallback(card.title))+'</div>'
+          : '<div class="signal-fallback">'+escapeHtml(signalFallback(card.title))+'</div>';
+        return '<article class="signal-card"><div class="signal-thumb">'+imageHtml+'</div><div class="signal-body"><div class="signal-meta"><span class="signal-pill '+escapeHtml(cls)+'">'+escapeHtml(cls)+'</span><span class="signal-pill source">'+escapeHtml(card.source)+'</span><span class="signal-pill score">score '+escapeHtml(String(card.score))+'</span></div><h3 class="signal-title"><a href="'+escapeHtml(safeUrl)+'"'+target+'>'+escapeHtml(card.title)+'</a></h3><p class="signal-summary">'+escapeHtml(card.summary)+'</p></div></article>';
+      }
+
+      function extractSignalCards(doc){
+        var cards=[];
+        if(doc && Array.isArray(doc.sections)){
+          for(var i=0;i<doc.sections.length;i++){
+            var s=doc.sections[i]||{};
+            if(Array.isArray(s.cards)) cards=cards.concat(s.cards);
+          }
+        } else if(doc && Array.isArray(doc.cards)){
+          cards=doc.cards.slice();
+        }
+        return cards
+          .map(normalizeSignalCard)
+          .filter(function(card){ return card.score>0; })
+          .sort(function(a,b){ return b.score-a.score; })
+          .slice(0,6);
+      }
+
+      function renderSignals(cards,src){
+        var grid=document.getElementById("signalsGrid"), empty=document.getElementById("signalsEmpty");
+        setText("signalsCount","signals: "+cards.length);
+        setText("signalsSource","source: "+(src||"--"));
+        setHref("btnOpenSignalsJson",src||"#");
+        if(!cards.length){
+          if(grid) grid.innerHTML="";
+          if(empty) empty.style.display="block";
+          setText("gsArticles","0");
+          setText("gsArticlesSub","economic signals");
+          return;
+        }
+        if(empty) empty.style.display="none";
+        if(grid) grid.innerHTML=cards.map(signalCardHtml).join("");
+        setText("gsArticles",String(cards.length));
+        setText("gsArticlesSub","economic signals");
+      }
+
+      async function loadSignals(){
+        var picked=await pickFirstJson(SIGNALS_CANDIDATES);
+        if(!picked){
+          renderSignals([],null);
+          return;
+        }
+        var cards=extractSignalCards(picked.data||{});
+        renderSignals(cards,picked.url);
+      }
+
+      async function loadPair(pair){
+        var conf=MAP[pair]||MAP.JPYTHB;
+        setText("pairPill","pair: "+conf.pairLabel);
+        setText("pairNote",conf.note);
+        setText("overlayReady","loading...");
+
+        var imagePicked=await pickFirstImage(conf.imgCandidates);
+        if(imagePicked){
+          var imgUrl=imagePicked.url+"?t="+Date.now();
+          setImg("img",imgUrl);
+          setHref("btnOpenImage",imgUrl);
+          setText("srcImage","source: "+imagePicked.url);
+          setText("imageStateKpi","OK");
+        }else{
+          setImg("img","");
+          setHref("btnOpenImage","#");
+          setText("srcImage","source: missing");
+          setText("imageStateKpi","MISS");
+        }
+
+        var jsonPicked=await pickFirstJson(conf.decisionCandidates);
+        if(jsonPicked){
+          var ex=extractDecision(jsonPicked.data);
+          setText("decision",ex.decision);
+          setText("reason",ex.reason);
+          setText("decisionKpi",ex.decision);
+          setText("gsFx",ex.decision);
+          setText("gsFxSub",ex.reason);
+          setHref("btnOpenDecision",jsonPicked.url);
+          setText("srcDecision","source: "+jsonPicked.url);
+          setText("jsonStateKpi","OK");
+          setText("statePill","OK");
+          setText("sourcePill",conf.pairLabel+" analysis-first");
+        }else{
+          setText("decision","—");
+          setText("reason","Decision JSON not found.");
+          setText("decisionKpi","—");
+          setText("gsFx","—");
+          setText("gsFxSub","decision / fallback");
+          setHref("btnOpenDecision","#");
+          setText("srcDecision","source: missing");
+          setText("jsonStateKpi","MISS");
+          setText("statePill",imagePicked ? "partial" : "missing");
+          setText("sourcePill",conf.pairLabel+" files missing");
+        }
+
+        try{
+          if(window.GPGlobalStatus && window.GPGlobalStatus.load){
+            var gs=await window.GPGlobalStatus.load({fxDecisionCandidates:conf.decisionCandidates});
+            if(gs && gs.updated){
+              setText("overlayAsOf","as_of: "+gs.updated);
+            }else{
+              setText("overlayAsOf","as_of: --");
+            }
+            setText("overlayReady","Ready");
+          }else{
+            setText("overlayReady","Ready");
+          }
+        }catch(e){
+          setText("overlayReady","Error");
+          console.warn(e);
+        }
+      }
+
+      var sel=document.getElementById("pair");
+      if(sel){
+        sel.addEventListener("change", function(){ loadPair(sel.value); });
+      }
+
+      loadPair("JPYTHB");
+      loadSignals();
     })();
   </script>
 </body>
