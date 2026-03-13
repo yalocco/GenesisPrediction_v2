@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Digest - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260312-ui-final4" />
-  <script src="/static/common/global_status.js?v=20260312-ui-final4"></script>
+  <link rel="stylesheet" href="/static/app.css?v=20260313-digest-balance3axis2" />
+  <script src="/static/common/global_status.js?v=20260313-digest-balance3axis2"></script>
   <style>
     .digest-hero{margin-bottom:14px;}
 
@@ -68,6 +68,112 @@
       overflow:hidden;
       text-overflow:ellipsis;
     }
+
+    .sentiment-balance-wrap{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      min-width:0;
+    }
+    .sentiment-balance-top{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+      min-width:0;
+    }
+    .sentiment-balance-value{
+      font-size:22px;
+      font-weight:700;
+      line-height:1.05;
+      color:#eef4ff;
+      letter-spacing:-.02em;
+      white-space:nowrap;
+    }
+    .sentiment-balance-bars{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      margin-top:2px;
+    }
+    .sb-row{
+      display:grid;
+      grid-template-columns:28px 1fr 42px;
+      align-items:center;
+      gap:8px;
+      min-width:0;
+    }
+    .sb-label{
+      font-size:11px;
+      opacity:.84;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+    }
+    .sb-track{
+      position:relative;
+      height:8px;
+      border-radius:999px;
+      background:rgba(255,255,255,.08);
+      overflow:hidden;
+    }
+    .sb-fill{
+      position:absolute;
+      left:0;
+      top:0;
+      bottom:0;
+      border-radius:999px;
+      width:0%;
+    }
+    .sb-val{
+      font-size:11px;
+      text-align:right;
+      opacity:.84;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    }
+    .sb-pos .sb-fill{background:linear-gradient(90deg, rgba(86,239,193,.70), rgba(86,239,193,.98));}
+    .sb-neg .sb-fill{background:linear-gradient(90deg, rgba(255,126,141,.70), rgba(255,126,141,.98));}
+    .sb-unc .sb-fill{background:linear-gradient(90deg, rgba(255,207,111,.70), rgba(255,207,111,.98));}
+
+    .fx-wrap{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      min-width:0;
+    }
+    .fx-value{
+      font-size:24px;
+      line-height:1.05;
+      font-weight:700;
+      letter-spacing:-.02em;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .fx-ready{color:#eef4ff;}
+    .fx-warn{color:#ffcf6f;}
+    .fx-off{color:#ff8a98;}
+    .fx-on{color:#56efc1;}
+    .fx-meta{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .fx-pill{
+      display:inline-flex;
+      align-items:center;
+      min-height:24px;
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.04);
+      font-size:11px;
+      line-height:1;
+    }
+    .fx-pill.warn{color:#ffcf6f;border-color:rgba(255,207,111,.32);background:rgba(255,207,111,.10);}
+    .fx-pill.on{color:#56efc1;border-color:rgba(86,239,193,.30);background:rgba(86,239,193,.10);}
+    .fx-pill.off{color:#ff8a98;border-color:rgba(255,138,152,.30);background:rgba(255,138,152,.10);}
+    .fx-pill.neutral{color:#d7e3ff;}
 
     .digest-top{
       display:grid;
@@ -302,6 +408,7 @@
 
     @media (max-width:700px){
       .status-grid{grid-template-columns:1fr;}
+      .sb-row{grid-template-columns:24px 1fr 38px;}
     }
   </style>
 </head>
@@ -334,13 +441,40 @@
 
                 <div class="status-item">
                   <div class="status-label">Sentiment Balance</div>
-                  <div id="gsSentiment" class="status-value">—</div>
-                  <div id="gsSentimentSub" class="status-sub">article distribution</div>
+                  <div class="sentiment-balance-wrap">
+                    <div class="sentiment-balance-top">
+                      <div id="gsSentiment" class="sentiment-balance-value">—</div>
+                    </div>
+                    <div id="gsSentimentBars" class="sentiment-balance-bars">
+                      <div class="sb-row sb-pos">
+                        <div class="sb-label">▲</div>
+                        <div class="sb-track"><div id="sbPosFill" class="sb-fill"></div></div>
+                        <div id="sbPosVal" class="sb-val">--</div>
+                      </div>
+                      <div class="sb-row sb-neg">
+                        <div class="sb-label">▼</div>
+                        <div class="sb-track"><div id="sbNegFill" class="sb-fill"></div></div>
+                        <div id="sbNegVal" class="sb-val">--</div>
+                      </div>
+                      <div class="sb-row sb-unc">
+                        <div class="sb-label">≈</div>
+                        <div class="sb-track"><div id="sbUncFill" class="sb-fill"></div></div>
+                        <div id="sbUncVal" class="sb-val">--</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="gsSentimentSub" class="status-sub">3-axis sentiment balance</div>
                 </div>
 
                 <div class="status-item">
                   <div class="status-label">FX Regime</div>
-                  <div id="gsFx" class="status-value">—</div>
+                  <div class="fx-wrap">
+                    <div id="gsFx" class="fx-value fx-ready">—</div>
+                    <div class="fx-meta">
+                      <span id="gsFxMode" class="fx-pill neutral">no fx data</span>
+                      <span id="gsFxPair" class="fx-pill neutral">pair: --</span>
+                    </div>
+                  </div>
                   <div id="gsFxSub" class="status-sub">decision / fallback</div>
                 </div>
 
@@ -447,7 +581,7 @@
 
   <div id="site-footer"></div>
 
-  <script src="/static/common/layout.js?v=20260312-ui-final4"></script>
+  <script src="/static/common/layout.js?v=20260313-digest-balance3axis2"></script>
   <script>
     (function(){
       "use strict";
@@ -470,18 +604,33 @@
         "/analysis/world_politics/daily_news_latest.json"
       ];
 
+      var SENTIMENT_CANDIDATES = [
+        "/data/world_politics/analysis/sentiment_latest.json",
+        "/analysis/world_politics/analysis/sentiment_latest.json",
+        "/analysis/sentiment_latest.json",
+        "/data/digest/sentiment_latest.json"
+      ];
+
+      var FX_CANDIDATES = [
+        "/data/fx/fx_decision_latest_jpythb.json",
+        "/data/fx/fx_decision_latest.json",
+        "/data/fx/fx_decision_latest_usdjpy.json",
+        "/data/fx/fx_decision_latest_usdthb.json"
+      ];
+
       var state = {
         sort: "risk",
         articles: [],
         digestPath: "-",
         summaryPath: "-",
         newsPath: "-",
+        sentimentPath: "-",
+        fxPath: "-",
         sourceMode: "no-data"
       };
 
       function $(id){ return document.getElementById(id); }
-      function safeText(v){ return v == null ? "" : String(v); }
-      function setText(id, v){ var el = $(id); if(el) el.textContent = safeText(v); }
+      function setText(id, v){ var el = $(id); if(el) el.textContent = v == null ? "" : String(v); }
       function firstDefined(){
         for(var i = 0; i < arguments.length; i++){
           var v = arguments[i];
@@ -644,18 +793,192 @@
         if(n >= 0.33) return { text:"MEDIUM", cls:"risk-medium" };
         return { text:"LOW", cls:"risk-low" };
       }
-      function sentimentBalanceText(summary){
-        var p = toNumber(summary.positive_count, 0);
-        var n = toNumber(summary.negative_count, 0);
-        var u = toNumber(summary.neutral_count, 0);
-        var m = toNumber(summary.mixed_count, 0);
-        var max = Math.max(p, n, u, m);
-        if(max <= 0) return "—";
-        if(max === m) return "MIX";
-        if(max === p) return "POS";
-        if(max === n) return "NEG";
-        return "NEU";
+
+      function computeBalanceData(summary, sentimentRoot){
+        var p = toNumber(firstDefined(
+          summary && summary.positive_count,
+          summary && summary.positive
+        ), 0);
+
+        var n = toNumber(firstDefined(
+          summary && summary.negative_count,
+          summary && summary.negative
+        ), 0);
+
+        var u = toNumber(firstDefined(
+          summary && summary.uncertainty_count,
+          sentimentRoot && sentimentRoot.summary && sentimentRoot.summary.unknown,
+          sentimentRoot && sentimentRoot.today && sentimentRoot.today.label_counts && sentimentRoot.today.label_counts.unknown
+        ), 0);
+
+        if((p + n + u) <= 0 && sentimentRoot){
+          var labelCounts = (sentimentRoot.today && sentimentRoot.today.label_counts) || {};
+          p = toNumber(firstDefined(p, labelCounts.positive, sentimentRoot.summary && sentimentRoot.summary.positive), 0);
+          n = toNumber(firstDefined(n, labelCounts.negative, sentimentRoot.summary && sentimentRoot.summary.negative), 0);
+          u = toNumber(
+            firstDefined(
+              summary && summary.uncertainty_count,
+              labelCounts.unknown,
+              labelCounts.mixed,
+              sentimentRoot.summary && sentimentRoot.summary.unknown,
+              sentimentRoot.summary && sentimentRoot.summary.mixed
+            ),
+            0
+          );
+        }
+
+        var total = p + n + u;
+        if(total <= 0){
+          return {
+            total: 0,
+            positive: 0,
+            negative: 0,
+            uncertainty: 0,
+            pPct: 0,
+            nPct: 0,
+            uPct: 0,
+            text: "—",
+            sub: "3-axis sentiment balance unavailable"
+          };
+        }
+
+        var pPct = Math.round((p / total) * 100);
+        var nPct = Math.round((n / total) * 100);
+        var uPct = Math.max(0, 100 - pPct - nPct);
+
+        return {
+          total: total,
+          positive: p,
+          negative: n,
+          uncertainty: u,
+          pPct: pPct,
+          nPct: nPct,
+          uPct: uPct,
+          text: "▲" + pPct + " ▼" + nPct + " ≈" + uPct,
+          sub: "P " + p + " / N " + n + " / U " + u
+        };
       }
+
+      function applyBalanceData(balance){
+        setText("gsSentiment", balance.text || "—");
+        setText("gsSentimentSub", balance.sub || "3-axis sentiment balance");
+
+        var posFill = $("sbPosFill");
+        var negFill = $("sbNegFill");
+        var uncFill = $("sbUncFill");
+
+        if(posFill) posFill.style.width = String(balance.pPct || 0) + "%";
+        if(negFill) negFill.style.width = String(balance.nPct || 0) + "%";
+        if(uncFill) uncFill.style.width = String(balance.uPct || 0) + "%";
+
+        setText("sbPosVal", (balance.pPct || 0) + "%");
+        setText("sbNegVal", (balance.nPct || 0) + "%");
+        setText("sbUncVal", (balance.uPct || 0) + "%");
+      }
+
+      function normalizeDecision(decision){
+        var d = String(decision || "").trim().toUpperCase();
+        if(!d) return "—";
+        if(d === "WARN" || d === "ON" || d === "OFF") return d;
+        return d;
+      }
+
+      function fxClassFromDecision(decision){
+        var d = String(decision || "").trim().toUpperCase();
+        if(d === "WARN") return "fx-warn";
+        if(d === "ON") return "fx-on";
+        if(d === "OFF") return "fx-off";
+        return "fx-ready";
+      }
+
+      function fxPillClass(decision){
+        var d = String(decision || "").trim().toUpperCase();
+        if(d === "WARN") return "warn";
+        if(d === "ON") return "on";
+        if(d === "OFF") return "off";
+        return "neutral";
+      }
+
+      function deriveFxPair(path, fxDoc){
+        var explicit = firstDefined(
+          fxDoc && fxDoc.pair,
+          fxDoc && fxDoc.fx_pair,
+          fxDoc && fxDoc.name,
+          fxDoc && fxDoc.symbol
+        );
+        if(explicit) return String(explicit).toLowerCase();
+
+        var p = String(path || "").toLowerCase();
+        if(p.indexOf("jpythb") >= 0) return "jpythb";
+        if(p.indexOf("usdjpy") >= 0) return "usdjpy";
+        if(p.indexOf("usdthb") >= 0) return "usdthb";
+        return "--";
+      }
+
+      function deriveFxInfo(fxDoc, path){
+        if(!fxDoc){
+          return {
+            decision: "—",
+            action: "no fx data",
+            pair: "--",
+            reason: "decision / fallback"
+          };
+        }
+
+        var decision = normalizeDecision(firstDefined(
+          fxDoc.decision,
+          fxDoc.regime,
+          fxDoc.fx_regime,
+          fxDoc.state,
+          fxDoc.signal
+        ));
+
+        var action = textOr(firstDefined(
+          fxDoc.action,
+          fxDoc.note,
+          fxDoc.mode,
+          fxDoc.recommendation
+        ), "no action");
+
+        var pair = deriveFxPair(path, fxDoc);
+
+        var reason = textOr(firstDefined(
+          fxDoc.reason,
+          fxDoc.message,
+          fxDoc.description,
+          fxDoc.note
+        ), "decision / fallback");
+
+        return {
+          decision: decision,
+          action: action,
+          pair: pair,
+          reason: reason
+        };
+      }
+
+      function applyFxInfo(info){
+        var fxEl = $("gsFx");
+        if(fxEl){
+          fxEl.className = "fx-value " + fxClassFromDecision(info.decision);
+        }
+        setText("gsFx", info.decision || "—");
+
+        var modeEl = $("gsFxMode");
+        if(modeEl){
+          modeEl.className = "fx-pill " + fxPillClass(info.decision);
+          modeEl.textContent = info.action || "no action";
+        }
+
+        var pairEl = $("gsFxPair");
+        if(pairEl){
+          pairEl.className = "fx-pill neutral";
+          pairEl.textContent = "pair: " + (info.pair || "--");
+        }
+
+        setText("gsFxSub", info.reason || "decision / fallback");
+      }
+
       function renderTopics(tags){
         var row = $("topicRow");
         if(!row) return;
@@ -669,11 +992,11 @@
       }
       function renderKpis(summary, articleCount){
         setText("kpiArticles", String(toNumber(firstDefined(summary.articles, articleCount), articleCount)));
-        setText("kpiPositive", String(toNumber(summary.positive_count, 0)));
-        setText("kpiNegative", String(toNumber(summary.negative_count, 0)));
-        setText("kpiNeutral", String(toNumber(summary.neutral_count, 0)));
-        setText("kpiMixed", String(toNumber(summary.mixed_count, 0)));
-        setText("kpiUnknown", String(toNumber(summary.unknown_count, 0)));
+        setText("kpiPositive", String(toNumber(firstDefined(summary.positive_count, summary.positive), 0)));
+        setText("kpiNegative", String(toNumber(firstDefined(summary.negative_count, summary.negative), 0)));
+        setText("kpiNeutral", String(toNumber(firstDefined(summary.neutral_count, summary.neutral), 0)));
+        setText("kpiMixed", String(toNumber(firstDefined(summary.mixed_count, summary.mixed), 0)));
+        setText("kpiUnknown", String(toNumber(firstDefined(summary.unknown_count, summary.unknown), 0)));
       }
       function articleCard(article){
         var safeUrl = article.url && article.url !== "#" ? article.url : "#";
@@ -721,11 +1044,11 @@
         setText("totalCount", String(sorted.length));
       }
       function wireToolbar(){
-        var buttons = document.querySelectorAll('[data-sort]');
+        var buttons = document.querySelectorAll("[data-sort]");
         buttons.forEach(function(button){
-          button.addEventListener('click', function(){
+          button.addEventListener("click", function(){
             state.sort = button.dataset.sort;
-            buttons.forEach(function(el){ el.classList.toggle('active', el === button); });
+            buttons.forEach(function(el){ el.classList.toggle("active", el === button); });
             renderArticles();
           });
         });
@@ -740,76 +1063,140 @@
           digest && digest.date
         );
       }
-      function applyStatus(summary, articleCount, digest, summaryData){
+      function applyStatus(summary, articleCount, digest, summaryData, sentimentRoot, fxInfo){
         var risk = riskLabelFromValue(firstDefined(summary.risk, summary.global_risk, digest && digest.global_risk));
         setText("gsRisk", risk.text);
         $("gsRisk").className = "status-value " + risk.cls;
         setText("gsRiskSub", textOr(firstDefined(summary.regime_reason, summary.reason), "daily summary / sentiment"));
 
-        setText("gsSentiment", sentimentBalanceText(summary));
-        setText("gsSentimentSub", 'pos ' + toNumber(summary.positive_count, 0) + ' / neg ' + toNumber(summary.negative_count, 0) + ' / neu ' + toNumber(summary.neutral_count, 0) + ' / mix ' + toNumber(summary.mixed_count, 0));
+        var balance = computeBalanceData(summary, sentimentRoot);
+        applyBalanceData(balance);
 
-        setText("gsFx", textOr(firstDefined(digest && digest.fx_regime, summary.fx_regime, summary.fx_decision), "—"));
-        setText("gsFxSub", textOr(firstDefined(summary.fx_reason, digest && digest.fx_reason), "decision / fallback"));
+        applyFxInfo(fxInfo || {
+          decision: "—",
+          action: "no fx data",
+          pair: "--",
+          reason: "decision / fallback"
+        });
 
         setText("gsArticles", String(articleCount));
-        setText("gsArticlesSub", state.sourceMode === 'digest' ? 'digest latest' : (state.sourceMode === 'news-fallback' ? 'fallback news' : 'no data'));
+        setText("gsArticlesSub", state.sourceMode === "digest" ? "digest latest" : (state.sourceMode === "news-fallback" ? "fallback news" : "no data"));
 
         var updated = resolveDigestLocalAsOf(digest, summaryData);
         setText("gsUpdated", textOr(updated ? shortDate(updated) : null, "—"));
-        setText("gsUpdatedSub", textOr(state.summaryPath, state.digestPath, 'latest runtime stamp'));
+        setText("gsUpdatedSub", textOr(state.summaryPath, state.digestPath, "latest runtime stamp"));
 
-        setText("pillAsOfLocal", 'as_of: ' + shortDate(updated || "--"));
-        setText("pillReadyLocal", articleCount ? 'Ready' : 'No data');
+        setText("pillAsOfLocal", "as_of: " + shortDate(updated || "--"));
+        setText("pillReadyLocal", articleCount ? "Ready" : "No data");
       }
+
       async function init(){
         wireToolbar();
 
         var digestResult = await fetchFirstJson(DIGEST_CANDIDATES);
         var summaryResult = await fetchFirstJson(SUMMARY_CANDIDATES);
         var newsResult = await fetchFirstJson(NEWS_CANDIDATES);
+        var sentimentResult = await fetchFirstJson(SENTIMENT_CANDIDATES);
+        var fxResult = await fetchFirstJson(FX_CANDIDATES);
 
         var digest = digestResult && digestResult.data ? digestResult.data : null;
         var summaryData = summaryResult && summaryResult.data ? summaryResult.data : null;
         var newsData = newsResult && newsResult.data ? newsResult.data : null;
+        var sentimentRoot = sentimentResult && sentimentResult.data ? sentimentResult.data : null;
+        var fxDoc = fxResult && fxResult.data ? fxResult.data : null;
 
-        state.digestPath = digestResult && digestResult.url ? digestResult.url : '-';
-        state.summaryPath = summaryResult && summaryResult.url ? summaryResult.url : '-';
-        state.newsPath = newsResult && newsResult.url ? newsResult.url : '-';
+        state.digestPath = digestResult && digestResult.url ? digestResult.url : "-";
+        state.summaryPath = summaryResult && summaryResult.url ? summaryResult.url : "-";
+        state.newsPath = newsResult && newsResult.url ? newsResult.url : "-";
+        state.sentimentPath = sentimentResult && sentimentResult.url ? sentimentResult.url : "-";
+        state.fxPath = fxResult && fxResult.url ? fxResult.url : "-";
 
         var cards = digest ? getCards(digest).map(normalizeArticle) : [];
         var newsItemsRaw = Array.isArray(newsData && newsData.items) ? newsData.items : Array.isArray(newsData) ? newsData : [];
         var newsItems = newsItemsRaw.map(normalizeNewsArticle);
 
         state.articles = cards.length ? cards : newsItems;
-        state.sourceMode = cards.length ? 'digest' : (newsItems.length ? 'news-fallback' : 'no-data');
+        state.sourceMode = cards.length ? "digest" : (newsItems.length ? "news-fallback" : "no-data");
 
         var sentimentSummary = getSentimentSummary(digest || {});
-        var summaryText = textOr(getSummaryText(digest || {}, summaryData || {}), 'No summary available.');
-        var topicTags = getTopicTags(digest || {}, summaryData || {});
-        var section = getWorldPoliticsSection(digest || {});
-        var highlightCount = Array.isArray(section && section.cards) ? section.cards.length : 0;
+        if((toNumber(firstDefined(sentimentSummary.positive_count, sentimentSummary.positive), 0) +
+            toNumber(firstDefined(sentimentSummary.negative_count, sentimentSummary.negative), 0) +
+            toNumber(firstDefined(sentimentSummary.neutral_count, sentimentSummary.neutral), 0) +
+            toNumber(firstDefined(sentimentSummary.mixed_count, sentimentSummary.mixed), 0) +
+            toNumber(firstDefined(sentimentSummary.unknown_count, sentimentSummary.unknown), 0)) <= 0 && sentimentRoot){
+          sentimentSummary = {
+            articles: firstDefined(
+              sentimentRoot.today && sentimentRoot.today.articles,
+              sentimentRoot.items && sentimentRoot.items.length,
+              state.articles.length
+            ),
+            positive_count: firstDefined(
+              sentimentRoot.summary && sentimentRoot.summary.positive,
+              sentimentRoot.today && sentimentRoot.today.label_counts && sentimentRoot.today.label_counts.positive,
+              0
+            ),
+            negative_count: firstDefined(
+              sentimentRoot.summary && sentimentRoot.summary.negative,
+              sentimentRoot.today && sentimentRoot.today.label_counts && sentimentRoot.today.label_counts.negative,
+              0
+            ),
+            neutral_count: firstDefined(
+              sentimentRoot.summary && sentimentRoot.summary.neutral,
+              sentimentRoot.today && sentimentRoot.today.label_counts && sentimentRoot.today.label_counts.neutral,
+              0
+            ),
+            mixed_count: firstDefined(
+              sentimentRoot.summary && sentimentRoot.summary.mixed,
+              sentimentRoot.today && sentimentRoot.today.label_counts && sentimentRoot.today.label_counts.mixed,
+              0
+            ),
+            unknown_count: firstDefined(
+              sentimentRoot.summary && sentimentRoot.summary.unknown,
+              sentimentRoot.today && sentimentRoot.today.label_counts && sentimentRoot.today.label_counts.unknown,
+              0
+            ),
+            positive: firstDefined(
+              sentimentRoot.today && sentimentRoot.today.positive,
+              0
+            ),
+            risk: firstDefined(
+              sentimentRoot.today && sentimentRoot.today.risk,
+              0
+            ),
+            uncertainty_count: firstDefined(
+              sentimentRoot.summary && sentimentRoot.summary.unknown,
+              sentimentRoot.today && sentimentRoot.today.label_counts && sentimentRoot.today.label_counts.unknown,
+              sentimentRoot.summary && sentimentRoot.summary.mixed,
+              sentimentRoot.today && sentimentRoot.today.label_counts && sentimentRoot.today.label_counts.mixed,
+              0
+            )
+          };
+        }
 
-        setText('summaryBody', summaryText);
-        setText('summaryHint', state.sourceMode === 'digest' ? 'digest preferred' : (state.sourceMode === 'news-fallback' ? 'fallback summary/news' : 'no data'));
-        setText('summarySource', 'source: ' + (summaryResult && summaryResult.url ? summaryResult.url : state.digestPath));
-        setText('highlightsSource', 'source: ' + state.digestPath);
-        setText('articlesSource', 'source: ' + (state.sourceMode === 'digest' ? state.digestPath : state.newsPath));
-        setText('articlesState', state.sourceMode === 'digest' ? 'cards[].sentiment preferred' : 'daily_news_latest fallback');
+        var summaryText = textOr(getSummaryText(digest || {}, summaryData || {}), "No summary available.");
+        var topicTags = getTopicTags(digest || {}, summaryData || {});
+        var fxInfo = deriveFxInfo(fxDoc, state.fxPath);
+
+        setText("summaryBody", summaryText);
+        setText("summaryHint", state.sourceMode === "digest" ? "digest preferred" : (state.sourceMode === "news-fallback" ? "fallback summary/news" : "no data"));
+        setText("summarySource", "source: " + (summaryResult && summaryResult.url ? summaryResult.url : state.digestPath));
+        setText("highlightsSource", "source: " + (state.digestPath || "-") + (state.sentimentPath !== "-" ? " / " + state.sentimentPath : ""));
+        setText("articlesSource", "source: " + (state.sourceMode === "digest" ? state.digestPath : state.newsPath));
+        setText("articlesState", state.sourceMode === "digest" ? "cards[].sentiment preferred" : "daily_news_latest fallback");
         renderTopics(topicTags);
         renderKpis(sentimentSummary, state.articles.length);
         renderArticles();
-        applyStatus(sentimentSummary, state.articles.length, digest || {}, summaryData || {});
+        applyStatus(sentimentSummary, state.articles.length, digest || {}, summaryData || {}, sentimentRoot || {}, fxInfo);
 
-        if(state.sourceMode === 'digest'){
-          setText('heroText', 'Summary と Highlights を横並び同高で配置し、Highlights は KPI のみ表示します。Articles はその直下に全件表示します。');
-          setText('highlightsHint', 'KPI only / digest');
-        }else if(state.sourceMode === 'news-fallback'){
-          setText('heroText', 'Digest ViewModel を取得できなかったため fallback news を全件表示しています。正式運用では view_model_latest.json を優先してください。');
-          setText('highlightsHint', 'KPI only / fallback');
+        if(state.sourceMode === "digest"){
+          setText("heroText", "Summary と Highlights を横並び同高で配置し、Highlights は KPI のみ表示します。Articles はその直下に全件表示します。");
+          setText("highlightsHint", "KPI only / digest");
+        }else if(state.sourceMode === "news-fallback"){
+          setText("heroText", "Digest ViewModel を取得できなかったため fallback news を全件表示しています。正式運用では view_model_latest.json を優先してください。");
+          setText("highlightsHint", "KPI only / fallback");
         }else{
-          setText('heroText', 'Digest / Summary / News の取得に失敗しました。データ生成後に再読み込みしてください。');
-          setText('highlightsHint', 'KPI only / no data');
+          setText("heroText", "Digest / Summary / News の取得に失敗しました。データ生成後に再読み込みしてください。");
+          setText("highlightsHint", "KPI only / no data");
         }
       }
 

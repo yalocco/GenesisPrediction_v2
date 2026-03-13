@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sentiment - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260312-ui-sentiment-final1" />
-  <script src="/static/common/global_status.js?v=20260312-ui-sentiment-final1"></script>
+  <link rel="stylesheet" href="/static/app.css?v=20260313-ui-sentiment-content2" />
+  <script src="/static/common/global_status.js?v=20260313-ui-sentiment-content2"></script>
   <style>
     body{margin:0;}
 
@@ -59,7 +59,7 @@
 
     .searchRow{
       display:grid;
-      grid-template-columns:1.45fr .55fr .65fr auto;
+      grid-template-columns:1.4fr .58fr .68fr auto;
       gap:10px;
       align-items:center;
       margin-top:12px;
@@ -171,16 +171,22 @@
 
     .trendTop{
       display:flex;
-      align-items:center;
+      align-items:flex-start;
       justify-content:space-between;
       gap:12px;
       flex-wrap:wrap;
-      margin-bottom:10px;
+      margin-bottom:12px;
     }
 
     .trendTitle{
       font-size:18px;
       font-weight:700;
+    }
+
+    .trendLead{
+      margin-top:4px;
+      font-size:13px;
+      opacity:.74;
     }
 
     .legendRow{
@@ -214,56 +220,80 @@
     .dotPos{background:#5ef0c2;}
     .dotUnc{background:#f0c85e;}
 
-    .trendMeta{
+    .trendAxisGrid{
       display:grid;
-      grid-template-columns:repeat(3,minmax(0,1fr));
-      gap:10px;
-      margin-bottom:12px;
+      grid-template-columns:1fr;
+      gap:12px;
+      flex:1 1 auto;
     }
 
-    .miniMetric{
+    .axisCard{
       border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.14);
-      border-radius:14px;
-      padding:10px 12px;
+      background:rgba(8,14,28,.20);
+      border-radius:16px;
+      padding:12px 14px;
+      min-height:122px;
+      display:grid;
+      grid-template-columns:220px 1fr;
+      gap:14px;
+      align-items:center;
     }
 
-    .miniMetric .k{
-      font-size:12px;
+    .axisMeta{
+      min-width:0;
+    }
+
+    .axisName{
+      font-size:13px;
       opacity:.72;
       margin-bottom:4px;
     }
 
-    .miniMetric .v{
-      font-size:20px;
+    .axisValue{
+      font-size:28px;
       font-weight:700;
+      line-height:1.1;
     }
 
-    .metricRisk .v{color:#ff8d8d;}
-    .metricPos .v{color:#77f3cf;}
-    .metricUnc .v{color:#f1d37b;}
+    .axisDelta{
+      margin-top:8px;
+      display:inline-flex;
+      align-items:center;
+      min-height:28px;
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      font-size:12px;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      background:rgba(255,255,255,.04);
+      white-space:nowrap;
+    }
 
-    .chartWrap{
-      border:1px solid rgba(120,160,220,.14);
-      border-radius:16px;
-      background:rgba(8,14,28,.18);
-      padding:12px;
-      flex:1 1 auto;
-      min-height:340px;
+    .axisRisk .axisValue{color:#ff9a9a;}
+    .axisPos .axisValue{color:#79f1d0;}
+    .axisUnc .axisValue{color:#f1d37b;}
+
+    .axisRisk .axisDelta{border-color:rgba(255,120,120,.30);background:rgba(255,120,120,.08);color:#ffabab;}
+    .axisPos .axisDelta{border-color:rgba(120,255,200,.28);background:rgba(120,255,200,.08);color:#85f2d3;}
+    .axisUnc .axisDelta{border-color:rgba(255,220,120,.28);background:rgba(255,220,120,.08);color:#f1d37b;}
+
+    .axisChartWrap{
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.02);
+      border-radius:14px;
+      padding:10px;
+      min-height:98px;
       display:flex;
-      flex-direction:column;
-      justify-content:center;
+      align-items:center;
     }
 
-    .chartCanvas{
+    .axisCanvas{
       width:100%;
-      height:320px;
+      height:78px;
       display:block;
     }
 
-    .tableWrap{
-      margin-top:14px;
-    }
+    .tableWrap{margin-top:14px;}
 
     .tbl{
       width:100%;
@@ -303,8 +333,19 @@
     .aUrl{
       font-size:12px;
       opacity:.70;
-      margin-top:2px;
+      margin-top:4px;
       word-break:break-all;
+    }
+
+    .aSummary{
+      margin-top:6px;
+      font-size:12px;
+      line-height:1.55;
+      opacity:.84;
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
     }
 
     .aSrc{
@@ -313,8 +354,8 @@
     }
 
     .thumb{
-      width:40px;
-      height:40px;
+      width:48px;
+      height:48px;
       border-radius:12px;
       border:1px solid rgba(255,255,255,.12);
       background:rgba(255,255,255,.06);
@@ -358,6 +399,27 @@
     .mUnc{border-color:rgba(255,220,120,.34);background:rgba(255,220,120,.10);}
     .mNet{border-color:rgba(160,140,255,.32);background:rgba(160,140,255,.10);}
 
+    .sentBadge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:24px;
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.18);
+      font-size:12px;
+      font-weight:600;
+      margin-top:8px;
+      white-space:nowrap;
+    }
+
+    .sent-pos{border-color:rgba(120,255,200,.32);background:rgba(120,255,200,.10);color:#8ef0d2;}
+    .sent-neg{border-color:rgba(255,120,120,.38);background:rgba(255,120,120,.10);color:#ff9e9e;}
+    .sent-neu{border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:#d8dde8;}
+    .sent-mix{border-color:rgba(255,220,120,.34);background:rgba(255,220,120,.10);color:#f1d37b;}
+    .sent-unk{border-color:rgba(160,140,255,.32);background:rgba(160,140,255,.10);color:#c8b9ff;}
+
     .emptyRow{
       text-align:center;
       padding:22px 16px;
@@ -365,22 +427,21 @@
       line-height:1.7;
     }
 
-    @media (max-width:1100px){
+    @media (max-width:1200px){
       .kpiGrid{grid-template-columns:repeat(2,minmax(0,1fr));}
       .searchRow{grid-template-columns:1fr;}
-      .trendMeta{grid-template-columns:1fr;}
       .howGrid{grid-template-columns:repeat(2,minmax(0,1fr));}
     }
 
     @media (max-width:980px){
       .gridTop{grid-template-columns:1fr;}
+      .axisCard{grid-template-columns:1fr;}
     }
 
     @media (max-width:700px){
       .kpiGrid{grid-template-columns:1fr;}
       .howGrid{grid-template-columns:1fr;}
-      .chartWrap{min-height:260px;}
-      .chartCanvas{height:240px;}
+      .axisCanvas{height:72px;}
     }
   </style>
 </head>
@@ -391,13 +452,14 @@
     <main class="gp-main">
       <div class="gp-page">
         <section class="panel">
-
           <div class="hero-top">
             <div>
               <div class="h1">Sentiment</div>
-              <p class="sub">Articles + trend (3-axis). (robust / safe)</p>
+              <p class="sub">Articles + thumbnails + sentiment join + 3-axis trend.</p>
               <div class="hero-subpath">
-                main: <code id="kSrcInline">-</code>
+                sentiment: <code id="kSrcInline">-</code>
+                <span class="muted"> / </span>
+                world: <code id="kWorldInline">-</code>
                 <span class="muted"> / </span>
                 trend: <code id="kTrendInline">-</code>
               </div>
@@ -414,7 +476,6 @@
           </div>
 
           <div class="gridTop">
-
             <div class="card controlsCard">
               <div class="sectionTitle">
                 <h2>Controls</h2>
@@ -456,20 +517,21 @@
               </div>
 
               <div class="sourceBox">
-                <div class="k" style="opacity:.70; font-size:12px;">source</div>
-                <div class="path" id="kSrc">-</div>
+                <div class="k" style="opacity:.70; font-size:12px;">sources</div>
+                <div class="path" id="kSrc">sentiment: -</div>
+                <div class="muted" style="margin-top:4px; font-size:12px;" id="kWorld">world: -</div>
                 <div class="muted" style="margin-top:4px; font-size:12px;" id="kTrend">trend: -</div>
               </div>
 
               <div class="searchRow">
-                <input id="q" class="select" type="search" placeholder="search (title/source)" />
+                <input id="q" class="select" type="search" placeholder="search (title/source/summary)" />
                 <select id="fSent" class="select">
                   <option value="all">All</option>
-                  <option value="pos">Positive</option>
-                  <option value="neg">Negative</option>
-                  <option value="neu">Neutral</option>
-                  <option value="mix">Mixed</option>
-                  <option value="unk">Unknown</option>
+                  <option value="positive">Positive</option>
+                  <option value="negative">Negative</option>
+                  <option value="neutral">Neutral</option>
+                  <option value="mixed">Mixed</option>
+                  <option value="unknown">Unknown</option>
                 </select>
                 <select id="sort" class="select">
                   <option value="risk">risk ↓</option>
@@ -489,7 +551,10 @@
 
             <div class="card trendCardMain">
               <div class="trendTop">
-                <div class="trendTitle">Combined Trend</div>
+                <div>
+                  <div class="trendTitle">3-Axis Trend</div>
+                  <div class="trendLead">Risk / Positive / Uncertainty を独立レーンで表示</div>
+                </div>
                 <div class="legendRow">
                   <span class="legendTag"><span class="legendDot dotRisk"></span>Risk</span>
                   <span class="legendTag"><span class="legendDot dotPos"></span>Positive</span>
@@ -497,37 +562,51 @@
                 </div>
               </div>
 
-              <div class="trendMeta">
-                <div class="miniMetric metricRisk">
-                  <div class="k">Risk</div>
-                  <div class="v" id="riskNow">--</div>
+              <div class="trendAxisGrid">
+                <div class="axisCard axisRisk">
+                  <div class="axisMeta">
+                    <div class="axisName">Risk</div>
+                    <div class="axisValue" id="riskNow">--</div>
+                    <div class="axisDelta" id="riskDelta">Δ --</div>
+                  </div>
+                  <div class="axisChartWrap">
+                    <canvas id="cvRisk" class="axisCanvas" width="1200" height="120"></canvas>
+                  </div>
                 </div>
-                <div class="miniMetric metricPos">
-                  <div class="k">Positive</div>
-                  <div class="v" id="posNow">--</div>
-                </div>
-                <div class="miniMetric metricUnc">
-                  <div class="k">Uncertainty</div>
-                  <div class="v" id="uncNow">--</div>
-                </div>
-              </div>
 
-              <div class="chartWrap">
-                <canvas id="cvCombined" class="chartCanvas" width="1200" height="360"></canvas>
+                <div class="axisCard axisPos">
+                  <div class="axisMeta">
+                    <div class="axisName">Positive</div>
+                    <div class="axisValue" id="posNow">--</div>
+                    <div class="axisDelta" id="posDelta">Δ --</div>
+                  </div>
+                  <div class="axisChartWrap">
+                    <canvas id="cvPos" class="axisCanvas" width="1200" height="120"></canvas>
+                  </div>
+                </div>
+
+                <div class="axisCard axisUnc">
+                  <div class="axisMeta">
+                    <div class="axisName">Uncertainty</div>
+                    <div class="axisValue" id="uncNow">--</div>
+                    <div class="axisDelta" id="uncDelta">Δ --</div>
+                  </div>
+                  <div class="axisChartWrap">
+                    <canvas id="cvUnc" class="axisCanvas" width="1200" height="120"></canvas>
+                  </div>
+                </div>
               </div>
             </div>
-
           </div>
 
           <div class="howBand">
             <div class="howGrid">
-              <div class="howItem"><strong>1</strong> sentiment_latest.json を探索してロード</div>
-              <div class="howItem"><strong>2</strong> items / rows / articles を自動判定</div>
-              <div class="howItem"><strong>3</strong> サムネ探索 + favicon fallback</div>
-              <div class="howItem"><strong>4</strong> sentiment_timeseries.csv を Trend 表示</div>
+              <div class="howItem"><strong>1</strong> sentiment_latest.json をロードして score / label を採用</div>
+              <div class="howItem"><strong>2</strong> world_view_model_latest.json をロードして image / summary を補強</div>
+              <div class="howItem"><strong>3</strong> url 優先・title 補助で join、fallback は favicon</div>
+              <div class="howItem"><strong>4</strong> sentiment_timeseries.csv を 3-axis trend 表示</div>
             </div>
           </div>
-
         </section>
 
         <section class="panel tableWrap">
@@ -539,9 +618,9 @@
           <table class="tbl">
             <thead>
               <tr>
-                <th style="width:58px;"></th>
-                <th>title / url</th>
-                <th style="width:170px;">source</th>
+                <th style="width:66px;"></th>
+                <th>title / summary / url</th>
+                <th style="width:190px;">source / date / sentiment</th>
                 <th style="width:340px;">metrics</th>
               </tr>
             </thead>
@@ -554,27 +633,15 @@
 
   <div id="site-footer"></div>
 
-  <script src="/static/common/layout.js?v=20260312-ui-final4"></script>
+  <script src="/static/common/layout.js?v=20260313-ui-sentiment-content2"></script>
   <script>
     (function(){
       "use strict";
 
       function $(id){ return document.getElementById(id); }
-
-      function safeText(x){
-        if(x === null || x === undefined) return "";
-        return String(x);
-      }
-
-      function safeSetText(id, value){
-        var el = $(id);
-        if(el) el.textContent = value;
-      }
-
-      function safeSetHref(id, href){
-        var el = $(id);
-        if(el) el.setAttribute("href", href || "#");
-      }
+      function safeText(x){ return x === null || x === undefined ? "" : String(x); }
+      function safeSetText(id, value){ var el = $(id); if(el) el.textContent = value; }
+      function safeSetHref(id, href){ var el = $(id); if(el) el.setAttribute("href", href || "#"); }
 
       function setLocalPill(id, mode, text){
         var el = $(id);
@@ -585,6 +652,7 @@
       }
 
       function fmt3(n){
+        n = Number(n);
         if(!isFinite(n)) return "--";
         return (Math.round(n * 1000) / 1000).toFixed(3);
       }
@@ -605,62 +673,103 @@
         return undefined;
       }
 
-      function normalizeItems(root){
+      function normalizeSentItems(root){
         if(!root) return [];
-        if(Array.isArray(root.items)) return root.items;
-        if(Array.isArray(root.articles)) return root.articles;
-        if(Array.isArray(root.rows)) return root.rows;
-        if(root.today && Array.isArray(root.today.items)) return root.today.items;
-        if(root.yesterday_summary && Array.isArray(root.yesterday_summary.items)) return root.yesterday_summary.items;
-        if(root.sentiment_summary && Array.isArray(root.sentiment_summary.items)) return root.sentiment_summary.items;
+        var src = [];
+        if(Array.isArray(root.items)) src = root.items;
+        else if(Array.isArray(root.articles)) src = root.articles;
+        else if(Array.isArray(root.rows)) src = root.rows;
+        else if(root.today && Array.isArray(root.today.items)) src = root.today.items;
+        return src.filter(function(x){ return x && typeof x === "object"; }).map(function(a){
+          var source = "";
+          if(a.source){
+            if(typeof a.source === "string") source = a.source;
+            else source = safeText(a.source.name || a.source.id || "");
+          }
+          var net = Number(pickFirst(a, ["net","net_score","sentiment_net","score"]));
+          if(!isFinite(net)) net = Number(pickFirst(a, ["positive","pos"])) - Number(pickFirst(a, ["risk","risk_score"]));
+          var sentiment = safeText(pickFirst(a, ["sentiment_label","sentiment","label"]) || "unknown").toLowerCase();
+          if(!sentiment) sentiment = "unknown";
+          return {
+            url: safeText(a.url || a.link || ""),
+            title: safeText(a.title || a.headline || a.name || ""),
+            source: safeText(source || a.source_name || a.publisher || a.site || ""),
+            summary: safeText(a.summary || a.description || a.excerpt || ""),
+            image: safeText(a.image || a.urlToImage || a.thumbnail || a.thumb || ""),
+            publishedAt: safeText(a.publishedAt || a.published_at || a.date || a.datetime || ""),
+            risk: clamp01(pickFirst(a, ["risk","risk_score","riskAvg","risk_mean"])),
+            pos: clamp01(pickFirst(a, ["positive","pos","positive_score","pos_score"])),
+            unc: clamp01(pickFirst(a, ["uncertainty","unc","uncertainty_score","unc_score"])),
+            net: isFinite(net) ? net : 0,
+            sentiment: sentiment
+          };
+        });
+      }
+
+      function normalizeWorldCards(root){
+        if(!root || !Array.isArray(root.sections)) return [];
+        for(var i = 0; i < root.sections.length; i++){
+          if(root.sections[i] && Array.isArray(root.sections[i].cards)){
+            return root.sections[i].cards.filter(function(x){ return x && typeof x === "object"; }).map(function(a){
+              return {
+                url: safeText(a.url || a.link || ""),
+                title: safeText(a.title || a.headline || a.name || ""),
+                source: safeText(a.source || a.publisher || a.site || ""),
+                summary: safeText(a.summary || a.description || a.excerpt || ""),
+                image: safeText(a.image || a.urlToImage || a.thumbnail || a.thumb || "")
+              };
+            });
+          }
+        }
         return [];
       }
 
-      function normalizeOne(a){
-        a = a || {};
-        var src = "";
-        try{
-          if(a.source){
-            if(typeof a.source === "string") src = a.source;
-            else if(a.source.name) src = a.source.name;
-            else if(a.source.id) src = a.source.id;
-          }
-        }catch(_e){}
+      function normalizeKey(s){
+        return safeText(s)
+          .toLowerCase()
+          .replace(/&#x27;/g, "'")
+          .replace(/&quot;/g, '"')
+          .replace(/&amp;/g, "&")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
 
-        var url = safeText(a.url || a.link || "");
-        var title = safeText(a.title || a.headline || a.name || "");
-        var img = safeText(a.urlToImage || a.image || a.image_url || a.imageUrl || a.thumbnail || a.thumb || "");
-        var pub = safeText(a.publishedAt || a.published_at || a.date || a.datetime || "");
-        var risk = clamp01(pickFirst(a, ["risk","risk_score","riskAvg","risk_mean"]));
-        var pos  = clamp01(pickFirst(a, ["positive","pos","positive_score","pos_score"]));
-        var unc  = clamp01(pickFirst(a, ["uncertainty","unc","uncertainty_score","unc_score"]));
-        var net  = Number(pickFirst(a, ["net","net_score","sentiment_net","score","sentiment"]));
+      function mergeWithWorld(sentItems, worldCards){
+        var byUrl = Object.create(null);
+        var byTitle = Object.create(null);
+        (worldCards || []).forEach(function(card){
+          var ku = normalizeKey(card.url);
+          var kt = normalizeKey(card.title);
+          if(ku && !byUrl[ku]) byUrl[ku] = card;
+          if(kt && !byTitle[kt]) byTitle[kt] = card;
+        });
 
-        if(!isFinite(net)){
-          net = pos - risk;
-        }
-
-        return {
-          url: url,
-          title: title,
-          source: safeText(src || a.source_name || a.publisher || a.site || ""),
-          urlToImage: img,
-          publishedAt: pub,
-          risk: risk,
-          pos: pos,
-          unc: unc,
-          net: net
-        };
+        return (sentItems || []).map(function(it){
+          var ku = normalizeKey(it.url);
+          var kt = normalizeKey(it.title);
+          var w = (ku && byUrl[ku]) || (kt && byTitle[kt]) || null;
+          return {
+            url: it.url || (w ? w.url : ""),
+            title: it.title || (w ? w.title : ""),
+            source: it.source || (w ? w.source : ""),
+            summary: it.summary || (w ? w.summary : ""),
+            image: it.image || (w ? w.image : ""),
+            publishedAt: it.publishedAt || "",
+            risk: it.risk,
+            pos: it.pos,
+            unc: it.unc,
+            net: it.net,
+            sentiment: it.sentiment || "unknown"
+          };
+        });
       }
 
       function deriveOverview(root, items){
         root = root || {};
         items = items || [];
-
         var today = root.today || {};
-        var summary = root.summary || {};
         var sentSummary = root.sentiment_summary || {};
-
+        var summary = root.summary || {};
         var out = {
           asOf: safeText(root.as_of || root.date || root.base || root.base_date || "").slice(0, 10) || "-",
           risk: NaN,
@@ -693,14 +802,13 @@
         if(!isFinite(out.unc)) out.unc = Number(pickFirst(sentSummary, ["uncertainty","unc"]));
         if(!out.articles) out.articles = Number(pickFirst(sentSummary, ["articles","count","items"])) || 0;
         if(!out.articles) out.articles = Number(pickFirst(summary, ["count","articles","items"])) || 0;
-
         return out;
       }
 
       function guessFaviconFromUrl(url){
         try{
           var u = new URL(url);
-          return u.origin + "/favicon.ico";
+          return "https://www.google.com/s2/favicons?domain=" + encodeURIComponent(u.hostname) + "&sz=64";
         }catch(_e){
           return "";
         }
@@ -725,11 +833,7 @@
         function step(){
           if(i >= cands.length) return Promise.reject(new Error("all candidates failed"));
           var p = cands[i++];
-          return fetchJson(p).then(function(j){
-            return { path:p, json:j };
-          }).catch(function(){
-            return step();
-          });
+          return fetchJson(p).then(function(j){ return { path:p, json:j }; }).catch(function(){ return step(); });
         }
         return step();
       }
@@ -739,11 +843,7 @@
         function step(){
           if(i >= cands.length) return Promise.reject(new Error("all candidates failed"));
           var p = cands[i++];
-          return fetchText(p).then(function(t){
-            return { path:p, text:t };
-          }).catch(function(){
-            return step();
-          });
+          return fetchText(p).then(function(t){ return { path:p, text:t }; }).catch(function(){ return step(); });
         }
         return step();
       }
@@ -752,144 +852,113 @@
         csv = safeText(csv);
         var lines = csv.split(/\r?\n/).map(function(x){ return x.trim(); }).filter(Boolean);
         if(lines.length < 2) return [];
-
         var head = lines[0].split(",").map(function(x){ return x.trim().toLowerCase(); });
         var idxDate = head.indexOf("date");
         var idxRisk = head.indexOf("risk");
-        var idxPos  = head.indexOf("positive");
+        var idxPos = head.indexOf("positive");
         if(idxPos < 0) idxPos = head.indexOf("pos");
-        var idxUnc  = head.indexOf("uncertainty");
+        var idxUnc = head.indexOf("uncertainty");
         if(idxUnc < 0) idxUnc = head.indexOf("unc");
-
         var out = [];
         for(var i = 1; i < lines.length; i++){
           var cols = lines[i].split(",");
-          if(cols.length < 2) continue;
           var d = (idxDate >= 0 ? cols[idxDate] : cols[0]) || "";
           d = safeText(d).slice(0,10);
-          var r = idxRisk >= 0 ? Number(cols[idxRisk]) : NaN;
-          var p = idxPos >= 0 ? Number(cols[idxPos]) : NaN;
-          var u = idxUnc >= 0 ? Number(cols[idxUnc]) : NaN;
           if(!d) continue;
-          out.push({ date:d, risk:clamp01(r), pos:clamp01(p), unc:clamp01(u) });
+          out.push({
+            date: d,
+            risk: clamp01(idxRisk >= 0 ? Number(cols[idxRisk]) : NaN),
+            pos: clamp01(idxPos >= 0 ? Number(cols[idxPos]) : NaN),
+            unc: clamp01(idxUnc >= 0 ? Number(cols[idxUnc]) : NaN)
+          });
         }
-
         out.sort(function(a,b){ return a.date.localeCompare(b.date); });
         return out;
       }
 
       function aggregateFromItems(items){
-        var m = {};
+        var m = Object.create(null);
         items.forEach(function(it){
           var d = safeText(it.publishedAt).slice(0,10);
           if(!d) return;
           if(!m[d]) m[d] = { date:d, n:0, risk:0, pos:0, unc:0 };
           m[d].n++;
-          m[d].risk += it.risk;
-          m[d].pos += it.pos;
-          m[d].unc += it.unc;
+          m[d].risk += Number(it.risk) || 0;
+          m[d].pos += Number(it.pos) || 0;
+          m[d].unc += Number(it.unc) || 0;
         });
-
         return Object.keys(m).sort().map(function(k){
           var x = m[k];
-          if(x.n){
-            x.risk /= x.n;
-            x.pos /= x.n;
-            x.unc /= x.n;
-          }
+          if(x.n){ x.risk /= x.n; x.pos /= x.n; x.unc /= x.n; }
           return { date:x.date, risk:x.risk, pos:x.pos, unc:x.unc };
         });
       }
 
       function makeFlatSeriesFromOverview(asOf, risk, pos, unc){
         if(!asOf || asOf === "-") return [];
-        return [{
-          date: asOf,
-          risk: clamp01(risk),
-          pos: clamp01(pos),
-          unc: clamp01(unc)
-        }];
+        return [{ date:asOf, risk:clamp01(risk), pos:clamp01(pos), unc:clamp01(unc) }];
       }
 
-      function drawCombined(canvas, series){
+      function formatDelta(series, key){
+        if(!series || !series.length) return "Δ --";
+        if(series.length === 1) return "Δ 0.000";
+        var first = Number(series[0][key]);
+        var last = Number(series[series.length - 1][key]);
+        if(!isFinite(first) || !isFinite(last)) return "Δ --";
+        var d = last - first;
+        var sign = d >= 0 ? "+" : "";
+        return "Δ " + sign + fmt3(d);
+      }
+
+      function drawAxis(canvas, series, key, stroke, fill){
         var ctx = canvas.getContext("2d");
         var ratio = window.devicePixelRatio || 1;
         var w = canvas.width = canvas.clientWidth * ratio;
-        var h = canvas.height = Math.max(220, canvas.clientHeight) * ratio;
+        var h = canvas.height = Math.max(68, canvas.clientHeight) * ratio;
         ctx.clearRect(0,0,w,h);
 
         ctx.strokeStyle = "rgba(255,255,255,.08)";
         ctx.lineWidth = 1 * ratio;
-        for(var i = 0; i <= 4; i++){
-          var y = Math.round((h - 20) * i / 4) + 10;
+        for(var i = 0; i <= 2; i++){
+          var y = Math.round((h - 16) * i / 2) + 8;
           ctx.beginPath();
-          ctx.moveTo(10, y);
-          ctx.lineTo(w - 10, y);
+          ctx.moveTo(8, y);
+          ctx.lineTo(w - 8, y);
           ctx.stroke();
         }
 
-        if(!series || !series.length){
-          safeSetText("riskNow", "--");
-          safeSetText("posNow", "--");
-          safeSetText("uncNow", "--");
-          return;
+        if(!series || !series.length) return;
+
+        function xAt(i){ return series.length <= 1 ? 8 + ((w - 16) / 2) : 8 + (w - 16) * (i / (series.length - 1)); }
+        function yAt(v){ return (h - 16) - (h - 16) * clamp01(v) + 8; }
+
+        ctx.beginPath();
+        for(var j = 0; j < series.length; j++){
+          var xx = xAt(j), yy = yAt(series[j][key]);
+          if(j === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
         }
+        if(series.length > 1){
+          ctx.lineTo(w - 8, h - 8);
+          ctx.lineTo(8, h - 8);
+          ctx.closePath();
+          ctx.fillStyle = fill;
+          ctx.fill();
+        }
+
+        ctx.beginPath();
+        for(var k = 0; k < series.length; k++){
+          var x2 = xAt(k), y2 = yAt(series[k][key]);
+          if(k === 0) ctx.moveTo(x2, y2); else ctx.lineTo(x2, y2);
+        }
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 2 * ratio;
+        ctx.stroke();
 
         var last = series[series.length - 1];
-        safeSetText("riskNow", fmt3(last.risk));
-        safeSetText("posNow", fmt3(last.pos));
-        safeSetText("uncNow", fmt3(last.unc));
-
-        function xAt(i){
-          if(series.length <= 1) return 10 + ((w - 20) / 2);
-          return 10 + (w - 20) * (i / (series.length - 1));
-        }
-
-        function yAt(v){
-          var vv = clamp01(v);
-          return (h - 20) - (h - 20) * vv + 10;
-        }
-
-        function drawOne(pick, stroke, fill){
-          ctx.beginPath();
-          for(var j = 0; j < series.length; j++){
-            var xx = xAt(j);
-            var yy = yAt(pick(series[j]));
-            if(j === 0) ctx.moveTo(xx, yy);
-            else ctx.lineTo(xx, yy);
-          }
-          if(series.length > 1){
-            ctx.lineTo(w - 10, h - 10);
-            ctx.lineTo(10, h - 10);
-            ctx.closePath();
-            ctx.fillStyle = fill;
-            ctx.fill();
-          }
-
-          ctx.beginPath();
-          for(var k = 0; k < series.length; k++){
-            var x2 = xAt(k);
-            var y2 = yAt(pick(series[k]));
-            if(k === 0) ctx.moveTo(x2, y2);
-            else ctx.lineTo(x2, y2);
-          }
-          ctx.strokeStyle = stroke;
-          ctx.lineWidth = 2 * ratio;
-          ctx.stroke();
-
-          if(series.length === 1){
-            var dotX = xAt(0);
-            var dotY = yAt(pick(series[0]));
-            ctx.beginPath();
-            ctx.arc(dotX, dotY, 4 * ratio, 0, Math.PI * 2);
-            ctx.fillStyle = stroke;
-            ctx.fill();
-          }
-        }
-
-        drawOne(function(x){ return x.risk; }, "rgba(255,120,120,.95)", "rgba(255,120,120,.08)");
-        drawOne(function(x){ return x.pos; }, "rgba(120,255,200,.95)", "rgba(120,255,200,.06)");
-        drawOne(function(x){ return x.unc; }, "rgba(255,220,120,.95)", "rgba(255,220,120,.06)");
+        ctx.beginPath();
+        ctx.arc(xAt(series.length - 1), yAt(last[key]), 3.5 * ratio, 0, Math.PI * 2);
+        ctx.fillStyle = stroke;
+        ctx.fill();
       }
 
       function render(items){
@@ -898,43 +967,28 @@
         var f = $("fSent").value;
         var s = $("sort").value;
         var showMissing = !!$("showMissing").checked;
-
         var arr = items.slice();
 
         if(q){
           arr = arr.filter(function(it){
             return (it.title || "").toLowerCase().indexOf(q) >= 0 ||
                    (it.source || "").toLowerCase().indexOf(q) >= 0 ||
+                   (it.summary || "").toLowerCase().indexOf(q) >= 0 ||
                    (it.url || "").toLowerCase().indexOf(q) >= 0;
           });
         }
 
         if(f !== "all"){
-          arr = arr.filter(function(it){
-            if(f === "pos") return it.net > 0.05;
-            if(f === "neg") return it.net < -0.05;
-            if(f === "neu") return Math.abs(it.net) <= 0.05;
-            if(f === "mix") return (it.unc >= 0.33) && (Math.abs(it.net) <= 0.12);
-            if(f === "unk") return (!isFinite(it.net)) || it.url === "" || it.title === "";
-            return true;
-          });
+          arr = arr.filter(function(it){ return (it.sentiment || "unknown") === f; });
         }
 
         if(!showMissing){
-          arr = arr.filter(function(it){
-            return !!it.url && !!it.title;
-          });
+          arr = arr.filter(function(it){ return !!it.url && !!it.title; });
         }
 
         function cmp(a,b,key){
-          var av = a[key], bv = b[key];
-          if(key === "date"){
-            var ad = safeText(a.publishedAt).slice(0,10);
-            var bd = safeText(b.publishedAt).slice(0,10);
-            return bd.localeCompare(ad);
-          }
-          av = Number(av);
-          bv = Number(bv);
+          if(key === "date") return safeText(b.publishedAt).slice(0,10).localeCompare(safeText(a.publishedAt).slice(0,10));
+          var av = Number(a[key]), bv = Number(b[key]);
           if(!isFinite(av)) av = -999;
           if(!isFinite(bv)) bv = -999;
           return bv - av;
@@ -948,19 +1002,13 @@
 
         $("totalN").textContent = String(items.length);
         $("renderedN").textContent = String(arr.length);
-
         $("kItems").textContent = "items=" + items.length;
         $("kRendered").textContent = "rendered=" + arr.length + "/" + items.length;
         $("kTrendPts").textContent = "trend_points=" + (state.series ? state.series.length : 0);
-
-        $("localPillItems").textContent = "items: " + String(items ? items.length : 0);
-        $("localPillRendered").textContent = "rendered: " + String(arr.length);
-        $("localPillTrend").textContent = "trend_points: " + String(state.series ? state.series.length : 0);
         updateLocalPills();
 
         var tbody = $("rows");
         tbody.innerHTML = "";
-
         if(!arr.length){
           var trEmpty = document.createElement("tr");
           var tdEmpty = document.createElement("td");
@@ -976,26 +1024,23 @@
           var tr = document.createElement("tr");
 
           var td0 = document.createElement("td");
-          var dv = document.createElement("div");
-          dv.className = "thumb";
-
-          if(it.urlToImage || it.url){
+          var thumb = document.createElement("div");
+          thumb.className = "thumb";
+          if(it.image || it.url){
             var img = document.createElement("img");
             img.loading = "lazy";
             img.referrerPolicy = "no-referrer";
             img.alt = "";
-            img.src = it.urlToImage || guessFaviconFromUrl(it.url);
+            img.src = it.image || guessFaviconFromUrl(it.url);
             img.onerror = function(){
               var fb = guessFaviconFromUrl(it.url);
-              if(fb && img.src !== fb) img.src = fb;
-              else dv.textContent = "•";
+              if(fb && img.src !== fb) img.src = fb; else thumb.textContent = "•";
             };
-            dv.appendChild(img);
+            thumb.appendChild(img);
           }else{
-            dv.textContent = "•";
+            thumb.textContent = "•";
           }
-
-          td0.appendChild(dv);
+          td0.appendChild(thumb);
           tr.appendChild(td0);
 
           var td1 = document.createElement("td");
@@ -1007,40 +1052,55 @@
           a.textContent = it.title || "(missing title)";
           td1.appendChild(a);
 
-          var url = document.createElement("div");
-          url.className = "aUrl";
-          url.textContent = it.url || "(missing url)";
-          td1.appendChild(url);
+          if(it.summary){
+            var sm = document.createElement("div");
+            sm.className = "aSummary";
+            sm.textContent = it.summary;
+            td1.appendChild(sm);
+          }
+
+          var u = document.createElement("div");
+          u.className = "aUrl";
+          u.textContent = it.url || "(missing url)";
+          td1.appendChild(u);
           tr.appendChild(td1);
 
           var td2 = document.createElement("td");
-          var sdiv = document.createElement("div");
-          sdiv.className = "aSrc";
-          sdiv.textContent = it.source || "-";
-          td2.appendChild(sdiv);
+          var src = document.createElement("div");
+          src.className = "aSrc";
+          src.textContent = it.source || "-";
+          td2.appendChild(src);
 
-          var ddiv = document.createElement("div");
-          ddiv.className = "aUrl";
-          ddiv.textContent = safeText(it.publishedAt).slice(0,10) || "";
-          td2.appendChild(ddiv);
+          var d = document.createElement("div");
+          d.className = "aUrl";
+          d.textContent = safeText(it.publishedAt).slice(0,10) || "";
+          td2.appendChild(d);
+
+          var badge = document.createElement("span");
+          var sentiment = it.sentiment || "unknown";
+          badge.className = "sentBadge " + (
+            sentiment === "positive" ? "sent-pos" :
+            sentiment === "negative" ? "sent-neg" :
+            sentiment === "neutral" ? "sent-neu" :
+            sentiment === "mixed" ? "sent-mix" : "sent-unk"
+          );
+          badge.textContent = sentiment;
+          td2.appendChild(badge);
           tr.appendChild(td2);
 
           var td3 = document.createElement("td");
           var mr = document.createElement("div");
           mr.className = "metricRow";
-
-          function mp(cls, label, val){
+          function pill(cls, label, val){
             var sp = document.createElement("span");
             sp.className = "mPill " + cls;
             sp.textContent = label + " " + fmt3(val);
             return sp;
           }
-
-          mr.appendChild(mp("mRisk", "risk", it.risk));
-          mr.appendChild(mp("mPos", "pos", it.pos));
-          mr.appendChild(mp("mUnc", "unc", it.unc));
-          mr.appendChild(mp("mNet", "net", it.net));
-
+          mr.appendChild(pill("mRisk", "risk", it.risk));
+          mr.appendChild(pill("mPos", "pos", it.pos));
+          mr.appendChild(pill("mUnc", "unc", it.unc));
+          mr.appendChild(pill("mNet", "net", it.net));
           td3.appendChild(mr);
           tr.appendChild(td3);
 
@@ -1055,6 +1115,14 @@
         "/analysis/sentiment_latest.json"
       ];
 
+      var WORLD_JSON_CAND = [
+        "/analysis/world_view_model_latest.json",
+        "/analysis/view_model_latest.json",
+        "/data/world_politics/analysis/view_model_latest.json",
+        "/data/digest/view/view_model_latest.json",
+        "/data/digest/view_model_latest.json"
+      ];
+
       var TS_CAND = [
         "/analysis/world_politics/analysis/sentiment_timeseries.csv",
         "/analysis/sentiment_timeseries.csv",
@@ -1064,6 +1132,7 @@
 
       var state = {
         sentPath: "-",
+        worldPath: "-",
         tsPath: "-",
         items: [],
         series: [],
@@ -1071,15 +1140,12 @@
         overview: null
       };
 
-      function updateDebug(text){
-        $("dbg").textContent = text;
-      }
+      function updateDebug(text){ $("dbg").textContent = text; }
 
       function updateLocalPills(){
         var itemsMode = (state.items && state.items.length) ? "good" : "warn";
         var asofMode = (state.asOf && state.asOf !== "-") ? "good" : "";
         var trendMode = (state.series && state.series.length) ? "good" : "warn";
-
         setLocalPill("localPillAsOf", asofMode, "as_of: " + (state.asOf || "-"));
         setLocalPill("localPillItems", itemsMode, "items: " + String(state.items ? state.items.length : 0));
         setLocalPill("localPillRendered", itemsMode, "rendered: " + ($("renderedN") ? $("renderedN").textContent : "--"));
@@ -1087,95 +1153,126 @@
       }
 
       function drawAll(){
-        drawCombined($("cvCombined"), state.series);
+        drawAxis($("cvRisk"), state.series, "risk", "rgba(255,120,120,.95)", "rgba(255,120,120,.08)");
+        drawAxis($("cvPos"), state.series, "pos", "rgba(120,255,200,.95)", "rgba(120,255,200,.06)");
+        drawAxis($("cvUnc"), state.series, "unc", "rgba(255,220,120,.95)", "rgba(255,220,120,.06)");
+
+        var last = (state.series && state.series.length) ? state.series[state.series.length - 1] : null;
+        safeSetText("riskNow", last ? fmt3(last.risk) : "--");
+        safeSetText("posNow", last ? fmt3(last.pos) : "--");
+        safeSetText("uncNow", last ? fmt3(last.unc) : "--");
+        safeSetText("riskDelta", formatDelta(state.series, "risk"));
+        safeSetText("posDelta", formatDelta(state.series, "pos"));
+        safeSetText("uncDelta", formatDelta(state.series, "unc"));
+      }
+
+      function applyOverview(overview){
+        state.overview = overview;
+        state.asOf = overview.asOf || "-";
+        safeSetText("kAsOf", state.asOf);
+        safeSetText("kRisk", fmt3(overview.risk));
+        safeSetText("kPos", fmt3(overview.pos));
+        safeSetText("kUnc", fmt3(overview.unc));
+      }
+
+      function loadTrend(items, overview){
+        return fetchTextFirst(TS_CAND).then(function(ts){
+          state.tsPath = ts.path;
+          safeSetText("kTrend", "trend: " + state.tsPath);
+          safeSetText("kTrendInline", state.tsPath);
+          safeSetHref("btnOpenTS", state.tsPath);
+          safeSetHref("btnOpenTSTop", state.tsPath);
+          var series = parseTimeseriesCsv(ts.text);
+          if(!series.length) series = aggregateFromItems(items);
+          if(!series.length) series = makeFlatSeriesFromOverview(state.asOf, overview.risk, overview.pos, overview.unc);
+          state.series = series;
+        }).catch(function(){
+          state.tsPath = "(fallback)";
+          safeSetText("kTrend", "trend: (fallback)");
+          safeSetText("kTrendInline", "(fallback)");
+          safeSetHref("btnOpenTS", "#");
+          safeSetHref("btnOpenTSTop", "#");
+          var series = aggregateFromItems(items);
+          if(!series.length) series = makeFlatSeriesFromOverview(state.asOf, overview.risk, overview.pos, overview.unc);
+          state.series = series;
+        });
       }
 
       function loadAll(){
         updateDebug("loading...");
-
         return fetchJsonFirst(SENT_JSON_CAND).then(function(res){
           state.sentPath = res.path;
-          var root = res.json || {};
-          var items = normalizeItems(root).map(normalizeOne);
-          state.items = items;
-
-          var overview = deriveOverview(root, items);
-          state.overview = overview;
-          state.asOf = overview.asOf || "-";
-
-          safeSetText("kAsOf", state.asOf);
-          safeSetText("kRisk", fmt3(overview.risk));
-          safeSetText("kPos", fmt3(overview.pos));
-          safeSetText("kUnc", fmt3(overview.unc));
-
-          safeSetText("kSrc", state.sentPath);
-          safeSetText("kSrcInline", state.sentPath);
           safeSetHref("btnOpenSent", state.sentPath);
           safeSetHref("btnOpenSentTop", state.sentPath);
 
-          return fetchTextFirst(TS_CAND).then(function(ts){
-            state.tsPath = ts.path;
-            safeSetText("kTrend", "trend: " + state.tsPath);
-            safeSetText("kTrendInline", state.tsPath);
-            safeSetHref("btnOpenTS", state.tsPath);
-            safeSetHref("btnOpenTSTop", state.tsPath);
+          var root = res.json || {};
+          var sentItems = normalizeSentItems(root);
 
-            var series = parseTimeseriesCsv(ts.text);
-            if(!series.length) series = aggregateFromItems(items);
-            if(!series.length) series = makeFlatSeriesFromOverview(state.asOf, overview.risk, overview.pos, overview.unc);
-            state.series = series;
+          return fetchJsonFirst(WORLD_JSON_CAND).then(function(worldRes){
+            state.worldPath = worldRes.path;
+            var worldCards = normalizeWorldCards(worldRes.json);
+            state.items = mergeWithWorld(sentItems, worldCards);
+            safeSetText("kSrc", "sentiment: " + state.sentPath);
+            safeSetText("kSrcInline", state.sentPath);
+            safeSetText("kWorld", "world: " + state.worldPath);
+            safeSetText("kWorldInline", state.worldPath);
 
-            render(items);
-            drawAll();
-            updateLocalPills();
+            var overview = deriveOverview(root, state.items);
+            applyOverview(overview);
 
-            window.GPGlobalStatus.load({
-              fxDecisionCandidates: [
-                "/data/fx/fx_decision_latest.json",
-                "/data/fx/fx_decision_latest_jpythb.json"
-              ]
-            }).catch(function(e){
-              console.warn(e);
+            return loadTrend(state.items, overview).then(function(){
+              render(state.items);
+              drawAll();
+              updateLocalPills();
+              if(window.GPGlobalStatus && window.GPGlobalStatus.load){
+                window.GPGlobalStatus.load({
+                  fxDecisionCandidates: [
+                    "/data/fx/fx_decision_latest.json",
+                    "/data/fx/fx_decision_latest_jpythb.json"
+                  ]
+                }).catch(function(e){ console.warn(e); });
+              }
+              updateDebug(
+                "debug: ok\n" +
+                "sentiment: " + state.sentPath + "\n" +
+                "world: " + state.worldPath + "\n" +
+                "trend: " + state.tsPath + "\n" +
+                "items=" + state.items.length + " trend_points=" + state.series.length + "\n" +
+                "today.articles=" + (overview.articles || 0)
+              );
             });
+          }).catch(function(worldErr){
+            state.worldPath = "(missing)";
+            state.items = sentItems;
+            safeSetText("kSrc", "sentiment: " + state.sentPath);
+            safeSetText("kSrcInline", state.sentPath);
+            safeSetText("kWorld", "world: (missing)");
+            safeSetText("kWorldInline", "(missing)");
 
-            updateDebug(
-              "debug: ok\n" +
-              "sentiment: " + state.sentPath + "\n" +
-              "trend: " + state.tsPath + "\n" +
-              "items=" + items.length + " trend_points=" + series.length + "\n" +
-              "today.articles=" + (overview.articles || 0)
-            );
-          }).catch(function(){
-            state.tsPath = "(missing)";
-            safeSetText("kTrend", "trend: (missing)");
-            safeSetText("kTrendInline", "(missing)");
-            safeSetHref("btnOpenTS", "#");
-            safeSetHref("btnOpenTSTop", "#");
+            var overview = deriveOverview(root, state.items);
+            applyOverview(overview);
 
-            var series2 = aggregateFromItems(items);
-            if(!series2.length) series2 = makeFlatSeriesFromOverview(state.asOf, overview.risk, overview.pos, overview.unc);
-            state.series = series2;
-
-            render(items);
-            drawAll();
-            updateLocalPills();
-
-            window.GPGlobalStatus.load({
-              fxDecisionCandidates: [
-                "/data/fx/fx_decision_latest.json",
-                "/data/fx/fx_decision_latest_jpythb.json"
-              ]
-            }).catch(function(e){
-              console.warn(e);
+            return loadTrend(state.items, overview).then(function(){
+              render(state.items);
+              drawAll();
+              updateLocalPills();
+              if(window.GPGlobalStatus && window.GPGlobalStatus.load){
+                window.GPGlobalStatus.load({
+                  fxDecisionCandidates: [
+                    "/data/fx/fx_decision_latest.json",
+                    "/data/fx/fx_decision_latest_jpythb.json"
+                  ]
+                }).catch(function(e){ console.warn(e); });
+              }
+              updateDebug(
+                "debug: ok (world fallback)\n" +
+                "sentiment: " + state.sentPath + "\n" +
+                "world: (missing: " + safeText(worldErr && worldErr.message) + ")\n" +
+                "trend: " + state.tsPath + "\n" +
+                "items=" + state.items.length + " trend_points=" + state.series.length + "\n" +
+                "today.articles=" + (overview.articles || 0)
+              );
             });
-
-            updateDebug(
-              "debug: ok (trend fallback)\n" +
-              "sentiment: " + state.sentPath + "\n" +
-              "trend: (fallback)\n" +
-              "items=" + items.length + " trend_points=" + series2.length + "\n" +
-              "today.articles=" + (overview.articles || 0)
-            );
           });
         }).catch(function(e){
           state.items = [];
@@ -1189,11 +1286,7 @@
       }
 
       function wire(){
-        $("btnReload").addEventListener("click", function(ev){
-          ev.preventDefault();
-          loadAll();
-        });
-
+        $("btnReload").addEventListener("click", function(ev){ ev.preventDefault(); loadAll(); });
         $("btnReset").addEventListener("click", function(ev){
           ev.preventDefault();
           $("q").value = "";
@@ -1202,15 +1295,11 @@
           $("showMissing").checked = true;
           render(state.items);
         });
-
         $("q").addEventListener("input", function(){ render(state.items); });
         $("fSent").addEventListener("change", function(){ render(state.items); });
         $("sort").addEventListener("change", function(){ render(state.items); });
         $("showMissing").addEventListener("change", function(){ render(state.items); });
-
-        window.addEventListener("resize", function(){
-          drawAll();
-        });
+        window.addEventListener("resize", function(){ drawAll(); });
       }
 
       wire();
