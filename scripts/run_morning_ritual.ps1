@@ -7,7 +7,8 @@ param(
     [switch]$SkipFx,
     [switch]$SkipHealth,
     [switch]$SkipRefresh,
-    [switch]$ContinueOnError
+    [switch]$ContinueOnError,
+    [switch]$Pretty
 )
 
 Set-StrictMode -Version Latest
@@ -58,8 +59,11 @@ function Invoke-Step {
     }
 }
 
-function Test-ScriptSupportsDate {
-    param([string]$ScriptPath)
+function Test-ScriptSupportsParameter {
+    param(
+        [string]$ScriptPath,
+        [string]$ParameterName
+    )
 
     if (-not (Test-Path -LiteralPath $ScriptPath)) {
         return $false
@@ -67,7 +71,7 @@ function Test-ScriptSupportsDate {
 
     try {
         $text = Get-Content -LiteralPath $ScriptPath -Raw -Encoding UTF8
-        if ($text -match '(?is)param\s*\(' -and $text -match '(?i)\$Date\b') {
+        if ($text -match '(?is)param\s*\(' -and $text -match ("(?i)\[" + "switch" + "\]\s*\$" + [regex]::Escape($ParameterName) + "\b|(?i)\[" + "string" + "\]\s*\$" + [regex]::Escape($ParameterName) + "\b|(?i)\$" + [regex]::Escape($ParameterName) + "\b")) {
             return $true
         }
     }
@@ -78,12 +82,18 @@ function Test-ScriptSupportsDate {
     return $false
 }
 
+function Test-ScriptSupportsDate {
+    param([string]$ScriptPath)
+    return (Test-ScriptSupportsParameter -ScriptPath $ScriptPath -ParameterName "Date")
+}
+
 function Invoke-PowerShellFile {
     param(
         [string]$Name,
         [string]$ScriptPath,
         [string]$DateValue = "",
-        [switch]$PassAllowDirtyRepo
+        [switch]$PassAllowDirtyRepo,
+        [switch]$PassPretty
     )
 
     if (-not (Test-Path -LiteralPath $ScriptPath)) {
@@ -100,8 +110,12 @@ function Invoke-PowerShellFile {
         $args += @("-Date", $DateValue)
     }
 
-    if ($PassAllowDirtyRepo) {
+    if ($PassAllowDirtyRepo -and (Test-ScriptSupportsParameter -ScriptPath $ScriptPath -ParameterName "AllowDirtyRepo")) {
         $args += "-AllowDirtyRepo"
+    }
+
+    if ($PassPretty -and (Test-ScriptSupportsParameter -ScriptPath $ScriptPath -ParameterName "Pretty")) {
+        $args += "-Pretty"
     }
 
     Write-Host ("CMD: powershell " + ($args -join " "))
@@ -183,6 +197,31 @@ function Find-FirstExistingPath {
     return $null
 }
 
+function Show-GlobalStatusSummary {
+    param([string]$RepoRoot)
+
+    $globalStatusPath = Join-Path $RepoRoot "analysis\global_status_latest.json"
+    if (-not (Test-Path -LiteralPath $globalStatusPath)) {
+        Write-Log "[INFO] analysis\global_status_latest.json not found."
+        return
+    }
+
+    try {
+        $json = Get-Content -LiteralPath $globalStatusPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        Write-Host ""
+        Write-Host "=== Global Status ==="
+        Write-Host "AS_OF     : $($json.as_of)"
+        Write-Host "RISK      : $($json.global_risk)"
+        Write-Host "SENTIMENT : $($json.sentiment_balance)"
+        Write-Host "FX        : $($json.fx_regime)"
+        Write-Host "ARTICLES  : $($json.articles)"
+        Write-Host "HEALTH    : $($json.health)"
+    }
+    catch {
+        Write-Warning "global_status_latest.json exists but could not be parsed: $($_.Exception.Message)"
+    }
+}
+
 $Root = Resolve-RepoRoot -ExplicitRoot $Root
 if ([string]::IsNullOrWhiteSpace($Date)) {
     $Date = Get-Date -Format "yyyy-MM-dd"
@@ -207,6 +246,7 @@ Write-Host ("PREDICTION  : " + ($(if ($SkipPredictionLayer) { "SKIP" } else { "R
 Write-Host ("FX          : " + ($(if ($SkipFx) { "SKIP" } else { "RUN" })))
 Write-Host ("HEALTH      : " + ($(if ($SkipHealth) { "SKIP" } else { "RUN" })))
 Write-Host ("REFRESH     : " + ($(if ($SkipRefresh) { "SKIP" } else { "RUN" })))
+Write-Host ("PRETTY      : " + ($(if ($Pretty) { "ON" } else { "OFF" })))
 Write-Host ""
 
 Push-Location $Root
@@ -349,8 +389,8 @@ try {
     if (-not $SkipRefresh) {
         Invoke-Step -Name "Refresh latest artifacts" -Action {
             $refreshCandidates = @(
-                (Join-Path $scriptsDir "refresh_latest.ps1"),
                 (Join-Path $scriptsDir "refresh_latest_artifacts.ps1"),
+                (Join-Path $scriptsDir "refresh_latest.ps1"),
                 (Join-Path $scriptsDir "materialize_latest.ps1")
             )
 
@@ -363,9 +403,12 @@ try {
             Invoke-PowerShellFile `
                 -Name "Refresh latest artifacts" `
                 -ScriptPath $refreshScript `
-                -DateValue $Date
+                -DateValue $Date `
+                -PassPretty:$Pretty
         }
     }
+
+    Show-GlobalStatusSummary -RepoRoot $Root
 
     Write-Log "Morning Ritual completed successfully."
     exit 0
