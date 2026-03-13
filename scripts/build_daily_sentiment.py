@@ -1,15 +1,22 @@
-
 from __future__ import annotations
 
 # scripts/build_daily_sentiment.py
-# Build sentiment_latest.json (and dated sentiment_YYYY-MM-DD.json) from daily_news_YYYY-MM-DD.json
+# Build sentiment_latest.json (and dated sentiment_YYYY-MM-DD.json)
 #
-# Output schema is kept compatible with existing Sentiment / Digest consumers, while
-# adding per-item sentiment labels:
+# Primary input:
+#   data/world_politics/YYYY-MM-DD.json   (NewsAPI raw daily file)
+#
+# Fallback input:
+#   data/world_politics/analysis/daily_news_YYYY-MM-DD.json
+#
+# Output schema is kept compatible with existing Sentiment / Digest consumers,
+# while adding per-item fields useful for UI article cards:
 #   positive / negative / neutral / mixed
+#   publishedAt
+#   image
 #
 # Usage:
-#   .\.venv\Scripts\python.exe scripts/build_daily_sentiment.py --date 2026-03-06
+#   .\.venv\Scripts\python.exe scripts/build_daily_sentiment.py --date 2026-03-13
 
 import argparse
 import json
@@ -20,8 +27,10 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List
 
 ROOT = Path(__file__).resolve().parents[1]
-ANALYSIS_DIR = ROOT / "data" / "world_politics" / "analysis"
-DAILY_NEWS_TMPL = ANALYSIS_DIR / "daily_news_latest.json"
+
+DATA_WORLD_DIR = ROOT / "data" / "world_politics"
+ANALYSIS_DIR = DATA_WORLD_DIR / "analysis"
+
 OUT_LATEST = ANALYSIS_DIR / "sentiment_latest.json"
 OUT_DATED_TMPL = ANALYSIS_DIR / "sentiment_{date}.json"
 
@@ -80,6 +89,10 @@ def _pick(obj: Any, keys: Iterable[str], default: Any = None) -> Any:
     return default
 
 
+def _as_str(value: Any) -> str:
+    return "" if value is None else str(value)
+
+
 def _extract_items(doc: Any) -> List[Dict[str, Any]]:
     if isinstance(doc, dict):
         for key in ("items", "articles", "rows", "data", "news"):
@@ -94,6 +107,31 @@ def _extract_items(doc: Any) -> List[Dict[str, Any]]:
 def _tokenize(*parts: str) -> List[str]:
     text = " ".join(p for p in parts if p)
     return [m.group(0).lower() for m in TOKEN_RE.finditer(text)]
+
+
+def _source_name(it: Dict[str, Any]) -> str:
+    src = it.get("source")
+    if isinstance(src, dict):
+        return _as_str(src.get("name") or src.get("id") or "")
+    return _as_str(
+        _pick(it, ["source", "publisher", "site", "domain"], "") or ""
+    )
+
+
+def _image_url(it: Dict[str, Any]) -> str:
+    return _as_str(
+        _pick(it, ["urlToImage", "image", "thumbnail", "thumb", "og_image"], "") or ""
+    )
+
+
+def _published_at(it: Dict[str, Any]) -> str:
+    return _as_str(
+        _pick(
+            it,
+            ["publishedAt", "published_at", "pubDate", "date", "datetime"],
+            "",
+        ) or ""
+    )
 
 
 def score_text(title: str, desc: str) -> Score:
@@ -150,15 +188,36 @@ def _label_counts(items: List[Dict[str, Any]]) -> Dict[str, int]:
     return out
 
 
+def _resolve_input(date: str) -> Path:
+    raw_daily = DATA_WORLD_DIR / f"{date}.json"
+    analysis_daily = ANALYSIS_DIR / f"daily_news_{date}.json"
+    latest_daily = ANALYSIS_DIR / "daily_news_latest.json"
+
+    # Prefer NewsAPI raw daily file because it contains full article objects.
+    if raw_daily.exists():
+        return raw_daily
+
+    # Fallback to dated analysis file if raw is missing.
+    if analysis_daily.exists():
+        return analysis_daily
+
+    # Last fallback to latest alias.
+    if latest_daily.exists():
+        return latest_daily
+
+    raise SystemExit(
+        "[ERR] missing daily news input: "
+        f"{raw_daily} / {analysis_daily} / {latest_daily}"
+    )
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", required=True, help="YYYY-MM-DD")
     args = ap.parse_args()
 
     date = args.date.strip()
-    src = DAILY_NEWS_TMPL.with_name(f"daily_news_{date}.json")
-    if not src.exists():
-        raise SystemExit(f"[ERR] missing daily news: {src}")
+    src = _resolve_input(date)
 
     doc = json.loads(src.read_text(encoding="utf-8"))
     items = _extract_items(doc)
@@ -168,12 +227,14 @@ def main() -> int:
     fallback = 0
 
     for it in items:
-        url = _pick(it, ["url", "link", "href"], "") or ""
-        title = _pick(it, ["title", "headline", "name"], "") or ""
-        desc = _pick(it, ["description", "summary", "content", "snippet"], "") or ""
-        source = _pick(it, ["source", "publisher", "site", "domain"], "") or ""
+        url = _as_str(_pick(it, ["url", "link", "href"], "") or "")
+        title = _as_str(_pick(it, ["title", "headline", "name"], "") or "")
+        desc = _as_str(_pick(it, ["description", "summary", "content", "snippet"], "") or "")
+        source = _source_name(it)
+        published_at = _published_at(it)
+        image = _image_url(it)
 
-        s = score_text(str(title), str(desc))
+        s = score_text(title, desc)
         label = classify_sentiment(s)
 
         if s.method == "lex":
@@ -187,6 +248,8 @@ def main() -> int:
                 "title": title,
                 "source": source,
                 "description": desc,
+                "publishedAt": published_at,
+                "image": image,
                 "risk": round(s.risk, 6),
                 "positive": round(s.positive, 6),
                 "uncertainty": round(s.uncertainty, 6),
