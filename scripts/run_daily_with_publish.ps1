@@ -108,8 +108,13 @@ if ([string]::IsNullOrWhiteSpace($Date)) {
 
 $python = Join-Path $Root ".venv\Scripts\python.exe"
 $scriptsDir = Join-Path $Root "scripts"
+
 $dataDir = Join-Path $Root "data\world_politics"
 $dataAnalysisDir = Join-Path $dataDir "analysis"
+
+$digestDir = Join-Path $Root "data\digest"
+$digestViewDir = Join-Path $digestDir "view"
+
 $analysisDir = Join-Path $Root "analysis"
 $predictionDir = Join-Path $analysisDir "prediction"
 $predictionHistoryDir = Join-Path $analysisDir "prediction_history"
@@ -117,6 +122,7 @@ $predictionHistoryDir = Join-Path $analysisDir "prediction_history"
 Ensure-Dir -PathToEnsure $analysisDir
 Ensure-Dir -PathToEnsure $predictionDir
 Ensure-Dir -PathToEnsure $predictionHistoryDir
+Ensure-Dir -PathToEnsure $digestViewDir
 
 Write-Host "GenesisPrediction v2 - run_daily_with_publish"
 Write-Host "ROOT : $Root"
@@ -250,6 +256,25 @@ if daily_summary_path.exists():
         Invoke-PythonScript -PythonExe $python `
             -ScriptPath (Join-Path $scriptsDir "build_daily_sentiment.py") `
             -Arguments @("--date", $Date)
+
+        $sentLatest = Join-Path $dataAnalysisDir "sentiment_latest.json"
+        $sentDated  = Join-Path $dataAnalysisDir ("sentiment_{0}.json" -f $Date)
+
+        Copy-IfExists -SourcePath $sentLatest -DestinationPath $sentDated | Out-Null
+        Copy-IfExists -SourcePath $sentLatest -DestinationPath (Join-Path $analysisDir "sentiment_latest.json") | Out-Null
+    }
+
+    Invoke-Step -Name "2.5) Build world view model latest" -Action {
+        if ($SkipDigest) {
+            Write-Log "[SKIP] world view model build skipped because digest phase is skipped by flag."
+            return
+        }
+
+        Invoke-PythonScript -PythonExe $python `
+            -ScriptPath (Join-Path $scriptsDir "build_world_view_model_latest.py")
+
+        $worldViewLatest = Join-Path $dataAnalysisDir "view_model_latest.json"
+        Copy-IfExists -SourcePath $worldViewLatest -DestinationPath (Join-Path $analysisDir "view_model_latest.json") | Out-Null
     }
 
     Invoke-Step -Name "3) Build digest view model" -Action {
@@ -258,18 +283,34 @@ if daily_summary_path.exists():
             return
         }
 
-        $digestCandidates = @(
-            (Join-Path $scriptsDir "build_digest_view_model.py"),
-            (Join-Path $scriptsDir "build_digest.py")
-        )
-
-        $digestScript = $digestCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
-        if ($null -eq $digestScript -or [string]::IsNullOrWhiteSpace($digestScript)) {
-            Write-Log "[SKIP] digest builder not found."
-            return
+        $digestBuilder = Join-Path $scriptsDir "build_digest_view_model.py"
+        if (Test-Path -LiteralPath $digestBuilder) {
+            Invoke-PythonScript -PythonExe $python `
+                -ScriptPath $digestBuilder `
+                -Arguments @("--date", $Date)
+        }
+        else {
+            Write-Log "[SKIP] missing script: $digestBuilder"
         }
 
-        Invoke-PythonScript -PythonExe $python -ScriptPath $digestScript -Arguments @("--date", $Date)
+        $digestLatestCandidates = @(
+            (Join-Path $digestDir "view_model_latest.json"),
+            (Join-Path $digestViewDir "view_model_latest.json"),
+            (Join-Path $digestViewDir "$Date.json")
+        )
+
+        $digestLatestFound = $false
+        foreach ($candidate in $digestLatestCandidates) {
+            if (Test-Path -LiteralPath $candidate) {
+                Copy-IfExists -SourcePath $candidate -DestinationPath (Join-Path $analysisDir "view_model_latest.json") | Out-Null
+                $digestLatestFound = $true
+                break
+            }
+        }
+
+        if (-not $digestLatestFound) {
+            Write-Log "[INFO] digest latest alias not found; root analysis/view_model_latest.json remains world view model."
+        }
     }
 
     Invoke-Step -Name "4) Prediction pipeline" -Action {
@@ -278,47 +319,67 @@ if daily_summary_path.exists():
             return
         }
 
-        Invoke-PythonScript -PythonExe $python `
-            -ScriptPath (Join-Path $scriptsDir "trend_engine.py")
+        $predictionRunner = Join-Path $scriptsDir "run_prediction_pipeline.py"
+        if (-not (Test-Path -LiteralPath $predictionRunner)) {
+            Write-Log "[SKIP] missing script: $predictionRunner"
+            return
+        }
 
         Invoke-PythonScript -PythonExe $python `
-            -ScriptPath (Join-Path $scriptsDir "signal_engine.py")
+            -ScriptPath $predictionRunner `
+            -Arguments @("--date", $Date)
 
-        Invoke-PythonScript -PythonExe $python `
-            -ScriptPath (Join-Path $scriptsDir "scenario_engine.py")
-
-        Invoke-PythonScript -PythonExe $python `
-            -ScriptPath (Join-Path $scriptsDir "prediction_engine.py")
-    }
-
-    Invoke-Step -Name "5) Publish prediction snapshot" -Action {
-        $datedDir = Join-Path $predictionHistoryDir $Date
-        Ensure-Dir -PathToEnsure $datedDir
-
-        $predictionFiles = @(
+        $predFiles = @(
             "trend_latest.json",
             "signal_latest.json",
-            "early_warning_latest.json",
             "scenario_latest.json",
-            "prediction_latest.json"
+            "prediction_latest.json",
+            "early_warning_latest.json"
         )
 
-        foreach ($name in $predictionFiles) {
+        foreach ($name in $predFiles) {
             $src = Join-Path $predictionDir $name
-            if (Test-Path -LiteralPath $src) {
-                Copy-Item -LiteralPath $src -Destination (Join-Path $datedDir $name) -Force
-                Write-Log "[OK] snapshot: $name"
-            }
+            Copy-IfExists -SourcePath $src -DestinationPath (Join-Path $analysisDir $name) | Out-Null
+        }
+
+        $datedHistoryDir = Join-Path $predictionHistoryDir $Date
+        Ensure-Dir -PathToEnsure $datedHistoryDir
+
+        $historyMap = @{
+            "trend_latest.json"        = "trend.json"
+            "signal_latest.json"       = "signal.json"
+            "scenario_latest.json"     = "scenario.json"
+            "prediction_latest.json"   = "prediction.json"
+            "early_warning_latest.json"= "early_warning.json"
+        }
+
+        foreach ($latestName in $historyMap.Keys) {
+            $src = Join-Path $predictionDir $latestName
+            $dst = Join-Path $datedHistoryDir $historyMap[$latestName]
+            Copy-IfExists -SourcePath $src -DestinationPath $dst | Out-Null
         }
     }
 
-    Write-Log "run_daily_with_publish completed successfully."
-    exit 0
-}
-catch {
-    Write-Host "run_daily_with_publish finished with warnings/errors."
-    Write-Error $_
-    exit 1
+    Invoke-Step -Name "5) Publish aliases" -Action {
+        $publishPairs = @(
+            @{ Src = (Join-Path $dataAnalysisDir "daily_news_latest.json");              Dst = (Join-Path $analysisDir "daily_news_latest.json") },
+            @{ Src = (Join-Path $dataAnalysisDir "daily_summary_latest.json");           Dst = (Join-Path $analysisDir "daily_summary_latest.json") },
+            @{ Src = (Join-Path $dataAnalysisDir "sentiment_latest.json");               Dst = (Join-Path $analysisDir "sentiment_latest.json") },
+            @{ Src = (Join-Path $dataAnalysisDir "view_model_latest.json");              Dst = (Join-Path $analysisDir "world_view_model_latest.json") },
+            @{ Src = (Join-Path $Root "data\digest\health_latest.json");                 Dst = (Join-Path $analysisDir "health_latest.json") },
+            @{ Src = (Join-Path $predictionDir "trend_latest.json");                     Dst = (Join-Path $analysisDir "trend_latest.json") },
+            @{ Src = (Join-Path $predictionDir "signal_latest.json");                    Dst = (Join-Path $analysisDir "signal_latest.json") },
+            @{ Src = (Join-Path $predictionDir "scenario_latest.json");                  Dst = (Join-Path $analysisDir "scenario_latest.json") },
+            @{ Src = (Join-Path $predictionDir "prediction_latest.json");                Dst = (Join-Path $analysisDir "prediction_latest.json") },
+            @{ Src = (Join-Path $predictionDir "early_warning_latest.json");             Dst = (Join-Path $analysisDir "early_warning_latest.json") }
+        )
+
+        foreach ($pair in $publishPairs) {
+            Copy-IfExists -SourcePath $pair.Src -DestinationPath $pair.Dst | Out-Null
+        }
+    }
+
+    Write-Log "[DONE] run_daily_with_publish completed."
 }
 finally {
     Pop-Location
