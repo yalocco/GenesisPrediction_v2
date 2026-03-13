@@ -3,6 +3,7 @@ param(
     [string]$Root = "",
     [switch]$AllowDirtyRepo,
     [switch]$SkipMain,
+    [switch]$SkipPredictionLayer,
     [switch]$SkipFx,
     [switch]$SkipHealth,
     [switch]$SkipRefresh,
@@ -110,21 +111,102 @@ function Invoke-PowerShellFile {
     }
 }
 
+function Resolve-PythonCommand {
+    param([string]$RepoRoot)
+
+    $venvPython = Join-Path $RepoRoot ".venv\Scripts\python.exe"
+    if (Test-Path -LiteralPath $venvPython) {
+        return @{
+            Executable = $venvPython
+            PrefixArgs = @()
+            Display = $venvPython
+        }
+    }
+
+    $pythonCmd = Get-Command python -ErrorAction SilentlyContinue
+    if ($null -ne $pythonCmd) {
+        return @{
+            Executable = $pythonCmd.Source
+            PrefixArgs = @()
+            Display = $pythonCmd.Source
+        }
+    }
+
+    $pyCmd = Get-Command py -ErrorAction SilentlyContinue
+    if ($null -ne $pyCmd) {
+        return @{
+            Executable = $pyCmd.Source
+            PrefixArgs = @("-3")
+            Display = "$($pyCmd.Source) -3"
+        }
+    }
+
+    throw "Python executable not found. Expected .venv\Scripts\python.exe, python, or py -3."
+}
+
+function Invoke-PythonFile {
+    param(
+        [string]$Name,
+        [string]$ScriptPath,
+        [string[]]$Arguments = @()
+    )
+
+    if (-not (Test-Path -LiteralPath $ScriptPath)) {
+        Write-Log "[SKIP] missing script: $ScriptPath"
+        return
+    }
+
+    $python = Resolve-PythonCommand -RepoRoot $Root
+    $cmdArgs = @()
+    $cmdArgs += $python.PrefixArgs
+    $cmdArgs += $ScriptPath
+    if ($Arguments.Count -gt 0) {
+        $cmdArgs += $Arguments
+    }
+
+    Write-Host ("CMD: " + $python.Display + " " + ($cmdArgs -join " "))
+    & $python.Executable @cmdArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "$Name failed with exit code $LASTEXITCODE."
+    }
+}
+
+function Find-FirstExistingPath {
+    param([string[]]$Candidates)
+
+    foreach ($candidate in $Candidates) {
+        if (Test-Path -LiteralPath $candidate) {
+            return $candidate
+        }
+    }
+
+    return $null
+}
+
 $Root = Resolve-RepoRoot -ExplicitRoot $Root
 if ([string]::IsNullOrWhiteSpace($Date)) {
     $Date = Get-Date -Format "yyyy-MM-dd"
 }
 
 $scriptsDir = Join-Path $Root "scripts"
+$analysisDir = Join-Path $Root "analysis"
+$predictionDir = Join-Path $analysisDir "prediction"
+
+$trendOutput = Join-Path $predictionDir "trend_latest.json"
+$signalOutput = Join-Path $predictionDir "signal_latest.json"
+$earlyWarningOutput = Join-Path $predictionDir "early_warning_latest.json"
+$scenarioOutput = Join-Path $predictionDir "scenario_latest.json"
+$predictionOutput = Join-Path $predictionDir "prediction_latest.json"
 
 Write-Host "Morning Ritual (single entrypoint)"
-Write-Host "ROOT      : $Root"
-Write-Host "DATE      : $Date"
-Write-Host ("GUARD     : " + ($(if ($AllowDirtyRepo) { "OFF" } else { "ON" })))
-Write-Host ("MAIN      : " + ($(if ($SkipMain) { "SKIP" } else { "RUN" })))
-Write-Host ("FX        : " + ($(if ($SkipFx) { "SKIP" } else { "RUN" })))
-Write-Host ("HEALTH    : " + ($(if ($SkipHealth) { "SKIP" } else { "RUN" })))
-Write-Host ("REFRESH   : " + ($(if ($SkipRefresh) { "SKIP" } else { "RUN" })))
+Write-Host "ROOT        : $Root"
+Write-Host "DATE        : $Date"
+Write-Host ("GUARD       : " + ($(if ($AllowDirtyRepo) { "OFF" } else { "ON" })))
+Write-Host ("MAIN        : " + ($(if ($SkipMain) { "SKIP" } else { "RUN" })))
+Write-Host ("PREDICTION  : " + ($(if ($SkipPredictionLayer) { "SKIP" } else { "RUN" })))
+Write-Host ("FX          : " + ($(if ($SkipFx) { "SKIP" } else { "RUN" })))
+Write-Host ("HEALTH      : " + ($(if ($SkipHealth) { "SKIP" } else { "RUN" })))
+Write-Host ("REFRESH     : " + ($(if ($SkipRefresh) { "SKIP" } else { "RUN" })))
 Write-Host ""
 
 Push-Location $Root
@@ -139,6 +221,10 @@ try {
         Write-Log "Dirty repo allowed by flag."
     }
 
+    if (-not (Test-Path -LiteralPath $predictionDir)) {
+        New-Item -ItemType Directory -Force -Path $predictionDir | Out-Null
+    }
+
     if (-not $SkipMain) {
         Invoke-Step -Name "1) run_daily_with_publish" -Action {
             Invoke-PowerShellFile `
@@ -146,6 +232,85 @@ try {
                 -ScriptPath (Join-Path $scriptsDir "run_daily_with_publish.ps1") `
                 -DateValue $Date `
                 -PassAllowDirtyRepo:$AllowDirtyRepo
+        }
+    }
+
+    if (-not $SkipPredictionLayer) {
+        Invoke-Step -Name "Prediction Layer 1) Trend build" -Action {
+            $trendScript = Find-FirstExistingPath -Candidates @(
+                (Join-Path $scriptsDir "trend_engine.py"),
+                (Join-Path $scriptsDir "build_trend_latest.py")
+            )
+
+            if ($null -eq $trendScript) {
+                Write-Log "[SKIP] trend build script not found."
+                return
+            }
+
+            $trendArgs = @()
+            if ((Split-Path -Leaf $trendScript) -ieq "trend_engine.py") {
+                $trendArgs = @(
+                    "--analysis-root", "analysis"
+                )
+            }
+
+            Invoke-PythonFile `
+                -Name "Prediction Layer 1) Trend build" `
+                -ScriptPath $trendScript `
+                -Arguments $trendArgs
+        }
+
+        Invoke-Step -Name "Prediction Layer 2) Signal build" -Action {
+            $signalScript = Join-Path $scriptsDir "signal_engine.py"
+            if (-not (Test-Path -LiteralPath $signalScript)) {
+                Write-Log "[SKIP] signal_engine.py not found."
+                return
+            }
+
+            Invoke-PythonFile `
+                -Name "Prediction Layer 2) Signal build" `
+                -ScriptPath $signalScript `
+                -Arguments @(
+                    "--analysis-root", "analysis",
+                    "--trend-input", $trendOutput,
+                    "--signal-output", $signalOutput,
+                    "--early-warning-output", $earlyWarningOutput
+                )
+        }
+
+        Invoke-Step -Name "Prediction Layer 3) Scenario build" -Action {
+            $scenarioScript = Join-Path $scriptsDir "scenario_engine.py"
+            if (-not (Test-Path -LiteralPath $scenarioScript)) {
+                Write-Log "[SKIP] scenario_engine.py not found."
+                return
+            }
+
+            Invoke-PythonFile `
+                -Name "Prediction Layer 3) Scenario build" `
+                -ScriptPath $scenarioScript `
+                -Arguments @(
+                    "--root", $Root,
+                    "--input", $signalOutput,
+                    "--early-warning-input", $earlyWarningOutput,
+                    "--output-dir", $predictionDir
+                )
+        }
+
+        Invoke-Step -Name "Prediction Layer 4) Prediction build" -Action {
+            $predictionScript = Join-Path $scriptsDir "prediction_engine.py"
+            if (-not (Test-Path -LiteralPath $predictionScript)) {
+                Write-Log "[SKIP] prediction_engine.py not found."
+                return
+            }
+
+            Invoke-PythonFile `
+                -Name "Prediction Layer 4) Prediction build" `
+                -ScriptPath $predictionScript `
+                -Arguments @(
+                    "--root", $Root,
+                    "--input", $scenarioOutput,
+                    "--output-dir", $predictionDir
+                )
         }
     }
 
