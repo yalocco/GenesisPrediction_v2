@@ -60,14 +60,15 @@
   }
 
   function mountIntoTarget(target, html) {
-    if (!target) return;
+    if (!target) return false;
 
     if (target.dataset.layoutMounted === "1" && target.innerHTML.trim() === html) {
-      return;
+      return false;
     }
 
     target.innerHTML = html;
     target.dataset.layoutMounted = "1";
+    return true;
   }
 
   function applyActiveNav(activeKey) {
@@ -87,95 +88,7 @@
     });
   }
 
-  function mountSharedLayout() {
-    const activeKey = currentPageKey();
-
-    const headerTarget = document.getElementById("site-header");
-    const footerTarget = document.getElementById("site-footer");
-
-    mountIntoTarget(headerTarget, HEADER_HTML);
-    mountIntoTarget(footerTarget, FOOTER_HTML);
-    applyActiveNav(activeKey);
-  }
-
-  async function fetchJson(url) {
-    try {
-      const res = await fetch(url, { cache: "no-store" });
-      if (!res.ok) {
-        throw new Error("HTTP " + res.status);
-      }
-      return await res.json();
-    } catch (_err) {
-      return null;
-    }
-  }
-
-  function firstString() {
-    for (let i = 0; i < arguments.length; i += 1) {
-      const value = arguments[i];
-      if (typeof value === "string" && value.trim()) {
-        return value.trim();
-      }
-    }
-    return "";
-  }
-
-  function normalizeHealthStatus(health) {
-    if (!health || typeof health !== "object") {
-      return "--";
-    }
-
-    const raw =
-      firstString(
-        health.status,
-        health.overall,
-        health.state,
-        health.health
-      ) || "--";
-
-    const lower = raw.toLowerCase();
-
-    if (lower === "ok" || lower === "ready" || lower === "healthy") {
-      return "OK";
-    }
-
-    if (lower === "warn" || lower === "warning") {
-      return "WARN";
-    }
-
-    if (lower === "error" || lower === "failed" || lower === "critical") {
-      return "ERROR";
-    }
-
-    return raw;
-  }
-
-  function formatAsOf(value) {
-    if (!value) return "--";
-
-    const text = String(value).trim();
-    if (!text) return "--";
-
-    const m = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (m) {
-      return `${m[1]}-${m[2]}-${m[3]}`;
-    }
-
-    const d = new Date(text);
-    if (Number.isNaN(d.getTime())) {
-      return text;
-    }
-
-    const y = d.getFullYear();
-    const mo = String(d.getMonth() + 1).padStart(2, "0");
-    const da = String(d.getDate()).padStart(2, "0");
-    return `${y}-${mo}-${da}`;
-  }
-
-  function setHealthText(status, asOf) {
-    const safeStatus = status || "--";
-    const safeAsOf = asOf || "--";
-
+  function setHeaderFallback() {
     const pillReady = document.getElementById("pillReady");
     const pillHealth = document.getElementById("pillHealth");
     const pillAsOf = document.getElementById("pillAsOf");
@@ -184,49 +97,60 @@
     if (pillReady) {
       pillReady.textContent = "Ready";
     }
-
     if (pillHealth) {
-      pillHealth.textContent = `Health: ${safeStatus}`;
+      pillHealth.textContent = "Health: --";
     }
-
     if (pillAsOf) {
-      pillAsOf.textContent = `as_of: ${safeAsOf}`;
+      pillAsOf.textContent = "as_of: --";
     }
-
     if (legacyHealth) {
-      legacyHealth.textContent = `Ready Health: ${safeStatus} as_of: ${safeAsOf}`;
+      legacyHealth.textContent = "Ready Health: -- as_of: --";
     }
   }
 
-  async function updateGlobalHealth() {
-    setHealthText("--", "--");
+  function mountSharedLayout() {
+    const activeKey = currentPageKey();
 
-    const health = await fetchJson("/analysis/health_latest.json");
+    const headerTarget = document.getElementById("site-header");
+    const footerTarget = document.getElementById("site-footer");
 
-    if (!health) {
-      setHealthText("--", "--");
-      return;
+    const headerMounted = mountIntoTarget(headerTarget, HEADER_HTML);
+    const footerMounted = mountIntoTarget(footerTarget, FOOTER_HTML);
+
+    applyActiveNav(activeKey);
+    setHeaderFallback();
+
+    return headerMounted || footerMounted;
+  }
+
+  async function refreshSharedStatus() {
+    if (typeof window.refreshGlobalStatus === "function") {
+      try {
+        await window.refreshGlobalStatus();
+        return;
+      } catch (err) {
+        console.error("[layout] refreshGlobalStatus failed:", err);
+      }
     }
 
-    const status = normalizeHealthStatus(health);
-    const asOf = formatAsOf(
-      firstString(
-        health.as_of,
-        health.date,
-        health.generated_at,
-        health.updated_at
-      )
-    );
-
-    setHealthText(status, asOf);
+    setHeaderFallback();
   }
 
   async function initLayout() {
     ensureLayoutStateFlag();
     mountSharedLayout();
     markLayoutReady();
-    await updateGlobalHealth();
+    await refreshSharedStatus();
   }
+
+  window.GPLayout = {
+    init: initLayout,
+    remount: async function () {
+      mountSharedLayout();
+      markLayoutReady();
+      await refreshSharedStatus();
+    },
+  };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initLayout, { once: true });

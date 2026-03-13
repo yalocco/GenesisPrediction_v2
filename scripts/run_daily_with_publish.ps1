@@ -5,7 +5,6 @@ param(
     [switch]$SkipAnalyzer,
     [switch]$SkipSentiment,
     [switch]$SkipDigest,
-    [switch]$SkipPrediction,
     [switch]$ContinueOnError
 )
 
@@ -116,12 +115,8 @@ $digestDir = Join-Path $Root "data\digest"
 $digestViewDir = Join-Path $digestDir "view"
 
 $analysisDir = Join-Path $Root "analysis"
-$predictionDir = Join-Path $analysisDir "prediction"
-$predictionHistoryDir = Join-Path $analysisDir "prediction_history"
 
 Ensure-Dir -PathToEnsure $analysisDir
-Ensure-Dir -PathToEnsure $predictionDir
-Ensure-Dir -PathToEnsure $predictionHistoryDir
 Ensure-Dir -PathToEnsure $digestViewDir
 
 Write-Host "GenesisPrediction v2 - run_daily_with_publish"
@@ -313,65 +308,13 @@ if daily_summary_path.exists():
         }
     }
 
-    Invoke-Step -Name "4) Prediction pipeline" -Action {
-        if ($SkipPrediction) {
-            Write-Log "[SKIP] prediction skipped by flag."
-            return
-        }
-
-        $predictionRunner = Join-Path $scriptsDir "run_prediction_pipeline.py"
-        if (-not (Test-Path -LiteralPath $predictionRunner)) {
-            Write-Log "[SKIP] missing script: $predictionRunner"
-            return
-        }
-
-        Invoke-PythonScript -PythonExe $python `
-            -ScriptPath $predictionRunner `
-            -Arguments @("--date", $Date)
-
-        $predFiles = @(
-            "trend_latest.json",
-            "signal_latest.json",
-            "scenario_latest.json",
-            "prediction_latest.json",
-            "early_warning_latest.json"
-        )
-
-        foreach ($name in $predFiles) {
-            $src = Join-Path $predictionDir $name
-            Copy-IfExists -SourcePath $src -DestinationPath (Join-Path $analysisDir $name) | Out-Null
-        }
-
-        $datedHistoryDir = Join-Path $predictionHistoryDir $Date
-        Ensure-Dir -PathToEnsure $datedHistoryDir
-
-        $historyMap = @{
-            "trend_latest.json"        = "trend.json"
-            "signal_latest.json"       = "signal.json"
-            "scenario_latest.json"     = "scenario.json"
-            "prediction_latest.json"   = "prediction.json"
-            "early_warning_latest.json"= "early_warning.json"
-        }
-
-        foreach ($latestName in $historyMap.Keys) {
-            $src = Join-Path $predictionDir $latestName
-            $dst = Join-Path $datedHistoryDir $historyMap[$latestName]
-            Copy-IfExists -SourcePath $src -DestinationPath $dst | Out-Null
-        }
-    }
-
-    Invoke-Step -Name "5) Publish aliases" -Action {
+    Invoke-Step -Name "4) Publish aliases" -Action {
         $publishPairs = @(
-            @{ Src = (Join-Path $dataAnalysisDir "daily_news_latest.json");              Dst = (Join-Path $analysisDir "daily_news_latest.json") },
-            @{ Src = (Join-Path $dataAnalysisDir "daily_summary_latest.json");           Dst = (Join-Path $analysisDir "daily_summary_latest.json") },
-            @{ Src = (Join-Path $dataAnalysisDir "sentiment_latest.json");               Dst = (Join-Path $analysisDir "sentiment_latest.json") },
-            @{ Src = (Join-Path $dataAnalysisDir "view_model_latest.json");              Dst = (Join-Path $analysisDir "world_view_model_latest.json") },
-            @{ Src = (Join-Path $Root "data\digest\health_latest.json");                 Dst = (Join-Path $analysisDir "health_latest.json") },
-            @{ Src = (Join-Path $predictionDir "trend_latest.json");                     Dst = (Join-Path $analysisDir "trend_latest.json") },
-            @{ Src = (Join-Path $predictionDir "signal_latest.json");                    Dst = (Join-Path $analysisDir "signal_latest.json") },
-            @{ Src = (Join-Path $predictionDir "scenario_latest.json");                  Dst = (Join-Path $analysisDir "scenario_latest.json") },
-            @{ Src = (Join-Path $predictionDir "prediction_latest.json");                Dst = (Join-Path $analysisDir "prediction_latest.json") },
-            @{ Src = (Join-Path $predictionDir "early_warning_latest.json");             Dst = (Join-Path $analysisDir "early_warning_latest.json") }
+            @{ Src = (Join-Path $dataAnalysisDir "daily_news_latest.json");    Dst = (Join-Path $analysisDir "daily_news_latest.json") },
+            @{ Src = (Join-Path $dataAnalysisDir "daily_summary_latest.json"); Dst = (Join-Path $analysisDir "daily_summary_latest.json") },
+            @{ Src = (Join-Path $dataAnalysisDir "sentiment_latest.json");     Dst = (Join-Path $analysisDir "sentiment_latest.json") },
+            @{ Src = (Join-Path $dataAnalysisDir "view_model_latest.json");    Dst = (Join-Path $analysisDir "world_view_model_latest.json") },
+            @{ Src = (Join-Path $Root "data\digest\health_latest.json");       Dst = (Join-Path $analysisDir "health_latest.json") }
         )
 
         foreach ($pair in $publishPairs) {

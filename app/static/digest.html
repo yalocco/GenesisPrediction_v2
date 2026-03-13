@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Digest - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260313-digest-balance3axis2" />
-  <script src="/static/common/global_status.js?v=20260313-digest-balance3axis2"></script>
+  <link rel="stylesheet" href="/static/app.css?v=20260313-digest-asof-fix1" />
+  <script src="/static/common/global_status.js?v=20260313-gs-compat1"></script>
   <style>
     .digest-hero{margin-bottom:14px;}
 
@@ -581,7 +581,7 @@
 
   <div id="site-footer"></div>
 
-  <script src="/static/common/layout.js?v=20260313-digest-balance3axis2"></script>
+  <script src="/static/common/layout.js?v=20260313-digest-asof-fix1"></script>
   <script>
     (function(){
       "use strict";
@@ -594,20 +594,22 @@
 
       var SUMMARY_CANDIDATES = [
         "/data/world_politics/analysis/daily_summary_latest.json",
+        "/analysis/daily_summary_latest.json",
         "/analysis/world_politics/analysis/daily_summary_latest.json",
         "/analysis/world_politics/daily_summary_latest.json"
       ];
 
       var NEWS_CANDIDATES = [
         "/data/world_politics/analysis/daily_news_latest.json",
+        "/analysis/daily_news_latest.json",
         "/analysis/world_politics/analysis/daily_news_latest.json",
         "/analysis/world_politics/daily_news_latest.json"
       ];
 
       var SENTIMENT_CANDIDATES = [
         "/data/world_politics/analysis/sentiment_latest.json",
-        "/analysis/world_politics/analysis/sentiment_latest.json",
         "/analysis/sentiment_latest.json",
+        "/analysis/world_politics/analysis/sentiment_latest.json",
         "/data/digest/sentiment_latest.json"
       ];
 
@@ -1053,20 +1055,20 @@
           });
         });
       }
-      function resolveDigestLocalAsOf(digest, summaryData){
+      function resolveSummaryAsOf(summaryData){
         return firstDefined(
           summaryData && summaryData.generated_at,
           summaryData && summaryData.as_of,
-          summaryData && summaryData.date,
-          digest && digest.updated_at,
-          digest && digest.as_of,
-          digest && digest.date
+          summaryData && summaryData.date
         );
       }
       function applyStatus(summary, articleCount, digest, summaryData, sentimentRoot, fxInfo){
         var risk = riskLabelFromValue(firstDefined(summary.risk, summary.global_risk, digest && digest.global_risk));
+        var gsRisk = $("gsRisk");
         setText("gsRisk", risk.text);
-        $("gsRisk").className = "status-value " + risk.cls;
+        if(gsRisk){
+          gsRisk.className = "status-value " + risk.cls;
+        }
         setText("gsRiskSub", textOr(firstDefined(summary.regime_reason, summary.reason), "daily summary / sentiment"));
 
         var balance = computeBalanceData(summary, sentimentRoot);
@@ -1082,7 +1084,7 @@
         setText("gsArticles", String(articleCount));
         setText("gsArticlesSub", state.sourceMode === "digest" ? "digest latest" : (state.sourceMode === "news-fallback" ? "fallback news" : "no data"));
 
-        var updated = resolveDigestLocalAsOf(digest, summaryData);
+        var updated = resolveSummaryAsOf(summaryData);
         setText("gsUpdated", textOr(updated ? shortDate(updated) : null, "—"));
         setText("gsUpdatedSub", textOr(state.summaryPath, state.digestPath, "latest runtime stamp"));
 
