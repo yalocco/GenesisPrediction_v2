@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Home - GenesisPrediction v2</title>
   <link rel="stylesheet" href="/static/app.css?v=20260312-ui-final4" />
-  <script src="/static/common/global_status.js?v=20260312-ui-final4"></script>
   <style>
     .home-hero{margin-bottom:14px;}
     .status-shell{
@@ -236,6 +235,7 @@
   <div id="site-footer"></div>
 
   <script src="/static/common/layout.js?v=20260312-ui-final4"></script>
+  <script src="/static/common/global_status.js?v=20260312-ui-final4"></script>
   <script>
     (function(){
       "use strict";
@@ -278,20 +278,15 @@
 
       function renderKV(obj){
         var lines = [];
-
         Object.entries(obj || {}).forEach(function(pair){
           var k = pair[0];
           var v = pair[1];
-
           if(v == null) return;
           if(typeof v === "object") return;
-
           var key = k.replace(/_/g," ");
           key = key.charAt(0).toUpperCase() + key.slice(1);
-
           lines.push(key + ": " + String(v));
         });
-
         return lines.join("\n");
       }
 
@@ -315,17 +310,15 @@
       function renderSentiment(s){
         if(!s) return "—";
         var date = s.date || s.as_of || "";
-        var items = Array.isArray(s.items) ? s.items.length : firstNumber(s.total_items, s.summary && s.summary.articles);
-        var summary = s.summary || s.today || s.sentiment_summary || {};
-        var risk = firstNumber(summary.risk, summary.risk_score, summary.riskScore);
-        var pos = firstNumber(summary.positive, summary.posScore, summary.positive_count);
-        var unc = firstNumber(summary.uncertainty, summary.uncScore);
+        var labels = s.labels || s.counts || {};
+        var today = s.today || {};
         var parts = [];
         if(date) parts.push("date: " + date);
-        if(items != null) parts.push("items: " + items);
-        if(risk != null) parts.push("risk: " + Number(risk).toFixed(2));
-        if(pos != null) parts.push("positive: " + Number(pos).toFixed(2));
-        if(unc != null) parts.push("uncertainty: " + Number(unc).toFixed(2));
+        if(today.articles != null) parts.push("items: " + today.articles);
+        if(labels.positive != null) parts.push("positive: " + labels.positive);
+        if(labels.negative != null) parts.push("negative: " + labels.negative);
+        if(labels.neutral != null) parts.push("neutral: " + labels.neutral);
+        if(labels.mixed != null) parts.push("mixed: " + labels.mixed);
         return parts.join("\n");
       }
 
@@ -336,7 +329,9 @@
           sum.summary,
           sum.text_summary,
           sum.daily_summary,
-          sum.yesterday_summary_text
+          sum.yesterday_summary_text,
+          sum.text,
+          sum.events_today && sum.events_today.summary
         );
 
         if(text){
@@ -347,54 +342,71 @@
             .join("\n");
         }
 
-        if(sum.yesterday_summary){
-          if(typeof sum.yesterday_summary.text === "string" &&
-             sum.yesterday_summary.text.trim()){
-            return sum.yesterday_summary.text
-              .trim()
-              .split("\n")
-              .slice(0,6)
-              .join("\n");
-          }
+        return renderKV(sum);
+      }
 
-          if(Array.isArray(sum.yesterday_summary.titles) &&
-             sum.yesterday_summary.titles.length){
-            return sum.yesterday_summary.titles
-              .slice(0,8)
-              .map(function(t){
-                return "• " + safeText(t);
-              })
-              .join("\n");
-          }
+      function renderWorldView(vm){
+        if(!vm) return "—";
+        var section = Array.isArray(vm.sections) && vm.sections.length ? vm.sections[0] : null;
+        var cards = section && Array.isArray(section.cards) ? section.cards : [];
+        var today = vm.today || {};
+        var lines = [];
+
+        if(vm.date) lines.push("date: " + vm.date);
+        if(today.articles != null) lines.push("articles: " + today.articles);
+        if(today.count != null) lines.push("count: " + today.count);
+
+        if(cards.length){
+          lines.push("");
+          cards.slice(0, 6).forEach(function(card, idx){
+            var title = firstString(card.title, card.headline, "untitled");
+            lines.push((idx + 1) + ". " + title);
+          });
         }
 
-        return renderKV(sum);
+        if(!lines.length){
+          return renderKV(vm);
+        }
+
+        return lines.join("\n");
+      }
+
+      async function fetchJson(url){
+        try{
+          var res = await fetch(url, { cache: "no-store" });
+          if(!res.ok) throw new Error("HTTP " + res.status);
+          return { ok:true, data: await res.json(), url:url };
+        }catch(err){
+          return { ok:false, data:null, url:url, error:String(err) };
+        }
       }
 
       async function main(){
         try{
-          var gs = await window.GPGlobalStatus.load({
-            fxDecisionCandidates: [
-              "/data/fx/fx_decision_latest.json",
-              "/data/fx/fx_decision_latest_jpythb.json"
-            ]
-          });
+          var results = await Promise.all([
+            fetchJson("/analysis/global_status_latest.json"),
+            fetchJson("/analysis/world_view_model_latest.json"),
+            fetchJson("/analysis/health_latest.json"),
+            fetchJson("/analysis/sentiment_latest.json"),
+            fetchJson("/analysis/daily_summary_latest.json")
+          ]);
 
-          var vmRes = gs.vmRes;
-          var healthRes = gs.healthRes;
-          var senRes = gs.senRes;
-          var sumRes = gs.sumRes;
+          var gsRes = results[0];
+          var worldVmRes = results[1];
+          var healthRes = results[2];
+          var senRes = results[3];
+          var sumRes = results[4];
 
-          var vm = gs.vm;
-          var health = gs.health;
-          var sentiment = gs.sentiment;
-          var summary = gs.summary;
-          var articles = gs.articles;
+          var gs = gsRes.ok ? gsRes.data : null;
+          var vm = worldVmRes.ok ? worldVmRes.data : null;
+          var health = healthRes.ok ? healthRes.data : null;
+          var sentiment = senRes.ok ? senRes.data : null;
+          var summary = sumRes.ok ? sumRes.data : null;
 
           var localAsOf = firstString(
-            gs && gs.updated,
+            gs && (gs.updated || gs.as_of),
             summary && (summary.generated_at || summary.as_of || summary.date),
-            vm && (vm.updated_at || vm.as_of || vm.date),
+            vm && vm.date,
             health && (health.date || health.as_of),
             sentiment && (sentiment.date || sentiment.as_of)
           );
@@ -402,13 +414,27 @@
           setText("pillAsOfLocal", "as_of: " + shortDate(localAsOf || "--"));
           setText("pillReadyLocal", "Ready");
 
+          if(gs){
+            setText("gsRisk", gs.global_risk || "—");
+            setText("gsRiskSub", gs.global_risk_sub || "—");
+            setText("gsSentiment", gs.sentiment_balance || "—");
+            setText("gsSentimentSub", gs.sentiment_balance_sub || "—");
+            setText("gsFx", gs.fx_regime || "—");
+            setText("gsFxSub", gs.fx_regime_sub || "—");
+            setText("gsArticles", gs.articles || "—");
+            setText("gsArticlesSub", gs.articles_sub || "—");
+            setText("gsUpdated", shortDate(gs.updated || gs.as_of || "--"));
+            setText("gsUpdatedSub", gs.sources && gs.sources.summary ? gs.sources.summary : "—");
+          }
+
           if(vm){
             setText("evHint", "OK");
-            setText("evBody", renderKV(vm).slice(0, 1400));
-            setText("evSource", "source: " + vmRes.url);
+            setText("evBody", renderWorldView(vm));
+            setText("evSource", "source: " + worldVmRes.url);
           }else{
             setText("evHint", "missing");
-            setText("evBody", "view_model_latest.json not available.");
+            setText("evBody", "world_view_model_latest.json not available.");
+            setText("evSource", "source: --");
           }
 
           if(health){
@@ -419,7 +445,8 @@
           }else{
             setText("healthHint", "missing");
             setText("healthBody", "health_latest.json not available.");
-            setText("pillReadyLocal", "No data");
+            setText("healthSource", "source: --");
+            setHref("btnOpenHealth", "#");
           }
 
           if(sentiment){
@@ -429,6 +456,7 @@
           }else{
             setText("senHint", "missing");
             setText("senBody", "sentiment_latest.json not available.");
+            setText("senSource", "source: --");
           }
 
           if(summary){
@@ -439,19 +467,45 @@
           }else{
             setText("sumHint", "missing");
             setText("sumBody", "daily_summary_latest.json not available.");
+            setText("sumSource", "source: --");
+            setHref("btnOpenSummary", "#");
           }
 
-          setText("kpiEvents", articles != null ? String(articles) : "—");
-          setText("kpiHealthOk", health && health.summary && health.summary.ok != null ? String(health.summary.ok) : "—");
-          setText("kpiSentimentItems", sentiment && Array.isArray(sentiment.items) ? String(sentiment.items.length) : (articles != null ? String(articles) : "—"));
-          setText("kpiSummaryState", summary ? "OK" : "MISS");
+          var gsCards = gs && gs.cards ? gs.cards : {};
+          var vmToday = vm && vm.today ? vm.today : {};
+          var sentimentLabels = sentiment && (sentiment.labels || sentiment.counts || {}) ? (sentiment.labels || sentiment.counts || {}) : {};
+
+          setText("kpiEvents",
+            gsCards.events != null ? String(gsCards.events) :
+            (vmToday.articles != null ? String(vmToday.articles) :
+            (vmToday.count != null ? String(vmToday.count) : "—"))
+          );
+
+          setText("kpiHealthOk",
+            gsCards.health_ok != null ? String(gsCards.health_ok) :
+            (health && health.summary && health.summary.ok != null ? String(health.summary.ok) : "—")
+          );
+
+          var sentimentItems =
+            (sentiment && sentiment.today && sentiment.today.articles != null) ? sentiment.today.articles :
+            (gsCards.sentiment_items != null ? gsCards.sentiment_items :
+            (sentimentLabels.positive != null
+              ? sentimentLabels.positive + (sentimentLabels.negative || 0) + (sentimentLabels.neutral || 0) + (sentimentLabels.mixed || 0)
+              : null));
+
+          setText("kpiSentimentItems", sentimentItems != null ? String(sentimentItems) : "—");
+          setText("kpiSummaryState", gsCards.summary_state != null ? String(gsCards.summary_state) : (summary ? "OK" : "MISS"));
         }catch(e){
           setText("pillReadyLocal", "Error");
           console.warn(e);
         }
       }
 
-      main();
+      if(document.readyState === "loading"){
+        document.addEventListener("DOMContentLoaded", main, { once:true });
+      }else{
+        main();
+      }
     })();
   </script>
 </body>

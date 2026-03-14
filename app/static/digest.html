@@ -568,7 +568,7 @@
               </div>
             </div>
 
-            <div id="emptyState" class="emptyState">表示できる記事がありません。Digest ViewModel を優先し、必要時のみ daily_news_latest.json に fallback してください。</div>
+            <div id="emptyState" class="emptyState">表示できる記事がありません。Digest ViewModel を優先し、必要時のみ world_view_model_latest.json、その次に daily_news_latest.json に fallback してください。</div>
             <div id="articleGrid" class="articleGrid"></div>
             <div class="pillrow" style="margin-top:12px;">
               <span id="articlesSource" class="pill">source: --</span>
@@ -590,6 +590,12 @@
         "/data/digest/view_model_latest.json",
         "/data/digest/view/view_model_latest.json",
         "/analysis/digest/view_model_latest.json"
+      ];
+
+      var WORLD_VM_CANDIDATES = [
+        "/analysis/world_view_model_latest.json",
+        "/data/world_politics/analysis/view_model_latest.json",
+        "/analysis/view_model_latest.json"
       ];
 
       var SUMMARY_CANDIDATES = [
@@ -624,6 +630,7 @@
         sort: "risk",
         articles: [],
         digestPath: "-",
+        worldVmPath: "-",
         summaryPath: "-",
         newsPath: "-",
         sentimentPath: "-",
@@ -716,7 +723,6 @@
           summaryData && summaryData.summary,
           summaryData && summaryData.text_summary,
           summaryData && summaryData.daily_summary,
-          summaryData && summaryData.yesterday_summary_text,
           "No summary available."
         );
       }
@@ -881,13 +887,13 @@
       function normalizeDecision(decision){
         var d = String(decision || "").trim().toUpperCase();
         if(!d) return "—";
-        if(d === "WARN" || d === "ON" || d === "OFF") return d;
+        if(d === "WARN" || d === "ON" || d === "OFF" || d === "WAIT" || d === "MONITOR") return d;
         return d;
       }
 
       function fxClassFromDecision(decision){
         var d = String(decision || "").trim().toUpperCase();
-        if(d === "WARN") return "fx-warn";
+        if(d === "WARN" || d === "WAIT" || d === "MONITOR") return "fx-warn";
         if(d === "ON") return "fx-on";
         if(d === "OFF") return "fx-off";
         return "fx-ready";
@@ -895,7 +901,7 @@
 
       function fxPillClass(decision){
         var d = String(decision || "").trim().toUpperCase();
-        if(d === "WARN") return "warn";
+        if(d === "WARN" || d === "WAIT" || d === "MONITOR") return "warn";
         if(d === "ON") return "on";
         if(d === "OFF") return "off";
         return "neutral";
@@ -1082,7 +1088,12 @@
         });
 
         setText("gsArticles", String(articleCount));
-        setText("gsArticlesSub", state.sourceMode === "digest" ? "digest latest" : (state.sourceMode === "news-fallback" ? "fallback news" : "no data"));
+        setText("gsArticlesSub",
+          state.sourceMode === "digest" ? "digest latest" :
+          state.sourceMode === "world-fallback" ? "world view fallback" :
+          state.sourceMode === "news-fallback" ? "fallback news" :
+          "no data"
+        );
 
         var updated = resolveSummaryAsOf(summaryData);
         setText("gsUpdated", textOr(updated ? shortDate(updated) : null, "—"));
@@ -1096,31 +1107,39 @@
         wireToolbar();
 
         var digestResult = await fetchFirstJson(DIGEST_CANDIDATES);
+        var worldVmResult = await fetchFirstJson(WORLD_VM_CANDIDATES);
         var summaryResult = await fetchFirstJson(SUMMARY_CANDIDATES);
         var newsResult = await fetchFirstJson(NEWS_CANDIDATES);
         var sentimentResult = await fetchFirstJson(SENTIMENT_CANDIDATES);
         var fxResult = await fetchFirstJson(FX_CANDIDATES);
 
         var digest = digestResult && digestResult.data ? digestResult.data : null;
+        var worldVm = worldVmResult && worldVmResult.data ? worldVmResult.data : null;
         var summaryData = summaryResult && summaryResult.data ? summaryResult.data : null;
         var newsData = newsResult && newsResult.data ? newsResult.data : null;
         var sentimentRoot = sentimentResult && sentimentResult.data ? sentimentResult.data : null;
         var fxDoc = fxResult && fxResult.data ? fxResult.data : null;
 
         state.digestPath = digestResult && digestResult.url ? digestResult.url : "-";
+        state.worldVmPath = worldVmResult && worldVmResult.url ? worldVmResult.url : "-";
         state.summaryPath = summaryResult && summaryResult.url ? summaryResult.url : "-";
         state.newsPath = newsResult && newsResult.url ? newsResult.url : "-";
         state.sentimentPath = sentimentResult && sentimentResult.url ? sentimentResult.url : "-";
         state.fxPath = fxResult && fxResult.url ? fxResult.url : "-";
 
         var cards = digest ? getCards(digest).map(normalizeArticle) : [];
-        var newsItemsRaw = Array.isArray(newsData && newsData.items) ? newsData.items : Array.isArray(newsData) ? newsData : [];
+        var worldCards = worldVm ? getCards(worldVm).map(normalizeArticle) : [];
+        var newsItemsRaw =
+          Array.isArray(newsData && newsData.items) ? newsData.items :
+          Array.isArray(newsData && newsData.articles) ? newsData.articles :
+          Array.isArray(newsData) ? newsData :
+          [];
         var newsItems = newsItemsRaw.map(normalizeNewsArticle);
 
-        state.articles = cards.length ? cards : newsItems;
-        state.sourceMode = cards.length ? "digest" : (newsItems.length ? "news-fallback" : "no-data");
+        state.articles = cards.length ? cards : (worldCards.length ? worldCards : newsItems);
+        state.sourceMode = cards.length ? "digest" : (worldCards.length ? "world-fallback" : (newsItems.length ? "news-fallback" : "no-data"));
 
-        var sentimentSummary = getSentimentSummary(digest || {});
+        var sentimentSummary = getSentimentSummary(digest || worldVm || {});
         if((toNumber(firstDefined(sentimentSummary.positive_count, sentimentSummary.positive), 0) +
             toNumber(firstDefined(sentimentSummary.negative_count, sentimentSummary.negative), 0) +
             toNumber(firstDefined(sentimentSummary.neutral_count, sentimentSummary.neutral), 0) +
@@ -1175,27 +1194,47 @@
           };
         }
 
-        var summaryText = textOr(getSummaryText(digest || {}, summaryData || {}), "No summary available.");
-        var topicTags = getTopicTags(digest || {}, summaryData || {});
+        var primaryVm = digest || worldVm || {};
+        var summaryText = textOr(getSummaryText(primaryVm, summaryData || {}), "No summary available.");
+        var topicTags = getTopicTags(primaryVm, summaryData || {});
         var fxInfo = deriveFxInfo(fxDoc, state.fxPath);
 
         setText("summaryBody", summaryText);
-        setText("summaryHint", state.sourceMode === "digest" ? "digest preferred" : (state.sourceMode === "news-fallback" ? "fallback summary/news" : "no data"));
-        setText("summarySource", "source: " + (summaryResult && summaryResult.url ? summaryResult.url : state.digestPath));
-        setText("highlightsSource", "source: " + (state.digestPath || "-") + (state.sentimentPath !== "-" ? " / " + state.sentimentPath : ""));
-        setText("articlesSource", "source: " + (state.sourceMode === "digest" ? state.digestPath : state.newsPath));
-        setText("articlesState", state.sourceMode === "digest" ? "cards[].sentiment preferred" : "daily_news_latest fallback");
+        setText("summaryHint",
+          state.sourceMode === "digest" ? "digest preferred" :
+          state.sourceMode === "world-fallback" ? "world view fallback" :
+          state.sourceMode === "news-fallback" ? "fallback summary/news" :
+          "no data"
+        );
+        setText("summarySource", "source: " + (summaryResult && summaryResult.url ? summaryResult.url : (state.sourceMode === "world-fallback" ? state.worldVmPath : state.digestPath)));
+        setText("highlightsSource", "source: " + ((state.sourceMode === "digest" ? state.digestPath : state.worldVmPath) || "-") + (state.sentimentPath !== "-" ? " / " + state.sentimentPath : ""));
+        setText("articlesSource",
+          "source: " + (
+            state.sourceMode === "digest" ? state.digestPath :
+            state.sourceMode === "world-fallback" ? state.worldVmPath :
+            state.newsPath
+          )
+        );
+        setText("articlesState",
+          state.sourceMode === "digest" ? "cards[].sentiment preferred" :
+          state.sourceMode === "world-fallback" ? "world_view_model_latest fallback" :
+          "daily_news_latest fallback"
+        );
+
         renderTopics(topicTags);
         renderKpis(sentimentSummary, state.articles.length);
         renderArticles();
-        applyStatus(sentimentSummary, state.articles.length, digest || {}, summaryData || {}, sentimentRoot || {}, fxInfo);
+        applyStatus(sentimentSummary, state.articles.length, primaryVm, summaryData || {}, sentimentRoot || {}, fxInfo);
 
         if(state.sourceMode === "digest"){
           setText("heroText", "Summary と Highlights を横並び同高で配置し、Highlights は KPI のみ表示します。Articles はその直下に全件表示します。");
           setText("highlightsHint", "KPI only / digest");
+        }else if(state.sourceMode === "world-fallback"){
+          setText("heroText", "Digest ViewModel を取得できなかったため world_view_model_latest.json を fallback 使用しています。正式運用では digest view model を優先してください。");
+          setText("highlightsHint", "KPI only / world fallback");
         }else if(state.sourceMode === "news-fallback"){
-          setText("heroText", "Digest ViewModel を取得できなかったため fallback news を全件表示しています。正式運用では view_model_latest.json を優先してください。");
-          setText("highlightsHint", "KPI only / fallback");
+          setText("heroText", "Digest / World View を取得できなかったため fallback news を全件表示しています。正式運用では view model を優先してください。");
+          setText("highlightsHint", "KPI only / news fallback");
         }else{
           setText("heroText", "Digest / Summary / News の取得に失敗しました。データ生成後に再読み込みしてください。");
           setText("highlightsHint", "KPI only / no data");
