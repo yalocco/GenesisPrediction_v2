@@ -65,6 +65,10 @@
     .empty-card{min-height:160px;justify-content:center;text-align:center;border:1px solid rgba(120,160,220,.14);border-radius:16px;padding:14px;background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));display:grid;gap:8px}
     .empty-text{max-width:56ch;justify-self:center;color:#c8d7f6;line-height:1.7;margin:0}
     .muted{color:var(--text-muted, rgba(255,255,255,.72))}
+    .status-item{border:1px solid rgba(120,160,220,.14);border-radius:16px;padding:12px 14px;background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));min-width:0}
+    .status-item .status-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.72;margin-bottom:8px}
+    .status-item .status-value{font-size:18px;line-height:1.2;font-weight:700;color:#eef4ff}
+    .status-item .status-sub{margin-top:6px;font-size:12px;line-height:1.5;color:#c8d7f6;opacity:.8}
     @media (max-width:1100px){
       .hero-grid{grid-template-columns:1fr}
       .global-status{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -124,40 +128,40 @@
             <div class="global-status-head">
               <div class="global-status-title">Global Status</div>
               <div class="pillrow">
-                <span id="pillAsOfLocal" class="pill">as_of: --</span>
-                <span id="pillReadyLocal" class="pill">loading...</span>
+                <span id="global-status-as-of" class="pill">as_of: --</span>
+                <span id="global-status-health" class="pill">Health: --</span>
               </div>
             </div>
 
             <div class="global-status">
-              <div class="status-card">
-                <div class="status-label">Date</div>
-                <div id="gsDate" class="status-value">—</div>
-                <div id="gsDateSub" class="status-sub">loading</div>
+              <div class="status-item">
+                <div class="status-label">GLOBAL RISK</div>
+                <div class="status-value">—</div>
+                <div class="status-sub">loading</div>
               </div>
 
-              <div class="status-card">
-                <div class="status-label">Regime</div>
-                <div id="gsRegime" class="status-value">—</div>
-                <div id="gsRegimeSub" class="status-sub">loading</div>
+              <div class="status-item">
+                <div class="status-label">SENTIMENT BALANCE</div>
+                <div class="status-value">—</div>
+                <div class="status-sub">loading</div>
               </div>
 
-              <div class="status-card">
-                <div class="status-label">Signal</div>
-                <div id="gsSignal" class="status-value">—</div>
-                <div id="gsSignalSub" class="status-sub">loading</div>
+              <div class="status-item">
+                <div class="status-label">FX REGIME</div>
+                <div class="status-value">—</div>
+                <div class="status-sub">loading</div>
               </div>
 
-              <div class="status-card">
-                <div class="status-label">Confidence</div>
-                <div id="gsConfidence" class="status-value">—</div>
-                <div id="gsConfidenceSub" class="status-sub">loading</div>
+              <div class="status-item">
+                <div class="status-label">ARTICLES</div>
+                <div class="status-value">—</div>
+                <div class="status-sub">loading</div>
               </div>
 
-              <div class="status-card">
-                <div class="status-label">Health</div>
-                <div id="gsHealth" class="status-value">—</div>
-                <div id="gsHealthSub" class="status-sub">loading</div>
+              <div class="status-item">
+                <div class="status-label">UPDATED</div>
+                <div class="status-value">—</div>
+                <div class="status-sub">loading</div>
               </div>
             </div>
           </section>
@@ -367,14 +371,14 @@
   <div id="site-footer"></div>
 
   <script src="/static/common/layout.js?v=20260312-ui-final4"></script>
+  <script src="/static/common/global_status.js?v=20260314-display-only-1"></script>
   <script>
     const PREDICTION_SOURCES = {
       trend: "/analysis/prediction/trend_latest.json",
       signal: "/analysis/prediction/signal_latest.json",
       warning: "/analysis/prediction/early_warning_latest.json",
       scenario: "/analysis/prediction/scenario_latest.json",
-      prediction: "/analysis/prediction/prediction_latest.json",
-      health: "/analysis/health_latest.json"
+      prediction: "/analysis/prediction/prediction_latest.json"
     };
 
     const HISTORY_SCAN_DAYS = 30;
@@ -699,48 +703,6 @@
         });
       }
       return items;
-    }
-
-    function buildGlobalStatus(prediction, signalData, healthData){
-      const signalList = normalizeSignals(signalData, prediction);
-      const healthValue = firstString(healthData?.status, healthData?.overall, healthData?.state, healthData?.health) || "unknown";
-      return [
-        {
-          value:formatDate(firstString(prediction?.as_of, prediction?.date, prediction?.generated_at)),
-          sub:firstString(prediction?.source?.source_file, prediction?.engine, "prediction_latest.json")
-        },
-        {
-          value:titleize(firstString(prediction?.regime, prediction?.regime_label, prediction?.dominant_scenario?.regime)),
-          sub:firstString(prediction?.dominant_scenario?.label, prediction?.phase, "current branch")
-        },
-        {
-          value:formatCount(firstNonEmpty(prediction?.signal_count, signalList.length)),
-          sub:firstString(prediction?.signal, signalData?.status, "active inputs")
-        },
-        {
-          value:formatConfidence(firstNonEmpty(prediction?.confidence, prediction?.confidence_score, prediction?.confidence_pct)),
-          sub:firstString(prediction?.confidence_label, prediction?.confidence_note, "model confidence")
-        },
-        {
-          value:titleize(healthValue),
-          sub:firstString(healthData?.note, healthData?.summary, "pipeline health")
-        }
-      ];
-    }
-
-    function renderGlobalStatus(cards){
-      const ids = [
-        ["gsDate","gsDateSub"],
-        ["gsRegime","gsRegimeSub"],
-        ["gsSignal","gsSignalSub"],
-        ["gsConfidence","gsConfidenceSub"],
-        ["gsHealth","gsHealthSub"]
-      ];
-      ids.forEach(([vId, sId], index) => {
-        const item = cards[index] || { value:"—", sub:"—" };
-        el(vId).textContent = item.value || "—";
-        el(sId).textContent = item.sub || "—";
-      });
     }
 
     function renderHero(prediction, warningData){
@@ -1104,11 +1066,6 @@
       }
     }
 
-    function updateTopbarPills(prediction){
-      el("pillAsOfLocal").textContent = `as_of: ${formatDate(firstString(prediction?.as_of, prediction?.date, prediction?.generated_at))}`;
-      el("pillReadyLocal").textContent = "Ready";
-    }
-
     async function init(){
       const entries = await Promise.all(
         Object.entries(PREDICTION_SOURCES).map(async ([key, url]) => [key, await fetchJson(url)])
@@ -1125,14 +1082,12 @@
       const warningData = results.warning?.data || {};
       const trendData = results.trend?.data || {};
       const scenarioData = results.scenario?.data || {};
-      const healthData = results.health?.data || {};
 
       const scenarios = normalizeScenarios(prediction, scenarioData);
       const signals = normalizeSignals(signalData, prediction);
       const trends = normalizeTrendItems(trendData, prediction);
       const history = await loadHistorySnapshots();
 
-      renderGlobalStatus(buildGlobalStatus(prediction, signalData, healthData));
       renderHero(prediction, warningData);
       renderMetricCards(prediction, signalData, scenarios);
       renderProbabilityList(scenarios);
@@ -1149,11 +1104,9 @@
       renderList("implicationsList", firstNonEmpty(prediction?.implications, prediction?.actions, prediction?.notes, prediction?.dominant_scenario?.summary), "Implications unavailable", "M");
 
       renderSourceStatus(results);
-      updateTopbarPills(prediction);
     }
 
     window.addEventListener("DOMContentLoaded", init);
   </script>
 </body>
 </html>
-

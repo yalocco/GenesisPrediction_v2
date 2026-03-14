@@ -56,6 +56,10 @@
     .timeline-conf .sub{font-size:12px;opacity:.72;color:#c8d7f6}
     .empty-card{min-height:160px;justify-content:center;text-align:center;border:1px solid rgba(120,160,220,.14);border-radius:16px;padding:14px;background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));display:grid;gap:8px}
     .empty-text{max-width:56ch;justify-self:center;color:#c8d7f6;line-height:1.7;margin:0}
+    .status-item{border:1px solid rgba(120,160,220,.14);border-radius:16px;padding:12px 14px;background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));min-width:0}
+    .status-item .status-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.72;margin-bottom:8px}
+    .status-item .status-value{font-size:18px;line-height:1.2;font-weight:700;color:#eef4ff}
+    .status-item .status-sub{margin-top:6px;font-size:12px;line-height:1.5;color:#c8d7f6;opacity:.8}
     @media (max-width:1100px){
       .hero-grid{grid-template-columns:1fr}
       .global-status{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -116,40 +120,40 @@
             <div class="global-status-head">
               <div class="global-status-title">Global Status</div>
               <div class="pillrow">
-                <span id="pillAsOfLocal" class="pill">as_of: --</span>
-                <span id="pillReadyLocal" class="pill">loading...</span>
+                <span id="global-status-as-of" class="pill">as_of: --</span>
+                <span id="global-status-health" class="pill">Health: --</span>
               </div>
             </div>
 
             <div class="global-status">
-              <div class="status-card">
-                <div class="status-label">Latest Date</div>
-                <div id="gsDate" class="status-value">—</div>
-                <div id="gsDateSub" class="status-sub">history latest</div>
+              <div class="status-item">
+                <div class="status-label">GLOBAL RISK</div>
+                <div class="status-value">—</div>
+                <div class="status-sub">loading</div>
               </div>
 
-              <div class="status-card">
-                <div class="status-label">Global Risk</div>
-                <div id="gsRisk" class="status-value">—</div>
-                <div id="gsRiskSub" class="status-sub">history latest</div>
+              <div class="status-item">
+                <div class="status-label">SENTIMENT BALANCE</div>
+                <div class="status-value">—</div>
+                <div class="status-sub">loading</div>
               </div>
 
-              <div class="status-card">
-                <div class="status-label">Dominant</div>
-                <div id="gsDominant" class="status-value">—</div>
-                <div id="gsDominantSub" class="status-sub">dominant scenario</div>
+              <div class="status-item">
+                <div class="status-label">FX REGIME</div>
+                <div class="status-value">—</div>
+                <div class="status-sub">loading</div>
               </div>
 
-              <div class="status-card">
-                <div class="status-label">Confidence</div>
-                <div id="gsConfidence" class="status-value">—</div>
-                <div id="gsConfidenceSub" class="status-sub">history latest</div>
+              <div class="status-item">
+                <div class="status-label">ARTICLES</div>
+                <div class="status-value">—</div>
+                <div class="status-sub">loading</div>
               </div>
 
-              <div class="status-card">
-                <div class="status-label">Snapshots</div>
-                <div id="gsSnapshots" class="status-value">—</div>
-                <div id="gsSnapshotsSub" class="status-sub">30d scan</div>
+              <div class="status-item">
+                <div class="status-label">UPDATED</div>
+                <div class="status-value">—</div>
+                <div class="status-sub">loading</div>
               </div>
             </div>
           </section>
@@ -316,6 +320,7 @@
   <div id="site-footer"></div>
 
   <script src="/static/common/layout.js?v=20260312-ui-final4"></script>
+  <script src="/static/common/global_status.js?v=20260314-display-only-1"></script>
   <script>
     (function(){
       "use strict";
@@ -480,21 +485,6 @@
         });
       }
 
-      function renderGlobal(latest, count){
-        setText("gsDate", formatDate(latest.as_of));
-        setText("gsDateSub", formatDateTime(latest.generated_at));
-        setText("gsRisk", titleize(latest.overall_risk));
-        setText("gsRiskSub", latest.horizon || "history latest");
-        setText("gsDominant", titleize(latest.dominant_scenario));
-        setText("gsDominantSub", "dominant scenario");
-        setText("gsConfidence", formatPercent(latest.confidence));
-        setText("gsConfidenceSub", latest.signal_count != null ? ("signals: " + latest.signal_count) : "history latest");
-        setText("gsSnapshots", String(count));
-        setText("gsSnapshotsSub", SCAN_DAYS + "d scan");
-        setText("pillAsOfLocal", "as_of: " + formatDate(latest.as_of));
-        setText("pillReadyLocal", "Ready");
-      }
-
       function renderHero(latest){
         setText("heroHeadline", "Prediction History");
         setText("heroSummary", latest.summary || "Prediction history loaded.");
@@ -505,7 +495,7 @@
         setText("latestSignals", latest.signal_count != null ? String(latest.signal_count) : "—");
       }
 
-      function renderDrift(latest, oldest){
+      function renderDrift(latest, oldest, count){
         var riskDiff = riskRank(latest.overall_risk) - riskRank(oldest.overall_risk);
         var confLatest = firstNumber(latest.confidence);
         var confOldest = firstNumber(oldest.confidence);
@@ -546,7 +536,7 @@
           + ((riskDiff > 0 ? "+" : "") + riskDiff + " level")
           + " and confidence drift of "
           + (confDiff == null ? "—" : ((confDiff > 0 ? "+" : "") + confDiff + "pt"))
-          + ".";
+          + ". Snapshots loaded: " + count + ".";
         setText("historySummaryMain", summaryText);
       }
 
@@ -733,7 +723,6 @@
         try{
           var list = await loadSnapshots();
           if(!list.length){
-            setText("pillReadyLocal", "Missing");
             setText("heroSummary", "prediction history files were not found.");
             renderTimeline([]);
             renderSourceStatus([]);
@@ -743,9 +732,8 @@
           var latest = list[0];
           var oldest = list[list.length - 1];
 
-          renderGlobal(latest, list.length);
           renderHero(latest);
-          renderDrift(latest, oldest);
+          renderDrift(latest, oldest, list.length);
           renderTimeline(list);
           renderCharts(list);
           renderRuntimeNotes(latest, oldest, list.length);
@@ -756,7 +744,6 @@
           renderList("invalidationList", latest.invalidation_conditions, "No invalidation conditions");
           renderList("implicationsList", latest.key_implications, "No implications");
         }catch(e){
-          setText("pillReadyLocal", "Error");
           console.warn(e);
         }
       }
@@ -766,4 +753,3 @@
   </script>
 </body>
 </html>
-
