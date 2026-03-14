@@ -256,6 +256,20 @@ def _derive_articles_value(summary: dict[str, Any] | None) -> tuple[str, str, in
     if not isinstance(summary, dict):
         return "--", "daily summary unavailable", 0
 
+    today = summary.get("today")
+    if isinstance(today, dict):
+        today_count = _safe_number(today.get("count"), None)
+        if today_count is not None:
+            count = int(today_count)
+            return str(count), "daily summary latest", count
+
+    events_today = summary.get("events_today")
+    if isinstance(events_today, dict):
+        events_today_count = _safe_number(events_today.get("count"), None)
+        if events_today_count is not None:
+            count = int(events_today_count)
+            return str(count), "daily summary latest", count
+
     count = int(
         _safe_number(
             _first_non_empty(
@@ -270,6 +284,29 @@ def _derive_articles_value(summary: dict[str, Any] | None) -> tuple[str, str, in
     return str(count), "daily summary latest", count
 
 
+def _derive_events_summary_text(summary: dict[str, Any] | None, articles_count: int) -> str:
+    if not isinstance(summary, dict):
+        return "summary unavailable"
+
+    nested_summary = summary.get("summary")
+    if isinstance(nested_summary, dict):
+        nested_text = _first_non_empty(
+            nested_summary.get("text"),
+            nested_summary.get("summary"),
+        )
+        if nested_text:
+            return nested_text
+
+    text = _first_non_empty(
+        summary.get("text"),
+        summary.get("summary"),
+    )
+    if text:
+        return text
+
+    return f"Observed {articles_count} events."
+
+
 def _derive_as_of(
     summary: dict[str, Any] | None,
     prediction: dict[str, Any] | None,
@@ -278,15 +315,6 @@ def _derive_as_of(
     scenario: dict[str, Any] | None,
     signal: dict[str, Any] | None,
 ) -> str:
-    # Single source priority:
-    # 1) daily_summary
-    # 2) prediction
-    # 3) sentiment
-    # 4) health
-    # 5) scenario
-    # 6) signal
-    # No current-time fallback allowed.
-
     candidates = [
         _first_non_empty(
             summary.get("as_of") if isinstance(summary, dict) else None,
@@ -339,7 +367,6 @@ def _derive_risk_value(
     summary: dict[str, Any] | None,
     sentiment: dict[str, Any] | None,
 ) -> tuple[str, str]:
-    # Preferred explicit source: prediction -> scenario -> signal
     explicit = _normalize_risk_level(
         _first_non_empty(
             prediction.get("overall_risk_level") if isinstance(prediction, dict) else None,
@@ -451,6 +478,7 @@ def build_global_status(root: Path) -> dict[str, Any]:
         scenario=scenario,
         signal=signal,
     )
+    events_summary_text = _derive_events_summary_text(summary, articles_count)
 
     payload: dict[str, Any] = {
         "as_of": as_of,
@@ -482,7 +510,10 @@ def build_global_status(root: Path) -> dict[str, Any]:
         },
         "events_today": {
             "count": articles_count,
-            "status": _first_non_empty(summary.get("status") if isinstance(summary, dict) else None, "ok" if isinstance(summary, dict) else "--"),
+            "status": _first_non_empty(
+                summary.get("status") if isinstance(summary, dict) else None,
+                "ok" if isinstance(summary, dict) else "--",
+            ),
             "generated_at": _first_non_empty(
                 summary.get("generated_at") if isinstance(summary, dict) else None,
                 summary.get("updated") if isinstance(summary, dict) else None,
@@ -493,11 +524,7 @@ def build_global_status(root: Path) -> dict[str, Any]:
                 summary.get("as_of") if isinstance(summary, dict) else None,
                 as_of,
             ),
-            "summary": _first_non_empty(
-                summary.get("summary") if isinstance(summary, dict) else None,
-                summary.get("text") if isinstance(summary, dict) else None,
-                "summary unavailable" if not isinstance(summary, dict) else "",
-            ),
+            "summary": events_summary_text,
             "source": summary_res.path or "--",
         },
         "sources": {
