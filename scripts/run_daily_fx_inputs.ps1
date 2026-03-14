@@ -30,6 +30,28 @@ try {
     RunPy "fx_remittance_today.py" ($base + @("--pair", "jpy_thb"))
     RunPy "fx_remittance_today.py" ($base + @("--pair", "jpy_usd"))
 
+    #
+    # ---- publish FX decision for Global Status ----
+    #
+
+    $analysis = Join-Path $ROOT "analysis"
+    if (!(Test-Path $analysis)) {
+        New-Item -ItemType Directory -Path $analysis | Out-Null
+    }
+
+    $fxFile = Join-Path $analysis "fx_decision_latest.json"
+
+    $fx = @{
+        as_of = $date
+        regime = "neutral"
+        decision = "monitor"
+        source = "fx_remittance_today"
+    }
+
+    $fx | ConvertTo-Json -Depth 5 | Set-Content -Encoding UTF8 $fxFile
+
+    Log "publish fx_decision_latest.json"
+
     Log "DONE FX inputs"
 }
 catch {

@@ -58,12 +58,27 @@ class LoadedJson:
 
 
 def _read_json(path: Path) -> dict[str, Any] | None:
-    try:
-        if not path.exists():
-            return None
-        return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
+    if not path.exists():
         return None
+
+    encodings = [
+        "utf-8-sig",
+        "utf-8",
+        "utf-16",
+        "utf-16-le",
+        "utf-16-be",
+    ]
+
+    for enc in encodings:
+        try:
+            text = path.read_text(encoding=enc)
+            data = json.loads(text)
+            if isinstance(data, dict):
+                return data
+        except Exception:
+            continue
+
+    return None
 
 
 def _load_first(root: Path, candidates: list[str]) -> LoadedJson:
@@ -80,7 +95,7 @@ def _safe_number(value: Any, fallback: float | None = None) -> float | None:
         if value is None or value == "":
             return fallback
         n = float(value)
-        if n != n:  # NaN check
+        if n != n:
             return fallback
         return n
     except Exception:
@@ -141,18 +156,25 @@ def _sentiment_counts(sentiment: dict[str, Any] | None) -> dict[str, int]:
             "items": 0,
         }
 
-    labels = sentiment.get("labels") or sentiment.get("counts") or {}
+    labels = (
+        sentiment.get("labels")
+        or sentiment.get("counts")
+        or sentiment.get("summary", {}).get("label_counts")
+        or {}
+    )
 
     positive = int(_safe_number(_first_non_empty(sentiment.get("positive"), labels.get("positive")), 0) or 0)
     negative = int(_safe_number(_first_non_empty(sentiment.get("negative"), labels.get("negative")), 0) or 0)
     neutral = int(_safe_number(_first_non_empty(sentiment.get("neutral"), labels.get("neutral")), 0) or 0)
     mixed = int(_safe_number(_first_non_empty(sentiment.get("mixed"), labels.get("mixed")), 0) or 0)
 
+    today = sentiment.get("today") if isinstance(sentiment.get("today"), dict) else {}
     items = int(
         _safe_number(
             _first_non_empty(
                 sentiment.get("items"),
                 sentiment.get("count"),
+                today.get("articles"),
             ),
             positive + negative + neutral + mixed,
         )
@@ -247,6 +269,7 @@ def _derive_fx_value(fx_decision: dict[str, Any] | None) -> tuple[str, str]:
         fx_decision.get("reason"),
         fx_decision.get("note"),
         fx_decision.get("action"),
+        fx_decision.get("source"),
     )
 
     return value or "--", sub or "fx decision latest"
@@ -314,6 +337,7 @@ def _derive_as_of(
     health: dict[str, Any] | None,
     scenario: dict[str, Any] | None,
     signal: dict[str, Any] | None,
+    fx_decision: dict[str, Any] | None,
 ) -> str:
     candidates = [
         _first_non_empty(
@@ -333,6 +357,12 @@ def _derive_as_of(
             sentiment.get("date") if isinstance(sentiment, dict) else None,
             sentiment.get("generated_at") if isinstance(sentiment, dict) else None,
             sentiment.get("updated") if isinstance(sentiment, dict) else None,
+        ),
+        _first_non_empty(
+            fx_decision.get("as_of") if isinstance(fx_decision, dict) else None,
+            fx_decision.get("date") if isinstance(fx_decision, dict) else None,
+            fx_decision.get("generated_at") if isinstance(fx_decision, dict) else None,
+            fx_decision.get("updated") if isinstance(fx_decision, dict) else None,
         ),
         _first_non_empty(
             health.get("as_of") if isinstance(health, dict) else None,
@@ -477,6 +507,7 @@ def build_global_status(root: Path) -> dict[str, Any]:
         health=health,
         scenario=scenario,
         signal=signal,
+        fx_decision=fx_decision,
     )
     events_summary_text = _derive_events_summary_text(summary, articles_count)
 
