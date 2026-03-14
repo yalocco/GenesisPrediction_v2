@@ -1,12 +1,22 @@
 # scripts/run_daily_fx_overlay.ps1
-# FX overlay pipeline (safe)
+# FX overlay pipeline (safe / unified)
 # - Dashboard update (non-fatal)
 #   * weekend aware
-#   * ALSO aligns fx_date to the latest available dates in local rate CSVs (prevents "stale" on early weekdays)
+#   * aligns fx_date to latest common availability in local rate CSVs
 # - Sanitize dashboard CSV (self-healing)
-# - Remittance overlay (required)
-# - Multi overlay (optional: skip if missing / continue if failed)
-# - Publish to analysis + app/static (required)
+# - Pair overlays (required)
+#   * JPY→THB
+#   * JPY→USD
+# - Multi/pair overlays from raw rates (optional but recommended)
+#   * fx_multi_overlay.png
+#   * fx_multi_jpy_usd_overlay.png
+#   * fx_multi_usd_thb_overlay.png
+# - Variant overlays (required for served FX latest images)
+#   * analysis/fx/fx_overlay_latest_*.png
+#   * data/world_politics/analysis/fx/fx_overlay_latest_*.png
+# - Publish legacy analysis overlays (required)
+#   * fx_jpy_thb_overlay.png
+#   * fx_jpy_usd_overlay.png
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -41,7 +51,6 @@ function Get-LastBusinessDayString {
 
   $d = [datetime]::ParseExact($Ymd, "yyyy-MM-dd", $null)
 
-  # DayOfWeek: Sunday=0, Monday=1, ..., Saturday=6
   if ($d.DayOfWeek -eq [System.DayOfWeek]::Saturday) {
     $d = $d.AddDays(-1)
   } elseif ($d.DayOfWeek -eq [System.DayOfWeek]::Sunday) {
@@ -62,11 +71,9 @@ function Get-MaxDateFromRateCsv {
     $rows = Import-Csv -Path $CsvPath
     if ($null -eq $rows -or $rows.Count -eq 0) { return $null }
 
-    # Expect columns: date, rate
     $last = $rows[-1].date
     if ([string]::IsNullOrWhiteSpace($last)) { return $null }
 
-    # Validate format
     [void][datetime]::ParseExact($last, "yyyy-MM-dd", $null)
     return $last
   } catch {
@@ -120,12 +127,9 @@ def main():
 
     import pandas as pd
 
-    # Try robust read: python engine + skip bad lines.
-    # Support both new and old pandas APIs.
     try:
         df = pd.read_csv(p, engine="python", on_bad_lines="skip")
     except TypeError:
-        # older pandas
         df = pd.read_csv(p, engine="python", error_bad_lines=False, warn_bad_lines=True)
 
     tmp = p.with_suffix(p.suffix + ".tmp")
@@ -155,13 +159,9 @@ $REPO = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $PY = Join-Path $REPO ".venv\Scripts\python.exe"
 if (-not (Test-Path $PY)) { $PY = "python" }
 
-# Ritual date (used for publishing dated artifacts)
 $DATE = (Get-Date -Format "yyyy-MM-dd")
-
-# FX baseline date (weekend shift)
 $FX_DATE = Get-LastBusinessDayString -Ymd $DATE
 
-# Also align FX_DATE to the latest local availability (prevents stale at early hours)
 $usdthbCsv = Join-Path $REPO "data\fx\usdthb.csv"
 $usdjpyCsv = Join-Path $REPO "data\fx\usdjpy.csv"
 
@@ -170,7 +170,6 @@ $usdjpyMax = Get-MaxDateFromRateCsv -CsvPath $usdjpyCsv
 
 if ($usdthbMax -and $usdjpyMax) {
   $commonMax = Min-Ymd -A $usdthbMax -B $usdjpyMax
-  # Choose the earlier of (weekend-shifted FX_DATE) and (commonMax) to avoid demanding future dates
   $FX_DATE = Min-Ymd -A $FX_DATE -B $commonMax
 }
 
@@ -181,7 +180,7 @@ if ($FX_DATE -ne $DATE) {
 $ts = Get-Date -Format "HH:mm:ss"
 Write-Host "[$ts] START FX overlay date=$DATE (fx_date=$FX_DATE)"
 
-# 1) Dashboard update（stale 等で落ちることがある → 非fatal）
+# 1) Dashboard update (non-fatal, THB legacy support)
 $dash = Join-Path $REPO "scripts\fx_remittance_dashboard_update.py"
 Require-File $dash
 $codeDash = Invoke-External -Exe $PY -Arguments @($dash, "--date", $FX_DATE)
@@ -189,29 +188,48 @@ if ($codeDash -ne 0) {
   Write-Host "[INFO] dashboard update failed (exit=$codeDash). Continue with existing dashboard CSV."
 }
 
-# 1.5) Sanitize dashboard CSV (self-healing)
-$dashboardCsv = Join-Path $REPO "data\fx\jpy_thb_remittance_dashboard.csv"
-Sanitize-DashboardCsv -PythonExe $PY -CsvPath $dashboardCsv
+# 1.5) Sanitize dashboard CSVs
+$dashboardCsvLegacy = Join-Path $REPO "data\fx\jpy_thb_remittance_dashboard.csv"
+$dashboardCsvPairThb = Join-Path $REPO "data\fx\dashboard\jpy_thb_dashboard.csv"
+$dashboardCsvPairUsd = Join-Path $REPO "data\fx\dashboard\jpy_usd_dashboard.csv"
 
-# 2) Remit overlay（JPY→THB）【必須】
+Sanitize-DashboardCsv -PythonExe $PY -CsvPath $dashboardCsvLegacy
+Sanitize-DashboardCsv -PythonExe $PY -CsvPath $dashboardCsvPairThb
+Sanitize-DashboardCsv -PythonExe $PY -CsvPath $dashboardCsvPairUsd
+
+# 2) Pair overlays (required)
 $remit = Join-Path $REPO "scripts\fx_remittance_overlay.py"
 Require-File $remit
-Invoke-ExternalOrThrow -Exe $PY -Arguments @($remit)
 
-# 3) Multi overlay（JPY↔USD 等）【任意】
+# JPY -> THB
+Invoke-ExternalOrThrow -Exe $PY -Arguments @($remit, "--pair", "jpy_thb")
+
+# JPY -> USD
+Invoke-ExternalOrThrow -Exe $PY -Arguments @($remit, "--pair", "jpy_usd")
+
+# 3) Multi/pair overlays from raw rates (optional but recommended)
 $multi = Join-Path $REPO "scripts\fx_multi_overlay_from_rates.py"
 if (-not (Test-Path $multi)) {
   Write-Host "[INFO] multi overlay script missing (skipped): $multi"
 } else {
-  $codeMulti = Invoke-External -Exe $PY -Arguments @($multi, "--repo", $REPO, "--period", "90")
+  $codeMulti = Invoke-External -Exe $PY -Arguments @($multi)
   if ($codeMulti -ne 0) {
-    Write-Host "[INFO] multi overlay failed (exit=$codeMulti). Continue without multi overlay."
+    Write-Host "[INFO] multi overlay failed (exit=$codeMulti). Continue without multi overlay variants."
   } else {
     Write-Host "[OK] multi overlay built"
   }
 }
 
-# 4) Publish（analysis + app/static）【必須】
+# 4) FX variant overlays (required for USDJPY/USDTHB latest served images)
+$variants = Join-Path $REPO "scripts\build_fx_overlay_variants.py"
+if (-not (Test-Path $variants)) {
+  throw "[ERROR] missing file: $variants"
+} else {
+  Invoke-ExternalOrThrow -Exe $PY -Arguments @($variants, "--date", $DATE)
+  Write-Host "[OK] fx overlay variants built"
+}
+
+# 5) Publish legacy analysis overlays (required)
 $pub = Join-Path $REPO "scripts\publish_fx_overlay_to_analysis.py"
 Require-File $pub
 Invoke-ExternalOrThrow -Exe $PY -Arguments @($pub, "--date", $DATE, "--pair", "both")

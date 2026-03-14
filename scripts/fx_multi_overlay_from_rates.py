@@ -1,92 +1,88 @@
-# scripts/fx_multi_overlay_from_rates.py
-# Build a simple multi-overlay image from available FX rate CSVs (USDJPY, USDTHB) and write data/fx/fx_multi_overlay.png
-#
-# This is used by FX overlay pipeline.
-#
-# Run:
-#   .\.venv\Scripts\python.exe scripts\fx_multi_overlay_from_rates.py
-
-from __future__ import annotations
+#!/usr/bin/env python3
+# Build FX overlay images from rates CSV
 
 from pathlib import Path
-from datetime import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
 
+ROOT = Path(__file__).resolve().parents[1]
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-DATA_FX = REPO_ROOT / "data" / "fx"
-OUT_PNG = DATA_FX / "fx_multi_overlay.png"
+DATA_FX = ROOT / "data" / "fx"
 
 USDJPY = DATA_FX / "usdjpy.csv"
 USDTHB = DATA_FX / "usdthb.csv"
 
+OUT_USDJPY = DATA_FX / "fx_multi_jpy_usd_overlay.png"
+OUT_USDTHB = DATA_FX / "fx_multi_usd_thb_overlay.png"
 
-def _load_series(path: Path, label: str) -> pd.Series:
+
+def load_series(path):
+
     df = pd.read_csv(path)
-    # guess date col
+
     date_col = None
-    for c in ["date", "Date", "DATE", "day", "Day", "DAY", "timestamp", "time"]:
+    for c in ["date", "Date", "timestamp"]:
         if c in df.columns:
             date_col = c
             break
+
     if date_col is None:
         date_col = df.columns[0]
 
-    df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
-    df = df.dropna(subset=[date_col]).copy()
-    df = df.sort_values(date_col)
-
-    # guess value col
     value_col = None
-    for c in ["close", "Close", "CLOSE", "rate", "Rate", "RATE", "value", "Value", "VALUE"]:
+    for c in ["close", "rate", "value"]:
         if c in df.columns:
             value_col = c
             break
+
     if value_col is None:
-        # pick first numeric
-        for c in df.columns:
-            if c == date_col:
-                continue
-            if pd.api.types.is_numeric_dtype(df[c]):
-                value_col = c
-                break
-    if value_col is None:
-        raise RuntimeError(f"no numeric column found in {path}")
+        value_col = df.columns[1]
 
-    s = pd.to_numeric(df[value_col], errors="coerce")
-    idx = df[date_col].dt.strftime("%Y-%m-%d")
-    out = pd.Series(s.values, index=idx.values, dtype="float64")
-    out = out.dropna()
-    out = out[~out.index.duplicated(keep="last")]
-    out.name = label
-    return out
+    df[date_col] = pd.to_datetime(df[date_col])
+
+    s = pd.Series(df[value_col].values, index=df[date_col])
+
+    return s
 
 
-def main() -> int:
-    DATA_FX.mkdir(parents=True, exist_ok=True)
+def plot_overlay(series, title, out):
 
-    series = []
-    if USDJPY.exists():
-        series.append(_load_series(USDJPY, "USDJPY"))
-    if USDTHB.exists():
-        series.append(_load_series(USDTHB, "USDTHB"))
-
-    if not series:
-        raise SystemExit("no rate csv found")
-
-    plt.figure()
-    for s in series:
-        plt.plot(list(range(len(s))), s.values, label=s.name)
-    plt.legend()
-    plt.title("FX Multi Overlay (normalized index)")
+    plt.figure(figsize=(12,6))
+    plt.plot(series.index, series.values)
+    plt.title(title)
+    plt.grid(True)
     plt.tight_layout()
-    plt.savefig(OUT_PNG, dpi=150)
+
+    plt.savefig(out, dpi=150)
     plt.close()
 
-    print("[OK] fx_multi_overlay_from_rates: wrote", OUT_PNG)
-    return 0
+    print("[OK] wrote", out)
+
+
+def main():
+
+    DATA_FX.mkdir(parents=True, exist_ok=True)
+
+    if USDJPY.exists():
+
+        s = load_series(USDJPY)
+
+        plot_overlay(
+            s,
+            "USD/JPY Overlay",
+            OUT_USDJPY
+        )
+
+    if USDTHB.exists():
+
+        s = load_series(USDTHB)
+
+        plot_overlay(
+            s,
+            "USD/THB Overlay",
+            OUT_USDTHB
+        )
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

@@ -241,8 +241,10 @@
         USDTHB: {
           pairLabel:"USDTHB",
           imgCandidates:[
-            "/analysis/fx/fx_usd_thb_overlay.png",
-            "/data/world_politics/analysis/fx_usd_thb_overlay.png",
+            "/data/world_politics/analysis/fx/fx_overlay_latest_usdthb.png",
+            "/analysis/fx/fx_overlay_latest_usdthb.png",
+            "/data/world_politics/analysis/fx/fx_overlay_2026-03-14_usdthb.png",
+            "/analysis/fx/fx_overlay_2026-03-14_usdthb.png",
             "/data/fx/fx_overlay_latest_usdthb.png",
             "/data/fx/fx_multi_usd_thb_overlay.png",
             "/data/fx/fx_multi_overlay.png"
@@ -253,7 +255,7 @@
             "/analysis/fx/fx_decision_latest.json",
             "/data/fx/fx_decision_latest.json"
           ],
-          note:"USDTHB is intentionally not implemented yet. This page falls back to multi overlay imagery and common decision JSON when pair-specific artifacts do not exist."
+          note:"USDTHB now prefers the served pair-specific latest overlay under analysis/fx. Multi overlay and common decision JSON are fallback only."
         },
 
         MULTI: {
