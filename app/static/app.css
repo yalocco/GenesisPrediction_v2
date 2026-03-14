@@ -1,6 +1,7 @@
 /* =========================================================
 GenesisPrediction UI Theme System
 Core Theme File
+Theme Unified Fix 2026-03-15
 ========================================================= */
 
 :root {
@@ -48,13 +49,12 @@ Core Theme File
 
   --topbar-min-height: 76px;
   --topbar-status-width: 320px;
+  --topbar-gap: 18px;
   --topbar-health-width: 320px;
 }
 
 /* Reset / Base */
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 html,
 body {
@@ -83,14 +83,8 @@ body {
   min-height: 100vh;
 }
 
-a {
-  color: var(--accent);
-}
-
-img {
-  display: block;
-  max-width: 100%;
-}
+a { color: var(--accent); }
+img { display: block; max-width: 100%; }
 
 button,
 input,
@@ -123,6 +117,14 @@ html[data-layout-ready="1"] #site-header {
   visibility: visible;
 }
 
+html[data-layout-ready="0"] #site-footer {
+  visibility: hidden;
+}
+
+html[data-layout-ready="1"] #site-footer {
+  visibility: visible;
+}
+
 /* Typography */
 .h1,
 .hero-title {
@@ -148,9 +150,7 @@ html[data-layout-ready="1"] #site-header {
   color: var(--text-dim);
 }
 
-.small {
-  font-size: 12px;
-}
+.small { font-size: 12px; }
 
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -177,7 +177,7 @@ html[data-layout-ready="1"] #site-header {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) var(--topbar-status-width);
   align-items: center;
-  gap: 18px;
+  gap: var(--topbar-gap);
   min-height: var(--topbar-min-height);
   padding: 12px 0;
 }
@@ -227,9 +227,7 @@ nav,
   min-width: 0;
 }
 
-.topnav--center {
-  justify-content: center;
-}
+.topnav--center { justify-content: center; }
 
 nav a,
 .nav-link {
@@ -292,9 +290,7 @@ nav a.active,
 }
 
 /* Main Shell */
-.gp-main {
-  padding-top: 30px;
-}
+.gp-main { padding-top: 30px; }
 
 .panel {
   background: var(--panel-bg);
@@ -366,9 +362,7 @@ nav a.active,
   color: var(--text-main);
 }
 
-.sectionTitle .hint {
-  margin: 0;
-}
+.sectionTitle .hint { margin: 0; }
 
 /* Global Status */
 .global-status,

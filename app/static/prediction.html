@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Prediction - GenesisPrediction v2</title>
   <meta name="description" content="GenesisPrediction Prediction UI">
-  <link rel="stylesheet" href="/static/app.css?v=20260312-ui-pred-final2">
+  <link rel="stylesheet" href="/static/app.css?v=20260315-ui-fix-2">
   <style>
     .prediction-page{display:grid;gap:16px}
     .prediction-shell{display:grid;gap:16px}
@@ -370,8 +370,6 @@
 
   <div id="site-footer"></div>
 
-  <script src="/static/common/layout.js?v=20260312-ui-final4"></script>
-  <script src="/static/common/global_status.js?v=20260314-display-only-1"></script>
   <script>
     const PREDICTION_SOURCES = {
       trend: "/analysis/prediction/trend_latest.json",
@@ -1108,5 +1106,7 @@
 
     window.addEventListener("DOMContentLoaded", init);
   </script>
+  <script src="/static/common/global_status.js?v=20260315-ui-fix-2"></script>
+  <script src="/static/common/layout.js?v=20260315-ui-fix-2"></script>
 </body>
 </html>

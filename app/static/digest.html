@@ -3,412 +3,321 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Digest - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260313-digest-asof-fix1" />
-  <script src="/static/common/global_status.js?v=20260313-gs-compat1"></script>
+  <link rel="stylesheet" href="/static/app.css?v=20260315-ui-fix-2" />
   <style>
-    .digest-hero{margin-bottom:14px;}
+    .digest-hero { margin-bottom: 14px; }
 
-    .status-shell{
-      margin-top:14px;
-      padding:14px 16px;
-      border-radius:18px;
-      border:1px solid rgba(120,160,220,.18);
-      background:linear-gradient(180deg, rgba(10,16,30,.66), rgba(7,12,24,.48));
-      box-shadow:0 12px 30px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.04);
-    }
-    .status-top{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      flex-wrap:wrap;
-      margin-bottom:10px;
-    }
-    .status-title{
-      font-size:12px;
-      letter-spacing:.18em;
-      text-transform:uppercase;
-      opacity:.82;
-    }
-    .status-grid{
-      display:grid;
-      grid-template-columns:repeat(5,minmax(0,1fr));
-      gap:12px;
-    }
-    .status-item{
-      min-width:0;
-      border:1px solid rgba(120,160,220,.12);
-      border-radius:14px;
-      padding:12px 12px 10px;
-      background:rgba(8,14,28,.22);
-    }
-    .status-label{
-      font-size:11px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      opacity:.72;
-      margin-bottom:6px;
-    }
-    .status-value{
-      font-size:24px;
-      line-height:1.05;
-      font-weight:700;
-      letter-spacing:-.02em;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      color:#eef4ff;
-    }
-    .status-sub{
-      margin-top:4px;
-      font-size:12px;
-      opacity:.72;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
+    .status-shell {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(120, 160, 220, 0.18);
+      background: linear-gradient(180deg, rgba(10, 16, 30, 0.66), rgba(7, 12, 24, 0.48));
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.04);
     }
 
-    .sentiment-balance-wrap{
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      min-width:0;
+    .status-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
     }
-    .sentiment-balance-top{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      flex-wrap:wrap;
-      min-width:0;
-    }
-    .sentiment-balance-value{
-      font-size:22px;
-      font-weight:700;
-      line-height:1.05;
-      color:#eef4ff;
-      letter-spacing:-.02em;
-      white-space:nowrap;
-    }
-    .sentiment-balance-bars{
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-      margin-top:2px;
-    }
-    .sb-row{
-      display:grid;
-      grid-template-columns:28px 1fr 42px;
-      align-items:center;
-      gap:8px;
-      min-width:0;
-    }
-    .sb-label{
-      font-size:11px;
-      opacity:.84;
-      text-transform:uppercase;
-      letter-spacing:.06em;
-    }
-    .sb-track{
-      position:relative;
-      height:8px;
-      border-radius:999px;
-      background:rgba(255,255,255,.08);
-      overflow:hidden;
-    }
-    .sb-fill{
-      position:absolute;
-      left:0;
-      top:0;
-      bottom:0;
-      border-radius:999px;
-      width:0%;
-    }
-    .sb-val{
-      font-size:11px;
-      text-align:right;
-      opacity:.84;
-      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-    }
-    .sb-pos .sb-fill{background:linear-gradient(90deg, rgba(86,239,193,.70), rgba(86,239,193,.98));}
-    .sb-neg .sb-fill{background:linear-gradient(90deg, rgba(255,126,141,.70), rgba(255,126,141,.98));}
-    .sb-unc .sb-fill{background:linear-gradient(90deg, rgba(255,207,111,.70), rgba(255,207,111,.98));}
 
-    .fx-wrap{
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      min-width:0;
+    .status-title {
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      opacity: 0.82;
     }
-    .fx-value{
-      font-size:24px;
-      line-height:1.05;
-      font-weight:700;
-      letter-spacing:-.02em;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .fx-ready{color:#eef4ff;}
-    .fx-warn{color:#ffcf6f;}
-    .fx-off{color:#ff8a98;}
-    .fx-on{color:#56efc1;}
-    .fx-meta{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      align-items:center;
-    }
-    .fx-pill{
-      display:inline-flex;
-      align-items:center;
-      min-height:24px;
-      padding:4px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.04);
-      font-size:11px;
-      line-height:1;
-    }
-    .fx-pill.warn{color:#ffcf6f;border-color:rgba(255,207,111,.32);background:rgba(255,207,111,.10);}
-    .fx-pill.on{color:#56efc1;border-color:rgba(86,239,193,.30);background:rgba(86,239,193,.10);}
-    .fx-pill.off{color:#ff8a98;border-color:rgba(255,138,152,.30);background:rgba(255,138,152,.10);}
-    .fx-pill.neutral{color:#d7e3ff;}
 
-    .digest-top{
-      display:grid;
-      grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);
-      gap:16px;
-      align-items:stretch;
-      margin-top:14px;
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .status-item {
+      min-width: 0;
+      border: 1px solid rgba(120, 160, 220, 0.12);
+      border-radius: 14px;
+      padding: 12px 12px 10px;
+      background: rgba(8, 14, 28, 0.22);
+    }
+
+    .status-label {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.72;
+      margin-bottom: 6px;
+    }
+
+    .status-value {
+      font-size: 24px;
+      line-height: 1.05;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #eef4ff;
+    }
+
+    .status-sub {
+      margin-top: 4px;
+      font-size: 12px;
+      opacity: 0.72;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .digest-top {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+      gap: 16px;
+      align-items: stretch;
+      margin-top: 14px;
     }
 
     .summaryCard,
-    .highlightsCard{
-      height:100%;
-      display:flex;
-      flex-direction:column;
+    .highlightsCard {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
     }
 
-    .summaryBody{
-      min-height:250px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.14);
-      border-radius:16px;
-      padding:16px;
-      white-space:pre-wrap;
-      word-break:break-word;
-      line-height:1.8;
-      color:#dbe6ff;
-      flex:1;
+    .summaryBody {
+      min-height: 250px;
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      background: rgba(0, 0, 0, 0.14);
+      border-radius: 16px;
+      padding: 16px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.8;
+      color: #dbe6ff;
+      flex: 1;
     }
 
-    .topicRow{
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px;
-      margin-top:12px;
+    .topicRow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
     }
 
-    .topicTag{
-      display:inline-flex;
-      align-items:center;
-      min-height:30px;
-      padding:5px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.04);
-      font-size:12px;
-      color:#d9e4ff;
+    .topicTag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.04);
+      font-size: 12px;
+      color: #d9e4ff;
     }
 
-    .digest-kpis{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:12px;
-      flex:1;
+    .digest-kpis {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      flex: 1;
     }
 
-    .digest-kpi{
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.14);
-      border-radius:16px;
-      padding:14px 14px 12px;
-      min-height:96px;
-    }
-    .digest-kpi .k{
-      font-size:12px;
-      text-transform:uppercase;
-      letter-spacing:.08em;
-      opacity:.74;
-      margin-bottom:8px;
-    }
-    .digest-kpi .v{
-      font-size:22px;
-      font-weight:700;
-      line-height:1.05;
-      margin-bottom:5px;
-    }
-    .digest-kpi .s{
-      font-size:12px;
-      opacity:.72;
+    .digest-kpi {
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      background: rgba(0, 0, 0, 0.14);
+      border-radius: 16px;
+      padding: 14px 14px 12px;
+      min-height: 96px;
     }
 
-    .tone-articles .v{color:#eef4ff;}
-    .tone-positive .v{color:#56efc1;}
-    .tone-negative .v{color:#ff7e8d;}
-    .tone-neutral .v{color:#a8b8d8;}
-    .tone-mixed .v{color:#b998ff;}
-    .tone-unknown .v{color:#ffcf6f;}
+    .digest-kpi .k {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0.74;
+      margin-bottom: 8px;
+    }
 
-    .toolbar{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      flex-wrap:wrap;
-      margin-bottom:14px;
+    .digest-kpi .v {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.05;
+      margin-bottom: 5px;
+    }
+
+    .digest-kpi .s {
+      font-size: 12px;
+      opacity: 0.72;
+    }
+
+    .tone-articles .v { color: #eef4ff; }
+    .tone-positive .v { color: #56efc1; }
+    .tone-negative .v { color: #ff7e8d; }
+    .tone-neutral .v { color: #a8b8d8; }
+    .tone-mixed .v { color: #b998ff; }
+    .tone-unknown .v { color: #ffcf6f; }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
     }
 
     .toolbar-left,
-    .toolbar-right{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
+    .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
-    .articleGrid{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:14px;
+    .articleGrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
     }
 
-    .articleCard{
-      display:grid;
-      grid-template-columns:180px minmax(0,1fr);
-      gap:14px;
-      min-height:192px;
-      border:1px solid rgba(120,160,220,.14);
-      border-radius:18px;
-      background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
-      padding:14px;
-      overflow:hidden;
+    .articleCard {
+      display: grid;
+      grid-template-columns: 180px minmax(0, 1fr);
+      gap: 14px;
+      min-height: 192px;
+      border: 1px solid rgba(120, 160, 220, 0.14);
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015));
+      padding: 14px;
+      overflow: hidden;
     }
 
-    .thumbWrap{
-      min-height:160px;
-      border-radius:14px;
-      overflow:hidden;
-      background:rgba(255,255,255,.04);
-      border:1px solid rgba(255,255,255,.08);
-      position:relative;
-      display:flex;
-      align-items:center;
-      justify-content:center;
+    .thumbWrap {
+      min-height: 160px;
+      border-radius: 14px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .thumbWrap img{
-      width:100%;
-      height:100%;
-      object-fit:cover;
+    .thumbWrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
-    .thumbFallback{
-      width:100%;
-      height:100%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:40px;
-      font-weight:700;
-      color:#8fb8ff;
-      background:radial-gradient(circle at 30% 20%, rgba(106,164,255,.22), transparent 48%), rgba(255,255,255,.03);
+    .thumbFallback {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      font-weight: 700;
+      color: #8fb8ff;
+      background: radial-gradient(circle at 30% 20%, rgba(106, 164, 255, 0.22), transparent 48%), rgba(255, 255, 255, 0.03);
     }
 
-    .articleBody{min-width:0; display:flex; flex-direction:column;}
+    .articleBody {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
 
-    .articleMeta{
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px;
-      margin-bottom:10px;
+    .articleMeta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
     }
 
     .badge,
-    .scorePill{
-      display:inline-flex;
-      align-items:center;
-      min-height:28px;
-      padding:4px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.04);
-      font-size:11px;
-      line-height:1;
+    .scorePill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.04);
+      font-size: 11px;
+      line-height: 1;
     }
 
-    .badge.positive{color:#56efc1;}
-    .badge.negative{color:#ff7e8d;}
-    .badge.neutral{color:#a8b8d8;}
-    .badge.mixed{color:#b998ff;}
-    .badge.unknown{color:#ffcf6f;}
+    .badge.positive { color: #56efc1; }
+    .badge.negative { color: #ff7e8d; }
+    .badge.neutral { color: #a8b8d8; }
+    .badge.mixed { color: #b998ff; }
+    .badge.unknown { color: #ffcf6f; }
 
-    .articleTitle{
-      margin:0 0 8px;
-      font-size:17px;
-      line-height:1.45;
-      font-weight:700;
+    .articleTitle {
+      margin: 0 0 8px;
+      font-size: 17px;
+      line-height: 1.45;
+      font-weight: 700;
     }
 
-    .articleTitle a{
-      text-decoration:none;
+    .articleTitle a {
+      text-decoration: none;
     }
 
-    .articleTitle a:hover{
-      text-decoration:underline;
+    .articleTitle a:hover {
+      text-decoration: underline;
     }
 
-    .articleSummary{
-      margin:0;
-      font-size:13px;
-      line-height:1.75;
-      color:#d4def7;
-      flex:1;
+    .articleSummary {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.75;
+      color: #d4def7;
+      flex: 1;
     }
 
-    .scoreRow{
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px;
-      margin-top:12px;
+    .scoreRow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
     }
 
-    .emptyState{
-      display:none;
-      border:1px dashed rgba(255,255,255,.16);
-      border-radius:16px;
-      padding:18px;
-      text-align:center;
-      color:#b5c7ea;
-      background:rgba(8,14,28,.18);
+    .emptyState {
+      display: none;
+      border: 1px dashed rgba(255, 255, 255, 0.16);
+      border-radius: 16px;
+      padding: 18px;
+      text-align: center;
+      color: #b5c7ea;
+      background: rgba(8, 14, 28, 0.18);
     }
 
-    @media (max-width:1100px){
-      .status-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
-      .digest-top{grid-template-columns:1fr;}
-      .articleGrid{grid-template-columns:1fr;}
+    @media (max-width: 1100px) {
+      .status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .digest-top { grid-template-columns: 1fr; }
+      .articleGrid { grid-template-columns: 1fr; }
     }
 
-    @media (max-width:820px){
-      .digest-kpis{grid-template-columns:1fr;}
-      .articleCard{grid-template-columns:1fr;}
-      .thumbWrap{min-height:220px;}
+    @media (max-width: 820px) {
+      .digest-kpis { grid-template-columns: 1fr; }
+      .articleCard { grid-template-columns: 1fr; }
+      .thumbWrap { min-height: 220px; }
     }
 
-    @media (max-width:700px){
-      .status-grid{grid-template-columns:1fr;}
-      .sb-row{grid-template-columns:24px 1fr 38px;}
+    @media (max-width: 700px) {
+      .status-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -428,66 +337,39 @@
                 <div class="status-title">Global Status</div>
                 <div class="pillrow">
                   <span id="pillAsOfLocal" class="pill">as_of: --</span>
-                  <span id="pillReadyLocal" class="pill">loading…</span>
+                  <span id="pillReadyLocal" class="pill">Ready</span>
                 </div>
               </div>
 
               <div class="status-grid">
                 <div class="status-item">
-                  <div class="status-label">Global Risk</div>
-                  <div id="gsRisk" class="status-value risk-missing">—</div>
-                  <div id="gsRiskSub" class="status-sub">daily summary / sentiment</div>
+                  <div class="status-label">GLOBAL RISK</div>
+                  <div class="status-value">—</div>
+                  <div class="status-sub">loading</div>
                 </div>
 
                 <div class="status-item">
-                  <div class="status-label">Sentiment Balance</div>
-                  <div class="sentiment-balance-wrap">
-                    <div class="sentiment-balance-top">
-                      <div id="gsSentiment" class="sentiment-balance-value">—</div>
-                    </div>
-                    <div id="gsSentimentBars" class="sentiment-balance-bars">
-                      <div class="sb-row sb-pos">
-                        <div class="sb-label">▲</div>
-                        <div class="sb-track"><div id="sbPosFill" class="sb-fill"></div></div>
-                        <div id="sbPosVal" class="sb-val">--</div>
-                      </div>
-                      <div class="sb-row sb-neg">
-                        <div class="sb-label">▼</div>
-                        <div class="sb-track"><div id="sbNegFill" class="sb-fill"></div></div>
-                        <div id="sbNegVal" class="sb-val">--</div>
-                      </div>
-                      <div class="sb-row sb-unc">
-                        <div class="sb-label">≈</div>
-                        <div class="sb-track"><div id="sbUncFill" class="sb-fill"></div></div>
-                        <div id="sbUncVal" class="sb-val">--</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div id="gsSentimentSub" class="status-sub">3-axis sentiment balance</div>
+                  <div class="status-label">SENTIMENT BALANCE</div>
+                  <div class="status-value">—</div>
+                  <div class="status-sub">loading</div>
                 </div>
 
                 <div class="status-item">
-                  <div class="status-label">FX Regime</div>
-                  <div class="fx-wrap">
-                    <div id="gsFx" class="fx-value fx-ready">—</div>
-                    <div class="fx-meta">
-                      <span id="gsFxMode" class="fx-pill neutral">no fx data</span>
-                      <span id="gsFxPair" class="fx-pill neutral">pair: --</span>
-                    </div>
-                  </div>
-                  <div id="gsFxSub" class="status-sub">decision / fallback</div>
+                  <div class="status-label">FX REGIME</div>
+                  <div class="status-value">—</div>
+                  <div class="status-sub">loading</div>
                 </div>
 
                 <div class="status-item">
-                  <div class="status-label">Articles</div>
-                  <div id="gsArticles" class="status-value">—</div>
-                  <div id="gsArticlesSub" class="status-sub">digest latest</div>
+                  <div class="status-label">ARTICLES</div>
+                  <div class="status-value">—</div>
+                  <div class="status-sub">loading</div>
                 </div>
 
                 <div class="status-item">
-                  <div class="status-label">Updated</div>
-                  <div id="gsUpdated" class="status-value">—</div>
-                  <div id="gsUpdatedSub" class="status-sub">latest runtime stamp</div>
+                  <div class="status-label">UPDATED</div>
+                  <div class="status-value">—</div>
+                  <div class="status-sub">loading</div>
                 </div>
               </div>
             </div>
@@ -501,7 +383,7 @@
               </div>
               <div id="summaryBody" class="summaryBody">loading…</div>
               <div id="topicRow" class="topicRow"></div>
-              <div class="pillrow" style="margin-top:12px;">
+              <div class="pillrow" style="margin-top: 12px;">
                 <span id="summarySource" class="pill">source: --</span>
               </div>
             </div>
@@ -545,13 +427,13 @@
                 </div>
               </div>
 
-              <div class="pillrow" style="margin-top:12px;">
+              <div class="pillrow" style="margin-top: 12px;">
                 <span id="highlightsSource" class="pill">source: --</span>
               </div>
             </div>
           </div>
 
-          <div class="card" style="margin-top:16px;">
+          <div class="card" style="margin-top: 16px;">
             <div class="sectionTitle">
               <h2>Articles</h2>
               <div class="hint"><span id="renderedCount">--</span> / <span id="totalCount">--</span></div>
@@ -570,7 +452,7 @@
 
             <div id="emptyState" class="emptyState">表示できる記事がありません。Digest ViewModel を優先し、必要時のみ world_view_model_latest.json、その次に daily_news_latest.json に fallback してください。</div>
             <div id="articleGrid" class="articleGrid"></div>
-            <div class="pillrow" style="margin-top:12px;">
+            <div class="pillrow" style="margin-top: 12px;">
               <span id="articlesSource" class="pill">source: --</span>
             </div>
           </div>
@@ -581,9 +463,8 @@
 
   <div id="site-footer"></div>
 
-  <script src="/static/common/layout.js?v=20260313-digest-asof-fix1"></script>
   <script>
-    (function(){
+    (function () {
       "use strict";
 
       var DIGEST_CANDIDATES = [
@@ -619,13 +500,6 @@
         "/data/digest/sentiment_latest.json"
       ];
 
-      var FX_CANDIDATES = [
-        "/data/fx/fx_decision_latest_jpythb.json",
-        "/data/fx/fx_decision_latest.json",
-        "/data/fx/fx_decision_latest_usdjpy.json",
-        "/data/fx/fx_decision_latest_usdthb.json"
-      ];
-
       var state = {
         sort: "risk",
         articles: [],
@@ -634,48 +508,52 @@
         summaryPath: "-",
         newsPath: "-",
         sentimentPath: "-",
-        fxPath: "-",
         sourceMode: "no-data"
       };
 
-      function $(id){ return document.getElementById(id); }
-      function setText(id, v){ var el = $(id); if(el) el.textContent = v == null ? "" : String(v); }
-      function firstDefined(){
-        for(var i = 0; i < arguments.length; i++){
+      function $(id) { return document.getElementById(id); }
+      function setText(id, v) {
+        var el = $(id);
+        if (el) el.textContent = v == null ? "" : String(v);
+      }
+      function firstDefined() {
+        for (var i = 0; i < arguments.length; i++) {
           var v = arguments[i];
-          if(v !== undefined && v !== null && v !== "") return v;
+          if (v !== undefined && v !== null && v !== "") return v;
         }
         return null;
       }
-      function toNumber(value, fallback){
+      function toNumber(value, fallback) {
         var n = Number(value);
         return Number.isFinite(n) ? n : (fallback == null ? 0 : fallback);
       }
-      function textOr(value, fallback){
-        if(value == null) return fallback;
+      function textOr(value, fallback) {
+        if (value == null) return fallback;
         var text = String(value).trim();
         return text ? text : fallback;
       }
-      function fmtMetric(value){
+      function fmtMetric(value) {
         var n = Number(value);
-        if(!Number.isFinite(n)) return "--";
+        if (!Number.isFinite(n)) return "--";
         return Math.abs(n) >= 100 ? String(Math.round(n)) : n.toFixed(2).replace(/\.00$/, "");
       }
-      function fmtDate(value){
-        if(!value) return "--";
+      function fmtDate(value) {
+        if (!value) return "--";
         var d = new Date(value);
-        if(Number.isNaN(d.getTime())) return String(value);
-        try{
-          return d.toLocaleString("ja-JP", { year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit" });
-        }catch(_e){
+        if (Number.isNaN(d.getTime())) return String(value);
+        try {
+          return d.toLocaleString("ja-JP", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit"
+          });
+        } catch (_e) {
           return String(value);
         }
       }
-      function shortDate(value){
-        if(!value) return "--";
-        return String(value).slice(0, 10);
-      }
-      function escapeHtml(value){
+      function escapeHtml(value) {
         return String(value == null ? "" : value)
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
@@ -683,39 +561,41 @@
           .replace(/\"/g, "&quot;")
           .replace(/'/g, "&#39;");
       }
-      function fetchFirstJson(candidates){
+      function fetchFirstJson(candidates) {
         var i = 0;
-        function step(){
-          if(i >= candidates.length) return Promise.resolve(null);
+        function step() {
+          if (i >= candidates.length) return Promise.resolve(null);
           var url = candidates[i++];
-          return fetch(url, { cache:"no-store" }).then(function(r){
-            if(!r.ok) throw new Error("HTTP " + r.status);
-            return r.json().then(function(j){ return { url:url, data:j }; });
-          }).catch(function(){
+          return fetch(url, { cache: "no-store" }).then(function (r) {
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            return r.json().then(function (j) {
+              return { url: url, data: j };
+            });
+          }).catch(function () {
             return step();
           });
         }
         return step();
       }
-      function getWorldPoliticsSection(vm){
+      function getWorldPoliticsSection(vm) {
         var sections = Array.isArray(vm && vm.sections) ? vm.sections : [];
-        for(var i = 0; i < sections.length; i++){
+        for (var i = 0; i < sections.length; i++) {
           var s = sections[i] || {};
           var id = String(s.id || s.name || "").trim();
-          if(id === "world_politics" || id === "world-politics" || id === "worldPolitics") return s;
+          if (id === "world_politics" || id === "world-politics" || id === "worldPolitics") return s;
         }
         return sections[0] || null;
       }
-      function getCards(vm){
+      function getCards(vm) {
         var section = getWorldPoliticsSection(vm);
-        if(section && Array.isArray(section.cards)) return section.cards;
-        if(vm && Array.isArray(vm.cards)) return vm.cards;
+        if (section && Array.isArray(section.cards)) return section.cards;
+        if (vm && Array.isArray(vm.cards)) return vm.cards;
         return [];
       }
-      function getSentimentSummary(vm){
+      function getSentimentSummary(vm) {
         return (vm && (vm.sentiment_summary || (vm.today && (vm.today.sentiment_summary || vm.today.sentiment)))) || {};
       }
-      function getSummaryText(vm, summaryData){
+      function getSummaryText(vm, summaryData) {
         return firstDefined(
           vm && vm.summary,
           vm && vm.today && vm.today.summary,
@@ -726,28 +606,35 @@
           "No summary available."
         );
       }
-      function getTopicTags(vm, summaryData){
+      function getTopicTags(vm, summaryData) {
         var out = [];
-        function push(value){
-          if(value == null) return;
-          if(Array.isArray(value)){ value.forEach(push); return; }
+        function push(value) {
+          if (value == null) return;
+          if (Array.isArray(value)) { value.forEach(push); return; }
           var text = String(value).trim();
-          if(text) out.push(text);
+          if (text) out.push(text);
         }
         push(vm && vm.topics);
         push(vm && vm.today && vm.today.topics);
         push(summaryData && summaryData.topics);
         return Array.from(new Set(out)).slice(0, 8);
       }
-      function normalizeLabel(raw){
+      function normalizeLabel(raw) {
         var v = String(raw || "unknown").toLowerCase();
-        if(v === "positive" || v === "negative" || v === "neutral" || v === "mixed" || v === "unknown") return v;
+        if (v === "positive" || v === "negative" || v === "neutral" || v === "mixed" || v === "unknown") return v;
         return "unknown";
       }
-      function normalizeArticle(card, index){
+      function normalizeArticle(card, index) {
         card = card || {};
         var sentiment = card.sentiment || {};
-        var label = normalizeLabel(firstDefined(sentiment.sentiment_label, sentiment.sentiment, sentiment.label, card.sentiment_label, card.sentiment, card.label));
+        var label = normalizeLabel(firstDefined(
+          sentiment.sentiment_label,
+          sentiment.sentiment,
+          sentiment.label,
+          card.sentiment_label,
+          card.sentiment,
+          card.label
+        ));
         return {
           title: textOr(firstDefined(card.title, card.headline), "Untitled article " + (index + 1)),
           summary: textOr(firstDefined(card.summary, card.description, card.content), "Summary not available."),
@@ -762,10 +649,10 @@
           uncertainty: toNumber(firstDefined(sentiment.uncertainty, card.uncertainty), 0)
         };
       }
-      function normalizeNewsArticle(item, index){
+      function normalizeNewsArticle(item, index) {
         item = item || {};
         var source = item.source;
-        if(source && typeof source === "object") source = source.name || source.id || "";
+        if (source && typeof source === "object") source = source.name || source.id || "";
         return {
           title: textOr(firstDefined(item.title, item.headline), "News " + (index + 1)),
           summary: textOr(firstDefined(item.description, item.summary, item.content), "Summary not available."),
@@ -780,225 +667,32 @@
           uncertainty: 0
         };
       }
-      function fallbackMonogram(title){
+      function fallbackMonogram(title) {
         var text = String(title || "G").trim();
         return (text[0] || "G").toUpperCase();
       }
-      function sortArticles(articles, sort){
+      function sortArticles(articles, sort) {
         var list = articles.slice();
-        if(sort === "score"){
-          return list.sort(function(a,b){ return (b.score - a.score) || (b.risk - a.risk); });
+        if (sort === "score") {
+          return list.sort(function (a, b) { return (b.score - a.score) || (b.risk - a.risk); });
         }
-        if(sort === "newest"){
-          return list.sort(function(a,b){ return new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0); });
+        if (sort === "newest") {
+          return list.sort(function (a, b) { return new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0); });
         }
-        return list.sort(function(a,b){ return (b.risk - a.risk) || (b.score - a.score); });
+        return list.sort(function (a, b) { return (b.risk - a.risk) || (b.score - a.score); });
       }
-      function riskLabelFromValue(value){
-        var n = Number(value);
-        if(!Number.isFinite(n)) return { text:"—", cls:"risk-missing" };
-        if(n >= 0.66) return { text:"HIGH", cls:"risk-high" };
-        if(n >= 0.33) return { text:"MEDIUM", cls:"risk-medium" };
-        return { text:"LOW", cls:"risk-low" };
-      }
-
-      function computeBalanceData(summary, sentimentRoot){
-        var p = toNumber(firstDefined(
-          summary && summary.positive_count,
-          summary && summary.positive
-        ), 0);
-
-        var n = toNumber(firstDefined(
-          summary && summary.negative_count,
-          summary && summary.negative
-        ), 0);
-
-        var u = toNumber(firstDefined(
-          summary && summary.uncertainty_count,
-          sentimentRoot && sentimentRoot.summary && sentimentRoot.summary.unknown,
-          sentimentRoot && sentimentRoot.today && sentimentRoot.today.label_counts && sentimentRoot.today.label_counts.unknown
-        ), 0);
-
-        if((p + n + u) <= 0 && sentimentRoot){
-          var labelCounts = (sentimentRoot.today && sentimentRoot.today.label_counts) || {};
-          p = toNumber(firstDefined(p, labelCounts.positive, sentimentRoot.summary && sentimentRoot.summary.positive), 0);
-          n = toNumber(firstDefined(n, labelCounts.negative, sentimentRoot.summary && sentimentRoot.summary.negative), 0);
-          u = toNumber(
-            firstDefined(
-              summary && summary.uncertainty_count,
-              labelCounts.unknown,
-              labelCounts.mixed,
-              sentimentRoot.summary && sentimentRoot.summary.unknown,
-              sentimentRoot.summary && sentimentRoot.summary.mixed
-            ),
-            0
-          );
-        }
-
-        var total = p + n + u;
-        if(total <= 0){
-          return {
-            total: 0,
-            positive: 0,
-            negative: 0,
-            uncertainty: 0,
-            pPct: 0,
-            nPct: 0,
-            uPct: 0,
-            text: "—",
-            sub: "3-axis sentiment balance unavailable"
-          };
-        }
-
-        var pPct = Math.round((p / total) * 100);
-        var nPct = Math.round((n / total) * 100);
-        var uPct = Math.max(0, 100 - pPct - nPct);
-
-        return {
-          total: total,
-          positive: p,
-          negative: n,
-          uncertainty: u,
-          pPct: pPct,
-          nPct: nPct,
-          uPct: uPct,
-          text: "▲" + pPct + " ▼" + nPct + " ≈" + uPct,
-          sub: "P " + p + " / N " + n + " / U " + u
-        };
-      }
-
-      function applyBalanceData(balance){
-        setText("gsSentiment", balance.text || "—");
-        setText("gsSentimentSub", balance.sub || "3-axis sentiment balance");
-
-        var posFill = $("sbPosFill");
-        var negFill = $("sbNegFill");
-        var uncFill = $("sbUncFill");
-
-        if(posFill) posFill.style.width = String(balance.pPct || 0) + "%";
-        if(negFill) negFill.style.width = String(balance.nPct || 0) + "%";
-        if(uncFill) uncFill.style.width = String(balance.uPct || 0) + "%";
-
-        setText("sbPosVal", (balance.pPct || 0) + "%");
-        setText("sbNegVal", (balance.nPct || 0) + "%");
-        setText("sbUncVal", (balance.uPct || 0) + "%");
-      }
-
-      function normalizeDecision(decision){
-        var d = String(decision || "").trim().toUpperCase();
-        if(!d) return "—";
-        if(d === "WARN" || d === "ON" || d === "OFF" || d === "WAIT" || d === "MONITOR") return d;
-        return d;
-      }
-
-      function fxClassFromDecision(decision){
-        var d = String(decision || "").trim().toUpperCase();
-        if(d === "WARN" || d === "WAIT" || d === "MONITOR") return "fx-warn";
-        if(d === "ON") return "fx-on";
-        if(d === "OFF") return "fx-off";
-        return "fx-ready";
-      }
-
-      function fxPillClass(decision){
-        var d = String(decision || "").trim().toUpperCase();
-        if(d === "WARN" || d === "WAIT" || d === "MONITOR") return "warn";
-        if(d === "ON") return "on";
-        if(d === "OFF") return "off";
-        return "neutral";
-      }
-
-      function deriveFxPair(path, fxDoc){
-        var explicit = firstDefined(
-          fxDoc && fxDoc.pair,
-          fxDoc && fxDoc.fx_pair,
-          fxDoc && fxDoc.name,
-          fxDoc && fxDoc.symbol
-        );
-        if(explicit) return String(explicit).toLowerCase();
-
-        var p = String(path || "").toLowerCase();
-        if(p.indexOf("jpythb") >= 0) return "jpythb";
-        if(p.indexOf("usdjpy") >= 0) return "usdjpy";
-        if(p.indexOf("usdthb") >= 0) return "usdthb";
-        return "--";
-      }
-
-      function deriveFxInfo(fxDoc, path){
-        if(!fxDoc){
-          return {
-            decision: "—",
-            action: "no fx data",
-            pair: "--",
-            reason: "decision / fallback"
-          };
-        }
-
-        var decision = normalizeDecision(firstDefined(
-          fxDoc.decision,
-          fxDoc.regime,
-          fxDoc.fx_regime,
-          fxDoc.state,
-          fxDoc.signal
-        ));
-
-        var action = textOr(firstDefined(
-          fxDoc.action,
-          fxDoc.note,
-          fxDoc.mode,
-          fxDoc.recommendation
-        ), "no action");
-
-        var pair = deriveFxPair(path, fxDoc);
-
-        var reason = textOr(firstDefined(
-          fxDoc.reason,
-          fxDoc.message,
-          fxDoc.description,
-          fxDoc.note
-        ), "decision / fallback");
-
-        return {
-          decision: decision,
-          action: action,
-          pair: pair,
-          reason: reason
-        };
-      }
-
-      function applyFxInfo(info){
-        var fxEl = $("gsFx");
-        if(fxEl){
-          fxEl.className = "fx-value " + fxClassFromDecision(info.decision);
-        }
-        setText("gsFx", info.decision || "—");
-
-        var modeEl = $("gsFxMode");
-        if(modeEl){
-          modeEl.className = "fx-pill " + fxPillClass(info.decision);
-          modeEl.textContent = info.action || "no action";
-        }
-
-        var pairEl = $("gsFxPair");
-        if(pairEl){
-          pairEl.className = "fx-pill neutral";
-          pairEl.textContent = "pair: " + (info.pair || "--");
-        }
-
-        setText("gsFxSub", info.reason || "decision / fallback");
-      }
-
-      function renderTopics(tags){
+      function renderTopics(tags) {
         var row = $("topicRow");
-        if(!row) return;
-        if(!tags.length){
+        if (!row) return;
+        if (!tags.length) {
           row.innerHTML = '<span class="topicTag">topics unavailable</span>';
           return;
         }
-        row.innerHTML = tags.map(function(tag){
+        row.innerHTML = tags.map(function (tag) {
           return '<span class="topicTag">' + escapeHtml(tag) + '</span>';
         }).join("");
       }
-      function renderKpis(summary, articleCount){
+      function renderKpis(summary, articleCount) {
         setText("kpiArticles", String(toNumber(firstDefined(summary.articles, articleCount), articleCount)));
         setText("kpiPositive", String(toNumber(firstDefined(summary.positive_count, summary.positive), 0)));
         setText("kpiNegative", String(toNumber(firstDefined(summary.negative_count, summary.negative), 0)));
@@ -1006,7 +700,7 @@
         setText("kpiMixed", String(toNumber(firstDefined(summary.mixed_count, summary.mixed), 0)));
         setText("kpiUnknown", String(toNumber(firstDefined(summary.unknown_count, summary.unknown), 0)));
       }
-      function articleCard(article){
+      function articleCard(article) {
         var safeUrl = article.url && article.url !== "#" ? article.url : "#";
         var target = safeUrl === "#" ? "" : ' target="_blank" rel="noreferrer"';
         var imageHtml = article.image
@@ -1033,12 +727,12 @@
             '</div>' +
           '</article>';
       }
-      function renderArticles(){
+      function renderArticles() {
         var grid = $("articleGrid");
         var empty = $("emptyState");
         var sorted = sortArticles(state.articles, state.sort);
 
-        if(!sorted.length){
+        if (!sorted.length) {
           grid.innerHTML = "";
           empty.style.display = "block";
           setText("renderedCount", "0");
@@ -1051,59 +745,18 @@
         setText("renderedCount", String(sorted.length));
         setText("totalCount", String(sorted.length));
       }
-      function wireToolbar(){
+      function wireToolbar() {
         var buttons = document.querySelectorAll("[data-sort]");
-        buttons.forEach(function(button){
-          button.addEventListener("click", function(){
+        buttons.forEach(function (button) {
+          button.addEventListener("click", function () {
             state.sort = button.dataset.sort;
-            buttons.forEach(function(el){ el.classList.toggle("active", el === button); });
+            buttons.forEach(function (el) { el.classList.toggle("active", el === button); });
             renderArticles();
           });
         });
       }
-      function resolveSummaryAsOf(summaryData){
-        return firstDefined(
-          summaryData && summaryData.generated_at,
-          summaryData && summaryData.as_of,
-          summaryData && summaryData.date
-        );
-      }
-      function applyStatus(summary, articleCount, digest, summaryData, sentimentRoot, fxInfo){
-        var risk = riskLabelFromValue(firstDefined(summary.risk, summary.global_risk, digest && digest.global_risk));
-        var gsRisk = $("gsRisk");
-        setText("gsRisk", risk.text);
-        if(gsRisk){
-          gsRisk.className = "status-value " + risk.cls;
-        }
-        setText("gsRiskSub", textOr(firstDefined(summary.regime_reason, summary.reason), "daily summary / sentiment"));
 
-        var balance = computeBalanceData(summary, sentimentRoot);
-        applyBalanceData(balance);
-
-        applyFxInfo(fxInfo || {
-          decision: "—",
-          action: "no fx data",
-          pair: "--",
-          reason: "decision / fallback"
-        });
-
-        setText("gsArticles", String(articleCount));
-        setText("gsArticlesSub",
-          state.sourceMode === "digest" ? "digest latest" :
-          state.sourceMode === "world-fallback" ? "world view fallback" :
-          state.sourceMode === "news-fallback" ? "fallback news" :
-          "no data"
-        );
-
-        var updated = resolveSummaryAsOf(summaryData);
-        setText("gsUpdated", textOr(updated ? shortDate(updated) : null, "—"));
-        setText("gsUpdatedSub", textOr(state.summaryPath, state.digestPath, "latest runtime stamp"));
-
-        setText("pillAsOfLocal", "as_of: " + shortDate(updated || "--"));
-        setText("pillReadyLocal", articleCount ? "Ready" : "No data");
-      }
-
-      async function init(){
+      async function init() {
         wireToolbar();
 
         var digestResult = await fetchFirstJson(DIGEST_CANDIDATES);
@@ -1111,21 +764,18 @@
         var summaryResult = await fetchFirstJson(SUMMARY_CANDIDATES);
         var newsResult = await fetchFirstJson(NEWS_CANDIDATES);
         var sentimentResult = await fetchFirstJson(SENTIMENT_CANDIDATES);
-        var fxResult = await fetchFirstJson(FX_CANDIDATES);
 
         var digest = digestResult && digestResult.data ? digestResult.data : null;
         var worldVm = worldVmResult && worldVmResult.data ? worldVmResult.data : null;
         var summaryData = summaryResult && summaryResult.data ? summaryResult.data : null;
         var newsData = newsResult && newsResult.data ? newsResult.data : null;
         var sentimentRoot = sentimentResult && sentimentResult.data ? sentimentResult.data : null;
-        var fxDoc = fxResult && fxResult.data ? fxResult.data : null;
 
         state.digestPath = digestResult && digestResult.url ? digestResult.url : "-";
         state.worldVmPath = worldVmResult && worldVmResult.url ? worldVmResult.url : "-";
         state.summaryPath = summaryResult && summaryResult.url ? summaryResult.url : "-";
         state.newsPath = newsResult && newsResult.url ? newsResult.url : "-";
         state.sentimentPath = sentimentResult && sentimentResult.url ? sentimentResult.url : "-";
-        state.fxPath = fxResult && fxResult.url ? fxResult.url : "-";
 
         var cards = digest ? getCards(digest).map(normalizeArticle) : [];
         var worldCards = worldVm ? getCards(worldVm).map(normalizeArticle) : [];
@@ -1140,11 +790,11 @@
         state.sourceMode = cards.length ? "digest" : (worldCards.length ? "world-fallback" : (newsItems.length ? "news-fallback" : "no-data"));
 
         var sentimentSummary = getSentimentSummary(digest || worldVm || {});
-        if((toNumber(firstDefined(sentimentSummary.positive_count, sentimentSummary.positive), 0) +
+        if ((toNumber(firstDefined(sentimentSummary.positive_count, sentimentSummary.positive), 0) +
             toNumber(firstDefined(sentimentSummary.negative_count, sentimentSummary.negative), 0) +
             toNumber(firstDefined(sentimentSummary.neutral_count, sentimentSummary.neutral), 0) +
             toNumber(firstDefined(sentimentSummary.mixed_count, sentimentSummary.mixed), 0) +
-            toNumber(firstDefined(sentimentSummary.unknown_count, sentimentSummary.unknown), 0)) <= 0 && sentimentRoot){
+            toNumber(firstDefined(sentimentSummary.unknown_count, sentimentSummary.unknown), 0)) <= 0 && sentimentRoot) {
           sentimentSummary = {
             articles: firstDefined(
               sentimentRoot.today && sentimentRoot.today.articles,
@@ -1175,21 +825,6 @@
               sentimentRoot.summary && sentimentRoot.summary.unknown,
               sentimentRoot.today && sentimentRoot.today.label_counts && sentimentRoot.today.label_counts.unknown,
               0
-            ),
-            positive: firstDefined(
-              sentimentRoot.today && sentimentRoot.today.positive,
-              0
-            ),
-            risk: firstDefined(
-              sentimentRoot.today && sentimentRoot.today.risk,
-              0
-            ),
-            uncertainty_count: firstDefined(
-              sentimentRoot.summary && sentimentRoot.summary.unknown,
-              sentimentRoot.today && sentimentRoot.today.label_counts && sentimentRoot.today.label_counts.unknown,
-              sentimentRoot.summary && sentimentRoot.summary.mixed,
-              sentimentRoot.today && sentimentRoot.today.label_counts && sentimentRoot.today.label_counts.mixed,
-              0
             )
           };
         }
@@ -1197,7 +832,6 @@
         var primaryVm = digest || worldVm || {};
         var summaryText = textOr(getSummaryText(primaryVm, summaryData || {}), "No summary available.");
         var topicTags = getTopicTags(primaryVm, summaryData || {});
-        var fxInfo = deriveFxInfo(fxDoc, state.fxPath);
 
         setText("summaryBody", summaryText);
         setText("summaryHint",
@@ -1224,25 +858,32 @@
         renderTopics(topicTags);
         renderKpis(sentimentSummary, state.articles.length);
         renderArticles();
-        applyStatus(sentimentSummary, state.articles.length, primaryVm, summaryData || {}, sentimentRoot || {}, fxInfo);
 
-        if(state.sourceMode === "digest"){
+        if (state.sourceMode === "digest") {
           setText("heroText", "Summary と Highlights を横並び同高で配置し、Highlights は KPI のみ表示します。Articles はその直下に全件表示します。");
           setText("highlightsHint", "KPI only / digest");
-        }else if(state.sourceMode === "world-fallback"){
+        } else if (state.sourceMode === "world-fallback") {
           setText("heroText", "Digest ViewModel を取得できなかったため world_view_model_latest.json を fallback 使用しています。正式運用では digest view model を優先してください。");
           setText("highlightsHint", "KPI only / world fallback");
-        }else if(state.sourceMode === "news-fallback"){
+        } else if (state.sourceMode === "news-fallback") {
           setText("heroText", "Digest / World View を取得できなかったため fallback news を全件表示しています。正式運用では view model を優先してください。");
           setText("highlightsHint", "KPI only / news fallback");
-        }else{
+        } else {
           setText("heroText", "Digest / Summary / News の取得に失敗しました。データ生成後に再読み込みしてください。");
           setText("highlightsHint", "KPI only / no data");
         }
+
+        if (window.GenesisGlobalStatus && typeof window.GenesisGlobalStatus.refresh === "function") {
+          window.GenesisGlobalStatus.refresh().catch(function () {});
+        }
+
+        setText("pillReadyLocal", state.articles.length ? "Ready" : "No data");
       }
 
       init();
     })();
   </script>
+  <script src="/static/common/global_status.js?v=20260315-ui-fix-2"></script>
+  <script src="/static/common/layout.js?v=20260315-ui-fix-2"></script>
 </body>
 </html>

@@ -7,6 +7,7 @@ param(
     [switch]$SkipFx,
     [switch]$SkipHealth,
     [switch]$SkipRefresh,
+    [switch]$DeployLabos,
     [switch]$ContinueOnError,
     [switch]$Pretty
 )
@@ -133,7 +134,7 @@ function Resolve-PythonCommand {
         return @{
             Executable = $venvPython
             PrefixArgs = @()
-            Display = $venvPython
+            Display    = $venvPython
         }
     }
 
@@ -142,7 +143,7 @@ function Resolve-PythonCommand {
         return @{
             Executable = $pythonCmd.Source
             PrefixArgs = @()
-            Display = $pythonCmd.Source
+            Display    = $pythonCmd.Source
         }
     }
 
@@ -151,7 +152,7 @@ function Resolve-PythonCommand {
         return @{
             Executable = $pyCmd.Source
             PrefixArgs = @("-3")
-            Display = "$($pyCmd.Source) -3"
+            Display    = "$($pyCmd.Source) -3"
         }
     }
 
@@ -227,15 +228,15 @@ if ([string]::IsNullOrWhiteSpace($Date)) {
     $Date = Get-Date -Format "yyyy-MM-dd"
 }
 
-$scriptsDir = Join-Path $Root "scripts"
-$analysisDir = Join-Path $Root "analysis"
+$scriptsDir    = Join-Path $Root "scripts"
+$analysisDir   = Join-Path $Root "analysis"
 $predictionDir = Join-Path $analysisDir "prediction"
 
-$trendOutput = Join-Path $predictionDir "trend_latest.json"
-$signalOutput = Join-Path $predictionDir "signal_latest.json"
+$trendOutput        = Join-Path $predictionDir "trend_latest.json"
+$signalOutput       = Join-Path $predictionDir "signal_latest.json"
 $earlyWarningOutput = Join-Path $predictionDir "early_warning_latest.json"
-$scenarioOutput = Join-Path $predictionDir "scenario_latest.json"
-$predictionOutput = Join-Path $predictionDir "prediction_latest.json"
+$scenarioOutput     = Join-Path $predictionDir "scenario_latest.json"
+$predictionOutput   = Join-Path $predictionDir "prediction_latest.json"
 
 Write-Host "Morning Ritual (single entrypoint)"
 Write-Host "ROOT        : $Root"
@@ -246,6 +247,7 @@ Write-Host ("PREDICTION  : " + ($(if ($SkipPredictionLayer) { "SKIP" } else { "R
 Write-Host ("FX          : " + ($(if ($SkipFx) { "SKIP" } else { "RUN" })))
 Write-Host ("HEALTH      : " + ($(if ($SkipHealth) { "SKIP" } else { "RUN" })))
 Write-Host ("REFRESH     : " + ($(if ($SkipRefresh) { "SKIP" } else { "RUN" })))
+Write-Host ("DEPLOY      : " + ($(if ($DeployLabos) { "RUN" } else { "SKIP" })))
 Write-Host ("PRETTY      : " + ($(if ($Pretty) { "ON" } else { "OFF" })))
 Write-Host ""
 
@@ -408,7 +410,34 @@ try {
         }
     }
 
+    Invoke-Step -Name "Global Status build" -Action {
+        Invoke-PythonFile `
+            -Name "Global Status build" `
+            -ScriptPath (Join-Path $scriptsDir "build_global_status_latest.py") `
+            -Arguments @(
+                "--root", $Root,
+                "--pretty"
+            )
+    }
+
     Show-GlobalStatusSummary -RepoRoot $Root
+
+    if ($DeployLabos) {
+        Invoke-Step -Name "LABOS Deploy 1) Build payload" -Action {
+            Invoke-PowerShellFile `
+                -Name "LABOS Deploy 1) Build payload" `
+                -ScriptPath (Join-Path $scriptsDir "build_labos_deploy_payload.ps1")
+        }
+
+        Invoke-Step -Name "LABOS Deploy 2) Upload" -Action {
+            Invoke-PowerShellFile `
+                -Name "LABOS Deploy 2) Upload" `
+                -ScriptPath (Join-Path $scriptsDir "run_deploy_labos.ps1")
+        }
+    }
+    else {
+        Write-Log "LABOS deploy skipped. Use -DeployLabos on home PC only."
+    }
 
     Write-Log "Morning Ritual completed successfully."
     exit 0

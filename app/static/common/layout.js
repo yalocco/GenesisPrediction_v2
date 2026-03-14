@@ -1,160 +1,115 @@
-(function () {
+(() => {
   "use strict";
 
-  const HEADER_HTML = `
-<header class="topbar">
-  <div class="container">
-    <div class="topbar-inner topbar-inner--three">
-      <div class="brand">
-        <span class="brand-dot" aria-hidden="true"></span>
-        <span class="brand-title">GenesisPrediction v2</span>
-      </div>
+  const NAV_ITEMS = [
+    { href: "/static/index.html", label: "Home" },
+    { href: "/static/overlay.html", label: "Overlay" },
+    { href: "/static/sentiment.html", label: "Sentiment" },
+    { href: "/static/digest.html", label: "Digest" },
+    { href: "/static/prediction.html", label: "Prediction" },
+    { href: "/static/prediction_history.html", label: "Prediction History" }
+  ];
 
-      <nav class="topnav topnav--center" aria-label="Primary Navigation">
-        <a class="pill nav-link" data-page="home" href="/static/index.html">Home</a>
-        <a class="pill nav-link" data-page="overlay" href="/static/overlay.html">Overlay</a>
-        <a class="pill nav-link" data-page="sentiment" href="/static/sentiment.html">Sentiment</a>
-        <a class="pill nav-link" data-page="digest" href="/static/digest.html">Digest</a>
-        <a class="pill nav-link" data-page="prediction" href="/static/prediction.html">Prediction</a>
-        <a class="pill nav-link" data-page="prediction_history" href="/static/prediction_history.html">Prediction History</a>
-      </nav>
-
-      <div class="topbar-status" aria-label="Runtime Status">
-        <span id="pillReady" class="pill">Ready</span>
-        <span id="pillHealth" class="pill">Health: --</span>
-        <span id="pillAsOf" class="pill">as_of: --</span>
-      </div>
-    </div>
-  </div>
-</header>
-`.trim();
-
-  const FOOTER_HTML = `
-<footer class="footer">
-  <div class="container">
-    GenesisPrediction v2<br>
-    UI is read-only / analysis is SST
-  </div>
-</footer>
-`.trim();
-
-  function currentPageKey() {
-    const path = (window.location.pathname || "").toLowerCase();
-
-    if (path.endsWith("/overlay.html")) return "overlay";
-    if (path.endsWith("/sentiment.html")) return "sentiment";
-    if (path.endsWith("/digest.html")) return "digest";
-    if (path.endsWith("/prediction.html")) return "prediction";
-    if (path.endsWith("/prediction_history.html")) return "prediction_history";
-    return "home";
+  function normalizePath(path) {
+    return String(path || "")
+      .replace(/[?#].*$/, "")
+      .replace(/\/+$/, "")
+      .toLowerCase();
   }
 
-  function ensureLayoutStateFlag() {
-    document.documentElement.setAttribute("data-layout-ready", "0");
-  }
-
-  function markLayoutReady() {
-    window.requestAnimationFrame(function () {
-      document.documentElement.setAttribute("data-layout-ready", "1");
-    });
-  }
-
-  function mountIntoTarget(target, html) {
-    if (!target) return false;
-
-    if (target.dataset.layoutMounted === "1" && target.innerHTML.trim() === html) {
-      return false;
-    }
-
-    target.innerHTML = html;
-    target.dataset.layoutMounted = "1";
-    return true;
-  }
-
-  function applyActiveNav(activeKey) {
-    const links = document.querySelectorAll(".nav-link[data-page]");
-
-    links.forEach(function (link) {
-      const key = (link.getAttribute("data-page") || "").trim();
-      const isActive = key === activeKey;
-
-      link.classList.toggle("active", isActive);
-
-      if (isActive) {
-        link.setAttribute("aria-current", "page");
-      } else {
-        link.removeAttribute("aria-current");
-      }
-    });
-  }
-
-  function setHeaderFallback() {
-    const pillReady = document.getElementById("pillReady");
-    const pillHealth = document.getElementById("pillHealth");
-    const pillAsOf = document.getElementById("pillAsOf");
-    const legacyHealth = document.getElementById("global-health");
-
-    if (pillReady) {
-      pillReady.textContent = "Ready";
-    }
-    if (pillHealth) {
-      pillHealth.textContent = "Health: --";
-    }
-    if (pillAsOf) {
-      pillAsOf.textContent = "as_of: --";
-    }
-    if (legacyHealth) {
-      legacyHealth.textContent = "Ready Health: -- as_of: --";
+  function currentPath() {
+    try {
+      return normalizePath(window.location.pathname || "");
+    } catch (_error) {
+      return "";
     }
   }
 
-  function mountSharedLayout() {
-    const activeKey = currentPageKey();
+  function isActiveNav(href) {
+    return currentPath() === normalizePath(href);
+  }
 
-    const headerTarget = document.getElementById("site-header");
-    const footerTarget = document.getElementById("site-footer");
+  function buildNavHtml() {
+    return NAV_ITEMS.map((item) => {
+      const active = isActiveNav(item.href);
+      const aria = active ? ' aria-current="page"' : "";
+      const cls = `nav-link${active ? " active" : ""}`;
+      return `<a class="${cls}" href="${item.href}"${aria}>${item.label}</a>`;
+    }).join("");
+  }
 
-    const headerMounted = mountIntoTarget(headerTarget, HEADER_HTML);
-    const footerMounted = mountIntoTarget(footerTarget, FOOTER_HTML);
+  function buildHeaderHtml() {
+    return `
+      <header class="topbar">
+        <div class="container">
+          <div class="topbar-inner topbar-inner--three">
+            <div class="brand" aria-label="GenesisPrediction home">
+              <span class="brand-dot" aria-hidden="true"></span>
+              <span class="brand-title">GenesisPrediction v2</span>
+            </div>
 
-    applyActiveNav(activeKey);
-    setHeaderFallback();
+            <nav class="topnav topnav--center" aria-label="Primary navigation">
+              ${buildNavHtml()}
+            </nav>
 
-    return headerMounted || footerMounted;
+            <div class="topbar-status" aria-label="Global status header">
+              <span id="pillReady" class="pill">Ready</span>
+              <span id="pillHealth" class="pill">Health: --</span>
+              <span id="pillAsOf" class="pill">as_of: --</span>
+            </div>
+          </div>
+        </div>
+      </header>
+    `;
+  }
+
+  function buildFooterHtml() {
+    const year = new Date().getFullYear();
+    return `
+      <footer class="footer">
+        <div class="container">
+          <div>GenesisPrediction v2</div>
+          <div class="hint">UI is display only / analysis is SST / © ${year}</div>
+        </div>
+      </footer>
+    `;
+  }
+
+  function injectHeader() {
+    const root = document.getElementById("site-header");
+    if (!root) return;
+    root.innerHTML = buildHeaderHtml();
+  }
+
+  function injectFooter() {
+    const root = document.getElementById("site-footer");
+    if (!root) return;
+    root.innerHTML = buildFooterHtml();
   }
 
   async function refreshSharedStatus() {
-    if (typeof window.refreshGlobalStatus === "function") {
-      try {
-        await window.refreshGlobalStatus();
-        return;
-      } catch (err) {
-        console.error("[layout] refreshGlobalStatus failed:", err);
+    try {
+      if (window.GenesisGlobalStatus && typeof window.GenesisGlobalStatus.refresh === "function") {
+        await window.GenesisGlobalStatus.refresh();
       }
+    } catch (_error) {
+      // header skeleton remains visible even when status fetch fails
     }
-
-    setHeaderFallback();
   }
 
-  async function initLayout() {
-    ensureLayoutStateFlag();
-    mountSharedLayout();
-    markLayoutReady();
+  async function boot() {
+    document.documentElement.dataset.layoutReady = "0";
+
+    injectHeader();
+    injectFooter();
     await refreshSharedStatus();
-  }
 
-  window.GPLayout = {
-    init: initLayout,
-    remount: async function () {
-      mountSharedLayout();
-      markLayoutReady();
-      await refreshSharedStatus();
-    },
-  };
+    document.documentElement.dataset.layoutReady = "1";
+  }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initLayout, { once: true });
+    document.addEventListener("DOMContentLoaded", boot, { once: true });
   } else {
-    initLayout();
+    boot();
   }
 })();
