@@ -9,7 +9,7 @@
     },
   };
 
-  const GLOBAL_STATUS_PATH = "/analysis/global_status_latest.json";
+  const GLOBAL_STATUS_PATH = "/data/world_politics/analysis/view_model_latest.json";
 
   function textValue(value, fallback = "--") {
     if (value === null || value === undefined) return fallback;
