@@ -1,6 +1,7 @@
 # scripts/fx_remittance_overlay.py
 # FX Multi Overlay (JPY↔THB / JPY↔USD)
 #
+# Unified pair-based dashboard input
 # - pair: jpy_thb / jpy_usd
 # - Default: jpy_thb (backward compatible)
 # - Saves PNG (no GUI by default; use --show to display)
@@ -35,11 +36,10 @@ ROOT = Path(__file__).resolve().parents[1]
 FX_DIR = ROOT / "data" / "fx"
 DASH_DIR = FX_DIR / "dashboard"
 
-# legacy (must keep for current pipeline)
-LEGACY_THB_DASH = FX_DIR / "jpy_thb_remittance_dashboard.csv"
+# backward-compatible output only
 LEGACY_THB_PNG = FX_DIR / "jpy_thb_remittance_overlay.png"
 
-# new pair-based outputs (local)
+# unified pair-based outputs
 PAIR_PNG = {
     "jpy_thb": FX_DIR / "fx_jpy_thb_overlay.png",
     "jpy_usd": FX_DIR / "fx_jpy_usd_overlay.png",
@@ -48,6 +48,26 @@ PAIR_PNG = {
 PAIR_DASH = {
     "jpy_thb": DASH_DIR / "jpy_thb_dashboard.csv",
     "jpy_usd": DASH_DIR / "jpy_usd_dashboard.csv",
+}
+
+PAIR_YCOL = {
+    "jpy_thb": "jpy_thb",
+    "jpy_usd": "jpy_usd",
+}
+
+PAIR_TITLE = {
+    "jpy_thb": "JPY→THB Remittance Overlay",
+    "jpy_usd": "JPY→USD Overlay",
+}
+
+PAIR_YLABEL = {
+    "jpy_thb": "THB per JPY",
+    "jpy_usd": "USD per JPY",
+}
+
+PAIR_LINE_LABEL = {
+    "jpy_thb": "JPY→THB (THB per JPY)",
+    "jpy_usd": "JPY→USD (USD per JPY)",
 }
 
 
@@ -141,29 +161,18 @@ def _must_have_cols(df: pd.DataFrame, cols: list[str], label: str) -> None:
 
 
 def load_dashboard(pair: str) -> pd.DataFrame:
-    if pair == "jpy_thb":
-        # Prefer legacy if exists (overlay.html freeze compatibility)
-        csv_path = LEGACY_THB_DASH if LEGACY_THB_DASH.exists() else PAIR_DASH[pair]
-        label = str(csv_path)
-        if not csv_path.exists():
-            raise SystemExit(f"[ERR] input not found: {csv_path}")
-
-        df = pd.read_csv(csv_path)
-        _must_have_cols(df, ["date", "jpy_thb"], label)
-        y_col = "jpy_thb"
-
-    elif pair == "jpy_usd":
-        csv_path = PAIR_DASH[pair]
-        label = str(csv_path)
-        if not csv_path.exists():
-            raise SystemExit(f"[ERR] input not found: {csv_path}")
-
-        df = pd.read_csv(csv_path)
-        _must_have_cols(df, ["date", "jpy_usd"], label)
-        y_col = "jpy_usd"
-
-    else:
+    if pair not in PAIR_DASH:
         raise SystemExit(f"[ERR] unknown pair: {pair}")
+
+    csv_path = PAIR_DASH[pair]
+    y_col = PAIR_YCOL[pair]
+    label = str(csv_path)
+
+    if not csv_path.exists():
+        raise SystemExit(f"[ERR] input not found: {csv_path}")
+
+    df = pd.read_csv(csv_path)
+    _must_have_cols(df, ["date", y_col], label)
 
     df["date"] = pd.to_datetime(df["date"]).dt.tz_localize(None)
     df = df.sort_values("date").reset_index(drop=True)
@@ -241,15 +250,9 @@ def plot_overlay(pair: str, df: pd.DataFrame, out_png: Path, show: bool) -> None
     periods = ["90d", "180d", "ALL"]
     rb = RadioButtons(axp, periods, active=periods.index(DEFAULT_PERIOD))
 
-    # base plot + labels
-    if pair == "jpy_thb":
-        title = "JPY→THB Remittance Overlay"
-        ylab = "THB per JPY"
-        line_label = "JPY→THB (THB per JPY)"
-    else:
-        title = "JPY→USD Overlay"
-        ylab = "USD per JPY"
-        line_label = "JPY→USD (USD per JPY)"
+    title = PAIR_TITLE[pair]
+    ylab = PAIR_YLABEL[pair]
+    line_label = PAIR_LINE_LABEL[pair]
 
     ax.plot(df["date"], df[y_col], label=line_label)
     ax.plot(df["date"], df["ma"], label=f"MA{MA_N}")
@@ -297,7 +300,7 @@ def plot_overlay(pair: str, df: pd.DataFrame, out_png: Path, show: bool) -> None
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--pair", choices=["jpy_thb", "jpy_usd"], default="jpy_thb")
+    ap.add_argument("--pair", choices=sorted(PAIR_DASH.keys()), default="jpy_thb")
     ap.add_argument("--show", action="store_true", help="display window (manual use)")
     args = ap.parse_args()
 
@@ -311,13 +314,10 @@ def main() -> None:
     out_main = PAIR_PNG[pair]
     plot_overlay(pair, df, out_main, show=args.show)
 
-    # backward compatibility for THB: also write legacy output name
+    # backward compatibility for THB output name only
     if pair == "jpy_thb":
-        # copy-save (same figure already closed); easiest is to save again by re-plot quickly
-        # keep it simple: re-render in Agg with same data
         matplotlib.use("Agg")
-        df2 = df.copy()
-        plot_overlay(pair, df2, LEGACY_THB_PNG, show=False)
+        plot_overlay(pair, df.copy(), LEGACY_THB_PNG, show=False)
 
 
 if __name__ == "__main__":
