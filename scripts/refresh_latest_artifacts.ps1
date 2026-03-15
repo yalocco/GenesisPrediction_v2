@@ -47,6 +47,7 @@ function Resolve-PythonCommand {
     )
 
     foreach ($candidate in $candidates) {
+
         if ($candidate -eq "python") {
             try {
                 $null = Get-Command python -ErrorAction Stop
@@ -62,44 +63,7 @@ function Resolve-PythonCommand {
         }
     }
 
-    throw "Python executable not found. Checked .venv, venv, and PATH."
-}
-
-function Invoke-PythonScript {
-    param(
-        [string]$PythonCommand,
-        [string]$ScriptPath,
-        [string[]]$Arguments = @()
-    )
-
-    if (-not (Test-Path $ScriptPath)) {
-        throw "Missing script: $ScriptPath"
-    }
-
-    Write-Host "CMD: $PythonCommand $ScriptPath $($Arguments -join ' ')" -ForegroundColor DarkGray
-    & $PythonCommand $ScriptPath @Arguments
-
-    if ($LASTEXITCODE -ne 0) {
-        throw "Python script failed: $ScriptPath (exit code $LASTEXITCODE)"
-    }
-}
-
-function Invoke-PowerShellScript {
-    param(
-        [string]$ScriptPath,
-        [string[]]$Arguments = @()
-    )
-
-    if (-not (Test-Path $ScriptPath)) {
-        throw "Missing script: $ScriptPath"
-    }
-
-    Write-Host "CMD: powershell -ExecutionPolicy Bypass -File $ScriptPath $($Arguments -join ' ')" -ForegroundColor DarkGray
-    powershell -ExecutionPolicy Bypass -File $ScriptPath @Arguments
-
-    if ($LASTEXITCODE -ne 0) {
-        throw "PowerShell script failed: $ScriptPath (exit code $LASTEXITCODE)"
-    }
+    throw "Python executable not found."
 }
 
 function Ensure-AnalysisDir {
@@ -108,6 +72,7 @@ function Ensure-AnalysisDir {
     )
 
     $analysisDir = Join-Path $RepoRoot "analysis"
+
     if (-not (Test-Path $analysisDir)) {
         New-Item -ItemType Directory -Path $analysisDir -Force | Out-Null
     }
@@ -124,12 +89,15 @@ function Copy-IfExists {
     }
 
     $destDir = Split-Path -Parent $DestinationPath
+
     if ($destDir -and -not (Test-Path $destDir)) {
         New-Item -ItemType Directory -Path $destDir -Force | Out-Null
     }
 
     Copy-Item -Path $SourcePath -Destination $DestinationPath -Force
+
     Write-Host "[copy] $SourcePath -> $DestinationPath" -ForegroundColor Green
+
     return $true
 }
 
@@ -139,26 +107,38 @@ function Refresh-KnownLatestArtifacts {
     )
 
     $copyRules = @(
+
+        # daily summary
         @{
-            Source = (Join-Path $RepoRoot "analysis\world_politics\daily_summary_latest.json")
+            Source = (Join-Path $RepoRoot "data\world_politics\analysis\daily_summary_latest.json")
             Destination = (Join-Path $RepoRoot "analysis\daily_summary_latest.json")
         },
+
+        # sentiment
         @{
-            Source = (Join-Path $RepoRoot "analysis\world_politics\sentiment_latest.json")
+            Source = (Join-Path $RepoRoot "data\world_politics\analysis\sentiment_latest.json")
             Destination = (Join-Path $RepoRoot "analysis\sentiment_latest.json")
         },
+
+        # health
         @{
-            Source = (Join-Path $RepoRoot "analysis\world_politics\health_latest.json")
+            Source = (Join-Path $RepoRoot "data\world_politics\analysis\health_latest.json")
             Destination = (Join-Path $RepoRoot "analysis\health_latest.json")
         },
+
+        # prediction
         @{
             Source = (Join-Path $RepoRoot "analysis\prediction\prediction_latest.json")
             Destination = (Join-Path $RepoRoot "analysis\prediction_latest.json")
         },
+
+        # scenario
         @{
             Source = (Join-Path $RepoRoot "analysis\prediction\scenario_latest.json")
             Destination = (Join-Path $RepoRoot "analysis\scenario_latest.json")
         },
+
+        # signal
         @{
             Source = (Join-Path $RepoRoot "analysis\prediction\signal_latest.json")
             Destination = (Join-Path $RepoRoot "analysis\signal_latest.json")
@@ -166,7 +146,9 @@ function Refresh-KnownLatestArtifacts {
     )
 
     foreach ($rule in $copyRules) {
-        Copy-IfExists -SourcePath $rule.Source -DestinationPath $rule.Destination | Out-Null
+        Copy-IfExists `
+            -SourcePath $rule.Source `
+            -DestinationPath $rule.Destination | Out-Null
     }
 }
 
@@ -177,6 +159,7 @@ function Build-GlobalStatusLatest {
     )
 
     $runner = Join-Path $RepoRoot "scripts\run_global_status_latest.ps1"
+
     $args = @(
         "-Root", $RepoRoot
     )
@@ -185,7 +168,7 @@ function Build-GlobalStatusLatest {
         $args += "-Pretty"
     }
 
-    Invoke-PowerShellScript -ScriptPath $runner -Arguments $args
+    powershell -ExecutionPolicy Bypass -File $runner @args
 }
 
 function Show-Summary {
@@ -199,26 +182,21 @@ function Show-Summary {
     Write-Host "=== refresh_latest_artifacts summary ===" -ForegroundColor Cyan
 
     if (Test-Path $globalStatusPath) {
-        try {
-            $json = Get-Content $globalStatusPath -Raw -Encoding UTF8 | ConvertFrom-Json
-            Write-Host "global_status_latest.json : OK"
-            Write-Host "  as_of      : $($json.as_of)"
-            Write-Host "  risk       : $($json.global_risk)"
-            Write-Host "  sentiment  : $($json.sentiment_balance)"
-            Write-Host "  fx         : $($json.fx_regime)"
-            Write-Host "  articles   : $($json.articles)"
-            Write-Host "  health     : $($json.health)"
-        }
-        catch {
-            Write-Host "global_status_latest.json : exists but could not parse" -ForegroundColor Yellow
-        }
-    }
-    else {
-        Write-Host "global_status_latest.json : missing" -ForegroundColor Yellow
+
+        $json = Get-Content $globalStatusPath -Raw -Encoding UTF8 | ConvertFrom-Json
+
+        Write-Host "global_status_latest.json : OK"
+        Write-Host "  as_of      : $($json.as_of)"
+        Write-Host "  risk       : $($json.global_risk)"
+        Write-Host "  sentiment  : $($json.sentiment_balance)"
+        Write-Host "  fx         : $($json.fx_regime)"
+        Write-Host "  articles   : $($json.articles)"
+        Write-Host "  health     : $($json.health)"
     }
 }
 
 try {
+
     $repoRoot = Resolve-RepoRoot -ExplicitRoot $Root
     $runDate = Resolve-RunDate -ExplicitDate $Date
     $pythonCmd = Resolve-PythonCommand -RepoRoot $repoRoot
@@ -227,7 +205,6 @@ try {
     Write-Host "ROOT   : $repoRoot"
     Write-Host "DATE   : $runDate"
     Write-Host "PYTHON : $pythonCmd"
-    Write-Host "PRETTY : $($Pretty.IsPresent)"
     Write-Host ""
 
     Ensure-AnalysisDir -RepoRoot $repoRoot
@@ -240,6 +217,7 @@ try {
     Build-GlobalStatusLatest -RepoRoot $repoRoot -PrettyJson:$Pretty
 
     Show-Summary -RepoRoot $repoRoot
+
     exit 0
 }
 catch {
