@@ -1,143 +1,155 @@
 # scripts/deploy_labos.ps1
-# ConoHa WING deploy - stable, re-runnable (argv-array safe)
-#
-# Key points:
-# - Avoid $Host reserved variable collision (use $sshHost)
-# - Force bash on remote (WING may default to csh/tcsh)
-# - Upload tar to HOME first, then move into release dir
-# - Publish into public_html/<subdomain>
-# - Use argv arrays for ssh/scp to avoid quoting hell
-# - FIX: ensure /analysis/digest_latest.json exists (alias from common filenames or fallback {})
-
-[CmdletBinding()]
 param(
-  [ValidateSet("dev","prod")]
-  [string]$Profile = "dev",
-  [switch]$DryRun
+    [string]$Profile = "dev"
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-function Fail([string]$msg) { Write-Host "[FAIL] $msg" -ForegroundColor Red; exit 1 }
-function Info([string]$msg) { Write-Host "[INFO] $msg" -ForegroundColor Cyan }
-function Ok([string]$msg)   { Write-Host "[OK] $msg" -ForegroundColor Green }
+$ROOT = Resolve-Path (Join-Path $PSScriptRoot "..")
 
-function Require-Command([string]$name) {
-  if (-not (Get-Command $name -ErrorAction SilentlyContinue)) { Fail "command not found: $name" }
-}
-
-function Run([string]$label, [string[]]$argv) {
-  $cmdline = ($argv | ForEach-Object { if ($_ -match '\s') { '"' + $_ + '"' } else { $_ } }) -join ' '
-  Info $label
-  if ($DryRun) { Info ("DRYRUN: {0}" -f $cmdline); return }
-
-  & $argv[0] @($argv[1..($argv.Length-1)])
-  if ($LASTEXITCODE -ne 0) { Fail "$label failed (exit=$LASTEXITCODE)" }
-}
-
-Require-Command "ssh"
-Require-Command "scp"
-Require-Command "tar"
-
-$cfgPath = Join-Path $PSScriptRoot "deploy_labos.config.ps1"
-if (-not (Test-Path $cfgPath)) { Fail "missing config file: $cfgPath" }
-. $cfgPath
+. (Join-Path $ROOT "scripts/deploy_labos.config.ps1")
 
 if (-not $DEPLOY_PROFILES.ContainsKey($Profile)) {
-  Fail "profile not found: $Profile. Available: $($DEPLOY_PROFILES.Keys -join ', ')"
-}
-$p = $DEPLOY_PROFILES[$Profile]
-
-$required = @("Name","Host","User","Port","KeyPath","LocalDir","RemoteBaseDir","RemoteReleaseName","WebRootDirName")
-foreach ($k in $required) {
-  if (-not $p.ContainsKey($k) -or [string]::IsNullOrWhiteSpace([string]$p[$k])) {
-    Fail "config error: missing '$k' in profile '$Profile'"
-  }
+    throw "Profile not found: $Profile"
 }
 
-$name        = [string]$p["Name"]
-$sshHost     = [string]$p["Host"]   # do NOT use $Host/$host
-$user        = [string]$p["User"]
-$port        = [int]$p["Port"]
-$keyPath     = [string]$p["KeyPath"]
-$localDir    = (Resolve-Path ([string]$p["LocalDir"])).Path
-$homeDir     = [string]$p["RemoteBaseDir"]
-$releaseName = [string]$p["RemoteReleaseName"]
-$webDirName  = [string]$p["WebRootDirName"]
+$cfg = $DEPLOY_PROFILES[$Profile]
 
-$mirrorRootFiles = $true
-if ($p.ContainsKey("MirrorRootFiles")) { $mirrorRootFiles = [bool]$p["MirrorRootFiles"] }
+$sshHost    = [string]$cfg.Host
+$user       = [string]$cfg.User
+$port       = [string]$cfg.Port
+$key        = [string]$cfg.KeyPath
+$localDir   = [string]$cfg.LocalDir
+$remoteBase = [string]$cfg.RemoteBaseDir
+$release    = [string]$cfg.RemoteReleaseName
+$webroot    = "$remoteBase/public_html/$($cfg.WebRootDirName)"
+$releaseDir = "$remoteBase/releases/$release"
 
-if (-not (Test-Path $keyPath)) { Fail "SSH key not found: $keyPath" }
-if (-not (Test-Path $localDir)) { Fail "LocalDir not found: $localDir" }
+Write-Host "[INFO] Deploy: $($cfg.Name) ($Profile)"
+Write-Host "[INFO] Remote: ${user}@${sshHost}:${port}"
+Write-Host "[INFO] ReleaseDir: $releaseDir"
+Write-Host "[INFO] WebRoot   : $webroot"
+Write-Host "[INFO] MirrorRootFiles: $($cfg.MirrorRootFiles)"
 
-$remoteReleaseDir = "$homeDir/releases/$releaseName"
-$remoteWebRoot    = "$homeDir/public_html/$webDirName"
-$remoteTarget     = ("{0}@{1}" -f $user, $sshHost)
+if (-not (Test-Path $localDir)) {
+    throw "LocalDir not found: $localDir"
+}
+if (-not (Test-Path $key)) {
+    throw "SSH key not found: $key"
+}
 
-Info ("Deploy: {0} ({1})" -f $name, $Profile)
-Info ("Remote: {0}:{1}" -f $remoteTarget, $port)
-Info ("ReleaseDir: {0}" -f $remoteReleaseDir)
-Info ("WebRoot   : {0}" -f $remoteWebRoot)
-Info ("MirrorRootFiles: {0}" -f $mirrorRootFiles)
-
-$sshBase = @("ssh","-p","$port","-i",$keyPath,$remoteTarget)
-$scpBase = @("scp","-P","$port","-i",$keyPath)
-
-# Build tar
 $tmpTar = Join-Path $env:TEMP "labos_release.tar.gz"
-if (Test-Path $tmpTar) { Remove-Item $tmpTar -Force }
+if (Test-Path $tmpTar) {
+    Remove-Item $tmpTar -Force
+}
 
-Run "tar create" @("tar","-czf",$tmpTar,"-C",$localDir,".")
+Write-Host "[INFO] tar create"
+tar -czf $tmpTar -C $localDir .
+if ($LASTEXITCODE -ne 0) {
+    throw "tar create failed"
+}
 
-# remote mkdir (bash -lc "<cmd>")
-$mkdirCmd = 'set -e; mkdir -p "' + $homeDir + '/releases" "' + $remoteReleaseDir + '" "' + $remoteWebRoot + '/static" "' + $remoteWebRoot + '/analysis" "' + $remoteWebRoot + '/error"'
-Run "remote mkdir" ($sshBase + @("bash","-lc",$mkdirCmd))
+$sshArgs = @(
+    "-i", $key,
+    "-p", $port,
+    "${user}@${sshHost}"
+)
 
-# scp upload to HOME
-$remoteHomeTar = ("{0}:{1}/labos_release.tar.gz" -f $remoteTarget, $homeDir)
-Run "scp upload (to HOME)" ($scpBase + @($tmpTar, $remoteHomeTar))
+$scpArgs = @(
+    "-i", $key,
+    "-P", $port
+)
 
-# move+extract
-$extractCmd = 'set -e; mv "' + $homeDir + '/labos_release.tar.gz" "' + $remoteReleaseDir + '/release.tar.gz"; cd "' + $remoteReleaseDir + '"; tar -xzf release.tar.gz; rm -f release.tar.gz'
-Run "remote move+extract" ($sshBase + @("bash","-lc",$extractCmd))
+function To-LF([string]$s) {
+    return ($s -replace "`r", "")
+}
 
-# publish
-$mirrorFlag = if ($mirrorRootFiles) { "1" } else { "0" }
+function RunRemote([string]$script) {
+    $script = To-LF $script
 
-# --- IMPORTANT: ensure digest_latest.json exists in STAGE/analysis to avoid 404 on GUI
-$publishCmd =
-  'set -e;' +
-  ' STAGE="' + $remoteReleaseDir + '";' +
-  ' WEBROOT="' + $remoteWebRoot + '";' +
-  ' MIRROR="' + $mirrorFlag + '";' +
+    $tmpLocal = Join-Path $env:TEMP ("labos_remote_" + [guid]::NewGuid().ToString() + ".sh")
+    $tmpName = Split-Path $tmpLocal -Leaf
+    $remoteTmp = "`$HOME/$tmpName"
 
-  # ensure analysis dir exists
-  ' mkdir -p "$WEBROOT/analysis" "$WEBROOT/static" "$WEBROOT/error";' +
+    [System.IO.File]::WriteAllText($tmpLocal, $script, (New-Object System.Text.UTF8Encoding($false)))
 
-  # FIX: create digest_latest.json alias if missing
-  ' if [ ! -f "$STAGE/analysis/digest_latest.json" ]; then ' +
-  '   for c in daily_digest_latest.json digest_view_model_latest.json daily_digest_view_model_latest.json digest_latest_view_model.json; do ' +
-  '     if [ -f "$STAGE/analysis/$c" ]; then cp -af "$STAGE/analysis/$c" "$STAGE/analysis/digest_latest.json"; break; fi; ' +
-  '   done; ' +
-  ' fi;' +
-  ' if [ ! -f "$STAGE/analysis/digest_latest.json" ]; then echo "{}" > "$STAGE/analysis/digest_latest.json"; fi;' +
+    try {
+        & scp @scpArgs $tmpLocal "${user}@${sshHost}:$remoteTmp"
+        if ($LASTEXITCODE -ne 0) {
+            throw "remote script upload failed"
+        }
 
-  # copy static + analysis into webroot
-  ' if [ -d "$STAGE/static" ]; then cp -af "$STAGE/static/." "$WEBROOT/static/"; fi;' +
-  ' if [ -d "$STAGE/analysis" ]; then cp -af "$STAGE/analysis/." "$WEBROOT/analysis/"; fi;' +
+        & ssh @sshArgs "bash $remoteTmp"
+        if ($LASTEXITCODE -ne 0) {
+            throw "remote script execution failed"
+        }
 
-  # optionally mirror some root files for convenience
-  ' if [ "$MIRROR" = "1" ]; then ' +
-  '   for f in index.html overlay.html sentiment.html digest.html app.css styles.css index.js; do ' +
-  '     if [ -f "$STAGE/static/$f" ]; then cp -af "$STAGE/static/$f" "$WEBROOT/$f"; fi; ' +
-  '   done; ' +
-  ' fi;' +
+        & ssh @sshArgs "rm -f $remoteTmp" | Out-Null
+    }
+    finally {
+        if (Test-Path $tmpLocal) {
+            Remove-Item $tmpLocal -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
 
-  # stamp
-  ' date > "$WEBROOT/deploy_stamp.txt"'
+Write-Host "[INFO] remote mkdir"
+RunRemote @"
+set -e
+mkdir -p "$remoteBase/releases"
+mkdir -p "$releaseDir"
+mkdir -p "$webroot"
+mkdir -p "$webroot/static"
+mkdir -p "$webroot/analysis"
+mkdir -p "$webroot/data"
+mkdir -p "$webroot/error"
+"@
 
-Run "remote publish" ($sshBase + @("bash","-lc",$publishCmd))
+Write-Host "[INFO] scp upload (to HOME)"
+& scp @scpArgs $tmpTar "${user}@${sshHost}:`$HOME/labos_release.tar.gz"
+if ($LASTEXITCODE -ne 0) {
+    throw "scp upload failed"
+}
 
-Ok "DEPLOY COMPLETE"
+Write-Host "[INFO] remote move+extract"
+RunRemote @"
+set -e
+mv "`$HOME/labos_release.tar.gz" "$releaseDir/release.tar.gz"
+cd "$releaseDir"
+tar -xzf release.tar.gz
+rm -f release.tar.gz
+"@
+
+Write-Host "[INFO] remote publish"
+RunRemote @"
+set -e
+mkdir -p "$webroot/static"
+mkdir -p "$webroot/analysis"
+mkdir -p "$webroot/data"
+mkdir -p "$webroot/error"
+
+if [ -d "$releaseDir/static" ]; then
+  cp -af "$releaseDir/static/." "$webroot/static/"
+fi
+
+if [ -d "$releaseDir/analysis" ]; then
+  cp -af "$releaseDir/analysis/." "$webroot/analysis/"
+fi
+
+if [ -d "$releaseDir/data" ]; then
+  cp -af "$releaseDir/data/." "$webroot/data/"
+fi
+
+if [ "$($cfg.MirrorRootFiles)" = "True" ]; then
+  for f in index.html overlay.html sentiment.html digest.html app.css styles.css index.js; do
+    if [ -f "$releaseDir/static/`$f" ]; then
+      cp -af "$releaseDir/static/`$f" "$webroot/`$f"
+    fi
+  done
+fi
+
+date > "$webroot/deploy_stamp.txt"
+"@
+
+Write-Host "[OK] DEPLOY COMPLETE"

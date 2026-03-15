@@ -27,11 +27,12 @@ $DEPLOY_PROFILES = @{
     User = "c3999143"
     Port = "8022"
 
-    # 🔑 あなたの実在する鍵パス（変更しないでOKならこのまま）
+    # SSH private key
     KeyPath = "D:\AI\Projects\keys\genesisprediction-labos.pem"
 
-    # ローカルビルド成果物
-    LocalDir = "D:\AI\Projects\GenesisPrediction_v2\dist\labos_deploy"
+    # ローカル deploy 元
+    # build_labos_deploy_payload.ps1 の出力先に合わせる
+    LocalDir = "D:\AI\Projects\GenesisPrediction_v2\dist\labos_payload"
 
     # サーバー側 HOME
     RemoteBaseDir = "/home/c3999143"
@@ -49,20 +50,28 @@ $DEPLOY_PROFILES = @{
   "prod" = @{
     Name = "LABOS PROD"
 
+    # SSH
     Host = "www143.conoha.ne.jp"
     User = "c3999143"
     Port = "8022"
 
+    # SSH private key
     KeyPath = "D:\AI\Projects\keys\genesisprediction-labos.pem"
 
-    LocalDir = "D:\AI\Projects\GenesisPrediction_v2\dist\labos_deploy"
+    # ローカル deploy 元
+    # build_labos_deploy_payload.ps1 の出力先に合わせる
+    LocalDir = "D:\AI\Projects\GenesisPrediction_v2\dist\labos_payload"
 
+    # サーバー側 HOME
     RemoteBaseDir = "/home/c3999143"
 
+    # staging release name
     RemoteReleaseName = "prod_$(Get-Date -Format 'yyyyMMdd-HHmmss')"
 
+    # 公開先サブドメインディレクトリ
     WebRootDirName = "labos.soma-samui.com"
 
+    # ルート互換ファイルをミラーするか
     MirrorRootFiles = $true
   }
 }

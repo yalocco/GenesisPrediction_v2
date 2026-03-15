@@ -72,24 +72,18 @@ def to_relposix(p: Path, base: Path) -> str:
 def build_specs(analysis_dir: Path, date_str: str) -> List[CheckSpec]:
     a = analysis_dir
     return [
-        # Core summary/news (optional depending on pipeline)
         CheckSpec("daily_summary_latest", a / "daily_summary_latest.json", "json", required=False),
         CheckSpec("daily_news_latest", a / "daily_news_latest.json", "json", required=False),
-
-        # Sentiment outputs (known from your pipeline)
         CheckSpec("sentiment_latest", a / "sentiment_latest.json", "json", required=True),
-        CheckSpec("sentiment_timeseries", a / "sentiment_timeseries.csv", "csv", required=True),
 
-        # FX overlays (optional)
+        # 未使用なので optional 扱い
+        CheckSpec("sentiment_timeseries", a / "sentiment_timeseries.csv", "csv", required=False),
+
         CheckSpec("jpy_thb_remittance_overlay", a / "jpy_thb_remittance_overlay.png", "png", required=False),
         CheckSpec(f"fx_overlay_{date_str}", a / f"fx_overlay_{date_str}.png", "png", required=False),
-
-        # Observation (optional)
         CheckSpec("observation_latest_md", a / "observation_latest.md", "md", required=False),
         CheckSpec(f"observation_{date_str}_md", a / f"observation_{date_str}.md", "md", required=False),
         CheckSpec(f"observation_{date_str}_json", a / f"observation_{date_str}.json", "json", required=False),
-
-        # HTML artifacts (optional)
         CheckSpec(f"daily_news_{date_str}_html", a / f"daily_news_{date_str}.html", "html", required=False),
     ]
 
@@ -102,17 +96,6 @@ def evaluate_freshness(
     ok_age_sec: int,
     warn_age_sec: int,
 ) -> str:
-    """
-    Freshness rules:
-    - Missing:
-        required -> NG
-        optional -> WARN
-    - Exists but no age -> WARN (shouldn't happen)
-    - Exists with age:
-        <= ok_age_sec  -> OK
-        <= warn_age_sec -> WARN
-        >  warn_age_sec -> NG if required else WARN
-    """
     if not exists:
         return "NG" if required else "WARN"
     if age_seconds is None:
@@ -136,7 +119,6 @@ def main() -> int:
     ap.add_argument("--out-latest", default=None, help="Override latest output filename.")
     ap.add_argument("--write-dated", action="store_true", help="Also write dated health_<DATE>.json")
 
-    # freshness thresholds
     ap.add_argument(
         "--ok-age-hours",
         type=float,
@@ -188,12 +170,9 @@ def main() -> int:
                 age_seconds = int((now - mtime).total_seconds())
                 age_hours = round(age_seconds / 3600.0, 3)
             except Exception:
-                # keep as None -> WARN
                 pass
 
-        # Old "size <= 0" should degrade at least to WARN/NG logic
         if exists and bytes_ is not None and bytes_ <= 0:
-            # treat as missing content
             freshness = "NG" if s.required else "WARN"
         else:
             freshness = evaluate_freshness(
@@ -224,8 +203,8 @@ def main() -> int:
 
         item: Dict[str, Any] = {
             "name": s.name,
-            "status": freshness,            # what GUI uses (OK/WARN/NG)
-            "freshness": freshness,         # explicit alias
+            "status": freshness,
+            "freshness": freshness,
             "required": bool(s.required),
             "kind": s.kind,
             "path": to_relposix(s.path, analysis_dir),
@@ -241,7 +220,6 @@ def main() -> int:
         if age_hours is not None:
             item["age_hours"] = age_hours
 
-        # thresholds for transparency
         item["ok_age_hours"] = float(args.ok_age_hours)
         item["warn_age_hours"] = float(args.warn_age_hours)
 

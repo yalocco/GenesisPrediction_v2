@@ -23,9 +23,12 @@ powershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual.ps1
 # 自宅PC
 powershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual.ps1 -DeployLabos
 
+# Deploy
+powershell -ExecutionPolicy Bypass -File scripts/run_deploy_labos.ps1
 
 上は以下を同時に行う
 python scripts/build_global_status_latest.py --root . --pretty
+powershell -ExecutionPolicy Bypass -File scripts/run_deploy_labos.ps1
 powershell -ExecutionPolicy Bypass -File scripts/build_labos_deploy_payload.ps1
 powershell -ExecutionPolicy Bypass -File scripts/run_deploy_labos.ps1
 
