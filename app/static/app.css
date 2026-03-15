@@ -740,3 +740,22 @@ textarea {
     font-size: 22px;
   }
 }
+
+
+/* Time display stabilization */
+.status-card-updated .status-value {
+  font-size: 16px;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.25;
+}
+
+#pillAsOf,
+#pillAsOfLocal,
+#overlayAsOf,
+#localPillAsOf,
+#global-status-as-of {
+  min-width: 132px;
+  justify-content: center;
+}

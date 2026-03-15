@@ -114,8 +114,18 @@
         return /sub/i.test(cls);
       });
 
-    if (valueNode) valueNode.textContent = String(value);
-    if (subNode) subNode.textContent = String(sub);
+    if (String(labelText || "").trim().toUpperCase() === "UPDATED") {
+      card.classList.add("status-card-updated");
+    }
+
+    if (valueNode) {
+      valueNode.textContent = String(value);
+      valueNode.title = String(value);
+    }
+    if (subNode) {
+      subNode.textContent = String(sub);
+      subNode.title = String(sub);
+    }
   }
 
   function normalizeRiskClassName(value) {
@@ -128,6 +138,52 @@
     if (text === "critical") return "risk-critical";
 
     return "";
+  }
+
+
+  function parseDateLike(value) {
+    if (value === null || value === undefined) return null;
+
+    const text = String(value).trim();
+    if (!text) return null;
+
+    const normalized = text.replace(/([+-]\d{2})(\d{2})$/, "$1:$2");
+    const date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) return null;
+    return date;
+  }
+
+  function formatDateOnly(value, fallback = "--") {
+    const text = textValue(value, fallback);
+    if (text === fallback) return fallback;
+    const match = String(text).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return match ? `${match[1]}-${match[2]}-${match[3]}` : text;
+  }
+
+  function formatJstDateTime(value, fallback = "--") {
+    const date = parseDateLike(value);
+    if (!date) return textValue(value, fallback);
+
+    const parts = new Intl.DateTimeFormat("ja-JP", {
+      timeZone: "Asia/Tokyo",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).formatToParts(date);
+
+    const map = {};
+    parts.forEach((part) => {
+      if (part.type !== "literal") map[part.type] = part.value;
+    });
+
+    if (!map.year || !map.month || !map.day || !map.hour || !map.minute) {
+      return textValue(value, fallback);
+    }
+
+    return `${map.year}-${map.month}-${map.day} ${map.hour}:${map.minute} JST`;
   }
 
   function applyRiskClass(rawRiskValue) {
@@ -180,7 +236,11 @@
   }
 
   function buildDisplaySnapshot(payload) {
-    const asOfValue = textValue(payload.as_of ?? payload.updated);
+    const asOfValue = formatDateOnly(payload.as_of ?? payload.updated);
+    const updatedValue = formatJstDateTime(
+      payload.generated_at ?? payload.updated_at ?? payload.updated ?? payload.as_of,
+      asOfValue
+    );
 
     return {
       riskValue: textValue(payload.global_risk).toUpperCase(),
@@ -195,7 +255,7 @@
       articlesValue: textValue(payload.articles),
       articlesSub: textValue(payload.articles_sub),
 
-      updatedValue: asOfValue,
+      updatedValue,
       updatedSub: deriveUpdatedSub(payload),
 
       healthValue: healthDisplayValue(payload.health),
@@ -218,6 +278,8 @@
         "#header-as-of",
         "#pillAsOf",
         "#pillAsOfLocal",
+        "#overlayAsOf",
+        "#localPillAsOf",
         "[data-bind='global-status-as-of']",
       ],
       formatPill("as_of", snapshot.asOfValue)
