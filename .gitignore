@@ -28,11 +28,8 @@ configs/stopwords_approved.txt
 !resources/
 !resources/**/*
 
-# --- deploy artifacts (local only, do not commit) ---
+# --- deploy artifacts (generated files only) ---
 dist/
-docs/DEPLOY_LABOS_RUNBOOK.md
-scripts/build_labos_deploy_payload.ps1
-scripts/run_deploy_labos.ps1
 
 # --- backup files ---
 *.bak
