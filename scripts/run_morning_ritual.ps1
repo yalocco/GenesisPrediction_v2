@@ -423,16 +423,16 @@ try {
     Show-GlobalStatusSummary -RepoRoot $Root
 
     if ($DeployLabos) {
-        Invoke-Step -Name "LABOS Deploy 1) Build payload" -Action {
-            Invoke-PowerShellFile `
-                -Name "LABOS Deploy 1) Build payload" `
-                -ScriptPath (Join-Path $scriptsDir "build_labos_deploy_payload.ps1")
-        }
+        Invoke-Step -Name "LABOS Deploy" -Action {
+            $deployScript = Join-Path $scriptsDir "run_deploy_labos.ps1"
+            if (-not (Test-Path -LiteralPath $deployScript)) {
+                Write-Log "[SKIP] deploy script not found: $deployScript"
+                return
+            }
 
-        Invoke-Step -Name "LABOS Deploy 2) Upload" -Action {
             Invoke-PowerShellFile `
-                -Name "LABOS Deploy 2) Upload" `
-                -ScriptPath (Join-Path $scriptsDir "run_deploy_labos.ps1")
+                -Name "LABOS Deploy" `
+                -ScriptPath $deployScript
         }
     }
     else {

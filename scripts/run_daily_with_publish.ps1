@@ -100,6 +100,50 @@ function Invoke-PythonScript {
     }
 }
 
+function Get-RawNewsSourcePath {
+    param(
+        [string]$DataDir,
+        [string]$LatestJsonPath
+    )
+
+    $rawDate = $null
+
+    if (Test-Path -LiteralPath $LatestJsonPath) {
+        try {
+            $latestObj = Get-Content -LiteralPath $LatestJsonPath -Raw | ConvertFrom-Json
+            if ($latestObj -and $latestObj.PSObject.Properties.Name -contains "date") {
+                $rawDate = [string]$latestObj.date
+            }
+        }
+        catch {
+            Write-Log "[WARN] failed to parse latest.json for raw date: $($_.Exception.Message)"
+        }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($rawDate)) {
+        $candidate = Join-Path $DataDir ("{0}.json" -f $rawDate)
+        if (Test-Path -LiteralPath $candidate) {
+            Write-Log "[OK] raw news source resolved from latest.json date: $candidate"
+            return $candidate
+        }
+        else {
+            Write-Log "[WARN] latest.json date points to missing raw file: $candidate"
+        }
+    }
+
+    $fallback = Get-ChildItem -LiteralPath $DataDir -File |
+        Where-Object { $_.Name -match '^\d{4}-\d{2}-\d{2}\.json$' } |
+        Sort-Object Name -Descending |
+        Select-Object -First 1
+
+    if ($fallback) {
+        Write-Log "[WARN] fallback raw news source selected: $($fallback.FullName)"
+        return $fallback.FullName
+    }
+
+    throw "No raw news JSON found under $DataDir"
+}
+
 $Root = Resolve-RepoRoot -ExplicitRoot $Root
 if ([string]::IsNullOrWhiteSpace($Date)) {
     $Date = Get-Date -Format "yyyy-MM-dd"
@@ -157,10 +201,14 @@ try {
         $dailySummaryLatest = Join-Path $dataAnalysisDir "daily_summary_latest.json"
         $dailySummaryDated  = Join-Path $dataAnalysisDir ("daily_summary_{0}.json" -f $Date)
 
-        if (-not (Copy-IfExists -SourcePath $latestJson -DestinationPath $dailyNewsLatest)) {
-            Write-Warning "latest.json not found; daily_news alias was not created."
-        }
-        Copy-IfExists -SourcePath $dailyNewsLatest -DestinationPath $dailyNewsDated | Out-Null
+        # FIX:
+        # daily_news_* must be a real raw-news artifact, not latest.json metadata.
+        $rawNewsSource = Get-RawNewsSourcePath -DataDir $dataDir -LatestJsonPath $latestJson
+
+        Copy-Item -LiteralPath $rawNewsSource -Destination $dailyNewsLatest -Force
+        Write-Log "[OK] materialized: $dailyNewsLatest"
+        Copy-Item -LiteralPath $dailyNewsLatest -Destination $dailyNewsDated -Force
+        Write-Log "[OK] alias: $dailyNewsDated"
 
         if (-not (Copy-IfExists -SourcePath $summaryJson -DestinationPath $dailySummaryLatest)) {
             Write-Warning "summary.json not found; daily_summary alias was not created."
