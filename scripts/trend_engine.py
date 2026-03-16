@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 
-VERSION = "1.0"
+VERSION = "1.1"
 DEFAULT_HORIZON_DAYS = 7
 DEFAULT_HISTORY_DAYS = 7
 
@@ -134,6 +134,17 @@ def sentiment_balance_to_label(balance: float) -> str:
 def date_from_text(text: str) -> Optional[str]:
     m = re.search(r"(\d{4}-\d{2}-\d{2})", text)
     return m.group(1) if m else None
+
+
+def unique_preserve_order(items: Sequence[str]) -> List[str]:
+    seen = set()
+    out: List[str] = []
+    for item in items:
+        if item in seen:
+            continue
+        seen.add(item)
+        out.append(item)
+    return out
 
 
 def candidate_history_dirs(root: Path) -> List[Path]:
@@ -281,6 +292,15 @@ def build_sentiment_trend(bundle: ObservationBundle) -> Optional[TrendMetric]:
         f"neutral={neutral:.3f}, mixed={mixed:.3f}."
     )
     confidence = 0.55 + min(0.25, abs(current_balance) * 0.5)
+
+    tags = ["sentiment", "sentiment_balance", label.replace("-", "_")]
+    if current_balance <= -0.25:
+        tags.extend(["negative_sentiment", "risk_off"])
+    elif current_balance >= 0.25:
+        tags.extend(["positive_sentiment", "risk_on"])
+    else:
+        tags.append("mixed_sentiment")
+
     return TrendMetric(
         key="sentiment_trend",
         label="Sentiment Trend",
@@ -289,7 +309,7 @@ def build_sentiment_trend(bundle: ObservationBundle) -> Optional[TrendMetric]:
         confidence=confidence,
         rationale=rationale,
         source="sentiment_latest.json",
-        tags=["sentiment", label],
+        tags=unique_preserve_order(tags),
         metadata={
             "positive": round(positive, 4),
             "negative": round(negative, 4),
@@ -317,7 +337,17 @@ def build_risk_trend(bundle: ObservationBundle) -> Optional[TrendMetric]:
     history_values = summarize_history_metric(bundle.history, ["risk", "threat", "warning", "critical", "elevated"])
     previous = mean(history_values, current * 0.9 if current else 0.0)
     confidence = 0.5 + min(0.3, abs(current - previous) * 0.6)
-    rationale = f"Risk-related fields imply {risk_level_from_score(clamp(current, 0.0, 1.0))} pressure in current observation data."
+    risk_level = risk_level_from_score(clamp(current, 0.0, 1.0))
+    rationale = f"Risk-related fields imply {risk_level} pressure in current observation data."
+
+    tags = ["risk", risk_level]
+    if risk_level in {"elevated", "high", "critical"}:
+        tags.extend(["risk_pressure", "regime_shift_pressure"])
+    if risk_level in {"high", "critical"}:
+        tags.extend(["geopolitical_risk", "market_stress"])
+    if risk_level == "guarded":
+        tags.append("guarded_risk")
+
     return TrendMetric(
         key="risk_trend",
         label="Risk Trend",
@@ -326,8 +356,8 @@ def build_risk_trend(bundle: ObservationBundle) -> Optional[TrendMetric]:
         confidence=confidence,
         rationale=rationale,
         source="daily_summary/view_model/prediction",
-        tags=["risk", risk_level_from_score(clamp(current, 0.0, 1.0))],
-        metadata={"risk_level": risk_level_from_score(clamp(current, 0.0, 1.0))},
+        tags=unique_preserve_order(tags),
+        metadata={"risk_level": risk_level},
     )
 
 
@@ -344,6 +374,15 @@ def build_headline_intensity_trend(bundle: ObservationBundle) -> Optional[TrendM
     previous = mean(history_counts, article_count * 0.9 if article_count else 0.0)
     confidence = 0.45 + min(0.25, max(article_count, previous) / 100.0)
     rationale = f"Headline intensity is estimated from current article/highlight counts ({article_count:.2f})."
+
+    tags = ["news", "headline", "intensity"]
+    if article_count >= 25:
+        tags.extend(["headline_surge", "event_density_high"])
+    elif article_count >= 10:
+        tags.append("headline_elevated")
+    else:
+        tags.append("headline_muted")
+
     return TrendMetric(
         key="headline_intensity",
         label="Headline Intensity",
@@ -352,7 +391,7 @@ def build_headline_intensity_trend(bundle: ObservationBundle) -> Optional[TrendM
         confidence=confidence,
         rationale=rationale,
         source=Path(str(pick(payload, "__source_path__", default="observation"))).name,
-        tags=["news", "intensity"],
+        tags=unique_preserve_order(tags),
         metadata={"article_like_count": round(article_count, 4)},
     )
 
@@ -372,6 +411,15 @@ def build_health_trend(bundle: ObservationBundle) -> Optional[TrendMetric]:
     previous = mean(history_vals, current * 0.95)
     confidence = 0.55
     rationale = f"Health posture is inferred from ok={ok:.2f}, warn={warn:.2f}, ng/error={ng:.2f}."
+
+    tags = ["health", "pipeline_health"]
+    if current < -0.25:
+        tags.extend(["health_deterioration", "pipeline_stress"])
+    elif current > 0.25:
+        tags.append("health_stable")
+    else:
+        tags.append("health_mixed")
+
     return TrendMetric(
         key="health_signals",
         label="Health Signals",
@@ -380,7 +428,7 @@ def build_health_trend(bundle: ObservationBundle) -> Optional[TrendMetric]:
         confidence=confidence,
         rationale=rationale,
         source="health_latest.json",
-        tags=["health"],
+        tags=unique_preserve_order(tags),
         metadata={"ok": round(ok, 4), "warn": round(warn, 4), "ng": round(ng, 4)},
     )
 
@@ -392,6 +440,15 @@ def build_confidence_trend(metrics: Sequence[TrendMetric]) -> Optional[TrendMetr
     current = mean(confidences, 0.0)
     previous = current * 0.96
     rationale = "Confidence reflects how coherent current observation-derived trends are across risk, sentiment, intensity, and health."
+
+    tags = ["confidence", "derived"]
+    if current < 0.45:
+        tags.append("confidence_weak")
+    elif current < 0.7:
+        tags.append("confidence_moderate")
+    else:
+        tags.append("confidence_strong")
+
     return TrendMetric(
         key="confidence_trend",
         label="Confidence Trend",
@@ -400,7 +457,7 @@ def build_confidence_trend(metrics: Sequence[TrendMetric]) -> Optional[TrendMetr
         confidence=clamp(current, 0.0, 1.0),
         rationale=rationale,
         source="derived",
-        tags=["confidence", "derived"],
+        tags=unique_preserve_order(tags),
         metadata={"component_count": len(metrics)},
     )
 
@@ -468,6 +525,59 @@ def build_drivers(metrics: Sequence[TrendMetric]) -> List[str]:
     return drivers[:10]
 
 
+def build_trend_tags(metrics: Sequence[TrendMetric], summary: Dict[str, Any]) -> List[str]:
+    tags: List[str] = []
+
+    overall_direction = str(summary.get("overall_direction", "stable")).strip().lower()
+    risk_level = str(summary.get("risk_level", "low")).strip().lower()
+
+    tags.extend(
+        [
+            f"overall_direction_{overall_direction}",
+            f"risk_level_{risk_level}",
+        ]
+    )
+
+    if risk_level in {"elevated", "high", "critical"}:
+        tags.extend(["risk_pressure", "regime_shift_pressure"])
+    if overall_direction in {"rising", "accelerating"}:
+        tags.append("pressure_rising")
+    elif overall_direction == "falling":
+        tags.append("pressure_easing")
+
+    for metric in metrics:
+        tags.extend(metric.tags)
+        tags.append(f"{metric.key}_{metric.direction}")
+
+        if metric.key == "risk_trend":
+            metric_risk = str(metric.metadata.get("risk_level", risk_level)).strip().lower()
+            tags.append(f"risk_trend_{metric_risk}")
+            if metric.direction in {"rising", "accelerating"} and metric_risk in {"elevated", "high", "critical"}:
+                tags.extend(["geopolitical_risk", "market_stress"])
+        elif metric.key == "headline_intensity":
+            if metric.direction in {"rising", "accelerating"}:
+                tags.extend(["headline_pressure", "event_density_rising"])
+        elif metric.key == "sentiment_trend":
+            if metric.current < -0.25:
+                tags.extend(["negative_sentiment", "risk_off"])
+            elif metric.current > 0.25:
+                tags.extend(["positive_sentiment", "risk_on"])
+            else:
+                tags.append("mixed_sentiment")
+        elif metric.key == "health_signals":
+            if metric.current < -0.25:
+                tags.extend(["pipeline_stress", "health_deterioration"])
+        elif metric.key == "confidence_trend":
+            if metric.current < 0.45:
+                tags.append("confidence_weak")
+            elif metric.current < 0.7:
+                tags.append("confidence_moderate")
+            else:
+                tags.append("confidence_strong")
+
+    return unique_preserve_order(tags)
+
+
 def build_payload(bundle: ObservationBundle, horizon_days: int, history_days: int) -> Dict[str, Any]:
     metric_builders = [
         build_sentiment_trend,
@@ -487,6 +597,8 @@ def build_payload(bundle: ObservationBundle, horizon_days: int, history_days: in
         metrics.append(confidence_metric)
 
     summary = build_composite_summary(metrics)
+    trend_tags = build_trend_tags(metrics, summary)
+
     as_of = None
     for key in ("daily_summary", "sentiment", "health", "view_model", "prediction"):
         payload = bundle.sources.get(key)
@@ -509,6 +621,7 @@ def build_payload(bundle: ObservationBundle, horizon_days: int, history_days: in
         "overall_score": summary["overall_score"],
         "overall_confidence": summary["overall_confidence"],
         "risk_level": summary["risk_level"],
+        "trend_tags": trend_tags,
         "metrics": {metric.key: metric.to_dict() for metric in metrics},
         "trends": [metric.to_dict() for metric in metrics],
         "drivers": build_drivers(metrics),
@@ -522,6 +635,7 @@ def build_payload(bundle: ObservationBundle, horizon_days: int, history_days: in
             "Trend Engine reads analysis artifacts and lightweight history to infer directionality.",
             "Confidence expresses observation coherence, not certainty of future outcomes.",
             "Schema is tolerant so upstream analysis artifacts can evolve without breaking Signal Engine.",
+            "trend_tags are normalized short tags for downstream Signal / Historical Pattern matching.",
         ],
     }
 
@@ -551,6 +665,7 @@ def main() -> int:
     print(f"[trend_engine] status: {payload.get('status')}")
     print(f"[trend_engine] metrics: {len(payload.get('trends', []))}")
     print(f"[trend_engine] overall_direction: {payload.get('overall_direction')}")
+    print(f"[trend_engine] trend_tags: {len(payload.get('trend_tags', []))}")
     return 0
 
 

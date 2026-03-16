@@ -1,31 +1,24 @@
 #!/usr/bin/env python3
-"""GenesisPrediction v2 - Prediction Engine
-
-Builds prediction_latest.json from scenario_latest.json.
-
-Design intent:
-- analysis/ is the Single Source of Truth
-- scripts generate artifacts only
-- Prediction is the public-facing summary of Scenario, not a replacement for it
-- Prediction must remain explainable with summary, drivers, watchpoints,
-  confidence, invalidation_conditions, and scenario probabilities
-
-This implementation is intentionally schema-tolerant because upstream Scenario
-artifacts may evolve. It consumes stable scenario fields while keeping the
-output contract predictable for UI and Morning Ritual integration.
-"""
-
 from __future__ import annotations
 
-import argparse
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, List
 
 
-VERSION = "1.0"
-DEFAULT_HORIZON_DAYS = 7
+ROOT = Path(__file__).resolve().parents[1]
+
+ANALYSIS_DIR = ROOT / "analysis"
+PREDICTION_DIR = ANALYSIS_DIR / "prediction"
+
+TREND_LATEST_PATH = PREDICTION_DIR / "trend_latest.json"
+SIGNAL_LATEST_PATH = PREDICTION_DIR / "signal_latest.json"
+HISTORICAL_PATTERN_LATEST_PATH = PREDICTION_DIR / "historical_pattern_latest.json"
+HISTORICAL_ANALOG_LATEST_PATH = PREDICTION_DIR / "historical_analog_latest.json"
+SCENARIO_LATEST_PATH = PREDICTION_DIR / "scenario_latest.json"
+
+PREDICTION_LATEST_PATH = PREDICTION_DIR / "prediction_latest.json"
 
 
 def utc_now_iso() -> str:
@@ -33,544 +26,526 @@ def utc_now_iso() -> str:
 
 
 def load_json(path: Path) -> Dict[str, Any]:
-    with path.open("r", encoding="utf-8") as f:
-        return json.load(f)
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
 
 
-def save_json(path: Path, payload: Dict[str, Any]) -> None:
+def write_json(path: Path, payload: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
-        json.dump(payload, f, ensure_ascii=False, indent=2)
-        f.write("\n")
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def normalize_text(value: Any) -> str:
+    if value is None:
+        return ""
+    return str(value).strip().lower()
 
 
 def safe_float(value: Any, default: float = 0.0) -> float:
     try:
-        if value is None or value == "":
+        if value is None:
             return default
         return float(value)
-    except (TypeError, ValueError):
+    except Exception:
         return default
 
 
-def clamp(value: float, lo: float, hi: float) -> float:
-    return max(lo, min(hi, value))
+def clamp01(value: float) -> float:
+    return max(0.0, min(1.0, value))
 
 
-def pick(d: Dict[str, Any], *keys: str, default: Any = None) -> Any:
-    for key in keys:
-        if key in d and d[key] is not None:
-            return d[key]
-    return default
-
-
-def dedupe_keep_order(items: Iterable[str], limit: Optional[int] = None) -> List[str]:
+def unique_preserve_order(items: List[Any]) -> List[Any]:
     seen = set()
-    out: List[str] = []
+    out: List[Any] = []
     for item in items:
-        text = str(item or "").strip()
-        if not text or text in seen:
+        key = json.dumps(item, ensure_ascii=False, sort_keys=True) if isinstance(item, (dict, list)) else str(item)
+        if key in seen:
             continue
-        seen.add(text)
-        out.append(text)
-        if limit is not None and len(out) >= limit:
-            break
+        seen.add(key)
+        out.append(item)
     return out
 
 
-def to_title(text: str) -> str:
-    return str(text or "").replace("_", " ").replace("-", " ").strip().title()
+def extract_scenario_map(scenario_data: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    out: Dict[str, Dict[str, Any]] = {}
+    scenarios = scenario_data.get("scenarios", [])
+    if not isinstance(scenarios, list):
+        return out
 
-
-def normalize_risk_level(raw: Any, score: float) -> str:
-    text = str(raw or "").strip().lower()
-    if text in {"low", "guarded", "elevated", "high", "critical"}:
-        return text
-    if score >= 0.86:
-        return "critical"
-    if score >= 0.68:
-        return "high"
-    if score >= 0.48:
-        return "elevated"
-    if score >= 0.24:
-        return "guarded"
-    return "low"
-
-
-def normalize_probability_map(payload: Dict[str, Any]) -> Dict[str, float]:
-    probs = payload.get("probabilities") if isinstance(payload.get("probabilities"), dict) else {}
-    best = clamp(safe_float(probs.get("best_case", 0.25), 0.25), 0.0, 1.0)
-    base = clamp(safe_float(probs.get("base_case", 0.5), 0.5), 0.0, 1.0)
-    worst = clamp(safe_float(probs.get("worst_case", 0.25), 0.25), 0.0, 1.0)
-
-    total = max(best + base + worst, 1e-9)
-    best_r = round(best / total, 4)
-    base_r = round(base / total, 4)
-    worst_r = round(1.0 - best_r - base_r, 4)
-    if worst_r < 0:
-        worst_r = 0.0
-        base_r = round(1.0 - best_r, 4)
-
-    return {
-        "best_case": best_r,
-        "base_case": base_r,
-        "worst_case": worst_r,
-    }
-
-
-def iter_scenarios(payload: Dict[str, Any]) -> Iterable[Tuple[str, Dict[str, Any]]]:
-    if isinstance(payload.get("scenarios"), list):
-        for idx, item in enumerate(payload["scenarios"]):
-            if isinstance(item, dict):
-                scenario_id = str(pick(item, "scenario_id", "id", default=f"scenario_{idx}"))
-                yield scenario_id, item
-
-    for key in ("best_case", "base_case", "worst_case"):
-        item = payload.get(key)
-        if isinstance(item, dict):
-            yield key, item
-
-
-def build_scenario_index(payload: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
-    index: Dict[str, Dict[str, Any]] = {}
-    for scenario_id, item in iter_scenarios(payload):
-        if scenario_id not in index:
-            index[scenario_id] = item
-    return index
-
-
-def select_dominant_scenario(scenarios: Dict[str, Dict[str, Any]], probabilities: Dict[str, float], declared: str) -> Tuple[str, Dict[str, Any]]:
-    if declared in scenarios:
-        return declared, scenarios[declared]
-
-    ranked = sorted(
-        scenarios.items(),
-        key=lambda kv: (
-            safe_float(kv[1].get("probability", probabilities.get(kv[0], 0.0)), 0.0),
-            safe_float(kv[1].get("confidence", 0.0), 0.0),
-        ),
-        reverse=True,
-    )
-    if ranked:
-        return ranked[0][0], ranked[0][1]
-
-    fallback = {
-        "scenario_id": "base_case",
-        "name": "Base Case",
-        "probability": probabilities.get("base_case", 0.5),
-        "confidence": 0.0,
-        "regime": "Stable",
-        "risk_level": "guarded",
-        "risk_score": 0.0,
-        "summary": "Scenario input unavailable.",
-        "drivers": [],
-        "watchpoints": [],
-        "invalidation_conditions": [],
-        "supporting_signals": [],
-        "assumptions": [],
-    }
-    return "base_case", fallback
-
-
-def build_overall_risk(scenarios: Dict[str, Dict[str, Any]], probabilities: Dict[str, float], fallback_score: float, fallback_level: str) -> Tuple[float, str]:
-    weighted_score = 0.0
-    total_weight = 0.0
-    for scenario_id, item in scenarios.items():
-        p = clamp(safe_float(item.get("probability", probabilities.get(scenario_id, 0.0)), probabilities.get(scenario_id, 0.0)), 0.0, 1.0)
-        s = clamp(safe_float(item.get("risk_score", 0.0), 0.0), 0.0, 1.0)
-        weighted_score += p * s
-        total_weight += p
-
-    if total_weight > 0:
-        score = round(clamp(weighted_score / total_weight, 0.0, 1.0), 4)
-    else:
-        score = round(clamp(fallback_score, 0.0, 1.0), 4)
-
-    level = normalize_risk_level(fallback_level, score)
-    if scenarios:
-        inferred = normalize_risk_level(None, score)
-        if inferred != "low" or fallback_level in {"", "low"}:
-            level = inferred
-    return score, level
-
-
-def build_prediction_summary(
-    dominant_id: str,
-    dominant: Dict[str, Any],
-    overall_risk_level: str,
-    overall_risk_score: float,
-    horizon_days: int,
-    probabilities: Dict[str, float],
-    early_warning: Dict[str, Any],
-) -> str:
-    dominant_name = str(pick(dominant, "name", default=to_title(dominant_id)))
-    dominant_probability = clamp(
-        safe_float(dominant.get("probability", probabilities.get(dominant_id, 0.0)), probabilities.get(dominant_id, 0.0)),
-        0.0,
-        1.0,
-    )
-    dominant_regime = str(pick(dominant, "regime", default="Stable"))
-    dominant_risk = normalize_risk_level(dominant.get("risk_level"), safe_float(dominant.get("risk_score", overall_risk_score), overall_risk_score))
-    warning_level = str(pick(early_warning, "warning_level", default="quiet"))
-
-    if dominant_id == "worst_case":
-        return (
-            f"Downside pressure is currently dominant: {dominant_name} leads at {dominant_probability:.0%}. "
-            f"The {horizon_days}-day outlook is {overall_risk_level} risk under a {dominant_regime} regime, "
-            f"with early warning at {warning_level}."
-        )
-    if dominant_id == "best_case":
-        return (
-            f"Stabilization remains plausible: {dominant_name} leads at {dominant_probability:.0%}. "
-            f"The {horizon_days}-day outlook is {overall_risk_level} risk, but this path depends on current warnings failing to broaden."
-        )
-    return (
-        f"Base case remains the working outlook at {dominant_probability:.0%}. "
-        f"Overall risk is {overall_risk_level} ({overall_risk_score:.2f}) over the next {horizon_days} days, "
-        f"while the {probabilities.get('worst_case', 0.0):.0%} worst-case branch keeps downside pressure visible."
-    )
-
-
-def collect_prediction_drivers(dominant: Dict[str, Any], scenarios: Dict[str, Dict[str, Any]], overall_risk_level: str) -> List[str]:
-    drivers: List[str] = []
-    dominant_drivers = dominant.get("drivers", []) if isinstance(dominant.get("drivers"), list) else []
-    drivers.extend([str(x) for x in dominant_drivers])
-
-    if overall_risk_level in {"high", "critical"}:
-        drivers.append("Cross-scenario risk remains elevated enough that downside branches materially affect the public outlook.")
-    elif overall_risk_level == "elevated":
-        drivers.append("Risk is not extreme, but enough signals remain active to keep the outlook above guarded conditions.")
-    else:
-        drivers.append("Risk pressure is present but not yet dominant across the full scenario stack.")
-
-    for key in ("base_case", "worst_case", "best_case"):
-        if key in scenarios and scenarios[key] is not dominant:
-            name = str(pick(scenarios[key], "name", default=to_title(key)))
-            summary = str(pick(scenarios[key], "summary", default="")).strip()
-            if summary:
-                drivers.append(f"Alternative branch kept in view: {name} — {summary}")
-                break
-
-    return dedupe_keep_order(drivers, limit=8)
-
-
-def collect_prediction_watchpoints(dominant: Dict[str, Any], scenarios: Dict[str, Dict[str, Any]], early_warning: Dict[str, Any]) -> List[str]:
-    items: List[str] = []
-    for key in ("watchpoints",):
-        value = dominant.get(key)
-        if isinstance(value, list):
-            items.extend(str(x) for x in value)
-
-    for scenario_key in ("worst_case", "base_case", "best_case"):
-        scenario = scenarios.get(scenario_key)
-        if not isinstance(scenario, dict) or scenario is dominant:
+    for item in scenarios:
+        if not isinstance(item, dict):
             continue
-        value = scenario.get("watchpoints")
+        scenario_id = normalize_text(item.get("scenario_id"))
+        if scenario_id:
+            out[scenario_id] = item
+    return out
+
+
+def choose_primary_narrative(scenario_data: Dict[str, Any]) -> str:
+    dominant = normalize_text(scenario_data.get("dominant_scenario"))
+    scenario_map = extract_scenario_map(scenario_data)
+    selected = scenario_map.get(dominant)
+    if isinstance(selected, dict) and selected.get("narrative"):
+        return str(selected.get("narrative"))
+    summary = scenario_data.get("summary")
+    if summary:
+        return str(summary)
+    return "No scenario narrative available."
+
+
+def compute_historical_support_level(
+    pattern_data: Dict[str, Any],
+    analog_data: Dict[str, Any],
+) -> float:
+    pattern_conf = safe_float(pattern_data.get("pattern_confidence"))
+    analog_conf = safe_float(analog_data.get("analog_confidence"))
+    support = 0.65 * pattern_conf + 0.35 * analog_conf
+    return round(clamp01(support), 4)
+
+
+def collect_signal_tags(signal_data: Dict[str, Any]) -> List[str]:
+    tags: List[str] = []
+
+    for key in ("signal_tags", "historical_tags", "trend_tags_used", "dominant_signals", "watchpoints"):
+        value = signal_data.get(key)
         if isinstance(value, list):
-            items.extend(str(x) for x in value[:2])
+            tags.extend(normalize_text(x) for x in value if normalize_text(x))
 
-    ew_headline = str(pick(early_warning, "headline", default="")).strip()
-    ew_level = str(pick(early_warning, "warning_level", default="quiet")).strip()
-    if ew_headline:
-        items.append(f"Early warning: {ew_headline}")
-    if ew_level and ew_level.lower() not in {"quiet", "low"}:
-        items.append(f"Watch whether early warning level stays at {ew_level} or escalates further.")
-
-    return dedupe_keep_order(items, limit=8)
-
-
-def collect_invalidation_conditions(dominant: Dict[str, Any], scenarios: Dict[str, Dict[str, Any]]) -> List[str]:
-    items: List[str] = []
-    primary = dominant.get("invalidation_conditions")
-    if isinstance(primary, list):
-        items.extend(str(x) for x in primary)
-
-    for scenario_key in ("base_case", "worst_case", "best_case"):
-        scenario = scenarios.get(scenario_key)
-        if not isinstance(scenario, dict) or scenario is dominant:
-            continue
-        value = scenario.get("invalidation_conditions")
-        if isinstance(value, list):
-            items.extend(str(x) for x in value[:2])
-
-    return dedupe_keep_order(items, limit=6)
-
-
-def build_signal_rollup(scenarios: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
-    counts = {
-        "supporting_signal_count": 0,
-        "high_or_critical_support_count": 0,
-        "metrics": [],
-        "signal_types": [],
-    }
-    metrics: List[str] = []
-    signal_types: List[str] = []
-
-    for scenario in scenarios.values():
-        refs = scenario.get("supporting_signals") if isinstance(scenario.get("supporting_signals"), list) else []
-        counts["supporting_signal_count"] += len(refs)
-        for ref in refs:
-            if not isinstance(ref, dict):
+    signals = signal_data.get("signals", [])
+    if isinstance(signals, list):
+        for item in signals:
+            if not isinstance(item, dict):
                 continue
-            severity = str(ref.get("severity", "")).lower()
-            if severity in {"high", "critical"}:
-                counts["high_or_critical_support_count"] += 1
-            metric = str(ref.get("metric", "")).strip()
-            sig_type = str(ref.get("signal_type", "")).strip()
-            if metric:
-                metrics.append(metric)
-            if sig_type:
-                signal_types.append(sig_type)
+            key = normalize_text(item.get("key"))
+            if key:
+                tags.append(key)
+            item_tags = item.get("tags", [])
+            if isinstance(item_tags, list):
+                tags.extend(normalize_text(x) for x in item_tags if normalize_text(x))
 
-    counts["metrics"] = dedupe_keep_order(metrics, limit=12)
-    counts["signal_types"] = dedupe_keep_order(signal_types, limit=12)
-    return counts
+    return unique_preserve_order([x for x in tags if x])
 
 
-def build_prediction_payload(scenario_payload: Dict[str, Any], as_of: str, generated_at: str, horizon_days: int) -> Dict[str, Any]:
-    probabilities = normalize_probability_map(scenario_payload)
-    scenarios = build_scenario_index(scenario_payload)
-    declared_dominant = str(pick(scenario_payload, "dominant_scenario", default="base_case"))
-    dominant_id, dominant = select_dominant_scenario(scenarios, probabilities, declared_dominant)
+def collect_trend_tags(trend_data: Dict[str, Any]) -> List[str]:
+    tags: List[str] = []
 
-    fallback_score = clamp(safe_float(pick(scenario_payload, "overall_risk_score", default=0.0), 0.0), 0.0, 1.0)
-    fallback_level = str(pick(scenario_payload, "overall_risk_level", default="low"))
-    overall_risk_score, overall_risk_level = build_overall_risk(scenarios, probabilities, fallback_score, fallback_level)
+    raw_tags = trend_data.get("trend_tags", [])
+    if isinstance(raw_tags, list):
+        tags.extend(normalize_text(x) for x in raw_tags if normalize_text(x))
 
-    scenario_confidence = clamp(safe_float(pick(scenario_payload, "scenario_confidence", "confidence", default=0.0), 0.0), 0.0, 1.0)
-    dominant_confidence = clamp(safe_float(pick(dominant, "confidence", default=scenario_confidence), scenario_confidence), 0.0, 1.0)
-    confidence = round(clamp((scenario_confidence * 0.6) + (dominant_confidence * 0.4), 0.0, 1.0), 4)
+    trends = trend_data.get("trends", [])
+    if isinstance(trends, list):
+        for item in trends:
+            if not isinstance(item, dict):
+                continue
+            key = normalize_text(item.get("key"))
+            direction = normalize_text(item.get("direction"))
+            if key and direction:
+                tags.append(f"{key}_{direction}")
+            item_tags = item.get("tags", [])
+            if isinstance(item_tags, list):
+                tags.extend(normalize_text(x) for x in item_tags if normalize_text(x))
 
-    regime = str(pick(dominant, "regime", default=pick(scenario_payload, "regime", default="Stable")))
-    early_warning = scenario_payload.get("early_warning", {}) if isinstance(scenario_payload.get("early_warning"), dict) else {}
-
-    summary = build_prediction_summary(
-        dominant_id=dominant_id,
-        dominant=dominant,
-        overall_risk_level=overall_risk_level,
-        overall_risk_score=overall_risk_score,
-        horizon_days=horizon_days,
-        probabilities=probabilities,
-        early_warning=early_warning,
-    )
-
-    drivers = collect_prediction_drivers(dominant, scenarios, overall_risk_level)
-    watchpoints = collect_prediction_watchpoints(dominant, scenarios, early_warning)
-    invalidation_conditions = collect_invalidation_conditions(dominant, scenarios)
-    signal_rollup = build_signal_rollup(scenarios)
-
-    dominant_probability = round(
-        clamp(safe_float(dominant.get("probability", probabilities.get(dominant_id, 0.0)), probabilities.get(dominant_id, 0.0)), 0.0, 1.0),
-        4,
-    )
-    dominant_risk_score = round(clamp(safe_float(dominant.get("risk_score", overall_risk_score), overall_risk_score), 0.0, 1.0), 4)
-    dominant_risk_level = normalize_risk_level(dominant.get("risk_level"), dominant_risk_score)
-
-    output = {
-        "version": VERSION,
-        "generated_at": generated_at,
-        "as_of": as_of,
-        "horizon_days": horizon_days,
-        "engine": "prediction_engine",
-        "source": {
-            "scenario_file": "analysis/prediction/scenario_latest.json",
-            "scenario_count": len(scenarios),
-        },
-        "regime": regime,
-        "overall_risk": overall_risk_level,
-        "overall_risk_level": overall_risk_level,
-        "overall_risk_score": overall_risk_score,
-        "signal": dominant_risk_level,
-        "confidence": confidence,
-        "dominant_scenario": dominant_id,
-        "dominant_scenario_name": str(pick(dominant, "name", default=to_title(dominant_id))),
-        "dominant_probability": dominant_probability,
-        "summary": summary,
-        "scenario_probabilities": probabilities,
-        "drivers": drivers,
-        "watchpoints": watchpoints,
-        "invalidation_conditions": invalidation_conditions,
-        "early_warning": {
-            "warning_level": str(pick(early_warning, "warning_level", default="quiet")),
-            "warning_score": round(clamp(safe_float(pick(early_warning, "warning_score", default=0.0), 0.0), 0.0, 1.0), 4),
-            "headline": str(pick(early_warning, "headline", default="No strong early warning cluster is active.")),
-        },
-        "dominant_branch": {
-            "scenario_id": dominant_id,
-            "name": str(pick(dominant, "name", default=to_title(dominant_id))),
-            "regime": regime,
-            "risk_level": dominant_risk_level,
-            "risk_score": dominant_risk_score,
-            "probability": dominant_probability,
-            "confidence": round(dominant_confidence, 4),
-            "summary": str(pick(dominant, "summary", default="")),
-            "drivers": dominant.get("drivers", []) if isinstance(dominant.get("drivers"), list) else [],
-            "watchpoints": dominant.get("watchpoints", []) if isinstance(dominant.get("watchpoints"), list) else [],
-            "invalidation_conditions": dominant.get("invalidation_conditions", []) if isinstance(dominant.get("invalidation_conditions"), list) else [],
-            "supporting_signals": dominant.get("supporting_signals", []) if isinstance(dominant.get("supporting_signals"), list) else [],
-            "assumptions": dominant.get("assumptions", []) if isinstance(dominant.get("assumptions"), list) else [],
-        },
-        "scenario_summary": {
-            "best_case": scenarios.get("best_case", {}),
-            "base_case": scenarios.get("base_case", {}),
-            "worst_case": scenarios.get("worst_case", {}),
-        },
-        "signal_rollup": signal_rollup,
-        "ui": {
-            "prediction_card": {
-                "date": as_of,
-                "regime": regime,
-                "signal": dominant_risk_level,
-                "confidence": confidence,
-                "health": "OK" if scenarios else "DEGRADED",
-            }
-        },
-        "notes": [
-            "Prediction is a public-facing summary of the current scenario stack.",
-            "Confidence expresses current alignment strength, not certainty of being correct.",
-            "Scenario remains the branching layer; prediction should not recreate branch logic in UI.",
-        ],
-    }
-    return output
+    return unique_preserve_order([x for x in tags if x])
 
 
-def build_empty_payload(as_of: str, generated_at: str, horizon_days: int, reason: str) -> Dict[str, Any]:
-    return {
-        "version": VERSION,
-        "generated_at": generated_at,
-        "as_of": as_of,
-        "horizon_days": horizon_days,
-        "engine": "prediction_engine",
-        "source": {
-            "scenario_file": "analysis/prediction/scenario_latest.json",
-            "scenario_count": 0,
-        },
-        "regime": "Stable",
-        "overall_risk": "low",
-        "overall_risk_level": "low",
-        "overall_risk_score": 0.0,
-        "signal": "guarded",
-        "confidence": 0.0,
-        "dominant_scenario": "base_case",
-        "dominant_scenario_name": "Base Case",
-        "dominant_probability": 0.5,
-        "summary": reason,
-        "scenario_probabilities": {
-            "best_case": 0.25,
-            "base_case": 0.5,
-            "worst_case": 0.25,
-        },
-        "drivers": [],
-        "watchpoints": [],
-        "invalidation_conditions": [],
-        "early_warning": {
-            "warning_level": "quiet",
-            "warning_score": 0.0,
-            "headline": reason,
-        },
-        "dominant_branch": {
-            "scenario_id": "base_case",
-            "name": "Base Case",
-            "regime": "Stable",
-            "risk_level": "guarded",
-            "risk_score": 0.0,
-            "probability": 0.5,
-            "confidence": 0.0,
-            "summary": reason,
-            "drivers": [],
-            "watchpoints": [],
-            "invalidation_conditions": [],
-            "supporting_signals": [],
-            "assumptions": [],
-        },
-        "scenario_summary": {
-            "best_case": {},
-            "base_case": {},
-            "worst_case": {},
-        },
-        "signal_rollup": {
-            "supporting_signal_count": 0,
-            "high_or_critical_support_count": 0,
-            "metrics": [],
-            "signal_types": [],
-        },
-        "ui": {
-            "prediction_card": {
-                "date": as_of,
-                "regime": "Stable",
-                "signal": "guarded",
-                "confidence": 0.0,
-                "health": "DEGRADED",
-            }
-        },
-        "notes": [reason],
+def classify_prediction_direction(
+    scenario_data: Dict[str, Any],
+    signal_data: Dict[str, Any],
+    pattern_data: Dict[str, Any],
+) -> str:
+    dominant = normalize_text(scenario_data.get("dominant_scenario"))
+    risk = normalize_text(scenario_data.get("risk"))
+    dominant_pattern = normalize_text(pattern_data.get("dominant_pattern"))
+
+    signal_tags = set(collect_signal_tags(signal_data))
+
+    if dominant == "worst_case":
+        return "deteriorating"
+    if dominant == "best_case":
+        return "stabilizing"
+
+    stress_keywords = {
+        "war",
+        "military",
+        "sanction",
+        "debt",
+        "bank",
+        "currency",
+        "drought",
+        "flood",
+        "pandemic",
+        "trade",
+        "unrest",
+        "banking_stress",
+        "currency_instability",
+        "risk_pressure",
+        "systemic_stress",
     }
 
+    if risk in {"critical", "high", "guarded"} and (signal_tags & stress_keywords):
+        return "guarded_deterioration"
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Build prediction_latest.json from scenario artifacts")
-    parser.add_argument("--root", default=".", help="Repository root. Defaults to current directory.")
-    parser.add_argument(
-        "--input",
-        default=None,
-        help="Optional explicit scenario_latest.json path. Defaults to <root>/analysis/prediction/scenario_latest.json",
+    if dominant_pattern:
+        return "historically_guarded"
+
+    return "stable_to_guarded"
+
+
+def build_prediction_statement(
+    dominant_scenario: str,
+    risk: str,
+    direction: str,
+    confidence: float,
+    dominant_pattern: str,
+    dominant_analog: str,
+) -> str:
+    sentence = (
+        f"Primary outlook is {dominant_scenario} with {risk} risk and "
+        f"{direction} directional bias at confidence {confidence:.2f}."
     )
-    parser.add_argument(
-        "--output-dir",
-        default=None,
-        help="Optional explicit output directory. Defaults to <root>/analysis/prediction",
-    )
-    parser.add_argument("--horizon-days", type=int, default=DEFAULT_HORIZON_DAYS, help="Prediction horizon in days.")
-    return parser.parse_args()
 
-
-def main() -> int:
-    args = parse_args()
-    root = Path(args.root).resolve()
-    output_dir = Path(args.output_dir).resolve() if args.output_dir else root / "analysis" / "prediction"
-    scenario_path = Path(args.input).resolve() if args.input else output_dir / "scenario_latest.json"
-
-    generated_at = utc_now_iso()
-
-    if not scenario_path.exists():
-        payload = build_empty_payload(
-            as_of=datetime.now().date().isoformat(),
-            generated_at=generated_at,
-            horizon_days=args.horizon_days,
-            reason=f"scenario input not found: {scenario_path}",
+    if dominant_pattern and dominant_analog:
+        sentence += (
+            f" Historical support is led by pattern {dominant_pattern} "
+            f"and analog {dominant_analog}."
         )
-        save_json(output_dir / "prediction_latest.json", payload)
-        print(f"[prediction_engine] input missing; wrote empty artifact to {output_dir}")
-        return 0
+    elif dominant_pattern:
+        sentence += f" Historical support is led by pattern {dominant_pattern}."
+    elif dominant_analog:
+        sentence += f" Historical support is led by analog {dominant_analog}."
 
-    scenario_payload = load_json(scenario_path)
-    as_of = str(pick(scenario_payload, "as_of", "date", default=datetime.now().date().isoformat()))
-    horizon_days = int(safe_float(pick(scenario_payload, "horizon_days", default=args.horizon_days), args.horizon_days))
+    return sentence
 
-    scenarios = build_scenario_index(scenario_payload)
-    if not scenarios:
-        payload = build_empty_payload(
-            as_of=as_of,
-            generated_at=generated_at,
-            horizon_days=horizon_days,
-            reason="scenario input exists but no usable scenario records were found",
-        )
+
+def build_action_bias(
+    scenario_data: Dict[str, Any],
+    expected_outcomes: List[str],
+    historical_support_level: float,
+) -> str:
+    dominant = normalize_text(scenario_data.get("dominant_scenario"))
+    risk = normalize_text(scenario_data.get("risk"))
+    outcomes = set(normalize_text(x) for x in expected_outcomes)
+
+    if dominant == "worst_case":
+        return "defensive"
+    if dominant == "best_case" and risk in {"stable", "low"}:
+        return "constructive"
+    if {"currency_down", "currency_sharp_down", "trade_disruption", "energy_up", "commodity_up", "credit_spreads_up"} & outcomes:
+        return "guarded"
+    if historical_support_level >= 0.7:
+        return "guarded"
+    return "balanced"
+
+
+def build_monitoring_priorities(
+    scenario_data: Dict[str, Any],
+    pattern_data: Dict[str, Any],
+    analog_data: Dict[str, Any],
+) -> List[str]:
+    priorities: List[str] = []
+
+    for item in scenario_data.get("watchpoints", [])[:6]:
+        if item is not None:
+            priorities.append(normalize_text(item))
+
+    historical_context = scenario_data.get("historical_context", {})
+    if isinstance(historical_context, dict):
+        for item in historical_context.get("historical_watchpoints", [])[:6]:
+            if item is not None:
+                priorities.append(normalize_text(item))
+
+    matched_patterns = pattern_data.get("matched_patterns", [])
+    if isinstance(matched_patterns, list):
+        for item in matched_patterns[:2]:
+            if isinstance(item, dict):
+                for wp in item.get("watchpoints", [])[:3]:
+                    if wp is not None:
+                        priorities.append(normalize_text(wp))
+
+    top_analogs = analog_data.get("top_analogs", [])
+    if isinstance(top_analogs, list):
+        for item in top_analogs[:2]:
+            if isinstance(item, dict):
+                for wp in item.get("watchpoints", [])[:3]:
+                    if wp is not None:
+                        priorities.append(normalize_text(wp))
+                for sim in item.get("similarities", [])[:2]:
+                    if sim is not None:
+                        priorities.append(normalize_text(sim))
+
+    return unique_preserve_order([x for x in priorities if x])[:12]
+
+
+def build_prediction_drivers(
+    trend_data: Dict[str, Any],
+    signal_data: Dict[str, Any],
+    scenario_data: Dict[str, Any],
+    pattern_data: Dict[str, Any],
+    analog_data: Dict[str, Any],
+) -> List[str]:
+    drivers: List[str] = []
+
+    drivers.extend(collect_trend_tags(trend_data)[:5])
+    drivers.extend(collect_signal_tags(signal_data)[:6])
+
+    for item in scenario_data.get("key_drivers", [])[:6]:
+        if item is not None:
+            drivers.append(normalize_text(item))
+
+    dominant_pattern = pattern_data.get("dominant_pattern")
+    dominant_analog = analog_data.get("dominant_analog")
+    if dominant_pattern:
+        drivers.append(f"historical_pattern:{normalize_text(dominant_pattern)}")
+    if dominant_analog:
+        drivers.append(f"historical_analog:{normalize_text(dominant_analog)}")
+
+    return unique_preserve_order([x for x in drivers if x])[:14]
+
+
+def build_historical_context(
+    pattern_data: Dict[str, Any],
+    analog_data: Dict[str, Any],
+    scenario_data: Dict[str, Any],
+) -> Dict[str, Any]:
+    support_level = compute_historical_support_level(pattern_data, analog_data)
+
+    dominant_pattern = pattern_data.get("dominant_pattern")
+    dominant_analog = analog_data.get("dominant_analog")
+
+    summary_parts: List[str] = []
+
+    if dominant_pattern:
+        summary_parts.append(f"dominant pattern is {dominant_pattern}")
+    if dominant_analog:
+        summary_parts.append(f"dominant analog is {dominant_analog}")
+
+    if support_level >= 0.75:
+        summary_parts.append("historical support is strong")
+    elif support_level >= 0.5:
+        summary_parts.append("historical support is moderate")
     else:
-        payload = build_prediction_payload(
-            scenario_payload=scenario_payload,
-            as_of=as_of,
-            generated_at=generated_at,
-            horizon_days=horizon_days,
-        )
+        summary_parts.append("historical support is limited")
 
-    save_json(output_dir / "prediction_latest.json", payload)
-    print(f"[prediction_engine] wrote {output_dir / 'prediction_latest.json'}")
-    print(
-        f"[prediction_engine] dominant={payload.get('dominant_scenario', 'base_case')} "
-        f"risk={payload.get('overall_risk_level', 'low')} confidence={payload.get('confidence', 0.0)}"
+    summary = ". ".join(summary_parts).strip()
+    if summary:
+        summary += "."
+    else:
+        summary = "No historical context available."
+
+    historical_context = scenario_data.get("historical_context", {})
+    current_stress_vector = {}
+    if isinstance(historical_context, dict):
+        csv = historical_context.get("current_stress_vector", {})
+        if isinstance(csv, dict):
+            current_stress_vector = {str(k): round(clamp01(safe_float(v)), 4) for k, v in csv.items()}
+
+    return {
+        "dominant_pattern": dominant_pattern,
+        "pattern_confidence": round(safe_float(pattern_data.get("pattern_confidence")), 4),
+        "dominant_analog": dominant_analog,
+        "analog_confidence": round(safe_float(analog_data.get("analog_confidence")), 4),
+        "support_level": support_level,
+        "current_stress_vector": current_stress_vector,
+        "summary": summary,
+    }
+
+
+def calculate_prediction_confidence(
+    trend_data: Dict[str, Any],
+    signal_data: Dict[str, Any],
+    scenario_data: Dict[str, Any],
+    pattern_data: Dict[str, Any],
+    analog_data: Dict[str, Any],
+) -> float:
+    trend_conf = safe_float(trend_data.get("overall_confidence", trend_data.get("confidence", 0.0)))
+
+    signal_conf = 0.0
+    signals = signal_data.get("signals", [])
+    if isinstance(signals, list) and signals:
+        signal_conf = sum(
+            safe_float(item.get("confidence", 0.0))
+            for item in signals
+            if isinstance(item, dict)
+        ) / len(signals)
+
+    scenario_conf = safe_float(scenario_data.get("confidence", 0.0))
+    pattern_conf = safe_float(pattern_data.get("pattern_confidence", 0.0))
+    analog_conf = safe_float(analog_data.get("analog_confidence", 0.0))
+
+    confidence = (
+        0.15 * trend_conf
+        + 0.20 * signal_conf
+        + 0.40 * scenario_conf
+        + 0.15 * pattern_conf
+        + 0.10 * analog_conf
     )
-    return 0
+
+    return round(clamp01(confidence), 4)
+
+
+def build_summary(
+    direction: str,
+    dominant_scenario: str,
+    risk: str,
+    confidence: float,
+    historical_context: Dict[str, Any],
+) -> str:
+    base = (
+        f"Prediction is {direction}. "
+        f"Dominant scenario is {dominant_scenario}. "
+        f"Risk is {risk}. "
+        f"Confidence is {confidence:.2f}."
+    )
+
+    historical_summary = historical_context.get("summary")
+    if historical_summary:
+        base += f" {historical_summary}"
+
+    return base
+
+
+def build_prediction_output(
+    trend_data: Dict[str, Any],
+    signal_data: Dict[str, Any],
+    scenario_data: Dict[str, Any],
+    pattern_data: Dict[str, Any],
+    analog_data: Dict[str, Any],
+) -> Dict[str, Any]:
+    as_of = (
+        scenario_data.get("as_of")
+        or signal_data.get("as_of")
+        or trend_data.get("as_of")
+        or pattern_data.get("as_of")
+        or analog_data.get("as_of")
+        or today_str()
+    )
+
+    dominant_scenario = normalize_text(scenario_data.get("dominant_scenario")) or "base_case"
+    risk = normalize_text(scenario_data.get("risk")) or "guarded"
+
+    historical_context = build_historical_context(
+        pattern_data=pattern_data,
+        analog_data=analog_data,
+        scenario_data=scenario_data,
+    )
+
+    direction = classify_prediction_direction(
+        scenario_data=scenario_data,
+        signal_data=signal_data,
+        pattern_data=pattern_data,
+    )
+
+    confidence = calculate_prediction_confidence(
+        trend_data=trend_data,
+        signal_data=signal_data,
+        scenario_data=scenario_data,
+        pattern_data=pattern_data,
+        analog_data=analog_data,
+    )
+
+    expected_outcomes = scenario_data.get("expected_outcomes", [])
+    if not isinstance(expected_outcomes, list):
+        expected_outcomes = []
+
+    monitoring_priorities = build_monitoring_priorities(
+        scenario_data=scenario_data,
+        pattern_data=pattern_data,
+        analog_data=analog_data,
+    )
+
+    action_bias = build_action_bias(
+        scenario_data=scenario_data,
+        expected_outcomes=expected_outcomes,
+        historical_support_level=safe_float(historical_context.get("support_level")),
+    )
+
+    primary_narrative = choose_primary_narrative(scenario_data)
+
+    prediction_statement = build_prediction_statement(
+        dominant_scenario=dominant_scenario,
+        risk=risk,
+        direction=direction,
+        confidence=confidence,
+        dominant_pattern=str(historical_context.get("dominant_pattern") or ""),
+        dominant_analog=str(historical_context.get("dominant_analog") or ""),
+    )
+
+    prediction_drivers = build_prediction_drivers(
+        trend_data=trend_data,
+        signal_data=signal_data,
+        scenario_data=scenario_data,
+        pattern_data=pattern_data,
+        analog_data=analog_data,
+    )
+
+    summary = build_summary(
+        direction=direction,
+        dominant_scenario=dominant_scenario,
+        risk=risk,
+        confidence=confidence,
+        historical_context=historical_context,
+    )
+
+    return {
+        "as_of": as_of,
+        "generated_at": utc_now_iso(),
+        "engine_version": "v2_historical",
+        "direction": direction,
+        "dominant_scenario": dominant_scenario,
+        "risk": risk,
+        "confidence": confidence,
+        "action_bias": action_bias,
+        "prediction_statement": prediction_statement,
+        "primary_narrative": primary_narrative,
+        "key_drivers": prediction_drivers,
+        "monitoring_priorities": monitoring_priorities,
+        "expected_outcomes": expected_outcomes[:10],
+        "risk_flags": scenario_data.get("risk_flags", []),
+        "historical_context": historical_context,
+        "scenario_bias": scenario_data.get("scenario_bias", {}),
+        "summary": summary,
+    }
+
+
+def save_history(prediction_output: Dict[str, Any]) -> None:
+    as_of = str(prediction_output.get("as_of") or datetime.now().strftime("%Y-%m-%d"))
+    history_dir = PREDICTION_DIR / "history" / as_of
+    write_json(history_dir / "prediction.json", prediction_output)
+
+
+def main() -> None:
+    trend_data = load_json(TREND_LATEST_PATH)
+    signal_data = load_json(SIGNAL_LATEST_PATH)
+    scenario_data = load_json(SCENARIO_LATEST_PATH)
+    pattern_data = load_json(HISTORICAL_PATTERN_LATEST_PATH)
+    analog_data = load_json(HISTORICAL_ANALOG_LATEST_PATH)
+
+    prediction_output = build_prediction_output(
+        trend_data=trend_data,
+        signal_data=signal_data,
+        scenario_data=scenario_data,
+        pattern_data=pattern_data,
+        analog_data=analog_data,
+    )
+
+    write_json(PREDICTION_LATEST_PATH, prediction_output)
+    save_history(prediction_output)
+
+    print(f"[prediction_engine] wrote {PREDICTION_LATEST_PATH}")
+    print(
+        "[prediction_engine] dominant="
+        f"{prediction_output.get('dominant_scenario')} "
+        "risk="
+        f"{prediction_output.get('risk')} "
+        "confidence="
+        f"{prediction_output.get('confidence')}"
+    )
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
