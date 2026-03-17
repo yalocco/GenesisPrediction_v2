@@ -260,6 +260,7 @@ def _derive_fx_value(fx_decision: dict[str, Any] | None) -> tuple[str, str]:
         return "--", "fx decision unavailable"
 
     value = _first_non_empty(
+        fx_decision.get("primary"),
         fx_decision.get("decision"),
         fx_decision.get("status"),
         fx_decision.get("regime"),
