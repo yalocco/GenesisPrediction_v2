@@ -140,6 +140,41 @@ function Save-PredictionHistorySnapshot {
     return $null
 }
 
+function Build-PredictionHistoryIndex {
+    param(
+        [string]$RepoRoot
+    )
+
+    $python = Join-Path $RepoRoot ".venv\Scripts\python.exe"
+    $script = Join-Path $RepoRoot "scripts\build_prediction_history_index.py"
+
+    if (-not (Test-Path $script)) {
+        Write-Host "[skip] missing: $script" -ForegroundColor DarkYellow
+        return $false
+    }
+
+    if (-not (Test-Path $python)) {
+        Write-Host "[skip] missing python: $python" -ForegroundColor DarkYellow
+        return $false
+    }
+
+    Write-Host "CMD: $python $script" -ForegroundColor DarkCyan
+    & $python $script | Out-Host
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "build_prediction_history_index.py failed with exit code $LASTEXITCODE"
+    }
+
+    $indexPath = Join-Path $RepoRoot "analysis\prediction\prediction_history_index.json"
+    if (Test-Path $indexPath) {
+        Write-Host "[ok] prediction_history_index built: $indexPath" -ForegroundColor Green
+        return $true
+    }
+
+    Write-Host "[skip] prediction_history_index not found after build: $indexPath" -ForegroundColor DarkYellow
+    return $false
+}
+
 function Publish-PredictionArtifacts {
     param(
         [string]$RepoRoot
@@ -168,6 +203,10 @@ function Publish-PredictionArtifacts {
         @{
             Source      = (Join-Path $RepoRoot "analysis\prediction\prediction_latest.json")
             Destination = (Join-Path $publishDir "prediction_latest.json")
+        },
+        @{
+            Source      = (Join-Path $RepoRoot "analysis\prediction\prediction_history_index.json")
+            Destination = (Join-Path $publishDir "prediction_history_index.json")
         }
     )
 
@@ -211,10 +250,12 @@ function Show-Summary {
         [string]$RunDate,
         [int]$LatestCopied,
         [int]$PublishedCount,
-        [string]$PredictionHistoryPath
+        [string]$PredictionHistoryPath,
+        [bool]$HistoryIndexBuilt
     )
 
     $globalStatusPath = Join-Path $RepoRoot "analysis\global_status_latest.json"
+    $historyIndexPath = Join-Path $RepoRoot "analysis\prediction\prediction_history_index.json"
 
     Write-Host ""
     Write-Host "=== refresh_latest_artifacts summary ===" -ForegroundColor Cyan
@@ -227,6 +268,13 @@ function Show-Summary {
     }
     else {
         Write-Host "prediction history      : not updated"
+    }
+
+    if ($HistoryIndexBuilt -and (Test-Path $historyIndexPath)) {
+        Write-Host "prediction history idx  : $historyIndexPath"
+    }
+    else {
+        Write-Host "prediction history idx  : missing" -ForegroundColor DarkYellow
     }
 
     if (Test-Path $globalStatusPath) {
@@ -259,19 +307,23 @@ try {
     Ensure-Directory -Path (Join-Path $repoRoot "analysis\prediction\history")
     Ensure-Directory -Path (Join-Path $repoRoot "data\prediction")
 
-    Write-Host "[1/4] refresh known latest artifacts" -ForegroundColor Cyan
+    Write-Host "[1/5] refresh known latest artifacts" -ForegroundColor Cyan
     $latestCopied = Refresh-KnownLatestArtifacts -RepoRoot $repoRoot
 
     Write-Host ""
-    Write-Host "[2/4] save prediction history snapshot" -ForegroundColor Cyan
+    Write-Host "[2/5] save prediction history snapshot" -ForegroundColor Cyan
     $predictionHistoryPath = Save-PredictionHistorySnapshot -RepoRoot $repoRoot -RunDate $runDate
 
     Write-Host ""
-    Write-Host "[3/4] publish prediction artifacts" -ForegroundColor Cyan
+    Write-Host "[3/5] build prediction history index" -ForegroundColor Cyan
+    [bool]$historyIndexBuilt = Build-PredictionHistoryIndex -RepoRoot $repoRoot
+
+    Write-Host ""
+    Write-Host "[4/5] publish prediction artifacts" -ForegroundColor Cyan
     $publishedCount = Publish-PredictionArtifacts -RepoRoot $repoRoot
 
     Write-Host ""
-    Write-Host "[4/4] build analysis/global_status_latest.json" -ForegroundColor Cyan
+    Write-Host "[5/5] build analysis/global_status_latest.json" -ForegroundColor Cyan
     Build-GlobalStatusLatest -RepoRoot $repoRoot -PrettyJson:$Pretty
 
     Show-Summary `
@@ -279,7 +331,8 @@ try {
         -RunDate $runDate `
         -LatestCopied $latestCopied `
         -PublishedCount $publishedCount `
-        -PredictionHistoryPath $predictionHistoryPath
+        -PredictionHistoryPath $predictionHistoryPath `
+        -HistoryIndexBuilt $historyIndexBuilt
 
     exit 0
 }
