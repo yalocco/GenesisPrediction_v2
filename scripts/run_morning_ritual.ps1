@@ -141,7 +141,7 @@ Write-Host ("HEALTH      : {0}" -f ($(if ($SkipHealth) { "SKIP" } else { "RUN" }
 Write-Host ("REFRESH     : {0}" -f ($(if ($SkipRefresh) { "SKIP" } else { "RUN" })))
 Write-Host ("PYTHON      : {0}" -f $pythonExe)
 
-$mainWorldSummary = Join-Path $repoRoot "analysis\world_politics\daily_summary_latest.json"
+$mainWorldSummary = Join-Path $repoRoot "analysis\daily_summary_latest.json"
 $predictionLatest = Join-Path $repoRoot "analysis\prediction\prediction_latest.json"
 $fxDecisionLatest = Join-Path $repoRoot "analysis\fx\fx_decision_latest.json"
 $healthLatest = Join-Path $repoRoot "analysis\health_latest.json"
