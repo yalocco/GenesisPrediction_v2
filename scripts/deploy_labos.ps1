@@ -139,11 +139,12 @@ if [ ! -d "$WebRoot" ]; then
   exit 1
 fi
 
+# keep .htaccess even when replacing the rest of the web root
+find "$WebRoot" -mindepth 1 -maxdepth 1 ! -name '.htaccess' -exec rm -rf {} +
+
 if [ "$MirrorRootFiles" = "True" ] || [ "$MirrorRootFiles" = "true" ]; then
-  find "$WebRoot" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
   cp -a "$ReleaseDir"/. "$WebRoot"/
 else
-  find "$WebRoot" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
   cp -a "$ReleaseDir"/. "$WebRoot"/
 fi
 "@
