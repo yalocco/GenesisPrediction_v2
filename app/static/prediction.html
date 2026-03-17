@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Prediction - GenesisPrediction v2</title>
   <meta name="description" content="GenesisPrediction Prediction UI">
-  <link rel="stylesheet" href="/static/app.css?v=20260315-ui-fix-2">
+  <link rel="stylesheet" href="/static/app.css?v=20260317-publish-ui-1">
   <style>
     .prediction-page{display:grid;gap:16px}
     .prediction-shell{display:grid;gap:16px}
@@ -357,7 +357,7 @@
             <div class="section-header">
               <div>
                 <h2 class="section-title">Prediction History</h2>
-                <p class="section-subtitle">Recent prediction snapshots from prediction history.</p>
+                <p class="section-subtitle">Recent prediction snapshots from published prediction history.</p>
               </div>
             </div>
             <div id="predictionHistoryList" class="list-stack"></div>
@@ -372,14 +372,13 @@
 
   <script>
     const PREDICTION_SOURCES = {
-      trend: "/analysis/prediction/trend_latest.json",
-      signal: "/analysis/prediction/signal_latest.json",
-      warning: "/analysis/prediction/early_warning_latest.json",
-      scenario: "/analysis/prediction/scenario_latest.json",
-      prediction: "/analysis/prediction/prediction_latest.json"
+      trend: "/data/prediction/trend_latest.json",
+      signal: "/data/prediction/signal_latest.json",
+      warning: "/data/prediction/early_warning_latest.json",
+      scenario: "/data/prediction/scenario_latest.json",
+      prediction: "/data/prediction/prediction_latest.json",
+      historyIndex: "/data/prediction/prediction_history_index.json"
     };
-
-    const HISTORY_SCAN_DAYS = 30;
 
     function el(id){ return document.getElementById(id); }
 
@@ -526,41 +525,38 @@
       return 0;
     }
 
-    function recentDateList(days){
-      const out = [];
-      const base = new Date();
-      base.setHours(0,0,0,0);
-      for(let i = 0; i < days; i += 1){
-        const d = new Date(base);
-        d.setDate(base.getDate() - i);
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, "0");
-        const day = String(d.getDate()).padStart(2, "0");
-        out.push(`${y}-${m}-${day}`);
-      }
-      return out;
+    function normalizeHistoryIndexItem(item){
+      return {
+        date: firstString(item?.date, item?.as_of),
+        as_of: firstString(item?.as_of, item?.date),
+        generated_at: firstString(item?.generated_at),
+        horizon: firstString(item?.horizon),
+        overall_risk: firstString(item?.overall_risk),
+        confidence: pickNumber(item?.confidence),
+        dominant_scenario: firstString(item?.dominant_scenario),
+        best_case: pickNumber(item?.best_case),
+        base_case: pickNumber(item?.base_case),
+        worst_case: pickNumber(item?.worst_case),
+        summary: firstString(item?.summary),
+        watchpoints: safeArray(item?.watchpoints),
+        drivers: safeArray(item?.drivers),
+        invalidation_conditions: safeArray(item?.invalidation_conditions),
+        signal_count: pickNumber(item?.signal_count),
+        url: item?.date ? `/data/prediction/history/${item.date}/prediction.json` : ""
+      };
     }
 
     async function loadHistorySnapshots(){
-      const dates = recentDateList(HISTORY_SCAN_DAYS);
-      const loaded = await Promise.all(
-        dates.map(async (date) => {
-          const url = `/analysis/prediction/history/${date}/prediction.json`;
-          const res = await fetchJson(url);
-          if (!res.ok || !res.data) return null;
-          const raw = res.data || {};
-          return {
-            as_of: firstString(raw.as_of, date),
-            generated_at: firstString(raw.generated_at),
-            horizon: firstString(raw.horizon, raw.horizon_days ? `${raw.horizon_days}d` : ""),
-            overall_risk: firstString(raw.overall_risk, raw.risk_level, raw.warning_level),
-            confidence: pickNumber(raw.confidence, raw.confidence_score, raw.confidence_pct),
-            dominant_scenario: firstString(raw.dominant_scenario, raw.dominant_branch, raw.scenario),
-            summary: firstString(raw.summary, raw.prediction_summary)
-          };
-        })
-      );
-      return loaded.filter(Boolean).sort((a, b) => String(b.as_of).localeCompare(String(a.as_of)));
+      const historyIndexRes = await fetchJson(PREDICTION_SOURCES.historyIndex);
+      if (!historyIndexRes.ok || !historyIndexRes.data){
+        return [];
+      }
+
+      const items = safeArray(historyIndexRes.data.items)
+        .map(normalizeHistoryIndexItem)
+        .filter((item) => item.date);
+
+      return items.sort((a, b) => String(b.date).localeCompare(String(a.date)));
     }
 
     function normalizeScenarios(prediction, scenarioData){
@@ -846,12 +842,15 @@
       `).join("");
     }
 
-    function renderRuntimeNotes(prediction, signalData, warningData){
+    function renderRuntimeNotes(prediction, signalData, warningData, history){
+      const latestHistory = history[0] || null;
       el("runtimeNoteList").innerHTML = [
         `As of: ${formatDate(firstString(prediction?.as_of, prediction?.date, prediction?.generated_at))}`,
         `Signal count: ${formatCount(firstNonEmpty(prediction?.signal_count, normalizeSignals(signalData, prediction).length))}`,
         `Warning count: ${formatCount(firstNonEmpty(warningData?.warning_count, warningData?.early_warning_count, prediction?.early_warning?.warning_score != null ? 1 : 0))}`,
-        `Dominant scenario: ${titleize(firstString(prediction?.dominant_scenario?.label, prediction?.dominant_branch, prediction?.scenario, prediction?.regime))}`
+        `Dominant scenario: ${titleize(firstString(prediction?.dominant_scenario?.label, prediction?.dominant_branch, prediction?.scenario, prediction?.regime))}`,
+        `History rows: ${formatCount(history.length)}`,
+        `Latest history: ${latestHistory ? formatShortDate(latestHistory.date || latestHistory.as_of) : "—"}`
       ].map((item) => `<li>${escapeHtml(item)}</li>`).join("");
     }
 
@@ -861,7 +860,8 @@
         ["Signal", results.signal],
         ["Early Warning", results.warning],
         ["Scenario", results.scenario],
-        ["Prediction", results.prediction]
+        ["Prediction", results.prediction],
+        ["History Index", results.historyIndex]
       ];
 
       el("sourceStatusList").innerHTML = rows.map(([name, result]) => `
@@ -940,7 +940,7 @@
       if (!root) return;
 
       if (!history.length){
-        root.innerHTML = `<article class="empty-card"><div class="empty-meta">History unavailable</div><p class="empty-text">analysis/prediction/history/YYYY-MM-DD/prediction.json を取得できませんでした。</p></article>`;
+        root.innerHTML = `<article class="empty-card"><div class="empty-meta">History unavailable</div><p class="empty-text">prediction_history_index.json を取得できませんでした。</p></article>`;
         return;
       }
 
@@ -950,7 +950,7 @@
           <div>
             <div class="sectionTitle" style="margin-bottom:6px;">
               <h2 style="font-size:16px;margin:0;">${escapeHtml(titleize(item.dominant_scenario || "snapshot"))}</h2>
-              <span class="hint mono">${escapeHtml(formatShortDate(item.as_of))}</span>
+              <span class="hint mono">${escapeHtml(formatShortDate(item.date || item.as_of))}</span>
             </div>
             <p class="inline-text">${escapeHtml(item.summary || "Prediction snapshot")} / Confidence ${escapeHtml(formatConfidence(item.confidence))} / ${escapeHtml(titleize(item.overall_risk))}</p>
           </div>
@@ -1080,11 +1080,13 @@
       const warningData = results.warning?.data || {};
       const trendData = results.trend?.data || {};
       const scenarioData = results.scenario?.data || {};
+      const history = (results.historyIndex?.ok && results.historyIndex?.data)
+        ? safeArray(results.historyIndex.data.items).map(normalizeHistoryIndexItem).sort((a,b) => String(b.date).localeCompare(String(a.date)))
+        : [];
 
       const scenarios = normalizeScenarios(prediction, scenarioData);
       const signals = normalizeSignals(signalData, prediction);
       const trends = normalizeTrendItems(trendData, prediction);
-      const history = await loadHistorySnapshots();
 
       renderHero(prediction, warningData);
       renderMetricCards(prediction, signalData, scenarios);
@@ -1092,7 +1094,7 @@
       renderScenarioCards(scenarios);
       renderSignalList(signals);
       renderTrendSummary(trends);
-      renderRuntimeNotes(prediction, signalData, warningData);
+      renderRuntimeNotes(prediction, signalData, warningData, history);
       renderPredictionHistory(history);
       renderCharts(prediction, scenarios, history);
 
@@ -1106,7 +1108,7 @@
 
     window.addEventListener("DOMContentLoaded", init);
   </script>
-  <script src="/static/common/global_status.js?v=20260315-ui-fix-2"></script>
-  <script src="/static/common/layout.js?v=20260315-ui-fix-2"></script>
+  <script src="/static/common/global_status.js?v=20260317-publish-ui-1"></script>
+  <script src="/static/common/layout.js?v=20260317-publish-ui-1"></script>
 </body>
 </html>

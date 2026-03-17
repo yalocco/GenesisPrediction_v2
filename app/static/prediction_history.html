@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Prediction History - GenesisPrediction v2</title>
   <meta name="description" content="GenesisPrediction Prediction History UI">
-  <link rel="stylesheet" href="/static/app.css?v=20260315-ui-fix-2">
+  <link rel="stylesheet" href="/static/app.css?v=20260317-publish-ui-1">
   <style>
     .history-page{display:grid;gap:16px}
     .history-shell{display:grid;gap:16px}
@@ -37,7 +37,8 @@
     .detail-card,.note-card{border:1px solid rgba(120,160,220,.14);border-radius:16px;padding:12px 14px;background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));display:grid;gap:10px;min-width:0}
     .detail-eyebrow,.timeline-meta,.empty-meta{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.7}
     .detail-title,.timeline-title{margin:0;font-size:16px;line-height:1.35;font-weight:700;color:#eef4ff}
-    .timeline-row{display:grid;grid-template-columns:110px 150px minmax(0,1fr) 96px;gap:12px;align-items:center;padding:14px;border-radius:16px;border:1px solid rgba(120,160,220,.14);background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));min-width:0}
+    .timeline-row{display:grid;grid-template-columns:110px 150px minmax(0,1fr) 96px;gap:12px;align-items:center;padding:14px;border-radius:16px;border:1px solid rgba(120,160,220,.14);background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));min-width:0;cursor:pointer}
+    .timeline-row.is-active{border-color:rgba(147,197,253,.42);box-shadow:inset 0 0 0 1px rgba(147,197,253,.12)}
     .timeline-date{font-size:13px;font-weight:700;color:#eef4ff;line-height:1.35;white-space:nowrap}
     .timeline-state{display:grid;gap:6px;min-width:0}
     .timeline-badge,.risk-badge{display:inline-flex;align-items:center;justify-content:center;width:max-content;min-width:34px;min-height:28px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);font-size:12px;font-weight:700;line-height:1;letter-spacing:.03em}
@@ -263,7 +264,7 @@
                 <div class="section-header">
                   <div>
                     <h2 class="section-title">History Scan Status</h2>
-                    <p class="section-subtitle">Daily snapshot scan results.</p>
+                    <p class="section-subtitle">Published index and detail load state.</p>
                   </div>
                 </div>
                 <div id="sourceStatusList" class="list-stack"></div>
@@ -275,7 +276,7 @@
             <div class="section-header">
               <div>
                 <h2 class="section-title">History Timeline</h2>
-                <p class="section-subtitle">Recent snapshots in reverse chronological order.</p>
+                <p class="section-subtitle">Recent snapshots in reverse chronological order. Click a row to load full detail from history.</p>
               </div>
             </div>
             <div id="timelineList" class="timeline-list"></div>
@@ -284,8 +285,8 @@
           <section class="card">
             <div class="section-header">
               <div>
-                <h2 class="section-title">Latest Snapshot Notes</h2>
-                <p class="section-subtitle">Key lists from the latest history prediction.</p>
+                <h2 class="section-title">Selected Snapshot Notes</h2>
+                <p class="section-subtitle">Full-detail lists from the selected published history snapshot.</p>
               </div>
             </div>
 
@@ -324,6 +325,7 @@
       "use strict";
 
       var SCAN_DAYS = 30;
+      var SELECTED_DATE = null;
 
       function $(id){ return document.getElementById(id); }
 
@@ -427,60 +429,77 @@
           .replace(/'/g,"&#39;");
       }
 
-      function recentDateList(days){
-        var out = [];
-        var base = new Date();
-        base.setHours(0,0,0,0);
-        for(var i = 0; i < days; i++){
-          var d = new Date(base);
-          d.setDate(base.getDate() - i);
-          var y = d.getFullYear();
-          var m = String(d.getMonth()+1).padStart(2,"0");
-          var day = String(d.getDate()).padStart(2,"0");
-          out.push(y + "-" + m + "-" + day);
-        }
-        return out;
+      function listText(value){
+        if(Array.isArray(value)) return value.filter(Boolean);
+        return [];
       }
 
       async function fetchJson(url){
         try{
           var res = await fetch(url, { cache: "no-store" });
           if(!res.ok) throw new Error("HTTP " + res.status);
-          return await res.json();
-        }catch(_e){
-          return null;
+          return { ok:true, data: await res.json(), url:url };
+        }catch(e){
+          return { ok:false, error:String(e), url:url };
         }
       }
 
-      function normalizeSnapshot(raw, date, url){
+      function normalizeIndexItem(raw){
         raw = raw || {};
+        var date = firstString(raw.date, raw.as_of);
         return {
-          as_of: firstString(raw.as_of, date),
+          date: date,
+          as_of: firstString(raw.as_of, raw.date),
           generated_at: firstString(raw.generated_at),
-          horizon: firstString(raw.horizon, raw.horizon_days ? String(raw.horizon_days) + "d" : ""),
-          overall_risk: firstString(raw.overall_risk, raw.risk_level, raw.warning_level),
-          confidence: firstNumber(raw.confidence, raw.confidence_score, raw.confidence_pct),
-          dominant_scenario: firstString(raw.dominant_scenario, raw.dominant_branch, raw.scenario),
-          summary: firstString(raw.summary, raw.prediction_summary),
-          drivers: Array.isArray(raw.drivers) ? raw.drivers : [],
-          watchpoints: Array.isArray(raw.watchpoints) ? raw.watchpoints : [],
-          invalidation_conditions: Array.isArray(raw.invalidation_conditions) ? raw.invalidation_conditions : [],
-          key_implications: Array.isArray(raw.key_implications) ? raw.key_implications : (Array.isArray(raw.implications) ? raw.implications : []),
-          signal_count: firstNumber(raw.signal_count, raw.meta && raw.meta.signal_count),
-          url: url
+          horizon: firstString(raw.horizon),
+          overall_risk: firstString(raw.overall_risk),
+          confidence: firstNumber(raw.confidence),
+          dominant_scenario: firstString(raw.dominant_scenario),
+          summary: firstString(raw.summary),
+          signal_count: firstNumber(raw.signal_count),
+          drivers: listText(raw.drivers),
+          watchpoints: listText(raw.watchpoints),
+          invalidation_conditions: listText(raw.invalidation_conditions),
+          best_case: firstNumber(raw.best_case),
+          base_case: firstNumber(raw.base_case),
+          worst_case: firstNumber(raw.worst_case),
+          url: date ? ("/data/prediction/history/" + date + "/prediction.json") : ""
         };
       }
 
-      async function loadSnapshots(){
-        var dates = recentDateList(SCAN_DAYS);
-        var loaded = await Promise.all(dates.map(async function(date){
-          var url = "/analysis/prediction/history/" + date + "/prediction.json";
-          var raw = await fetchJson(url);
-          return raw ? normalizeSnapshot(raw, date, url) : null;
-        }));
-        return loaded.filter(Boolean).sort(function(a,b){
-          return String(b.as_of).localeCompare(String(a.as_of));
+      function normalizeDetail(raw, fallback){
+        raw = raw || {};
+        fallback = fallback || {};
+        return {
+          as_of: firstString(raw.as_of, fallback.as_of, fallback.date),
+          generated_at: firstString(raw.generated_at, fallback.generated_at),
+          horizon: firstString(raw.horizon, fallback.horizon),
+          overall_risk: firstString(raw.overall_risk, raw.risk_level, fallback.overall_risk),
+          confidence: firstNumber(raw.confidence, raw.confidence_score, fallback.confidence),
+          dominant_scenario: firstString(raw.dominant_scenario, raw.dominant_branch, raw.scenario, fallback.dominant_scenario),
+          summary: firstString(raw.summary, raw.prediction_summary, fallback.summary),
+          signal_count: firstNumber(raw.signal_count, raw.meta && raw.meta.signal_count, fallback.signal_count),
+          drivers: listText(raw.drivers).length ? listText(raw.drivers) : listText(fallback.drivers),
+          watchpoints: listText(raw.watchpoints).length ? listText(raw.watchpoints) : listText(fallback.watchpoints),
+          invalidation_conditions: listText(raw.invalidation_conditions).length ? listText(raw.invalidation_conditions) : listText(fallback.invalidation_conditions),
+          implications: Array.isArray(raw.key_implications) ? raw.key_implications : (Array.isArray(raw.implications) ? raw.implications : []),
+          url: fallback.url || ""
+        };
+      }
+
+      async function loadHistoryIndex(){
+        var res = await fetchJson("/data/prediction/prediction_history_index.json");
+        if(!res.ok || !res.data || !Array.isArray(res.data.items)) return [];
+        return res.data.items.map(normalizeIndexItem).sort(function(a,b){
+          return String(b.date).localeCompare(String(a.date));
         });
+      }
+
+      async function loadHistoryDetail(date, fallback){
+        if(!date) return null;
+        var res = await fetchJson("/data/prediction/history/" + date + "/prediction.json");
+        if(!res.ok || !res.data) return normalizeDetail({}, fallback);
+        return normalizeDetail(res.data, fallback);
       }
 
       function renderHero(latest){
@@ -538,36 +557,6 @@
         setText("historySummaryMain", summaryText);
       }
 
-      function renderTimeline(list){
-        var root = $("timelineList");
-        if(!root) return;
-
-        if(!list.length){
-          root.innerHTML = '<article class="empty-card"><div class="empty-meta">History unavailable</div><p class="empty-text">history not found.</p></article>';
-          return;
-        }
-
-        root.innerHTML = list.map(function(item){
-          return ''
-            + '<article class="timeline-row">'
-            +   '<div class="timeline-date mono">' + esc(formatDate(item.as_of)) + '</div>'
-            +   '<div class="timeline-state">'
-            +     '<span class="timeline-badge ' + esc(domClass(item.dominant_scenario)) + '">' + esc(titleize(item.dominant_scenario)) + '</span>'
-            +     '<span class="risk-badge ' + esc(riskClass(item.overall_risk)) + '">' + esc(titleize(item.overall_risk)) + '</span>'
-            +   '</div>'
-            +   '<div>'
-            +     '<h3 class="timeline-title">' + esc(titleize(item.dominant_scenario || "snapshot")) + '</h3>'
-            +     '<p class="timeline-summary">' + esc(item.summary || "Prediction snapshot") + '</p>'
-            +     '<div class="timeline-small">Generated: ' + esc(formatDateTime(item.generated_at)) + '</div>'
-            +   '</div>'
-            +   '<div class="timeline-conf">'
-            +     '<div class="value">' + esc(formatPercent(item.confidence)) + '</div>'
-            +     '<div class="sub">' + esc(item.horizon || "horizon n/a") + '</div>'
-            +   '</div>'
-            + '</article>';
-        }).join("");
-      }
-
       function renderList(id, items, emptyText){
         var root = $(id);
         if(!root) return;
@@ -597,22 +586,33 @@
         }).join("");
       }
 
-      function renderSourceStatus(list){
+      function renderSourceStatus(indexLoaded, selectedDetail){
         var root = $("sourceStatusList");
         if(!root) return;
 
-        if(!list.length){
-          root.innerHTML = '<article class="empty-card"><div class="empty-meta">Scan unavailable</div><p class="empty-text">No history files loaded.</p></article>';
-          return;
-        }
+        var rows = [
+          {
+            label:"History Index",
+            url:"/data/prediction/prediction_history_index.json",
+            ok:indexLoaded
+          },
+          {
+            label:"Selected Detail",
+            url:selectedDetail && selectedDetail.url ? selectedDetail.url : "",
+            ok:!!selectedDetail
+          }
+        ];
 
-        root.innerHTML = list.slice(0, 6).map(function(item, index){
+        root.innerHTML = rows.map(function(row, index){
           return ''
             + '<article class="list-row">'
-            +   '<span class="pill">' + esc(String(index + 1)) + '</span>'
+            +   '<span class="pill">' + esc(row.ok ? "OK" : "—") + '</span>'
             +   '<div>'
-            +     '<div class="hint mono">' + esc(item.url || "") + '</div>'
-            +     '<p class="inline-text">' + esc(formatDate(item.as_of)) + " / " + esc(titleize(item.dominant_scenario)) + " / " + esc(formatPercent(item.confidence)) + '</p>'
+            +     '<div class="sectionTitle" style="margin-bottom:6px;">'
+            +       '<h2 style="font-size:16px;margin:0;">' + esc(row.label) + '</h2>'
+            +       '<span class="hint mono">' + esc(row.url || "") + '</span>'
+            +     '</div>'
+            +     '<p class="inline-text">' + esc(row.ok ? "source loaded" : "source unavailable") + '</p>'
             +   '</div>'
             + '</article>';
         }).join("");
@@ -717,30 +717,81 @@
         }
       }
 
+      function renderTimeline(list){
+        var root = $("timelineList");
+        if(!root) return;
+
+        if(!list.length){
+          root.innerHTML = '<article class="empty-card"><div class="empty-meta">History unavailable</div><p class="empty-text">history not found.</p></article>';
+          return;
+        }
+
+        root.innerHTML = list.map(function(item){
+          var activeClass = item.date === SELECTED_DATE ? " is-active" : "";
+          return ''
+            + '<article class="timeline-row' + activeClass + '" data-date="' + esc(item.date) + '">'
+            +   '<div class="timeline-date mono">' + esc(formatDate(item.as_of)) + '</div>'
+            +   '<div class="timeline-state">'
+            +     '<span class="timeline-badge ' + esc(domClass(item.dominant_scenario)) + '">' + esc(titleize(item.dominant_scenario)) + '</span>'
+            +     '<span class="risk-badge ' + esc(riskClass(item.overall_risk)) + '">' + esc(titleize(item.overall_risk)) + '</span>'
+            +   '</div>'
+            +   '<div>'
+            +     '<h3 class="timeline-title">' + esc(titleize(item.dominant_scenario || "snapshot")) + '</h3>'
+            +     '<p class="timeline-summary">' + esc(item.summary || "Prediction snapshot") + '</p>'
+            +     '<div class="timeline-small">Generated: ' + esc(formatDateTime(item.generated_at)) + '</div>'
+            +   '</div>'
+            +   '<div class="timeline-conf">'
+            +     '<div class="value">' + esc(formatPercent(item.confidence)) + '</div>'
+            +     '<div class="sub">' + esc(item.horizon || "horizon n/a") + '</div>'
+            +   '</div>'
+            + '</article>';
+        }).join("");
+
+        Array.prototype.forEach.call(root.querySelectorAll(".timeline-row"), function(row){
+          row.addEventListener("click", function(){
+            var date = row.getAttribute("data-date");
+            if(date){
+              SELECTED_DATE = date;
+              window.__predictionHistoryState.select(date);
+            }
+          });
+        });
+      }
+
       async function main(){
         try{
-          var list = await loadSnapshots();
+          var list = await loadHistoryIndex();
           if(!list.length){
-            setText("heroSummary", "prediction history files were not found.");
+            setText("heroSummary", "prediction_history_index.json could not be loaded.");
             renderTimeline([]);
-            renderSourceStatus([]);
+            renderSourceStatus(false, null);
             return;
           }
 
           var latest = list[0];
           var oldest = list[list.length - 1];
+          SELECTED_DATE = latest.date;
 
           renderHero(latest);
           renderDrift(latest, oldest, list.length);
           renderTimeline(list);
           renderCharts(list);
           renderRuntimeNotes(latest, oldest, list.length);
-          renderSourceStatus(list);
 
-          renderList("driversList", latest.drivers, "No drivers");
-          renderList("watchpointsList", latest.watchpoints, "No watchpoints");
-          renderList("invalidationList", latest.invalidation_conditions, "No invalidation conditions");
-          renderList("implicationsList", latest.key_implications, "No implications");
+          async function select(date){
+            var fallback = list.find(function(item){ return item.date === date; }) || latest;
+            var detail = await loadHistoryDetail(date, fallback);
+            renderList("driversList", detail.drivers, "No drivers");
+            renderList("watchpointsList", detail.watchpoints, "No watchpoints");
+            renderList("invalidationList", detail.invalidation_conditions, "No invalidation conditions");
+            renderList("implicationsList", detail.implications, "No implications");
+            renderSourceStatus(true, detail);
+            renderTimeline(list);
+          }
+
+          window.__predictionHistoryState = { select: select };
+
+          await select(SELECTED_DATE);
         }catch(e){
           console.warn(e);
         }
@@ -749,7 +800,7 @@
       main();
     })();
   </script>
-  <script src="/static/common/global_status.js?v=20260315-ui-fix-2"></script>
-  <script src="/static/common/layout.js?v=20260315-ui-fix-2"></script>
+  <script src="/static/common/global_status.js?v=20260317-publish-ui-1"></script>
+  <script src="/static/common/layout.js?v=20260317-publish-ui-1"></script>
 </body>
 </html>
