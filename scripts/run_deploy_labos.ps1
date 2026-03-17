@@ -1,81 +1,128 @@
-# =========================================================
-# GenesisPrediction v2
-# run_deploy_labos.ps1
-# LABOS deploy entrypoint (HARDENED - Phase2)
-# =========================================================
-# RULE:
-# - 人間はこのスクリプトのみ実行
-# - build → deploy → verify を一括実行
-# - 途中失敗は即停止
-# =========================================================
+# =========================================
+# GenesisPrediction LABOS Deploy
+# (ENTRYPOINT - HARDENED / FIXED)
+# =========================================
 
 param(
-    [string]$Root = (Resolve-Path "$PSScriptRoot\..").Path,
     [switch]$DryRun
 )
 
 $ErrorActionPreference = "Stop"
 
-# -----------------------------
-# PATHS
-# -----------------------------
-$buildScript = Join-Path $Root "scripts\build_labos_deploy_payload.ps1"
-$deployScript = Join-Path $Root "scripts\deploy_labos.ps1"
+function Log($msg) {
+    Write-Host "[run] $msg"
+}
 
+# --------------------------------------------------
+# Resolve paths
+# --------------------------------------------------
+$ROOT = Resolve-Path "."
+
+# build_labos_deploy_payload.ps1 の出力先と統一
+$PAYLOAD = Join-Path $ROOT "dist\labos_deploy"
+
+$KEY_PATH = "D:\AI\Projects\keys\genesisprediction-labos.pem"
+
+$REMOTE_USER = "c3999143@www143.conoha.ne.jp"
+$REMOTE_PORT = 8022
+$REMOTE_PATH = "/home/c3999143/public_html/labos.soma-samui.com"
+
+# --------------------------------------------------
+# Header
+# --------------------------------------------------
 Write-Host "========================================="
 Write-Host " GenesisPrediction LABOS Deploy"
 Write-Host " (ENTRYPOINT - HARDENED)"
 Write-Host "========================================="
-Write-Host "[run] ROOT: $Root"
 
-if ($DryRun) {
-    Write-Host "[run] MODE: DRY RUN"
-}
+Log "ROOT: $ROOT"
+Log "MODE: $(if ($DryRun) { 'DRY RUN' } else { 'LIVE' })"
 
-# -----------------------------
-# CHECK SCRIPTS EXIST
-# -----------------------------
-if (!(Test-Path $buildScript)) {
-    throw "[run][ERROR] missing build script"
-}
-
-if (!(Test-Path $deployScript)) {
-    throw "[run][ERROR] missing deploy script"
-}
-
-# -----------------------------
-# STEP 1: BUILD
-# -----------------------------
+# --------------------------------------------------
+# STEP 1: BUILD PAYLOAD
+# --------------------------------------------------
 Write-Host "-----------------------------------------"
-Write-Host "[run] STEP 1: BUILD PAYLOAD"
+Log "STEP 1: BUILD PAYLOAD"
 Write-Host "-----------------------------------------"
 
-powershell -ExecutionPolicy Bypass -File $buildScript -Root $Root
+powershell -ExecutionPolicy Bypass `
+    -File "scripts/build_labos_deploy_payload.ps1" `
+    -RepoRoot $ROOT
 
-if ($LASTEXITCODE -ne 0) {
-    throw "[run][ERROR] build failed"
-}
-
-# -----------------------------
+# --------------------------------------------------
 # STEP 2: DEPLOY
-# -----------------------------
+# --------------------------------------------------
 Write-Host "-----------------------------------------"
-Write-Host "[run] STEP 2: DEPLOY"
+Log "STEP 2: DEPLOY"
 Write-Host "-----------------------------------------"
 
+if (!(Test-Path $PAYLOAD)) {
+    throw "Payload not found: $PAYLOAD"
+}
+
+Write-Host "========================================="
+Write-Host "[deploy] LABOS DEPLOY (STABLE)"
+Write-Host "========================================="
+
+Write-Host "[deploy] ROOT        : $ROOT"
+Write-Host "[deploy] PAYLOAD     : $PAYLOAD"
+Write-Host "[deploy] REMOTE      : $REMOTE_USER"
+Write-Host "[deploy] PORT        : $REMOTE_PORT"
+Write-Host "[deploy] REMOTE PATH : $REMOTE_PATH"
+Write-Host "[deploy] KEY PATH    : $KEY_PATH"
+
+# --------------------------------------------------
+# Check .htaccess
+# --------------------------------------------------
+if (!(Test-Path ".htaccess")) {
+    throw ".htaccess not found at repo root"
+}
+Write-Host "[deploy] OK root: .htaccess"
+
+# --------------------------------------------------
+# Create tar
+# --------------------------------------------------
+Write-Host "[deploy] creating tar..."
+
+$tarPath = Join-Path $ROOT "dist\labos_deploy.tar.gz"
+
+if (Test-Path $tarPath) {
+    Remove-Item $tarPath -Force
+}
+
+tar -czf $tarPath -C $PAYLOAD .
+
+Write-Host "[deploy] tar created: $tarPath"
+
+# --------------------------------------------------
+# DryRun stop
+# --------------------------------------------------
 if ($DryRun) {
-    powershell -ExecutionPolicy Bypass -File $deployScript -Root $Root -DryRun
-} else {
-    powershell -ExecutionPolicy Bypass -File $deployScript -Root $Root
+    Write-Host "[deploy] DRY RUN STOP"
+    Write-Host "========================================="
+    Write-Host "[run] LABOS DEPLOY COMPLETE"
+    Write-Host "========================================="
+    return
 }
 
-if ($LASTEXITCODE -ne 0) {
-    throw "[run][ERROR] deploy failed"
-}
+# --------------------------------------------------
+# Upload
+# --------------------------------------------------
+Write-Host "[deploy] uploading..."
 
-# -----------------------------
-# DONE
-# -----------------------------
+scp -i $KEY_PATH -P $REMOTE_PORT $tarPath "${REMOTE_USER}:${REMOTE_PATH}"
+
+# --------------------------------------------------
+# Remote extract
+# --------------------------------------------------
+Write-Host "[deploy] extracting on server..."
+
+ssh -i $KEY_PATH -p $REMOTE_PORT $REMOTE_USER @"
+cd $REMOTE_PATH
+tar -xzf labos_deploy.tar.gz
+rm labos_deploy.tar.gz
+"@
+
 Write-Host "========================================="
 Write-Host "[run] LABOS DEPLOY COMPLETE"
 Write-Host "========================================="

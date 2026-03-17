@@ -1,156 +1,109 @@
 # =========================================================
 # GenesisPrediction v2
-# build_labos_deploy_payload.ps1
-# LABOS deploy payload builder (HARDENED - Phase2)
-# =========================================================
-# RULE:
-# - payload は自己完結であること
-# - 必須ファイル欠損時は即停止（WARN禁止）
-# - root重要ファイルは必ず含める
-# - manifest を生成する
+# LABOS Deploy Payload Builder (FINAL - Phase4 Integrated)
 # =========================================================
 
 param(
-    [string]$Root = (Resolve-Path "$PSScriptRoot\..").Path
+    [string]$RepoRoot = ".",
+    [string]$OutDir = "dist/labos_deploy"
 )
 
 $ErrorActionPreference = "Stop"
 
-# -----------------------------
-# PATHS
-# -----------------------------
-$dist = Join-Path $Root "dist\labos_payload"
-$manifestPath = Join-Path $dist "manifest.json"
-
-Write-Host "========================================="
-Write-Host "[build] LABOS PAYLOAD BUILD (HARDENED)"
-Write-Host "========================================="
-Write-Host "[build] ROOT: $Root"
-Write-Host "[build] DIST: $dist"
-
-# -----------------------------
-# CLEAN DIST
-# -----------------------------
-if (Test-Path $dist) {
-    Write-Host "[build] cleaning dist..."
-    Remove-Item $dist -Recurse -Force
+function Log($msg) {
+    Write-Host "[build_labos_deploy_payload] $msg"
 }
-New-Item -ItemType Directory -Path $dist | Out-Null
 
-# -----------------------------
-# REQUIRED ROOT FILES
-# -----------------------------
-$requiredRootFiles = @(
-    ".htaccess"
+# ---------------------------------------------------------
+# Resolve paths
+# ---------------------------------------------------------
+$root = Resolve-Path $RepoRoot
+$out  = Join-Path $root $OutDir
+
+Log "ROOT : $root"
+Log "OUT  : $out"
+
+# Clean
+if (Test-Path $out) {
+    Remove-Item -Recurse -Force $out
+}
+New-Item -ItemType Directory -Path $out | Out-Null
+
+# ---------------------------------------------------------
+# 1. Copy static UI
+# ---------------------------------------------------------
+$staticSrc = Join-Path $root "app/static"
+$staticDst = Join-Path $out  "static"
+
+Log "Copy static..."
+Copy-Item -Recurse -Force $staticSrc $staticDst
+
+# ---------------------------------------------------------
+# 2. Prepare data directory
+# ---------------------------------------------------------
+$dataDst = Join-Path $out "data"
+New-Item -ItemType Directory -Path $dataDst | Out-Null
+
+# ---------------------------------------------------------
+# 3. Copy world / digest data (existing behavior)
+# ---------------------------------------------------------
+$dataSrc = Join-Path $root "data"
+
+if (Test-Path $dataSrc) {
+    Log "Copy data..."
+    Copy-Item -Recurse -Force $dataSrc\* $dataDst
+}
+
+# ---------------------------------------------------------
+# 4. 🔥 CRITICAL: Copy prediction from analysis → data
+# ---------------------------------------------------------
+$analysisPrediction = Join-Path $root "analysis/prediction"
+$dataPredictionDst  = Join-Path $dataDst "prediction"
+
+if (!(Test-Path $analysisPrediction)) {
+    throw "analysis/prediction not found"
+}
+
+Log "Copy prediction (analysis → data)..."
+New-Item -ItemType Directory -Path $dataPredictionDst -Force | Out-Null
+
+Copy-Item -Recurse -Force "$analysisPrediction\*" $dataPredictionDst
+
+# ---------------------------------------------------------
+# 5. Required files check
+# ---------------------------------------------------------
+$required = @(
+    "trend_latest.json",
+    "signal_latest.json",
+    "early_warning_latest.json",
+    "scenario_latest.json",
+    "prediction_latest.json",
+    "prediction_history_index.json"
 )
 
-# -----------------------------
-# REQUIRED DATA FILES（最低限）
-# -----------------------------
-$requiredDataFiles = @(
-    "data\prediction\prediction_latest.json",
-    "data\prediction\prediction_history_index.json"
-)
-
-# -----------------------------
-# COPY: STATIC
-# -----------------------------
-$staticSrc = Join-Path $Root "app\static"
-$staticDst = Join-Path $dist "static"
-
-if (!(Test-Path $staticSrc)) {
-    throw "[build][ERROR] missing static source: $staticSrc"
-}
-
-Write-Host "[build] static..."
-Copy-Item $staticSrc -Destination $staticDst -Recurse -Force
-
-# -----------------------------
-# COPY: DATA
-# -----------------------------
-$dataSrc = Join-Path $Root "data"
-$dataDst = Join-Path $dist "data"
-
-if (!(Test-Path $dataSrc)) {
-    throw "[build][ERROR] missing data source: $dataSrc"
-}
-
-Write-Host "[build] data..."
-Copy-Item $dataSrc -Destination $dataDst -Recurse -Force
-
-# -----------------------------
-# COPY: ANALYSIS（公開対象）
-# -----------------------------
-$analysisSrc = Join-Path $Root "analysis"
-$analysisDst = Join-Path $dist "analysis"
-
-if (!(Test-Path $analysisSrc)) {
-    throw "[build][ERROR] missing analysis source: $analysisSrc"
-}
-
-Write-Host "[build] analysis..."
-Copy-Item $analysisSrc -Destination $analysisDst -Recurse -Force
-
-# -----------------------------
-# COPY: ROOT FILES（強制）
-# -----------------------------
-Write-Host "[build] root files..."
-
-foreach ($file in $requiredRootFiles) {
-    $src = Join-Path $Root $file
-    if (!(Test-Path $src)) {
-        throw "[build][ERROR] required root file missing: $file"
-    }
-
-    Copy-Item $src -Destination $dist -Force
-    Write-Host "[build] copied root file: $file"
-}
-
-# -----------------------------
-# PRECHECK: REQUIRED DATA FILES
-# -----------------------------
-Write-Host "[build] precheck required data..."
-
-foreach ($relPath in $requiredDataFiles) {
-    $fullPath = Join-Path $Root $relPath
-    if (!(Test-Path $fullPath)) {
-        throw "[build][ERROR] required data missing: $relPath"
-    }
-    Write-Host "[build] OK: $relPath"
-}
-
-# -----------------------------
-# MANIFEST GENERATION
-# -----------------------------
-Write-Host "[build] generating manifest..."
-
-$files = Get-ChildItem -Path $dist -Recurse -File
-
-$manifest = @()
-
-foreach ($f in $files) {
-    $relative = $f.FullName.Replace($dist + "\", "")
-    $manifest += @{
-        path = $relative
-        size = $f.Length
-        last_write = $f.LastWriteTimeUtc.ToString("o")
+foreach ($f in $required) {
+    $p = Join-Path $dataPredictionDst $f
+    if (!(Test-Path $p)) {
+        throw "Missing required file: $p"
     }
 }
 
-$manifestObject = @{
-    build_time_utc = (Get-Date).ToUniversalTime().ToString("o")
-    file_count = $manifest.Count
-    files = $manifest
+Log "All required prediction files OK"
+
+# ---------------------------------------------------------
+# 6. History check
+# ---------------------------------------------------------
+$historyDir = Join-Path $dataPredictionDst "history"
+
+if (!(Test-Path $historyDir)) {
+    Log "[WARN] history directory not found"
+} else {
+    $count = (Get-ChildItem $historyDir -Recurse -Filter prediction.json | Measure-Object).Count
+    Log "History snapshots: $count"
 }
 
-$manifestObject | ConvertTo-Json -Depth 5 | Out-File -Encoding UTF8 $manifestPath
-
-Write-Host "[build] manifest created: $manifestPath"
-
-# -----------------------------
-# SUMMARY
-# -----------------------------
-Write-Host "-----------------------------------------"
-Write-Host "[build] FILE COUNT: $($manifest.Count)"
-Write-Host "[build] SUCCESS"
-Write-Host "-----------------------------------------"
+# ---------------------------------------------------------
+# 7. Summary
+# ---------------------------------------------------------
+Log "Payload build complete"
+Log "OUTPUT: $out"

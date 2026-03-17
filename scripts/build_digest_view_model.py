@@ -37,11 +37,58 @@ def first_non_empty(*values: Any) -> Optional[str]:
     return None
 
 
+def safe_list(value: Any) -> List[Any]:
+    return value if isinstance(value, list) else []
+
+
+def pick_number(*values: Any) -> Optional[float]:
+    for value in values:
+        try:
+            n = float(value)
+        except Exception:
+            continue
+        if n == n:  # not NaN
+            return n
+    return None
+
+
+def normalize_percent_number(value: Any) -> Optional[float]:
+    n = pick_number(value)
+    if n is None:
+        return None
+    return n * 100.0 if n <= 1.0 else n
+
+
+def normalize_list_items(value: Any) -> List[str]:
+    items: List[str] = []
+    for item in safe_list(value):
+        if isinstance(item, str) and item.strip():
+            items.append(item.strip())
+        elif isinstance(item, dict):
+            text = first_non_empty(
+                item.get("summary"),
+                item.get("label"),
+                item.get("name"),
+                item.get("title"),
+                item.get("description"),
+                item.get("message"),
+                item.get("text"),
+                item.get("signal"),
+                item.get("kind"),
+            )
+            if text:
+                items.append(text)
+
+    seen = set()
+    unique: List[str] = []
+    for item in items:
+        if item not in seen:
+            seen.add(item)
+            unique.append(item)
+    return unique
+
+
 def extract_summary_text(summary_json: Dict[str, Any], daily_summary_json: Dict[str, Any]) -> Optional[str]:
-    """
-    Prefer the analyzer's summary.json text.
-    Fall back to daily_summary_latest.json only if it already contains a real summary-like field.
-    """
     candidates: List[Any] = [
         summary_json.get("summary"),
         summary_json.get("text"),
@@ -133,12 +180,73 @@ def extract_highlights(summary_json: Dict[str, Any], daily_summary_json: Dict[st
     return highlights[:8]
 
 
+def extract_prediction_block(prediction_json: Dict[str, Any]) -> Dict[str, Any]:
+    if not prediction_json:
+        return {
+            "available": False,
+            "as_of": "",
+            "generated_at": "",
+            "engine_version": "",
+            "risk": "",
+            "dominant_scenario": "",
+            "confidence": None,
+            "summary": "",
+            "drivers": [],
+            "watchpoints": [],
+            "action_bias": "",
+            "historical_context": [],
+            "source": "analysis/prediction/prediction_latest.json",
+        }
+
+    dominant_scenario = first_non_empty(
+        prediction_json.get("dominant_scenario"),
+        prediction_json.get("dominant_branch"),
+        prediction_json.get("scenario"),
+        prediction_json.get("regime"),
+    )
+
+    confidence_raw = pick_number(prediction_json.get("confidence"))
+    confidence_pct = normalize_percent_number(confidence_raw)
+
+    summary = first_non_empty(
+        prediction_json.get("summary"),
+        prediction_json.get("prediction_statement"),
+        prediction_json.get("primary_narrative"),
+    )
+
+    drivers = normalize_list_items(prediction_json.get("key_drivers"))
+    watchpoints = normalize_list_items(prediction_json.get("monitoring_priorities"))
+    historical_context = normalize_list_items(prediction_json.get("historical_context"))
+
+    return {
+        "available": True,
+        "as_of": first_non_empty(
+            prediction_json.get("as_of"),
+            prediction_json.get("date"),
+            prediction_json.get("generated_at"),
+        ) or "",
+        "generated_at": first_non_empty(prediction_json.get("generated_at")) or "",
+        "engine_version": first_non_empty(prediction_json.get("engine_version")) or "",
+        "risk": first_non_empty(prediction_json.get("risk")) or "",
+        "dominant_scenario": dominant_scenario or "",
+        "confidence": confidence_raw,
+        "confidence_pct": confidence_pct,
+        "summary": summary or "",
+        "drivers": drivers[:5],
+        "watchpoints": watchpoints[:5],
+        "action_bias": first_non_empty(prediction_json.get("action_bias")) or "",
+        "historical_context": historical_context[:3],
+        "source": "analysis/prediction/prediction_latest.json",
+    }
+
+
 def build_payload(
     date_value: str,
     summary_text: Optional[str],
     titles: List[str],
     highlights: List[str],
     daily_summary_json: Dict[str, Any],
+    prediction_json: Dict[str, Any],
 ) -> Dict[str, Any]:
     new_urls = daily_summary_json.get("new_urls")
     if not isinstance(new_urls, list):
@@ -147,6 +255,8 @@ def build_payload(
     n_events = daily_summary_json.get("n_events")
     if not isinstance(n_events, int):
         n_events = len(titles)
+
+    prediction_block = extract_prediction_block(prediction_json)
 
     return {
         "status": "ok",
@@ -160,6 +270,7 @@ def build_payload(
             "n_events": n_events,
             "new_url_count": len(new_urls),
         },
+        "prediction": prediction_block,
     }
 
 
@@ -171,17 +282,20 @@ def main() -> None:
 
     root = Path(args.root).resolve()
 
-    analysis_dir = root / "data" / "world_politics" / "analysis"
+    world_analysis_dir = root / "data" / "world_politics" / "analysis"
     digest_dir = root / "data" / "digest"
     digest_view_dir = digest_dir / "view"
+    prediction_analysis_dir = root / "analysis" / "prediction"
 
-    daily_news_path = analysis_dir / f"daily_news_{args.date}.json"
-    daily_summary_latest_path = analysis_dir / "daily_summary_latest.json"
-    summary_json_path = analysis_dir / "summary.json"
+    daily_news_path = world_analysis_dir / f"daily_news_{args.date}.json"
+    daily_summary_latest_path = world_analysis_dir / "daily_summary_latest.json"
+    summary_json_path = world_analysis_dir / "summary.json"
+    prediction_latest_path = prediction_analysis_dir / "prediction_latest.json"
 
     daily_news_json = load_json(daily_news_path)
     daily_summary_json = load_json(daily_summary_latest_path)
     summary_json = load_json(summary_json_path)
+    prediction_json = load_json(prediction_latest_path)
 
     summary_text = extract_summary_text(summary_json, daily_summary_json)
     titles = extract_titles(daily_news_json, daily_summary_json)
@@ -193,6 +307,7 @@ def main() -> None:
         titles=titles,
         highlights=highlights,
         daily_summary_json=daily_summary_json,
+        prediction_json=prediction_json,
     )
 
     dated_path = digest_view_dir / f"{args.date}.json"
@@ -211,6 +326,14 @@ def main() -> None:
         print("[OK] summary loaded")
     else:
         print("[WARN] summary missing (summary.json / daily_summary_latest.json text not found)")
+
+    if payload["prediction"]["available"]:
+        print("[OK] prediction integrated")
+        print(f"[OK] prediction risk       : {payload['prediction']['risk']}")
+        print(f"[OK] prediction dominant   : {payload['prediction']['dominant_scenario']}")
+        print(f"[OK] prediction confidence : {payload['prediction']['confidence_pct']}")
+    else:
+        print("[WARN] prediction missing (analysis/prediction/prediction_latest.json not found)")
 
 
 if __name__ == "__main__":
