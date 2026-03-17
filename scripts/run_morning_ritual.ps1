@@ -206,19 +206,19 @@ if (-not $SkipFx) {
         -Name "run_daily_fx_rates" `
         -RepoRoot $repoRoot `
         -ScriptPath "scripts/run_daily_fx_rates.ps1" `
-        -Arguments @("-Date", $runDate)
+        -Arguments @()
 
     Invoke-PowerShellScript `
         -Name "run_daily_fx_inputs" `
         -RepoRoot $repoRoot `
         -ScriptPath "scripts/run_daily_fx_inputs.ps1" `
-        -Arguments @("-Date", $runDate)
+        -Arguments @()
 
     Invoke-PowerShellScript `
         -Name "run_daily_fx_overlay" `
         -RepoRoot $repoRoot `
         -ScriptPath "scripts/run_daily_fx_overlay.ps1" `
-        -Arguments @("-Date", $runDate)
+        -Arguments @()
 
     Invoke-PowerShellScript `
         -Name "run_daily_fx_decision" `
