@@ -7,8 +7,8 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <title>Digest - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260318-digest-fx-2" />
-  <link rel="stylesheet" href="/static/digest.css?v=20260318-digest-compact-1" />
+  <link rel="stylesheet" href="/static/app.css?v=20260318-digest-final-1" />
+  <link rel="stylesheet" href="/static/digest.css?v=20260318-digest-final-1" />
 </head>
 <body>
   <div id="site-header"></div>
@@ -21,17 +21,17 @@
             <div class="h1">Digest</div>
             <p id="heroText" class="sub">Digest ViewModel を優先し、Summary / Highlights / Prediction / FX を表示します。Articles は article card が無ければ world view または news に fallback します。</p>
 
-            <div class="card digest-card-top">
+            <section class="card digest-card-top section-no-margin">
               <div class="sectionTitle">
                 <h2>Global Status</h2>
                 <span class="hint">analysis/global_status_latest.json</span>
               </div>
               <div data-global-status data-page="digest"></div>
-            </div>
+            </section>
           </div>
 
           <div class="digest-top">
-            <div class="card summaryCard">
+            <section class="card summaryCard">
               <div class="sectionTitle">
                 <h2>Summary</h2>
                 <span id="summaryHint" class="hint">loading…</span>
@@ -41,9 +41,9 @@
               <div class="pillrow pillrow-top">
                 <span id="summarySource" class="pill">source: --</span>
               </div>
-            </div>
+            </section>
 
-            <div class="card highlightsCard">
+            <section class="card highlightsCard">
               <div class="sectionTitle">
                 <h2>Highlights</h2>
                 <span id="highlightsHint" class="hint">digest preferred</span>
@@ -107,10 +107,10 @@
               <div class="pillrow pillrow-top">
                 <span id="highlightsSource" class="pill">source: --</span>
               </div>
-            </div>
+            </section>
           </div>
 
-          <div class="card articles-card-top">
+          <section class="card articles-card-top">
             <div class="sectionTitle">
               <h2>Articles</h2>
               <div class="hint"><span id="renderedCount">--</span> / <span id="totalCount">--</span></div>
@@ -132,7 +132,7 @@
             <div class="pillrow pillrow-top">
               <span id="articlesSource" class="pill">source: --</span>
             </div>
-          </div>
+          </section>
         </section>
       </div>
     </main>
@@ -140,8 +140,8 @@
 
   <div id="site-footer"></div>
 
-  <script src="/static/common/global_status.js?v=20260318-digest-fx-2"></script>
-  <script src="/static/common/layout.js?v=20260318-digest-fx-2"></script>
+  <script src="/static/common/global_status.js?v=20260318-digest-final-1"></script>
+  <script src="/static/common/layout.js?v=20260318-digest-final-1"></script>
 
   <script>
     (function () {

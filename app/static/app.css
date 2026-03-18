@@ -43,14 +43,14 @@ Compact Layout Tuning 2026-03-18
   --space-6: 32px;
 
   --container-max: 1280px;
-  --panel-gap: 14px;
-  --card-gap: 10px;
-  --section-gap: 24px;
+  --panel-gap: 12px;
+  --card-gap: 8px;
+  --section-gap: 18px;
 
-  --topbar-min-height: 68px;
-  --topbar-status-width: 400px;
-  --topbar-gap: 14px;
-  --topbar-health-width: 300px;
+  --topbar-min-height: 60px;
+  --topbar-status-width: 360px;
+  --topbar-gap: 10px;
+  --topbar-health-width: 264px;
 }
 
 /* Reset / Base */
@@ -138,7 +138,7 @@ html[data-layout-ready="1"] #site-footer {
 
 .sub,
 .hero-summary {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   font-size: 14px;
   line-height: 1.62;
   color: var(--text-muted);
@@ -162,8 +162,8 @@ html[data-layout-ready="1"] #site-footer {
   max-width: var(--container-max);
   margin-left: auto;
   margin-right: auto;
-  padding-left: 18px;
-  padding-right: 18px;
+  padding-left: 16px;
+  padding-right: 16px;
 }
 
 /* Header / Navigation */
@@ -179,7 +179,7 @@ html[data-layout-ready="1"] #site-footer {
   align-items: center;
   gap: var(--topbar-gap);
   min-height: var(--topbar-min-height);
-  padding: 10px 0;
+  padding: 8px 0;
 }
 
 .topbar-inner--three {
@@ -189,9 +189,9 @@ html[data-layout-ready="1"] #site-footer {
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: .2px;
   color: var(--text-main);
@@ -222,7 +222,7 @@ nav,
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
   min-width: 0;
 }
@@ -235,13 +235,13 @@ nav a,
   align-items: center;
   justify-content: center;
   min-width: 0;
-  height: 30px;
-  padding: 5px 10px;
+  height: 28px;
+  padding: 4px 9px;
   color: var(--text-muted);
   text-decoration: none;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: 12px;
   line-height: 18px;
   white-space: nowrap;
   transition:
@@ -282,7 +282,7 @@ nav a.active,
   min-width: var(--topbar-health-width);
   text-align: right;
   color: var(--text-main);
-  font-size: 13px;
+  font-size: 12px;
   line-height: 18px;
   white-space: nowrap;
   overflow: hidden;
@@ -296,7 +296,7 @@ nav a.active,
   background: var(--panel-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: 16px;
+  padding: 14px;
   margin-top: var(--section-gap);
   box-shadow: var(--shadow-sm);
 }
@@ -305,12 +305,12 @@ nav a.active,
   background: var(--panel-bg-soft);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 12px 14px;
+  padding: 8px 10px;
   min-width: 0;
 }
 
 .section {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 /* Hero */
@@ -318,7 +318,7 @@ nav a.active,
   margin-top: var(--section-gap);
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 16px;
+  gap: 12px;
 }
 
 .hero-meta {
@@ -332,12 +332,12 @@ nav a.active,
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .section-title {
   margin: 0;
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1.25;
   font-weight: 700;
   color: var(--text-main);
@@ -355,12 +355,12 @@ nav a.active,
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .sectionTitle h2 {
   margin: 0;
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1.25;
   font-weight: 700;
   color: var(--text-main);
@@ -374,14 +374,14 @@ nav a.active,
   margin-top: 0;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .global-status-panel,
 .status-shell {
   display: grid;
   gap: 10px;
-  padding: 12px 14px;
+  padding: 8px 10px;
   border-radius: 16px;
   border: 1px solid rgba(120,160,220,.18);
   background: linear-gradient(180deg, rgba(10,16,30,.66), rgba(7,12,24,.48));
@@ -395,13 +395,13 @@ nav a.active,
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .global-status-title,
 .status-title {
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: .16em;
   text-transform: uppercase;
   opacity: .82;
@@ -413,7 +413,7 @@ nav a.active,
   background: rgba(8,14,28,.22);
   border: 1px solid rgba(120,160,220,.12);
   border-radius: 12px;
-  padding: 10px 10px 9px;
+  padding: 8px 9px 8px;
   min-width: 0;
 }
 
@@ -422,12 +422,12 @@ nav a.active,
   font-size: 10px;
   letter-spacing: .08em;
   text-transform: uppercase;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
 }
 
 .status-value {
   margin-top: 0;
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1.12;
   font-weight: 700;
   color: var(--text-main);
@@ -437,9 +437,9 @@ nav a.active,
 }
 
 .status-sub {
-  margin-top: 3px;
+  margin-top: 2px;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 10px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -449,21 +449,21 @@ nav a.active,
 .pillrow {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
 }
 
 .pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   min-height: 28px;
-  padding: 5px 9px;
+  padding: 4px 8px;
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,.08);
   background: rgba(255,255,255,.04);
   color: var(--text-main);
-  font-size: 11px;
+  font-size: 10px;
   line-height: 1;
 }
 
@@ -472,8 +472,8 @@ a.btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 32px;
-  padding: 7px 11px;
+  min-height: 30px;
+  padding: 6px 10px;
   border-radius: 10px;
   border: 1px solid var(--border-color);
   background: rgba(255,255,255,.03);
@@ -494,8 +494,8 @@ a.btn:hover {
 
 .select,
 select {
-  min-height: 32px;
-  padding: 5px 9px;
+  min-height: 30px;
+  padding: 4px 8px;
   border-radius: 10px;
   border: 1px solid var(--border-color);
   background: rgba(255,255,255,.03);
@@ -505,8 +505,8 @@ select {
 input[type="text"],
 input[type="search"],
 textarea {
-  min-height: 32px;
-  padding: 7px 9px;
+  min-height: 30px;
+  padding: 6px 8px;
   border-radius: 10px;
   border: 1px solid var(--border-color);
   background: rgba(255,255,255,.03);
@@ -631,7 +631,7 @@ textarea {
 .overlay-kpi {
   border: 1px solid rgba(120,160,220,.12);
   border-radius: 14px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   background: rgba(8,14,28,.18);
   min-width: 0;
 }
@@ -641,7 +641,7 @@ textarea {
   letter-spacing: .08em;
   text-transform: uppercase;
   opacity: .72;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
   color: var(--text-dim);
 }
 
@@ -655,8 +655,8 @@ textarea {
 }
 
 .metric-sub {
-  margin-top: 3px;
-  font-size: 11px;
+  margin-top: 2px;
+  font-size: 10px;
   line-height: 1.4;
   color: var(--text-muted);
   opacity: .82;
@@ -666,7 +666,7 @@ textarea {
 .overlay-kpis {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 /* Generic Grids */
@@ -701,7 +701,7 @@ textarea {
 .list-stack,
 .timeline {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 /* Rows / Timeline / Lists */
@@ -710,7 +710,7 @@ textarea {
   background: var(--panel-bg-soft);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 10px 12px;
+  padding: 8px 10px;
 }
 
 .timeline-row {
@@ -739,13 +739,13 @@ textarea {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 6px;
+  gap: 5px;
 }
 
 .plain-list li {
   border: 1px solid rgba(120,160,220,.10);
   border-radius: 10px;
-  padding: 7px 9px;
+  padding: 6px 8px;
   background: rgba(255,255,255,.015);
   color: var(--text-muted);
   font-size: 12px;
@@ -754,9 +754,9 @@ textarea {
 
 /* Footer */
 .footer {
-  margin-top: 34px;
+  margin-top: 26px;
   border-top: 1px solid var(--border-color);
-  padding: 16px 0 20px;
+  padding: 14px 0 18px;
   color: var(--text-dim);
   font-size: 12px;
   line-height: 1.55;
@@ -765,18 +765,18 @@ textarea {
 /* Responsive */
 @media (max-width: 1180px) {
   #site-header {
-    min-height: 108px;
+    min-height: 96px;
   }
 
   .topbar {
-    min-height: 108px;
+    min-height: 96px;
   }
 
   .topbar-inner,
   .topbar-inner--three {
     grid-template-columns: 1fr;
     align-items: flex-start;
-    min-height: 108px;
+    min-height: 96px;
   }
 
   .brand {
@@ -830,24 +830,24 @@ textarea {
 
 @media (max-width: 700px) {
   #site-header {
-    min-height: 140px;
+    min-height: 126px;
   }
 
   .topbar {
-    min-height: 140px;
+    min-height: 126px;
   }
 
   .container {
-    padding-left: 14px;
-    padding-right: 14px;
+    padding-left: 12px;
+    padding-right: 12px;
   }
 
   .panel {
-    padding: 14px;
+    padding: 12px;
   }
 
   .card {
-    padding: 11px 12px;
+    padding: 10px 11px;
   }
 
   .global-status,
@@ -867,12 +867,12 @@ textarea {
 
   .h1,
   .hero-title {
-    font-size: 20px;
+    font-size: 19px;
   }
 
   .metric-value,
   .overlay-kpi .value {
-    font-size: 22px;
+    font-size: 21px;
   }
 }
 

@@ -4,445 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sentiment - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260315-ui-fix-2" />
-  <style>
-    body{margin:0;}
-
-    .gridTop{
-      display:grid;
-      grid-template-columns:.92fr 1.08fr;
-      gap:18px;
-      margin-top:14px;
-      align-items:stretch;
-    }
-
-    .controlsCard,
-    .trendCardMain{
-      height:100%;
-    }
-
-    .kpiGrid{
-      display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:10px;
-      margin-top:12px;
-    }
-
-    .kpi{
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.14);
-      border-radius:14px;
-      padding:10px 12px;
-      min-height:64px;
-    }
-
-    .kpi .k{font-size:12px;opacity:.75;}
-    .kpi .v{font-size:24px;font-weight:700;margin-top:3px;}
-    .kpi .s{font-size:12px;opacity:.70;}
-
-    .sourceBox{
-      margin-top:10px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.12);
-      border-radius:14px;
-      padding:10px 12px;
-      overflow:hidden;
-    }
-
-    .sourceBox .path{
-      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
-      opacity:.9;
-      white-space:pre-wrap;
-      word-break:break-word;
-    }
-
-    .searchRow{
-      display:grid;
-      grid-template-columns:1.4fr .58fr .68fr auto;
-      gap:10px;
-      align-items:center;
-      margin-top:12px;
-    }
-
-    .check{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      padding:10px 12px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(0,0,0,.16);
-      user-select:none;
-      min-height:42px;
-      white-space:nowrap;
-    }
-
-    .tag{
-      display:inline-flex;
-      align-items:center;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(0,0,0,.16);
-      font-size:12px;
-      opacity:.92;
-      white-space:nowrap;
-    }
-
-    .hero-top{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:12px;
-      flex-wrap:wrap;
-    }
-
-    .hero-subpath{
-      margin-top:6px;
-      font-size:13px;
-      opacity:.82;
-    }
-
-    .hero-subpath code{
-      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-    }
-
-    .top-pills{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      align-items:center;
-    }
-
-    .howBand{
-      margin-top:16px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.12);
-      border-radius:14px;
-      padding:14px;
-    }
-
-    .howGrid{
-      display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:16px;
-    }
-
-    .howItem{
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(255,255,255,.02);
-      border-radius:12px;
-      padding:10px 12px;
-      font-size:13px;
-      line-height:1.6;
-      opacity:.92;
-    }
-
-    .howItem strong{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      width:18px;
-      height:18px;
-      border-radius:4px;
-      background:rgba(106,164,255,.18);
-      color:#8fc2ff;
-      font-size:11px;
-      margin-right:6px;
-    }
-
-    .debugBox{
-      margin-top:12px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.12);
-      border-radius:14px;
-      padding:10px 12px;
-      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
-      font-size:12px;
-      white-space:pre-wrap;
-      opacity:.85;
-    }
-
-    .trendCardMain{
-      display:flex;
-      flex-direction:column;
-    }
-
-    .trendTop{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:12px;
-      flex-wrap:wrap;
-      margin-bottom:12px;
-    }
-
-    .trendTitle{
-      font-size:18px;
-      font-weight:700;
-    }
-
-    .trendLead{
-      margin-top:4px;
-      font-size:13px;
-      opacity:.74;
-    }
-
-    .legendRow{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      align-items:center;
-    }
-
-    .legendTag{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      min-height:30px;
-      padding:5px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(0,0,0,.18);
-      font-size:12px;
-      white-space:nowrap;
-    }
-
-    .legendDot{
-      width:8px;
-      height:8px;
-      border-radius:50%;
-      display:inline-block;
-    }
-
-    .dotRisk{background:#ff7878;}
-    .dotPos{background:#5ef0c2;}
-    .dotUnc{background:#f0c85e;}
-
-    .trendAxisGrid{
-      display:grid;
-      grid-template-columns:1fr;
-      gap:12px;
-      flex:1 1 auto;
-    }
-
-    .axisCard{
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(8,14,28,.20);
-      border-radius:16px;
-      padding:12px 14px;
-      min-height:122px;
-      display:grid;
-      grid-template-columns:220px 1fr;
-      gap:14px;
-      align-items:center;
-    }
-
-    .axisMeta{
-      min-width:0;
-    }
-
-    .axisName{
-      font-size:13px;
-      opacity:.72;
-      margin-bottom:4px;
-    }
-
-    .axisValue{
-      font-size:28px;
-      font-weight:700;
-      line-height:1.1;
-    }
-
-    .axisDelta{
-      margin-top:8px;
-      display:inline-flex;
-      align-items:center;
-      min-height:28px;
-      padding:4px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      font-size:12px;
-      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-      background:rgba(255,255,255,.04);
-      white-space:nowrap;
-    }
-
-    .axisRisk .axisValue{color:#ff9a9a;}
-    .axisPos .axisValue{color:#79f1d0;}
-    .axisUnc .axisValue{color:#f1d37b;}
-
-    .axisRisk .axisDelta{border-color:rgba(255,120,120,.30);background:rgba(255,120,120,.08);color:#ffabab;}
-    .axisPos .axisDelta{border-color:rgba(120,255,200,.28);background:rgba(120,255,200,.08);color:#85f2d3;}
-    .axisUnc .axisDelta{border-color:rgba(255,220,120,.28);background:rgba(255,220,120,.08);color:#f1d37b;}
-
-    .axisChartWrap{
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(255,255,255,.02);
-      border-radius:14px;
-      padding:10px;
-      min-height:98px;
-      display:flex;
-      align-items:center;
-    }
-
-    .axisCanvas{
-      width:100%;
-      height:78px;
-      display:block;
-    }
-
-    .tableWrap{margin-top:14px;}
-
-    .tbl{
-      width:100%;
-      border-collapse:separate;
-      border-spacing:0;
-      overflow:hidden;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.12);
-    }
-
-    .tbl th,
-    .tbl td{
-      padding:10px 10px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-      vertical-align:top;
-      text-align:left;
-      font-size:13px;
-    }
-
-    .tbl th{
-      font-size:12px;
-      opacity:.78;
-      background:rgba(255,255,255,.03);
-    }
-
-    .tbl tr:last-child td{border-bottom:none;}
-
-    .aTitle{
-      font-weight:700;
-      text-decoration:none;
-      color:inherit;
-    }
-
-    .aTitle:hover{text-decoration:underline;}
-
-    .aUrl{
-      font-size:12px;
-      opacity:.70;
-      margin-top:4px;
-      word-break:break-all;
-    }
-
-    .aSummary{
-      margin-top:6px;
-      font-size:12px;
-      line-height:1.55;
-      opacity:.84;
-      display:-webkit-box;
-      -webkit-line-clamp:2;
-      -webkit-box-orient:vertical;
-      overflow:hidden;
-    }
-
-    .aSrc{
-      font-size:12px;
-      opacity:.80;
-    }
-
-    .thumb{
-      width:48px;
-      height:48px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.06);
-      overflow:hidden;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      color:rgba(255,255,255,.72);
-      font-size:18px;
-    }
-
-    .thumb img{
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      display:block;
-    }
-
-    .metricRow{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      align-items:center;
-    }
-
-    .mPill{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(0,0,0,.18);
-      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
-      font-size:12px;
-      min-width:72px;
-    }
-
-    .mRisk{border-color:rgba(255,120,120,.38);background:rgba(255,120,120,.10);}
-    .mPos{border-color:rgba(120,255,200,.32);background:rgba(120,255,200,.10);}
-    .mUnc{border-color:rgba(255,220,120,.34);background:rgba(255,220,120,.10);}
-    .mNet{border-color:rgba(160,140,255,.32);background:rgba(160,140,255,.10);}
-
-    .sentBadge{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      min-height:24px;
-      padding:4px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(0,0,0,.18);
-      font-size:12px;
-      font-weight:600;
-      margin-top:8px;
-      white-space:nowrap;
-    }
-
-    .sent-pos{border-color:rgba(120,255,200,.32);background:rgba(120,255,200,.10);color:#8ef0d2;}
-    .sent-neg{border-color:rgba(255,120,120,.38);background:rgba(255,120,120,.10);color:#ff9e9e;}
-    .sent-neu{border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:#d8dde8;}
-    .sent-mix{border-color:rgba(255,220,120,.34);background:rgba(255,220,120,.10);color:#f1d37b;}
-    .sent-unk{border-color:rgba(160,140,255,.32);background:rgba(160,140,255,.10);color:#c8b9ff;}
-
-    .emptyRow{
-      text-align:center;
-      padding:22px 16px;
-      opacity:.78;
-      line-height:1.7;
-    }
-
-    @media (max-width:1200px){
-      .kpiGrid{grid-template-columns:repeat(2,minmax(0,1fr));}
-      .searchRow{grid-template-columns:1fr;}
-      .howGrid{grid-template-columns:repeat(2,minmax(0,1fr));}
-    }
-
-    @media (max-width:980px){
-      .gridTop{grid-template-columns:1fr;}
-      .axisCard{grid-template-columns:1fr;}
-    }
-
-    @media (max-width:700px){
-      .kpiGrid{grid-template-columns:1fr;}
-      .howGrid{grid-template-columns:1fr;}
-      .axisCanvas{height:72px;}
-    }
-  </style>
+  <link rel="stylesheet" href="/static/app.css?v=20260318-sentiment-compact-1" />
+  <link rel="stylesheet" href="/static/sentiment.css?v=20260318-sentiment-compact-1" />
 </head>
 <body>
   <div id="site-header"></div>
@@ -485,7 +48,7 @@
                 </div>
               </div>
 
-              <div class="pillrow" style="margin-top:12px;">
+              <div class="top-pills">
                 <a class="btn" id="btnReload" href="#">Reload</a>
                 <a class="btn" id="btnReset" href="#">Reset filters</a>
                 <a class="btn" id="btnOpenSent" href="#" target="_blank" rel="noopener noreferrer">Open sentiment_latest.json</a>
@@ -516,10 +79,10 @@
               </div>
 
               <div class="sourceBox">
-                <div class="k" style="opacity:.70; font-size:12px;">sources</div>
+                <div class="hint">sources</div>
                 <div class="path" id="kSrc">sentiment: -</div>
-                <div class="muted" style="margin-top:4px; font-size:12px;" id="kWorld">world: -</div>
-                <div class="muted" style="margin-top:4px; font-size:12px;" id="kTrend">trend: -</div>
+                <div class="hint" id="kWorld">world: -</div>
+                <div class="hint" id="kTrend">trend: -</div>
               </div>
 
               <div class="searchRow">
@@ -617,10 +180,10 @@
           <table class="tbl">
             <thead>
               <tr>
-                <th style="width:66px;"></th>
+                <th></th>
                 <th>title / summary / url</th>
-                <th style="width:190px;">source / date / sentiment</th>
-                <th style="width:340px;">metrics</th>
+                <th>source / date / sentiment</th>
+                <th>metrics</th>
               </tr>
             </thead>
             <tbody id="rows"></tbody>
@@ -1123,9 +686,9 @@
 
       var TS_CAND = [
         "/analysis/world_politics/analysis/sentiment_timeseries.csv",
-        "/analysis/sentiment_timeseries.csv",
+        "/data/world_politics/analysis/sentiment_timeseries.csv",
         "/data/digest/sentiment_timeseries.csv",
-        "/data/world_politics/analysis/sentiment_timeseries.csv"
+        "/analysis/sentiment_timeseries.csv"
       ];
 
       var state = {
@@ -1138,138 +701,139 @@
         overview: null
       };
 
-      function updateDebug(text){ $("dbg").textContent = text; }
+      function updateDebug(text){
+        $("dbg").textContent = safeText(text || "");
+      }
 
       function updateLocalPills(){
-        var itemsMode = (state.items && state.items.length) ? "good" : "warn";
-        var asofMode = (state.asOf && state.asOf !== "-") ? "good" : "";
-        var trendMode = (state.series && state.series.length) ? "good" : "warn";
-        setLocalPill("localPillAsOf", asofMode, "as_of: " + (state.asOf || "-"));
-        setLocalPill("localPillItems", itemsMode, "items: " + String(state.items ? state.items.length : 0));
-        setLocalPill("localPillRendered", itemsMode, "rendered: " + ($("renderedN") ? $("renderedN").textContent : "--"));
-        setLocalPill("localPillTrend", trendMode, "trend_points: " + String(state.series ? state.series.length : 0));
+        setLocalPill("localPillAsOf", state.asOf && state.asOf !== "-" ? "good" : "", "as_of: " + (state.asOf || "--"));
+        setLocalPill("localPillItems", state.items.length ? "good" : "warn", "items: " + state.items.length);
+        setLocalPill("localPillRendered", state.items.length ? "good" : "warn", "rendered: " + $("renderedN").textContent);
+        setLocalPill("localPillTrend", state.series.length ? "good" : "warn", "trend_points: " + state.series.length);
+
+        safeSetText("kSrcInline", state.sentPath);
+        safeSetText("kWorldInline", state.worldPath);
+        safeSetText("kTrendInline", state.tsPath);
+
+        safeSetText("kSrc", "sentiment: " + state.sentPath);
+        safeSetText("kWorld", "world: " + state.worldPath);
+        safeSetText("kTrend", "trend: " + state.tsPath);
+
+        safeSetHref("btnOpenSentTop", state.sentPath !== "-" ? state.sentPath : "#");
+        safeSetHref("btnOpenTSTop", state.tsPath !== "-" ? state.tsPath : "#");
+        safeSetHref("btnOpenSent", state.sentPath !== "-" ? state.sentPath : "#");
+        safeSetHref("btnOpenTS", state.tsPath !== "-" ? state.tsPath : "#");
+
+        if(state.overview){
+          safeSetText("kAsOf", state.asOf || "--");
+          safeSetText("kRisk", fmt3(state.overview.risk));
+          safeSetText("kPos", fmt3(state.overview.pos));
+          safeSetText("kUnc", fmt3(state.overview.unc));
+        } else {
+          safeSetText("kAsOf", "--");
+          safeSetText("kRisk", "--");
+          safeSetText("kPos", "--");
+          safeSetText("kUnc", "--");
+        }
       }
 
       function drawAll(){
-        drawAxis($("cvRisk"), state.series, "risk", "rgba(255,120,120,.95)", "rgba(255,120,120,.08)");
-        drawAxis($("cvPos"), state.series, "pos", "rgba(120,255,200,.95)", "rgba(120,255,200,.06)");
-        drawAxis($("cvUnc"), state.series, "unc", "rgba(255,220,120,.95)", "rgba(255,220,120,.06)");
+        var series = state.series || [];
+        var ov = state.overview || {};
 
-        var last = (state.series && state.series.length) ? state.series[state.series.length - 1] : null;
-        safeSetText("riskNow", last ? fmt3(last.risk) : "--");
-        safeSetText("posNow", last ? fmt3(last.pos) : "--");
-        safeSetText("uncNow", last ? fmt3(last.unc) : "--");
-        safeSetText("riskDelta", formatDelta(state.series, "risk"));
-        safeSetText("posDelta", formatDelta(state.series, "pos"));
-        safeSetText("uncDelta", formatDelta(state.series, "unc"));
-      }
+        safeSetText("riskNow", fmt3(ov.risk));
+        safeSetText("posNow", fmt3(ov.pos));
+        safeSetText("uncNow", fmt3(ov.unc));
 
-      function applyOverview(overview){
-        state.overview = overview;
-        state.asOf = overview.asOf || "-";
-        safeSetText("kAsOf", state.asOf);
-        safeSetText("kRisk", fmt3(overview.risk));
-        safeSetText("kPos", fmt3(overview.pos));
-        safeSetText("kUnc", fmt3(overview.unc));
-      }
+        safeSetText("riskDelta", formatDelta(series, "risk"));
+        safeSetText("posDelta", formatDelta(series, "pos"));
+        safeSetText("uncDelta", formatDelta(series, "unc"));
 
-      function loadTrend(items, overview){
-        return fetchTextFirst(TS_CAND).then(function(ts){
-          state.tsPath = ts.path;
-          safeSetText("kTrend", "trend: " + state.tsPath);
-          safeSetText("kTrendInline", state.tsPath);
-          safeSetHref("btnOpenTS", state.tsPath);
-          safeSetHref("btnOpenTSTop", state.tsPath);
-          var series = parseTimeseriesCsv(ts.text);
-          if(!series.length) series = aggregateFromItems(items);
-          if(!series.length) series = makeFlatSeriesFromOverview(state.asOf, overview.risk, overview.pos, overview.unc);
-          state.series = series;
-        }).catch(function(){
-          state.tsPath = "(fallback)";
-          safeSetText("kTrend", "trend: (fallback)");
-          safeSetText("kTrendInline", "(fallback)");
-          safeSetHref("btnOpenTS", "#");
-          safeSetHref("btnOpenTSTop", "#");
-          var series = aggregateFromItems(items);
-          if(!series.length) series = makeFlatSeriesFromOverview(state.asOf, overview.risk, overview.pos, overview.unc);
-          state.series = series;
-        });
+        drawAxis($("cvRisk"), series, "risk", "#ff8585", "rgba(255,120,120,.10)");
+        drawAxis($("cvPos"), series, "pos", "#63efca", "rgba(120,255,200,.10)");
+        drawAxis($("cvUnc"), series, "unc", "#f1d37b", "rgba(255,220,120,.10)");
       }
 
       function loadAll(){
-        updateDebug("loading...");
-        return fetchJsonFirst(SENT_JSON_CAND).then(function(res){
-          state.sentPath = res.path;
-          safeSetHref("btnOpenSent", state.sentPath);
-          safeSetHref("btnOpenSentTop", state.sentPath);
+        fetchJsonFirst(SENT_JSON_CAND).then(function(sentRes){
+          state.sentPath = sentRes.path;
+          var rawItems = normalizeSentItems(sentRes.json);
+          state.asOf = safeText(sentRes.json.as_of || sentRes.json.date || sentRes.json.base || sentRes.json.base_date || "").slice(0,10) || "-";
 
-          var root = res.json || {};
-          var sentItems = normalizeSentItems(root);
-
-          return fetchJsonFirst(WORLD_JSON_CAND).then(function(worldRes){
+          fetchJsonFirst(WORLD_JSON_CAND).then(function(worldRes){
             state.worldPath = worldRes.path;
             var worldCards = normalizeWorldCards(worldRes.json);
-            state.items = mergeWithWorld(sentItems, worldCards);
-            safeSetText("kSrc", "sentiment: " + state.sentPath);
-            safeSetText("kSrcInline", state.sentPath);
-            safeSetText("kWorld", "world: " + state.worldPath);
-            safeSetText("kWorldInline", state.worldPath);
+            state.items = mergeWithWorld(rawItems, worldCards);
+            state.overview = deriveOverview(sentRes.json, state.items);
 
-            var overview = deriveOverview(root, state.items);
-            applyOverview(overview);
-
-            return loadTrend(state.items, overview).then(function(){
-              render(state.items);
-              drawAll();
-              updateLocalPills();
-              if(window.GPGlobalStatus && window.GPGlobalStatus.load){
-                window.GPGlobalStatus.load({
-                  fxDecisionCandidates: [
-                    "/data/fx/fx_decision_latest.json",
-                    "/data/fx/fx_decision_latest_jpythb.json"
-                  ]
-                }).catch(function(e){ console.warn(e); });
-              }
+            fetchTextFirst(TS_CAND).then(function(tsRes){
+              state.tsPath = tsRes.path;
+              state.series = parseTimeseriesCsv(tsRes.text);
+              if(!state.series.length) state.series = aggregateFromItems(state.items);
+              if(!state.series.length && state.overview) state.series = makeFlatSeriesFromOverview(state.asOf, state.overview.risk, state.overview.pos, state.overview.unc);
               updateDebug(
                 "debug: ok\n" +
                 "sentiment: " + state.sentPath + "\n" +
                 "world: " + state.worldPath + "\n" +
                 "trend: " + state.tsPath + "\n" +
                 "items=" + state.items.length + " trend_points=" + state.series.length + "\n" +
-                "today.articles=" + (overview.articles || 0)
+                "today.articles=" + (state.overview.articles || 0)
               );
+              updateLocalPills();
+              drawAll();
+              render(state.items);
+            }).catch(function(){
+              state.tsPath = "(fallback: aggregate/items)";
+              state.series = aggregateFromItems(state.items);
+              if(!state.series.length && state.overview) state.series = makeFlatSeriesFromOverview(state.asOf, state.overview.risk, state.overview.pos, state.overview.unc);
+              updateDebug(
+                "debug: ok (trend fallback)\n" +
+                "sentiment: " + state.sentPath + "\n" +
+                "world: " + state.worldPath + "\n" +
+                "trend: " + state.tsPath + "\n" +
+                "items=" + state.items.length + " trend_points=" + state.series.length + "\n" +
+                "today.articles=" + (state.overview.articles || 0)
+              );
+              updateLocalPills();
+              drawAll();
+              render(state.items);
             });
           }).catch(function(worldErr){
-            state.worldPath = "(missing)";
-            state.items = sentItems;
-            safeSetText("kSrc", "sentiment: " + state.sentPath);
-            safeSetText("kSrcInline", state.sentPath);
-            safeSetText("kWorld", "world: (missing)");
-            safeSetText("kWorldInline", "(missing)");
+            state.worldPath = "-";
+            state.items = rawItems.slice();
+            state.overview = deriveOverview(sentRes.json, state.items);
 
-            var overview = deriveOverview(root, state.items);
-            applyOverview(overview);
-
-            return loadTrend(state.items, overview).then(function(){
-              render(state.items);
-              drawAll();
-              updateLocalPills();
-              if(window.GPGlobalStatus && window.GPGlobalStatus.load){
-                window.GPGlobalStatus.load({
-                  fxDecisionCandidates: [
-                    "/data/fx/fx_decision_latest.json",
-                    "/data/fx/fx_decision_latest_jpythb.json"
-                  ]
-                }).catch(function(e){ console.warn(e); });
-              }
+            fetchTextFirst(TS_CAND).then(function(tsRes){
+              state.tsPath = tsRes.path;
+              state.series = parseTimeseriesCsv(tsRes.text);
+              if(!state.series.length) state.series = aggregateFromItems(state.items);
+              if(!state.series.length && state.overview) state.series = makeFlatSeriesFromOverview(state.asOf, state.overview.risk, state.overview.pos, state.overview.unc);
               updateDebug(
                 "debug: ok (world fallback)\n" +
                 "sentiment: " + state.sentPath + "\n" +
                 "world: (missing: " + safeText(worldErr && worldErr.message) + ")\n" +
                 "trend: " + state.tsPath + "\n" +
                 "items=" + state.items.length + " trend_points=" + state.series.length + "\n" +
-                "today.articles=" + (overview.articles || 0)
+                "today.articles=" + (state.overview.articles || 0)
               );
+              updateLocalPills();
+              drawAll();
+              render(state.items);
+            }).catch(function(){
+              state.tsPath = "(fallback: aggregate/items)";
+              state.series = aggregateFromItems(state.items);
+              if(!state.series.length && state.overview) state.series = makeFlatSeriesFromOverview(state.asOf, state.overview.risk, state.overview.pos, state.overview.unc);
+              updateDebug(
+                "debug: ok (world fallback / trend fallback)\n" +
+                "sentiment: " + state.sentPath + "\n" +
+                "world: (missing: " + safeText(worldErr && worldErr.message) + ")\n" +
+                "trend: " + state.tsPath + "\n" +
+                "items=" + state.items.length + " trend_points=" + state.series.length + "\n" +
+                "today.articles=" + (state.overview.articles || 0)
+              );
+              updateLocalPills();
+              drawAll();
+              render(state.items);
             });
           });
         }).catch(function(e){
@@ -1305,7 +869,7 @@
       loadAll();
     })();
   </script>
-  <script src="/static/common/global_status.js?v=20260315-ui-fix-2"></script>
-  <script src="/static/common/layout.js?v=20260315-ui-fix-2"></script>
+  <script src="/static/common/global_status.js?v=20260318-sentiment-compact-1"></script>
+  <script src="/static/common/layout.js?v=20260318-sentiment-compact-1"></script>
 </body>
 </html>

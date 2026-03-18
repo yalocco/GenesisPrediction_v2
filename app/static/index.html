@@ -4,106 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Home - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260315-ui-fix-2" />
-  <style>
-    .home-hero{margin-bottom:14px;}
-    .status-shell{
-      margin-top:14px;
-      padding:14px 16px;
-      border-radius:18px;
-      border:1px solid rgba(120,160,220,.18);
-      background:linear-gradient(180deg, rgba(10,16,30,.66), rgba(7,12,24,.48));
-      box-shadow:0 12px 30px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.04);
-    }
-    .status-top{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      flex-wrap:wrap;
-      margin-bottom:10px;
-    }
-    .status-title{
-      font-size:12px;
-      letter-spacing:.18em;
-      text-transform:uppercase;
-      opacity:.82;
-    }
-    .status-grid{
-      display:grid;
-      grid-template-columns:repeat(5,minmax(0,1fr));
-      gap:12px;
-    }
-    .status-item{
-      min-width:0;
-      border:1px solid rgba(120,160,220,.12);
-      border-radius:14px;
-      padding:12px 12px 10px;
-      background:rgba(8,14,28,.22);
-    }
-    .status-label{
-      font-size:11px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-      opacity:.72;
-      margin-bottom:6px;
-    }
-    .status-value{
-      font-size:24px;
-      line-height:1.05;
-      font-weight:700;
-      letter-spacing:-.02em;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      color:#eef4ff;
-    }
-    .status-sub{
-      margin-top:4px;
-      font-size:12px;
-      opacity:.72;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .home-kpis{
-      display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:12px;
-      margin-top:14px;
-    }
-    .home-kpi{
-      border:1px solid rgba(120,160,220,.16);
-      border-radius:16px;
-      padding:14px 16px;
-      background:rgba(8,14,28,.18);
-      min-height:86px;
-    }
-    .home-kpi .value{
-      font-size:31px;
-      line-height:1.05;
-      letter-spacing:-0.02em;
-      font-weight:600;
-    }
-    .home-pre{
-      white-space:pre-wrap;
-      word-break:break-word;
-      line-height:1.55;
-      font-size:13px;
-      color:#cfd9f8;
-    }
-    .home-pre strong{
-      color:#ffffff;
-    }
-    @media (max-width:1100px){
-      .status-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
-      .home-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}
-    }
-    @media (max-width:700px){
-      .status-grid{grid-template-columns:1fr;}
-      .home-kpis{grid-template-columns:1fr;}
-    }
-  </style>
+  <link rel="stylesheet" href="/static/app.css?v=20260318-home-compact-1" />
+  <link rel="stylesheet" href="/static/index.css?v=20260318-home-compact-1" />
 </head>
 <body>
   <div id="site-header"></div>
@@ -178,14 +80,14 @@
             </div>
           </div>
 
-          <div class="grid2" style="margin-top:12px;">
+          <div class="grid2 home-grid-section">
             <div class="card">
               <div class="sectionTitle">
                 <h2>Events (today)</h2>
                 <span id="evHint" class="hint">loading…</span>
               </div>
               <div id="evBody" class="mono small home-pre">loading…</div>
-              <div class="pillrow" style="margin-top:10px;">
+              <div class="pillrow home-pillrow-top">
                 <span id="evSource" class="pill">source: --</span>
               </div>
             </div>
@@ -196,21 +98,21 @@
                 <span id="healthHint" class="hint">loading…</span>
               </div>
               <div id="healthBody" class="mono small home-pre">loading…</div>
-              <div class="pillrow" style="margin-top:10px;">
+              <div class="pillrow home-pillrow-top">
                 <a id="btnOpenHealth" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open JSON</a>
                 <span id="healthSource" class="pill">source: --</span>
               </div>
             </div>
           </div>
 
-          <div class="grid2" style="margin-top:12px;">
+          <div class="grid2 home-grid-section">
             <div class="card">
               <div class="sectionTitle">
                 <h2>Sentiment</h2>
                 <span id="senHint" class="hint">loading…</span>
               </div>
               <div id="senBody" class="mono small home-pre">loading…</div>
-              <div class="pillrow" style="margin-top:10px;">
+              <div class="pillrow home-pillrow-top">
                 <span id="senSource" class="pill">source: --</span>
               </div>
             </div>
@@ -221,7 +123,7 @@
                 <span id="sumHint" class="hint">loading…</span>
               </div>
               <div id="sumBody" class="mono small home-pre">loading…</div>
-              <div class="pillrow" style="margin-top:10px;">
+              <div class="pillrow home-pillrow-top">
                 <a id="btnOpenSummary" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open JSON</a>
                 <span id="sumSource" class="pill">source: --</span>
               </div>
@@ -234,8 +136,8 @@
 
   <div id="site-footer"></div>
 
-  <script src="/static/common/layout.js?v=20260315-home-page-1"></script>
-  <script src="/static/common/global_status.js?v=20260315-home-page-1"></script>
-  <script src="/static/common/home_page.js?v=20260315-home-page-1"></script>
+  <script src="/static/common/layout.js?v=20260318-home-compact-1"></script>
+  <script src="/static/common/global_status.js?v=20260318-home-compact-1"></script>
+  <script src="/static/common/home_page.js?v=20260318-home-compact-1"></script>
 </body>
 </html>

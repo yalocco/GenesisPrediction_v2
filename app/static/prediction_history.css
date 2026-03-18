@@ -1,0 +1,520 @@
+/* =========================================================
+   Prediction History Page
+   COMPACT FINISH PASS
+   2026-03-18
+   ========================================================= */
+
+/* =========================
+   Page Layout
+========================= */
+.history-page {
+  display: grid;
+  gap: 10px;
+}
+
+.history-shell {
+  display: grid;
+  gap: 10px;
+}
+
+/* =========================
+   Hero
+========================= */
+.hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(320px, 0.88fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+.hero-card,
+.hero-side-card {
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.hero-intro-card {
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.hero-side-stack {
+  display: grid;
+  gap: 8px;
+  height: 100%;
+}
+
+.history-meta-row {
+  margin-top: 8px;
+  gap: 6px;
+}
+
+.pill-value {
+  display: inline-block;
+  margin-left: 6px;
+}
+
+.scenario-shift-value {
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+/* =========================
+   Hero Metric
+========================= */
+.hero-metric {
+  border: 1px solid rgba(120,160,220,.12);
+  border-radius: 14px;
+  padding: 9px 12px;
+  background: rgba(8,14,28,.18);
+}
+
+.hero-metric .metric-label {
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .72;
+  margin-bottom: 3px;
+  color: #c8d7f6;
+}
+
+.hero-metric .metric-value {
+  font-size: 16px;
+  line-height: 1.06;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #eef4ff;
+}
+
+.hero-metric .metric-sub {
+  margin-top: 2px;
+  font-size: 10px;
+  line-height: 1.4;
+  color: #c8d7f6;
+  opacity: .8;
+}
+
+/* =========================
+   Compact shared cards
+========================= */
+.chart-card,
+.detail-card,
+.note-card,
+.status-item,
+.empty-card {
+  border: 1px solid rgba(120,160,220,.14);
+  border-radius: 14px;
+  padding: 9px 12px;
+  background: linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));
+  min-width: 0;
+}
+
+.detail-card,
+.note-card,
+.empty-card {
+  display: grid;
+  gap: 7px;
+}
+
+/* =========================
+   Typography
+========================= */
+.summary-text,
+.detail-text,
+.timeline-summary,
+.inline-text {
+  margin: 0;
+  color: #c8d7f6;
+  line-height: 1.58;
+  font-size: 12px;
+}
+
+.detail-eyebrow,
+.timeline-meta,
+.empty-meta {
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .7;
+  color: #c8d7f6;
+}
+
+.detail-title,
+.timeline-title {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.32;
+  font-weight: 700;
+  color: #eef4ff;
+}
+
+/* =========================
+   Window chip
+========================= */
+.window-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.04);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: .03em;
+  color: #93c5fd;
+  width: max-content;
+}
+
+/* =========================
+   Chart
+========================= */
+.chart-card .chart-label {
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .72;
+  margin-bottom: 3px;
+  color: #c8d7f6;
+}
+
+.chart-card .chart-value {
+  font-size: 16px;
+  line-height: 1.06;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #eef4ff;
+  margin-bottom: 7px;
+}
+
+.chart-card .chart-value.pos {
+  color: #7dd3fc;
+}
+
+.chart-card .chart-value.neg {
+  color: #fca5a5;
+}
+
+.chart-card .chart-value.neu {
+  color: #eef4ff;
+}
+
+.chart-card svg {
+  width: 100%;
+  height: 80px;
+  display: block;
+  border-radius: 12px;
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(255,255,255,.06);
+}
+
+.chart-note {
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.42;
+  color: #c8d7f6;
+  opacity: .8;
+}
+
+/* Make history trend feel dense on desktop */
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+/* =========================
+   Detail / Notes
+========================= */
+.history-detail-grid {
+  margin-top: 8px;
+}
+
+.note-card .plain-list {
+  gap: 6px;
+}
+
+.note-card .plain-list li {
+  border: 1px solid rgba(120,160,220,.10);
+  border-radius: 10px;
+  padding: 6px 8px;
+  background: rgba(255,255,255,.015);
+  color: #c8d7f6;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* =========================
+   Runtime / Source Status
+========================= */
+.source-status-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.source-status-title {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.28;
+  font-weight: 700;
+  color: #eef4ff;
+}
+
+/* =========================
+   Timeline
+========================= */
+.timeline-list {
+  display: grid;
+  gap: 7px;
+}
+
+.timeline-row {
+  display: grid;
+  grid-template-columns: 92px 110px minmax(0, 1fr) 70px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(120,160,220,.14);
+  background: linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));
+  min-width: 0;
+  cursor: pointer;
+  transition:
+    border-color .18s ease,
+    background-color .18s ease,
+    box-shadow .18s ease;
+}
+
+.timeline-row:hover {
+  border-color: rgba(147,197,253,.26);
+  background: linear-gradient(180deg, rgba(12,18,34,.50), rgba(8,13,24,.32));
+}
+
+.timeline-row.is-active {
+  border-color: rgba(147,197,253,.42);
+  box-shadow: inset 0 0 0 1px rgba(147,197,253,.12);
+}
+
+.timeline-date {
+  font-size: 11px;
+  font-weight: 700;
+  color: #eef4ff;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.timeline-state {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.timeline-badge,
+.risk-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: max-content;
+  min-width: 30px;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.04);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: .03em;
+}
+
+.timeline-badge.best {
+  color: #93c5fd;
+  border-color: rgba(96,165,250,.28);
+}
+
+.timeline-badge.base {
+  color: #eef4ff;
+  border-color: rgba(255,255,255,.14);
+}
+
+.timeline-badge.worst {
+  color: #fca5a5;
+  border-color: rgba(248,113,113,.28);
+}
+
+.timeline-badge.other {
+  color: #c4b5fd;
+  border-color: rgba(196,181,253,.24);
+}
+
+.risk-badge.low {
+  color: #7dd3fc;
+}
+
+.risk-badge.guarded {
+  color: #c4b5fd;
+}
+
+.risk-badge.elevated {
+  color: #facc15;
+}
+
+.risk-badge.high {
+  color: #fb923c;
+}
+
+.risk-badge.critical {
+  color: #f87171;
+}
+
+.timeline-small {
+  font-size: 10px;
+  opacity: .72;
+  color: #c8d7f6;
+  margin-top: 3px;
+  line-height: 1.35;
+}
+
+.timeline-conf {
+  text-align: right;
+  display: grid;
+  gap: 4px;
+  justify-items: end;
+}
+
+.timeline-conf .value {
+  font-size: 15px;
+  font-weight: 800;
+  color: #93c5fd;
+  line-height: 1;
+}
+
+.timeline-conf .sub {
+  font-size: 10px;
+  opacity: .72;
+  color: #c8d7f6;
+  margin: 0;
+}
+
+/* =========================
+   Global status tune
+========================= */
+.global-status-panel {
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.global-status-head {
+  gap: 6px;
+}
+
+.global-status-title {
+  font-size: 10px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  opacity: .82;
+  color: var(--text-main);
+}
+
+.status-item .status-label {
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .72;
+  margin-bottom: 5px;
+  color: #c8d7f6;
+}
+
+.status-item .status-value {
+  font-size: 14px;
+  line-height: 1.15;
+  font-weight: 700;
+  color: #eef4ff;
+}
+
+.status-item .status-sub {
+  margin-top: 3px;
+  font-size: 10px;
+  line-height: 1.38;
+  color: #c8d7f6;
+  opacity: .8;
+}
+
+/* =========================
+   Empty
+========================= */
+.empty-card {
+  min-height: 110px;
+  justify-content: center;
+  text-align: center;
+}
+
+.empty-text {
+  max-width: 56ch;
+  justify-self: center;
+  color: #c8d7f6;
+  line-height: 1.55;
+  margin: 0;
+  font-size: 12px;
+}
+
+/* =========================
+   Responsive
+========================= */
+@media (max-width: 1100px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .timeline-row {
+    grid-template-columns: 1fr;
+  }
+
+  .timeline-conf {
+    justify-items: start;
+    text-align: left;
+  }
+}
+
+@media (max-width: 700px) {
+  .source-status-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .history-meta-row {
+    gap: 5px;
+  }
+
+  .timeline-row {
+    padding: 9px 10px;
+    gap: 8px;
+  }
+
+  .timeline-badge,
+  .risk-badge,
+  .window-chip {
+    min-height: 22px;
+    font-size: 10px;
+  }
+
+  .chart-card .chart-value,
+  .hero-metric .metric-value {
+    font-size: 15px;
+  }
+}

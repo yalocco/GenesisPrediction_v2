@@ -24,9 +24,7 @@
   let headerRetryTimer = null;
 
   function text(value, fallback = "--") {
-    if (value === null || value === undefined) {
-      return fallback;
-    }
+    if (value === null || value === undefined) return fallback;
     const s = String(value).trim();
     return s ? s : fallback;
   }
@@ -80,28 +78,22 @@
   }
 
   function addStatusClass(node, value) {
-    if (!node) {
-      return;
-    }
+    if (!node) return;
     node.classList.remove("status-safe", "status-caution", "status-danger", "status-neutral");
-    node.classList.add(`status-${normalizeStatusClass(value)}`);
+    node.classList.add("status-" + normalizeStatusClass(value));
   }
 
   function setFirstText(selectors, value) {
     for (const selector of selectors) {
       const node = document.querySelector(selector);
-      if (node) {
-        node.textContent = value;
-      }
+      if (node) node.textContent = value;
     }
   }
 
   function setFirstClass(selectors, value) {
     for (const selector of selectors) {
       const node = document.querySelector(selector);
-      if (node) {
-        addStatusClass(node, value);
-      }
+      if (node) addStatusClass(node, value);
     }
   }
 
@@ -160,18 +152,14 @@
 
   function deriveHeaderReady(status) {
     const health = upper(status.health);
-    if (health === "NG") {
-      return "Blocked";
-    }
+    if (health === "NG") return "Blocked";
     return "Ready";
   }
 
   function deriveHeaderFx(status) {
     const fx = upper(status.fx_regime);
-    if (fx === "--") {
-      return "FX: --";
-    }
-    return `FX: ${fx}`;
+    if (fx === "--") return "FX: --";
+    return "FX: " + fx;
   }
 
   function buildCardsForPage(pageType, status) {
@@ -190,9 +178,9 @@
     if (pageType === "digest") {
       return [
         { label: "Date", value: asOf, sub: "analysis latest", statusValue: "" },
+        { label: "Articles", value: text(status.articles), sub: text(status.articles_sub, ""), statusValue: "" },
+        { label: "Highlights", value: upper(status.sentiment_balance), sub: text(status.sentiment_balance_sub, ""), statusValue: status.sentiment_balance },
         { label: "Risk", value: upper(status.global_risk), sub: text(status.global_risk_sub, ""), statusValue: status.global_risk },
-        { label: "Sentiment", value: upper(status.sentiment_balance), sub: text(status.sentiment_balance_sub, ""), statusValue: status.sentiment_balance },
-        { label: "FX", value: upper(status.fx_regime), sub: text(status.fx_regime_sub, ""), statusValue: status.fx_regime },
         { label: "Health", value: upper(status.health), sub: text(status.health_sub, ""), statusValue: status.health }
       ];
     }
@@ -201,8 +189,28 @@
       return [
         { label: "Date", value: asOf, sub: "analysis latest", statusValue: "" },
         { label: "Articles", value: text(status.articles), sub: text(status.articles_sub, ""), statusValue: "" },
-        { label: "Sentiment", value: upper(status.sentiment_balance), sub: text(status.sentiment_balance_sub, ""), statusValue: status.sentiment_balance },
-        { label: "Risk", value: upper(status.global_risk), sub: text(status.global_risk_sub, ""), statusValue: status.global_risk },
+        { label: "Positive", value: upper(status.sentiment_balance), sub: text(status.sentiment_balance_sub, ""), statusValue: status.sentiment_balance },
+        { label: "Negative", value: upper(status.global_risk), sub: text(status.global_risk_sub, ""), statusValue: status.global_risk },
+        { label: "Health", value: upper(status.health), sub: text(status.health_sub, ""), statusValue: status.health }
+      ];
+    }
+
+    if (pageType === "prediction") {
+      return [
+        { label: "Date", value: asOf, sub: "analysis latest", statusValue: "" },
+        { label: "Regime", value: upper(status.global_risk), sub: text(status.global_risk_sub, ""), statusValue: status.global_risk },
+        { label: "Signal", value: upper(status.sentiment_balance), sub: text(status.sentiment_balance_sub, ""), statusValue: status.sentiment_balance },
+        { label: "Confidence", value: text(status.articles), sub: text(status.articles_sub, ""), statusValue: "" },
+        { label: "Health", value: upper(status.health), sub: text(status.health_sub, ""), statusValue: status.health }
+      ];
+    }
+
+    if (pageType === "history") {
+      return [
+        { label: "Date", value: asOf, sub: "analysis latest", statusValue: "" },
+        { label: "Snapshots", value: text(status.articles), sub: text(status.articles_sub, ""), statusValue: "" },
+        { label: "Drift", value: upper(status.global_risk), sub: text(status.global_risk_sub, ""), statusValue: status.global_risk },
+        { label: "Review", value: upper(status.sentiment_balance), sub: text(status.sentiment_balance_sub, ""), statusValue: status.sentiment_balance },
         { label: "Health", value: upper(status.health), sub: text(status.health_sub, ""), statusValue: status.health }
       ];
     }
@@ -218,19 +226,19 @@
 
   function createCard(card) {
     const article = document.createElement("article");
-    article.className = "global-status-card";
+    article.className = "status-item";
     addStatusClass(article, card.statusValue);
 
     const labelEl = document.createElement("div");
-    labelEl.className = "global-status-label";
+    labelEl.className = "status-label";
     labelEl.textContent = text(card.label);
 
     const valueEl = document.createElement("div");
-    valueEl.className = "global-status-value";
+    valueEl.className = "status-value";
     valueEl.textContent = text(card.value);
 
     const subEl = document.createElement("div");
-    subEl.className = "global-status-sub";
+    subEl.className = "status-sub";
     subEl.textContent = text(card.sub, "");
 
     article.appendChild(labelEl);
@@ -248,8 +256,9 @@
       const cards = buildCardsForPage(pageType, status);
 
       root.innerHTML = "";
+
       const grid = document.createElement("section");
-      grid.className = "global-status-grid";
+      grid.className = "global-status";
 
       cards.forEach((card) => {
         grid.appendChild(createCard(card));
@@ -263,9 +272,9 @@
     const selectors = getHeaderSelectors();
 
     const readyText = deriveHeaderReady(status);
-    const healthText = `Health: ${upper(status.health)}`;
+    const healthText = "Health: " + upper(status.health);
     const fxText = deriveHeaderFx(status);
-    const asOfText = `as_of: ${text(status.as_of || status.updated)}`;
+    const asOfText = "as_of: " + text(status.as_of || status.updated);
 
     setFirstText(selectors.ready, readyText);
     setFirstText(selectors.health, healthText);
@@ -297,12 +306,12 @@
   }
 
   async function fetchGlobalStatus() {
-    const response = await fetch(`${GLOBAL_STATUS_URL}?t=${Date.now()}`, {
+    const response = await fetch(GLOBAL_STATUS_URL + "?t=" + Date.now(), {
       cache: "no-store"
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch global status: ${response.status}`);
+      throw new Error("Failed to fetch global status: " + response.status);
     }
 
     const data = await response.json();
@@ -314,9 +323,7 @@
   }
 
   function startHeaderRetry() {
-    if (headerRetryTimer !== null) {
-      return;
-    }
+    if (headerRetryTimer !== null) return;
 
     headerRetryCount = 0;
 
