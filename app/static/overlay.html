@@ -4,83 +4,20 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Overlay - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260318-fx-status-1" />
-  <style>
-    .overlay-hero{margin-bottom:14px;}
-    .overlay-pills{margin-top:10px;}
-    .overlay-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px;}
-    .overlay-kpi{border:1px solid rgba(120,160,220,.16);border-radius:16px;padding:14px 16px;background:rgba(8,14,28,.18);min-height:86px;}
-    .overlay-kpi .value{font-size:31px;line-height:1.05;letter-spacing:-0.02em;font-weight:600;}
-    .overlay-card{min-width:0;}
-    .overlay-img-frame{margin-top:12px;width:100%;overflow:hidden;border-radius:18px;border:1px solid rgba(120,160,220,.18);background:rgba(9,16,30,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.03);padding:10px;}
-    .overlay-img-frame img{display:block;width:100%;max-width:100%;height:auto;max-height:72vh;object-fit:contain;border-radius:12px;background:#0b1020;}
-    .overlay-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px;}
-    .overlay-note{margin-top:12px;padding:12px 14px;border:1px solid rgba(120,160,220,.14);border-radius:14px;background:rgba(8,14,28,.18);line-height:1.6;}
-    .signals-wrap{margin-top:16px;}
-    .signals-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:8px;margin-bottom:14px;}
-    .signals-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
-    .signal-card{display:grid;grid-template-columns:160px minmax(0,1fr);gap:14px;min-height:176px;border:1px solid rgba(120,160,220,.14);border-radius:18px;background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));padding:14px;overflow:hidden;}
-    .signal-thumb{min-height:146px;border-radius:14px;overflow:hidden;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);position:relative;display:flex;align-items:center;justify-content:center;}
-    .signal-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
-    .signal-fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700;color:#8fb8ff;background:radial-gradient(circle at 30% 20%, rgba(106,164,255,.22), transparent 48%), rgba(255,255,255,.03);}
-    .signal-body{min-width:0;display:flex;flex-direction:column;}
-    .signal-meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
-    .signal-pill{display:inline-flex;align-items:center;min-height:26px;padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);font-size:11px;line-height:1;}
-    .signal-pill.energy{color:#ffcf6f;}
-    .signal-pill.macro{color:#7ad2ff;}
-    .signal-pill.trade{color:#b998ff;}
-    .signal-pill.risk{color:#ff8a98;}
-    .signal-pill.source{color:#d7e3ff;}
-    .signal-pill.score{color:#56efc1;}
-    .signal-title{margin:0 0 8px;font-size:18px;line-height:1.45;font-weight:700;}
-    .signal-title a{text-decoration:none;}
-    .signal-title a:hover{text-decoration:underline;}
-    .signal-summary{margin:0;font-size:13px;line-height:1.72;color:#d4def7;flex:1;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;}
-    .signals-empty{display:none;border:1px dashed rgba(255,255,255,.16);border-radius:16px;padding:18px;text-align:center;color:#b5c7ea;background:rgba(8,14,28,.18);}
-    .fx-decision-banner{margin-top:12px;padding:14px 16px;border-radius:16px;border:1px solid rgba(120,160,220,.16);background:rgba(8,14,28,.20);}
-    .fx-decision-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
-    .fx-decision-title{font-size:12px;letter-spacing:.16em;text-transform:uppercase;opacity:.8;}
-    .fx-decision-badge{display:inline-flex;align-items:center;justify-content:center;min-width:120px;min-height:38px;padding:0 14px;border-radius:999px;font-size:14px;font-weight:700;letter-spacing:.04em;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#eef4ff;}
-    .fx-decision-badge.safe{color:#7ff0a8;border-color:rgba(127,240,168,.35);box-shadow:inset 0 0 0 1px rgba(127,240,168,.10);}
-    .fx-decision-badge.caution{color:#ffd36e;border-color:rgba(255,211,110,.35);box-shadow:inset 0 0 0 1px rgba(255,211,110,.10);}
-    .fx-decision-badge.danger{color:#ff8e8e;border-color:rgba(255,142,142,.35);box-shadow:inset 0 0 0 1px rgba(255,142,142,.10);}
-    .fx-decision-badge.neutral{color:#d7e3ff;}
-    .fx-decision-reason{margin-top:10px;font-size:13px;line-height:1.7;color:#d4def7;}
-    .global-status-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-top:14px;}
-    .global-status-card{min-width:0;border:1px solid rgba(120,160,220,.12);border-radius:14px;padding:12px 12px 10px;background:rgba(8,14,28,.22);}
-    .global-status-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.72;margin-bottom:6px;}
-    .global-status-value{font-size:24px;line-height:1.05;font-weight:700;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#eef4ff;}
-    .global-status-sub{margin-top:4px;font-size:12px;opacity:.72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .global-status-card.status-safe .global-status-value{color:#7ff0a8;}
-    .global-status-card.status-caution .global-status-value{color:#ffd36e;}
-    .global-status-card.status-danger .global-status-value{color:#ff8e8e;}
-    .global-status-card.status-neutral .global-status-value{color:#eef4ff;}
-    @media (max-width: 1100px){
-      .global-status-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
-      .signals-grid{grid-template-columns:1fr;}
-    }
-    @media (max-width: 900px){
-      .overlay-meta{grid-template-columns:1fr;}
-      .overlay-kpis{grid-template-columns:1fr;}
-      .signal-card{grid-template-columns:1fr;}
-      .signal-thumb{min-height:220px;}
-    }
-    @media (max-width: 700px){
-      .global-status-grid{grid-template-columns:1fr;}
-    }
-  </style>
+  <link rel="stylesheet" href="/static/app.css?v=20260318-fx-status-2" />
+  <link rel="stylesheet" href="/static/overlay.css?v=20260318-overlay-compact-1" />
 </head>
 <body>
   <div id="site-header"></div>
   <div class="page container">
     <main class="gp-main">
-      <div class="gp-page">
-        <section class="panel">
+      <div class="gp-page overlay-page">
+        <section class="panel overlay-shell">
           <div class="overlay-hero">
             <div class="h1">Overlay</div>
             <p class="sub">FX decision + remittance overlay + economic signals.</p>
 
-            <div class="card">
+            <div class="card overlay-card-top">
               <div class="sectionTitle">
                 <h2>Global Status</h2>
                 <span class="hint">analysis/global_status_latest.json</span>
@@ -121,13 +58,13 @@
             </div>
           </div>
 
-          <div class="grid2" style="margin-top:12px;">
+          <div class="grid2 overlay-card-top">
             <div class="card overlay-card">
               <div class="sectionTitle"><h2>Controls</h2></div>
-              <div style="display:flex; gap:12px; align-items:end; flex-wrap:wrap; margin-top:10px;">
-                <div style="min-width:240px;">
-                  <div class="hint" style="margin-bottom:6px;">Pair</div>
-                  <select id="pair" class="select" style="width:240px;">
+              <div class="controls-row">
+                <div class="controls-field">
+                  <div class="hint controls-label">Pair</div>
+                  <select id="pair" class="select select-wide">
                     <option value="JPYTHB">JPYTHB</option>
                     <option value="USDJPY">USDJPY</option>
                     <option value="USDTHB">USDTHB</option>
@@ -150,7 +87,7 @@
                 </div>
               </div>
 
-              <div class="pillrow" style="margin-top:12px;">
+              <div class="pillrow pillrow-top">
                 <span id="srcDecision" class="pill">source: --</span>
               </div>
 
@@ -159,7 +96,7 @@
 
             <div class="card overlay-card">
               <div class="sectionTitle"><h2>FX Overlay</h2><span class="hint">image preview</span></div>
-              <div class="pillrow" style="margin-top:10px;">
+              <div class="pillrow overlay-pills">
                 <a id="btnOpenImage" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open image</a>
                 <span id="srcImage" class="pill">source: --</span>
               </div>
@@ -190,8 +127,8 @@
 
   <div id="site-footer"></div>
 
-  <script src="/static/common/global_status.js?v=20260318-fx-status-1"></script>
-  <script src="/static/common/layout.js?v=20260318-fx-status-1"></script>
+  <script src="/static/common/global_status.js?v=20260318-fx-status-2"></script>
+  <script src="/static/common/layout.js?v=20260318-fx-status-2"></script>
 
   <script>
     (function () {

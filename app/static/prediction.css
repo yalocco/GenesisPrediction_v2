@@ -1,0 +1,238 @@
+/* =========================================================
+   Prediction Page Layout (FULL – migrated from inline style)
+   ========================================================= */
+
+/* =========================
+   Layout
+========================= */
+.prediction-page {
+  display: grid;
+  gap: 12px;
+}
+
+.prediction-shell {
+  display: grid;
+  gap: 12px;
+}
+
+/* =========================
+   Hero
+========================= */
+.hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0,1.2fr) minmax(300px,.8fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.hero-card,
+.hero-side-card {
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.hero-side-stack {
+  display: grid;
+  gap: 10px;
+  height: 100%;
+}
+
+.hero-intro-card {
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.hero-title {
+  font-size: 18px;
+  line-height: 1.22;
+  margin: 0;
+}
+
+.hero-summary {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #c8d7f6;
+}
+
+/* =========================
+   Metric
+========================= */
+.hero-metric {
+  border: 1px solid rgba(120,160,220,.12);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(8,14,28,.18);
+}
+
+.metric-label {
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: .72;
+  margin-bottom: 4px;
+}
+
+.metric-value {
+  font-size: 18px;
+  line-height: 1.12;
+  font-weight: 700;
+  color: #eef4ff;
+}
+
+.metric-sub {
+  margin-top: 3px;
+  font-size: 11px;
+  opacity: .72;
+  color: #c8d7f6;
+}
+
+/* =========================
+   Card System
+========================= */
+.detail-card,
+.scenario-card,
+.signal-card,
+.trend-card,
+.status-item {
+  border: 1px solid rgba(120,160,220,.14);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* =========================
+   Typography
+========================= */
+.summary-text,
+.detail-text,
+.scenario-text,
+.signal-text,
+.trend-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #c8d7f6;
+}
+
+.detail-title,
+.scenario-title,
+.signal-title,
+.trend-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #eef4ff;
+}
+
+/* =========================
+   Grid Systems
+========================= */
+.content-grid.prediction-top {
+  grid-template-columns: minmax(0,1.15fr) minmax(320px,.85fr);
+  align-items: start;
+}
+
+.signal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.trend-stack {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.scenario-compact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.quad-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+/* =========================
+   FX
+========================= */
+.fx-inline-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+/* =========================
+   Utility
+========================= */
+.mt-compact {
+  margin-top: 10px;
+}
+
+.section-no-margin {
+  margin-top: 0;
+}
+
+.compact-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pill {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.06);
+}
+
+/* =========================
+   Empty
+========================= */
+.empty-card {
+  min-height: 120px;
+  display: grid;
+  gap: 6px;
+  text-align: center;
+  justify-content: center;
+}
+
+.empty-text {
+  font-size: 13px;
+  color: #c8d7f6;
+}
+
+/* =========================
+   Responsive
+========================= */
+@media (max-width:1100px) {
+  .hero-grid { grid-template-columns: 1fr; }
+  .content-grid.prediction-top { grid-template-columns: 1fr; }
+  .signal-grid,
+  .trend-stack,
+  .scenario-compact-grid,
+  .quad-grid {
+    grid-template-columns: 1fr;
+  }
+  .kpi-grid { grid-template-columns: repeat(2,1fr); }
+}
+
+@media (max-width:700px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+}

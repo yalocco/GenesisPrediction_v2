@@ -5,93 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Prediction - GenesisPrediction v2</title>
   <meta name="description" content="GenesisPrediction Prediction UI">
-  <link rel="stylesheet" href="/static/app.css?v=20260318-prediction-fx-1">
-  <style>
-    .prediction-page{display:grid;gap:16px}
-    .prediction-shell{display:grid;gap:16px}
-    .hero-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:16px;align-items:stretch}
-    .hero-card,.hero-side-card{min-width:0;height:100%;display:flex;flex-direction:column}
-    .hero-side-stack{display:grid;gap:12px;height:100%}
-
-    .hero-intro-card{
-      padding:0;
-      border:none;
-      background:transparent;
-      box-shadow:none;
-    }
-
-    .hero-metric{border:1px solid rgba(120,160,220,.12);border-radius:14px;padding:12px 14px;background:rgba(8,14,28,.18)}
-    .hero-metric .metric-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.72;margin-bottom:6px}
-    .hero-metric .metric-value{font-size:26px;line-height:1.05;font-weight:700;letter-spacing:-.02em;color:#eef4ff}
-    .hero-metric .metric-sub{margin-top:4px;font-size:12px;opacity:.72;color:#c8d7f6;line-height:1.5}
-
-    .chart-card{border:1px solid rgba(120,160,220,.12);border-radius:16px;padding:12px 14px;background:rgba(8,14,28,.18);min-width:0}
-    .chart-card .chart-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.72;margin-bottom:6px}
-    .chart-card .chart-value{font-size:24px;line-height:1.05;font-weight:700;letter-spacing:-.02em;color:#eef4ff;margin-bottom:10px}
-    .chart-card .chart-value.pos{color:#7dd3fc}
-    .chart-card .chart-value.neg{color:#fca5a5}
-    .chart-card .chart-value.neu{color:#eef4ff}
-    .chart-card svg{width:100%;height:92px;display:block;border-radius:12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06)}
-    .chart-note{margin-top:8px;font-size:12px;line-height:1.5;color:#c8d7f6;opacity:.8}
-
-    .confidence-chip{display:inline-flex;align-items:center;justify-content:center;min-width:34px;min-height:28px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);font-size:12px;font-weight:700;line-height:1;letter-spacing:.03em;color:#93c5fd;width:max-content}
-
-    .summary-text,.detail-text,.scenario-text,.signal-text,.trend-text{margin:0;color:#c8d7f6;line-height:1.8;font-size:15px}
-    .detail-card,.scenario-card,.signal-card,.trend-card{border:1px solid rgba(120,160,220,.14);border-radius:16px;padding:12px 14px;background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));display:grid;gap:10px;min-width:0}
-    .detail-eyebrow,.scenario-meta,.signal-meta,.trend-meta,.timeline-meta,.empty-meta{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.7}
-    .detail-title,.scenario-title,.signal-title,.trend-title,.timeline-title{margin:0;font-size:16px;line-height:1.35;font-weight:700;color:#eef4ff}
-    .scenario-meta,.signal-meta,.trend-meta,.scenario-title-row,.signal-title-row,.trend-title-row,.timeline-title-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
-    .scenario-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
-    .signal-grid,.trend-stack,.probability-stack{display:grid;gap:12px}
-    .scenario-list li,.probability-row{display:grid;gap:8px;padding:12px 14px;border-radius:14px;border:1px solid rgba(120,160,220,.14);background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));min-width:0}
-    .probability-row{grid-template-columns:auto 1fr auto;align-items:center;gap:12px}
-    .signal-badge,.trend-badge{display:inline-flex;align-items:center;justify-content:center;min-width:34px;min-height:28px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);font-size:12px;font-weight:700;line-height:1;letter-spacing:.03em;width:max-content}
-    .progress-track{position:relative;height:10px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.08)}
-    .progress-bar{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg, rgba(96,165,250,.95), rgba(59,130,246,.55))}
-    .probability-value,.scenario-probability,.signal-strength,.trend-strength{font-size:13px;font-weight:700;opacity:.86;color:#c8d7f6}
-
-    .scenario-card.scenario-best{border-color:rgba(96,165,250,.28);box-shadow:inset 0 0 0 1px rgba(96,165,250,.08)}
-    .scenario-card.scenario-base{border-color:rgba(255,255,255,.10)}
-    .scenario-card.scenario-worst{border-color:rgba(248,113,113,.28);box-shadow:inset 0 0 0 1px rgba(248,113,113,.08)}
-    .scenario-card.scenario-best .scenario-meta span:first-child,.scenario-card.scenario-best .scenario-probability{color:#93c5fd}
-    .scenario-card.scenario-base .scenario-meta span:first-child,.scenario-card.scenario-base .scenario-probability{color:#eef4ff}
-    .scenario-card.scenario-worst .scenario-meta span:first-child,.scenario-card.scenario-worst .scenario-probability{color:#fca5a5}
-
-    .signal-card.signal-low,.signal-card.signal-stable{border-color:rgba(125,211,252,.24);box-shadow:inset 0 0 0 1px rgba(125,211,252,.07)}
-    .signal-card.signal-guarded{border-color:rgba(196,181,253,.24);box-shadow:inset 0 0 0 1px rgba(196,181,253,.07)}
-    .signal-card.signal-elevated,.signal-card.signal-warn{border-color:rgba(250,204,21,.24);box-shadow:inset 0 0 0 1px rgba(250,204,21,.07)}
-    .signal-card.signal-high{border-color:rgba(251,146,60,.24);box-shadow:inset 0 0 0 1px rgba(251,146,60,.07)}
-    .signal-card.signal-critical{border-color:rgba(248,113,113,.24);box-shadow:inset 0 0 0 1px rgba(248,113,113,.07)}
-    .signal-card.signal-low .signal-badge,.signal-card.signal-stable .signal-badge{color:#7dd3fc}
-    .signal-card.signal-guarded .signal-badge{color:#c4b5fd}
-    .signal-card.signal-elevated .signal-badge,.signal-card.signal-warn .signal-badge{color:#facc15}
-    .signal-card.signal-high .signal-badge{color:#fb923c}
-    .signal-card.signal-critical .signal-badge{color:#f87171}
-
-    .empty-card{min-height:160px;justify-content:center;text-align:center;border:1px solid rgba(120,160,220,.14);border-radius:16px;padding:14px;background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));display:grid;gap:8px}
-    .empty-text{max-width:56ch;justify-self:center;color:#c8d7f6;line-height:1.7;margin:0}
-    .muted{color:var(--text-muted, rgba(255,255,255,.72))}
-    .status-item{border:1px solid rgba(120,160,220,.14);border-radius:16px;padding:12px 14px;background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));min-width:0}
-    .status-item .status-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.72;margin-bottom:8px}
-    .status-item .status-value{font-size:18px;line-height:1.2;font-weight:700;color:#eef4ff}
-    .status-item .status-sub{margin-top:6px;font-size:12px;line-height:1.5;color:#c8d7f6;opacity:.8}
-
-    .fx-inline-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-    .fx-kpi-chip{display:inline-flex;align-items:center;justify-content:center;min-height:28px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);font-size:12px;font-weight:700;line-height:1}
-    .fx-kpi-chip.safe{color:#56efc1}
-    .fx-kpi-chip.caution{color:#ffcf6f}
-    .fx-kpi-chip.danger{color:#ff7e8d}
-    .fx-kpi-chip.neutral{color:#dbe6ff}
-
-    @media (max-width:1100px){
-      .hero-grid{grid-template-columns:1fr}
-      .fx-inline-grid{grid-template-columns:1fr}
-    }
-    @media (max-width:700px){
-      .scenario-title-row,.signal-title-row,.trend-title-row,.timeline-title-row{flex-direction:column}
-      .probability-row{grid-template-columns:1fr}
-    }
-  </style>
+  <link rel="stylesheet" href="/static/app.css?v=20260318-prediction-compact-3">
+  <link rel="stylesheet" href="/static/prediction.css?v=20260318-compact-2">
 </head>
 <body>
   <div id="site-header"></div>
@@ -106,11 +21,11 @@
               <h1 id="heroHeadline" class="hero-title">Trend / Signal / Scenario / Prediction</h1>
               <p id="heroSummary" class="hero-summary">Loading latest prediction summary...</p>
 
-              <div class="pillrow" style="margin-top:16px;">
-                <span class="pill"><strong>As of</strong><span id="metaAsof" style="margin-left:8px;">—</span></span>
-                <span class="pill"><strong>Dominant</strong><span id="metaDominant" style="margin-left:8px;">—</span></span>
-                <span class="pill"><strong>Confidence</strong><span id="metaConfidence" style="margin-left:8px;">—</span></span>
-                <span class="pill"><strong>Early Warning</strong><span id="metaWarning" style="margin-left:8px;">—</span></span>
+              <div class="compact-meta-row pillrow">
+                <span class="pill"><strong>As of</strong><span id="metaAsof" style="margin-left:6px;">—</span></span>
+                <span class="pill"><strong>Dominant</strong><span id="metaDominant" style="margin-left:6px;">—</span></span>
+                <span class="pill"><strong>Confidence</strong><span id="metaConfidence" style="margin-left:6px;">—</span></span>
+                <span class="pill"><strong>Early Warning</strong><span id="metaWarning" style="margin-left:6px;">—</span></span>
               </div>
             </article>
 
@@ -124,20 +39,20 @@
 
                 <div class="hero-metric">
                   <div class="metric-label">Prediction Summary</div>
-                  <div id="summaryMini" class="metric-value" style="font-size:20px;line-height:1.2;">—</div>
+                  <div id="summaryMini" class="metric-value">—</div>
                   <div id="summaryMiniSub" class="metric-sub">latest summary</div>
                 </div>
 
                 <div class="hero-metric">
                   <div class="metric-label">Runtime Status</div>
-                  <div id="runtimeMini" class="metric-value" style="font-size:20px;line-height:1.2;">Loading</div>
+                  <div id="runtimeMini" class="metric-value">Loading</div>
                   <div id="runtimeMiniSub" class="metric-sub">artifact check</div>
                 </div>
               </div>
             </aside>
           </section>
 
-          <section class="card" style="margin-top:0;">
+          <section class="card section-no-margin">
             <div class="sectionTitle">
               <h2>Global Status</h2>
               <span class="hint">analysis/global_status_latest.json</span>
@@ -145,7 +60,7 @@
             <div data-global-status data-page="prediction"></div>
           </section>
 
-          <section class="content-grid">
+          <section class="content-grid prediction-top">
             <article class="card">
               <div class="section-header">
                 <div>
@@ -157,7 +72,7 @@
 
               <p id="predictionSummaryMain" class="summary-text">Loading prediction summary...</p>
 
-              <div class="detail-grid" style="margin-top:14px;">
+              <div class="detail-grid mt-compact">
                 <article class="detail-card">
                   <div class="detail-eyebrow">Confidence</div>
                   <h3 class="detail-title">Confidence Context</h3>
@@ -197,7 +112,7 @@
                     <h3 id="fxReasonTitle" class="detail-title">Decision Context</h3>
                     <p id="fxReasonText" class="detail-text">FX reason unavailable.</p>
                     <div class="pillrow">
-                      <span class="pill"><strong>as_of</strong><span id="fxAsof" style="margin-left:8px;">—</span></span>
+                      <span class="pill"><strong>as_of</strong><span id="fxAsof" style="margin-left:6px;">—</span></span>
                     </div>
                   </div>
                 </div>
@@ -317,10 +232,10 @@
                 <p class="section-subtitle">Best / base / worst style branches from scenario output.</p>
               </div>
             </div>
-            <div id="scenarioCardGrid" class="chart-grid"></div>
+            <div id="scenarioCardGrid" class="scenario-compact-grid"></div>
           </section>
 
-          <section class="chart-grid">
+          <section class="quad-grid">
             <article class="card">
               <div class="section-header">
                 <div>
@@ -362,7 +277,7 @@
             </article>
           </section>
 
-          <section class="card">
+          <section class="card history-compact">
             <div class="section-header">
               <div>
                 <h2 class="section-title">Prediction History</h2>
@@ -921,8 +836,8 @@
         <article class="list-row">
           <span class="pill">${result?.ok ? "OK" : "—"}</span>
           <div>
-            <div class="sectionTitle" style="margin-bottom:6px;">
-              <h2 style="font-size:16px;margin:0;">${escapeHtml(name)}</h2>
+            <div class="source-status-head">
+              <h2 class="source-status-title">${escapeHtml(name)}</h2>
               <span class="hint mono">${escapeHtml(result?.url || "")}</span>
             </div>
             <p class="inline-text">${result?.ok ? "source loaded" : "source unavailable"}</p>
@@ -997,12 +912,12 @@
         return;
       }
 
-      root.innerHTML = history.slice(0, 10).map((item, index) => `
+      root.innerHTML = history.slice(0, 8).map((item, index) => `
         <article class="list-row">
           <span class="pill">${escapeHtml(String(index + 1))}</span>
           <div>
-            <div class="sectionTitle" style="margin-bottom:6px;">
-              <h2 style="font-size:16px;margin:0;">${escapeHtml(titleize(item.dominant_scenario || "snapshot"))}</h2>
+            <div class="history-row-head">
+              <h2 class="history-row-title">${escapeHtml(titleize(item.dominant_scenario || "snapshot"))}</h2>
               <span class="hint mono">${escapeHtml(formatShortDate(item.date || item.as_of))}</span>
             </div>
             <p class="inline-text">${escapeHtml(item.summary || "Prediction snapshot")} / Confidence ${escapeHtml(formatConfidence(item.confidence))} / ${escapeHtml(titleize(item.overall_risk))}</p>
@@ -1163,7 +1078,7 @@
 
     window.addEventListener("DOMContentLoaded", init);
   </script>
-  <script src="/static/common/global_status.js?v=20260318-prediction-fx-1"></script>
-  <script src="/static/common/layout.js?v=20260318-prediction-fx-1"></script>
+  <script src="/static/common/global_status.js?v=20260318-prediction-compact-3"></script>
+  <script src="/static/common/layout.js?v=20260318-prediction-compact-3"></script>
 </body>
 </html>
