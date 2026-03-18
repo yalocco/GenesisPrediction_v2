@@ -48,7 +48,7 @@ Theme Unified Fix 2026-03-15
   --section-gap: 34px;
 
   --topbar-min-height: 76px;
-  --topbar-status-width: 320px;
+  --topbar-status-width: 420px;
   --topbar-gap: 18px;
   --topbar-health-width: 320px;
 }
@@ -509,6 +509,119 @@ textarea {
   color: var(--text-main);
 }
 
+/* Shared status colors */
+.status-safe {
+  border-color: rgba(63,185,80,.35) !important;
+  background: rgba(63,185,80,.08) !important;
+  box-shadow: inset 0 0 0 1px rgba(63,185,80,.08);
+}
+
+.status-safe .status-value,
+.status-safe .global-status-value,
+.status-safe .metric-value,
+.status-safe .value,
+.pill.status-safe {
+  color: var(--success) !important;
+}
+
+.status-caution {
+  border-color: rgba(227,179,65,.35) !important;
+  background: rgba(227,179,65,.08) !important;
+  box-shadow: inset 0 0 0 1px rgba(227,179,65,.08);
+}
+
+.status-caution .status-value,
+.status-caution .global-status-value,
+.status-caution .metric-value,
+.status-caution .value,
+.pill.status-caution {
+  color: var(--warn) !important;
+}
+
+.status-danger {
+  border-color: rgba(248,81,73,.35) !important;
+  background: rgba(248,81,73,.08) !important;
+  box-shadow: inset 0 0 0 1px rgba(248,81,73,.08);
+}
+
+.status-danger .status-value,
+.status-danger .global-status-value,
+.status-danger .metric-value,
+.status-danger .value,
+.pill.status-danger {
+  color: var(--danger) !important;
+}
+
+.status-neutral {
+  border-color: rgba(255,255,255,.08) !important;
+  background: rgba(255,255,255,.04) !important;
+}
+
+.status-neutral .status-value,
+.status-neutral .global-status-value,
+.status-neutral .metric-value,
+.status-neutral .value,
+.pill.status-neutral {
+  color: var(--text-main) !important;
+}
+
+/* Specific pill tuning */
+.pill.status-safe,
+.pill.status-caution,
+.pill.status-danger,
+.pill.status-neutral {
+  transition:
+    color .18s ease,
+    border-color .18s ease,
+    background-color .18s ease,
+    box-shadow .18s ease;
+}
+
+.pill.status-safe {
+  box-shadow: inset 0 0 0 1px rgba(63,185,80,.10);
+}
+
+.pill.status-caution {
+  box-shadow: inset 0 0 0 1px rgba(227,179,65,.10);
+}
+
+.pill.status-danger {
+  box-shadow: inset 0 0 0 1px rgba(248,81,73,.10);
+}
+
+.pill.status-neutral {
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+}
+
+/* Specific global-status tuning */
+.global-status-card.status-safe,
+.status-card.status-safe,
+.status-item.status-safe {
+  border-color: rgba(63,185,80,.30);
+  background: rgba(63,185,80,.06);
+}
+
+.global-status-card.status-caution,
+.status-card.status-caution,
+.status-item.status-caution {
+  border-color: rgba(227,179,65,.30);
+  background: rgba(227,179,65,.06);
+}
+
+.global-status-card.status-danger,
+.status-card.status-danger,
+.status-item.status-danger {
+  border-color: rgba(248,81,73,.30);
+  background: rgba(248,81,73,.06);
+}
+
+.global-status-card.status-neutral,
+.status-card.status-neutral,
+.status-item.status-neutral {
+  border-color: rgba(120,160,220,.12);
+  background: rgba(8,14,28,.22);
+}
+
 /* Metrics / KPI */
 .metric-card,
 .overlay-kpi {
@@ -740,7 +853,6 @@ textarea {
     font-size: 22px;
   }
 }
-
 
 /* Time display stabilization */
 .status-card-updated .status-value {

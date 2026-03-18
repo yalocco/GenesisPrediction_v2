@@ -1,335 +1,372 @@
-(() => {
+(function () {
   "use strict";
 
-  const JSON_FETCH_OPTIONS = {
-    cache: "no-store",
-    headers: {
-      "Cache-Control": "no-cache",
-      Pragma: "no-cache",
-    },
+  const GLOBAL_STATUS_URL = "/analysis/global_status_latest.json";
+
+  const DEFAULT_STATUS = {
+    as_of: "--",
+    updated: "--",
+    global_risk: "--",
+    global_risk_sub: "",
+    sentiment_balance: "--",
+    sentiment_balance_sub: "",
+    fx_regime: "--",
+    fx_regime_sub: "",
+    articles: "--",
+    articles_sub: "",
+    health: "--",
+    health_sub: ""
   };
 
-  const GLOBAL_STATUS_PATH = "/analysis/global_status_latest.json";
+  let latestStatus = { ...DEFAULT_STATUS };
+  let hasFetched = false;
+  let headerRetryCount = 0;
+  let headerRetryTimer = null;
 
-  function textValue(value, fallback = "--") {
-    if (value === null || value === undefined) return fallback;
-
-    if (typeof value === "object") {
-      if (Array.isArray(value)) {
-        return value.length ? value.join(", ") : fallback;
-      }
-
-      const objectText =
-        value.status ??
-        value.label ??
-        value.value ??
-        value.name ??
-        value.state ??
-        value.level;
-
-      if (objectText !== null && objectText !== undefined && String(objectText).trim()) {
-        return String(objectText).trim();
-      }
-
+  function text(value, fallback = "--") {
+    if (value === null || value === undefined) {
       return fallback;
     }
-
-    const text = String(value).trim();
-    return text ? text : fallback;
+    const s = String(value).trim();
+    return s ? s : fallback;
   }
 
-  function healthDisplayValue(value) {
-    if (value === null || value === undefined) return "--";
+  function upper(value, fallback = "--") {
+    const s = text(value, fallback);
+    return s === fallback ? fallback : s.toUpperCase();
+  }
 
-    if (typeof value === "object") {
-      return textValue(
-        value.status ??
-        value.label ??
-        value.value ??
-        value.name ??
-        value.state ??
-        value.level,
-        "--"
-      );
+  function normalizeStatusClass(value) {
+    const v = upper(value);
+
+    if (
+      v === "SAFE" ||
+      v === "OK" ||
+      v === "POS" ||
+      v === "LOW" ||
+      v === "READY" ||
+      v === "STABLE"
+    ) {
+      return "safe";
     }
 
-    return textValue(value, "--");
-  }
-
-  function formatPill(label, value) {
-    return `${label}: ${textValue(value)}`;
-  }
-
-  function setTextContent(selectors, value) {
-    if (value === undefined || value === null) return false;
-
-    let touched = false;
-
-    selectors.forEach((selector) => {
-      document.querySelectorAll(selector).forEach((node) => {
-        node.textContent = String(value);
-        touched = true;
-      });
-    });
-
-    return touched;
-  }
-
-  function findStatusCardByLabel(labelText) {
-    const normalizedTarget = String(labelText || "").trim().toLowerCase();
-    const candidates = Array.from(
-      document.querySelectorAll(".status-item, .metric-card, .card, .kpi-card")
-    );
-
-    return candidates.find((card) => {
-      const labelNode =
-        card.querySelector(".status-label, .metric-label, .card-label, .label") ||
-        Array.from(card.querySelectorAll("*")).find((el) => {
-          const text = String(el.textContent || "").trim().toLowerCase();
-          return text === normalizedTarget;
-        });
-
-      if (!labelNode) return false;
-
-      const text = String(labelNode.textContent || "").trim().toLowerCase();
-      return text === normalizedTarget;
-    });
-  }
-
-  function setStatusCard(labelText, value, sub) {
-    const card = findStatusCardByLabel(labelText);
-    if (!card) return;
-
-    const valueNode =
-      card.querySelector(".status-value, .metric-value, .value") ||
-      Array.from(card.children).find((el) => {
-        const cls = String(el.className || "");
-        return /value/i.test(cls);
-      });
-
-    const subNode =
-      card.querySelector(".status-sub, .metric-sub, .sub") ||
-      Array.from(card.children).find((el) => {
-        const cls = String(el.className || "");
-        return /sub/i.test(cls);
-      });
-
-    if (String(labelText || "").trim().toUpperCase() === "UPDATED") {
-      card.classList.add("status-card-updated");
+    if (
+      v === "CAUTION" ||
+      v === "WARN" ||
+      v === "WARNING" ||
+      v === "MIX" ||
+      v === "GUARDED" ||
+      v === "ELEVATED" ||
+      v === "DEGRADED" ||
+      v === "WATCH"
+    ) {
+      return "caution";
     }
 
-    if (valueNode) {
-      valueNode.textContent = String(value);
-      valueNode.title = String(value);
-    }
-    if (subNode) {
-      subNode.textContent = String(sub);
-      subNode.title = String(sub);
-    }
-  }
-
-  function normalizeRiskClassName(value) {
-    const text = String(value || "").trim().toLowerCase();
-
-    if (text === "low") return "risk-low";
-    if (text === "guarded") return "risk-guarded";
-    if (text === "elevated") return "risk-elevated";
-    if (text === "high") return "risk-high";
-    if (text === "critical") return "risk-critical";
-
-    return "";
-  }
-
-
-  function parseDateLike(value) {
-    if (value === null || value === undefined) return null;
-
-    const text = String(value).trim();
-    if (!text) return null;
-
-    const normalized = text.replace(/([+-]\d{2})(\d{2})$/, "$1:$2");
-    const date = new Date(normalized);
-    if (Number.isNaN(date.getTime())) return null;
-    return date;
-  }
-
-  function formatDateOnly(value, fallback = "--") {
-    const text = textValue(value, fallback);
-    if (text === fallback) return fallback;
-    const match = String(text).match(/^(\d{4})-(\d{2})-(\d{2})/);
-    return match ? `${match[1]}-${match[2]}-${match[3]}` : text;
-  }
-
-  function formatJstDateTime(value, fallback = "--") {
-    const date = parseDateLike(value);
-    if (!date) return textValue(value, fallback);
-
-    const parts = new Intl.DateTimeFormat("ja-JP", {
-      timeZone: "Asia/Tokyo",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).formatToParts(date);
-
-    const map = {};
-    parts.forEach((part) => {
-      if (part.type !== "literal") map[part.type] = part.value;
-    });
-
-    if (!map.year || !map.month || !map.day || !map.hour || !map.minute) {
-      return textValue(value, fallback);
+    if (
+      v === "DANGER" ||
+      v === "NG" ||
+      v === "NEG" ||
+      v === "HIGH" ||
+      v === "CRITICAL" ||
+      v === "OFF" ||
+      v === "BLOCKED" ||
+      v === "ALERT"
+    ) {
+      return "danger";
     }
 
-    return `${map.year}-${map.month}-${map.day} ${map.hour}:${map.minute} JST`;
+    return "neutral";
   }
 
-  function applyRiskClass(rawRiskValue) {
-    const className = normalizeRiskClassName(rawRiskValue);
+  function addStatusClass(node, value) {
+    if (!node) {
+      return;
+    }
+    node.classList.remove("status-safe", "status-caution", "status-danger", "status-neutral");
+    node.classList.add(`status-${normalizeStatusClass(value)}`);
+  }
 
-    const nodes = document.querySelectorAll(
-      "[data-risk-target], .risk-pill, .global-risk-pill, .status-item, .metric-card"
-    );
-
-    nodes.forEach((node) => {
-      node.classList.remove(
-        "risk-low",
-        "risk-guarded",
-        "risk-elevated",
-        "risk-high",
-        "risk-critical"
-      );
-
-      if (className) {
-        node.classList.add(className);
+  function setFirstText(selectors, value) {
+    for (const selector of selectors) {
+      const node = document.querySelector(selector);
+      if (node) {
+        node.textContent = value;
       }
-    });
-
-    document.documentElement.dataset.globalRisk = className.replace(/^risk-/, "");
-  }
-
-  async function fetchGlobalStatus() {
-    const response = await fetch(GLOBAL_STATUS_PATH, JSON_FETCH_OPTIONS);
-
-    if (!response.ok) {
-      throw new Error(`global status fetch failed: ${response.status}`);
     }
+  }
 
-    const data = await response.json();
-
-    if (!data || typeof data !== "object") {
-      throw new Error("global status payload is not an object");
+  function setFirstClass(selectors, value) {
+    for (const selector of selectors) {
+      const node = document.querySelector(selector);
+      if (node) {
+        addStatusClass(node, value);
+      }
     }
-
-    return data;
   }
 
-  function deriveUpdatedSub(payload) {
-    return textValue(
-      payload.updated_sub ??
-      payload.sources?.summary ??
-      payload.sources?.prediction ??
-      "analysis latest"
-    );
-  }
-
-  function buildDisplaySnapshot(payload) {
-    const asOfValue = formatDateOnly(payload.as_of ?? payload.updated);
-    const updatedValue = formatJstDateTime(
-      payload.generated_at ?? payload.updated_at ?? payload.updated ?? payload.as_of,
-      asOfValue
-    );
-
+  function getHeaderSelectors() {
     return {
-      riskValue: textValue(payload.global_risk).toUpperCase(),
-      riskSub: textValue(payload.global_risk_sub),
-
-      sentimentValue: textValue(payload.sentiment_balance),
-      sentimentSub: textValue(payload.sentiment_balance_sub),
-
-      fxValue: textValue(payload.fx_regime),
-      fxSub: textValue(payload.fx_regime_sub),
-
-      articlesValue: textValue(payload.articles),
-      articlesSub: textValue(payload.articles_sub),
-
-      updatedValue,
-      updatedSub: deriveUpdatedSub(payload),
-
-      healthValue: healthDisplayValue(payload.health),
-      healthSub: textValue(payload.health_sub),
-
-      asOfValue,
+      ready: [
+        "#pillReady",
+        "#headerReady",
+        "[data-role='header-ready']",
+        "[data-header-ready]",
+        ".js-header-ready",
+        ".gp-header-ready"
+      ],
+      health: [
+        "#pillHealth",
+        "#headerHealth",
+        "[data-role='header-health']",
+        "[data-header-health]",
+        ".js-header-health",
+        ".gp-header-health"
+      ],
+      fx: [
+        "#pillFx",
+        "#headerFx",
+        "[data-role='header-fx']",
+        "[data-header-fx]",
+        ".js-header-fx",
+        ".gp-header-fx",
+        "#pillStatus",
+        "#headerStatus",
+        "[data-role='header-status']",
+        "[data-header-status]",
+        ".js-header-status",
+        ".gp-header-status"
+      ],
+      asof: [
+        "#pillAsOf",
+        "#headerAsOf",
+        "[data-role='header-asof']",
+        "[data-header-asof]",
+        ".js-header-asof",
+        ".gp-header-asof"
+      ]
     };
   }
 
-  function applyStatusSnapshot(snapshot) {
-    setStatusCard("GLOBAL RISK", snapshot.riskValue, snapshot.riskSub);
-    setStatusCard("SENTIMENT BALANCE", snapshot.sentimentValue, snapshot.sentimentSub);
-    setStatusCard("FX REGIME", snapshot.fxValue, snapshot.fxSub);
-    setStatusCard("ARTICLES", snapshot.articlesValue, snapshot.articlesSub);
-    setStatusCard("UPDATED", snapshot.updatedValue, snapshot.updatedSub);
-
-    setTextContent(
-      [
-        "#global-status-as-of",
-        "#header-as-of",
-        "#pillAsOf",
-        "#pillAsOfLocal",
-        "#overlayAsOf",
-        "#localPillAsOf",
-        "[data-bind='global-status-as-of']",
-      ],
-      formatPill("as_of", snapshot.asOfValue)
+  function hasHeaderNodes() {
+    const s = getHeaderSelectors();
+    return (
+      s.ready.some((x) => document.querySelector(x)) ||
+      s.health.some((x) => document.querySelector(x)) ||
+      s.fx.some((x) => document.querySelector(x)) ||
+      s.asof.some((x) => document.querySelector(x))
     );
-
-    setTextContent(
-      [
-        "#global-status-health",
-        "#header-health",
-        "#pillHealth",
-        "[data-bind='global-status-health']",
-      ],
-      formatPill("Health", snapshot.healthValue)
-    );
-
-    applyRiskClass(snapshot.riskValue);
-
-    document.documentElement.dataset.globalHealth = snapshot.healthValue.toLowerCase();
-    document.documentElement.dataset.globalReady = "ready";
-    document.documentElement.dataset.globalStatusPath = GLOBAL_STATUS_PATH;
   }
 
-  function applyLoadError(error) {
-    const message = error instanceof Error ? error.message : String(error || "load error");
-
-    setTextContent(
-      [
-        "#updated-sub",
-        "#home-updated-sub",
-        "[data-bind='updated-sub']",
-      ],
-      message
-    );
-
-    document.documentElement.dataset.globalReady = "error";
-    document.documentElement.dataset.globalStatusPath = GLOBAL_STATUS_PATH;
+  function deriveHeaderReady(status) {
+    const health = upper(status.health);
+    if (health === "NG") {
+      return "Blocked";
+    }
+    return "Ready";
   }
 
-  async function refreshGlobalStatus() {
-    const payload = await fetchGlobalStatus();
-    const snapshot = buildDisplaySnapshot(payload);
-    applyStatusSnapshot(snapshot);
-    return { payload, snapshot };
+  function deriveHeaderFx(status) {
+    const fx = upper(status.fx_regime);
+    if (fx === "--") {
+      return "FX: --";
+    }
+    return `FX: ${fx}`;
+  }
+
+  function buildCardsForPage(pageType, status) {
+    const asOf = text(status.as_of || status.updated);
+
+    if (pageType === "overlay") {
+      return [
+        { label: "Date", value: asOf, sub: "analysis latest", statusValue: "" },
+        { label: "FX Base", value: text(status.articles), sub: text(status.articles_sub, ""), statusValue: "" },
+        { label: "FX Signal", value: upper(status.fx_regime), sub: text(status.fx_regime_sub, ""), statusValue: status.fx_regime },
+        { label: "Trend", value: upper(status.global_risk), sub: text(status.global_risk_sub, ""), statusValue: status.global_risk },
+        { label: "Health", value: upper(status.health), sub: text(status.health_sub, ""), statusValue: status.health }
+      ];
+    }
+
+    if (pageType === "digest") {
+      return [
+        { label: "Date", value: asOf, sub: "analysis latest", statusValue: "" },
+        { label: "Risk", value: upper(status.global_risk), sub: text(status.global_risk_sub, ""), statusValue: status.global_risk },
+        { label: "Sentiment", value: upper(status.sentiment_balance), sub: text(status.sentiment_balance_sub, ""), statusValue: status.sentiment_balance },
+        { label: "FX", value: upper(status.fx_regime), sub: text(status.fx_regime_sub, ""), statusValue: status.fx_regime },
+        { label: "Health", value: upper(status.health), sub: text(status.health_sub, ""), statusValue: status.health }
+      ];
+    }
+
+    if (pageType === "sentiment") {
+      return [
+        { label: "Date", value: asOf, sub: "analysis latest", statusValue: "" },
+        { label: "Articles", value: text(status.articles), sub: text(status.articles_sub, ""), statusValue: "" },
+        { label: "Sentiment", value: upper(status.sentiment_balance), sub: text(status.sentiment_balance_sub, ""), statusValue: status.sentiment_balance },
+        { label: "Risk", value: upper(status.global_risk), sub: text(status.global_risk_sub, ""), statusValue: status.global_risk },
+        { label: "Health", value: upper(status.health), sub: text(status.health_sub, ""), statusValue: status.health }
+      ];
+    }
+
+    return [
+      { label: "Date", value: asOf, sub: "analysis latest", statusValue: "" },
+      { label: "System", value: text(status.articles), sub: text(status.articles_sub, ""), statusValue: "" },
+      { label: "Analysis", value: upper(status.sentiment_balance), sub: text(status.sentiment_balance_sub, ""), statusValue: status.sentiment_balance },
+      { label: "Prediction", value: upper(status.global_risk), sub: text(status.global_risk_sub, ""), statusValue: status.global_risk },
+      { label: "Health", value: upper(status.health), sub: text(status.health_sub, ""), statusValue: status.health }
+    ];
+  }
+
+  function createCard(card) {
+    const article = document.createElement("article");
+    article.className = "global-status-card";
+    addStatusClass(article, card.statusValue);
+
+    const labelEl = document.createElement("div");
+    labelEl.className = "global-status-label";
+    labelEl.textContent = text(card.label);
+
+    const valueEl = document.createElement("div");
+    valueEl.className = "global-status-value";
+    valueEl.textContent = text(card.value);
+
+    const subEl = document.createElement("div");
+    subEl.className = "global-status-sub";
+    subEl.textContent = text(card.sub, "");
+
+    article.appendChild(labelEl);
+    article.appendChild(valueEl);
+    article.appendChild(subEl);
+
+    return article;
+  }
+
+  function renderCardRoots(status) {
+    const roots = Array.from(document.querySelectorAll("[data-global-status]"));
+
+    roots.forEach((root) => {
+      const pageType = text(root.dataset.page, "home").toLowerCase();
+      const cards = buildCardsForPage(pageType, status);
+
+      root.innerHTML = "";
+      const grid = document.createElement("section");
+      grid.className = "global-status-grid";
+
+      cards.forEach((card) => {
+        grid.appendChild(createCard(card));
+      });
+
+      root.appendChild(grid);
+    });
+  }
+
+  function renderHeader(status) {
+    const selectors = getHeaderSelectors();
+
+    const readyText = deriveHeaderReady(status);
+    const healthText = `Health: ${upper(status.health)}`;
+    const fxText = deriveHeaderFx(status);
+    const asOfText = `as_of: ${text(status.as_of || status.updated)}`;
+
+    setFirstText(selectors.ready, readyText);
+    setFirstText(selectors.health, healthText);
+    setFirstText(selectors.fx, fxText);
+    setFirstText(selectors.asof, asOfText);
+
+    setFirstClass(selectors.ready, readyText);
+    setFirstClass(selectors.health, status.health);
+    setFirstClass(selectors.fx, status.fx_regime);
+    setFirstClass(selectors.asof, "");
+  }
+
+  function renderLegacyFields(status) {
+    setFirstText(["#globalRiskValue", "[data-role='global-risk-value']"], upper(status.global_risk));
+    setFirstText(["#globalRiskSub", "[data-role='global-risk-sub']"], text(status.global_risk_sub, ""));
+    setFirstText(["#sentimentBalanceValue", "[data-role='sentiment-balance-value']"], upper(status.sentiment_balance));
+    setFirstText(["#sentimentBalanceSub", "[data-role='sentiment-balance-sub']"], text(status.sentiment_balance_sub, ""));
+    setFirstText(["#fxRegimeValue", "[data-role='fx-regime-value']"], upper(status.fx_regime));
+    setFirstText(["#fxRegimeSub", "[data-role='fx-regime-sub']"], text(status.fx_regime_sub, ""));
+    setFirstText(["#healthValue", "[data-role='health-value']"], upper(status.health));
+    setFirstText(["#healthSub", "[data-role='health-sub']"], text(status.health_sub, ""));
+    setFirstText(["#globalStatusAsOf", "[data-role='global-status-asof']"], text(status.as_of || status.updated));
+  }
+
+  function renderAll(status) {
+    renderCardRoots(status);
+    renderHeader(status);
+    renderLegacyFields(status);
+  }
+
+  async function fetchGlobalStatus() {
+    const response = await fetch(`${GLOBAL_STATUS_URL}?t=${Date.now()}`, {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch global status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (!data || typeof data !== "object") {
+      throw new Error("Invalid global status payload");
+    }
+
+    return { ...DEFAULT_STATUS, ...data };
+  }
+
+  function startHeaderRetry() {
+    if (headerRetryTimer !== null) {
+      return;
+    }
+
+    headerRetryCount = 0;
+
+    headerRetryTimer = window.setInterval(() => {
+      headerRetryCount += 1;
+
+      if (hasHeaderNodes()) {
+        renderHeader(latestStatus);
+        window.clearInterval(headerRetryTimer);
+        headerRetryTimer = null;
+        return;
+      }
+
+      if (headerRetryCount >= 20) {
+        window.clearInterval(headerRetryTimer);
+        headerRetryTimer = null;
+      }
+    }, 250);
+  }
+
+  async function initGlobalStatus() {
+    startHeaderRetry();
+
+    if (!hasFetched) {
+      hasFetched = true;
+      try {
+        latestStatus = await fetchGlobalStatus();
+      } catch (error) {
+        console.error("[global_status] fetch failed", error);
+        latestStatus = { ...DEFAULT_STATUS };
+      }
+    }
+
+    renderAll(latestStatus);
   }
 
   window.GenesisGlobalStatus = {
-    refresh: refreshGlobalStatus,
-    applyLoadError,
-    path: GLOBAL_STATUS_PATH,
+    init: initGlobalStatus,
+    rerender: function () {
+      renderAll(latestStatus);
+    }
   };
 
-  window.refreshGlobalStatus = refreshGlobalStatus;
+  window.GPGlobalStatus = window.GenesisGlobalStatus;
+
+  document.addEventListener("DOMContentLoaded", initGlobalStatus, { once: true });
+  document.addEventListener("layout:mounted", function () {
+    renderAll(latestStatus);
+  });
+  window.addEventListener("load", function () {
+    renderAll(latestStatus);
+  });
 })();

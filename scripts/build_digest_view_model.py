@@ -47,7 +47,7 @@ def pick_number(*values: Any) -> Optional[float]:
             n = float(value)
         except Exception:
             continue
-        if n == n:  # not NaN
+        if n == n:
             return n
     return None
 
@@ -86,6 +86,19 @@ def normalize_list_items(value: Any) -> List[str]:
             seen.add(item)
             unique.append(item)
     return unique
+
+
+def normalize_fx_status(value: Any) -> str:
+    text = str(value or "").strip().upper()
+
+    if text in {"SAFE", "OK", "ON", "BUY", "RISK_ON"}:
+        return "SAFE"
+    if text in {"CAUTION", "WARN", "WARNING", "HOLD", "MIXED"}:
+        return "CAUTION"
+    if text in {"DANGER", "OFF", "SELL", "RISK_OFF"}:
+        return "DANGER"
+
+    return ""
 
 
 def extract_summary_text(summary_json: Dict[str, Any], daily_summary_json: Dict[str, Any]) -> Optional[str]:
@@ -190,6 +203,7 @@ def extract_prediction_block(prediction_json: Dict[str, Any]) -> Dict[str, Any]:
             "risk": "",
             "dominant_scenario": "",
             "confidence": None,
+            "confidence_pct": None,
             "summary": "",
             "drivers": [],
             "watchpoints": [],
@@ -240,6 +254,84 @@ def extract_prediction_block(prediction_json: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def extract_fx_block(fx_json: Dict[str, Any]) -> Dict[str, Any]:
+    if not fx_json:
+        return {
+            "available": False,
+            "as_of": "",
+            "generated_at": "",
+            "status": "",
+            "raw_status": "",
+            "pair": "",
+            "summary": "",
+            "reason": "",
+            "action": "",
+            "source": "analysis/fx/fx_decision_latest.json",
+        }
+
+    raw_status = first_non_empty(
+        fx_json.get("primary"),
+        fx_json.get("decision"),
+        fx_json.get("status"),
+        fx_json.get("regime"),
+    ) or ""
+
+    status = normalize_fx_status(raw_status)
+    pair = first_non_empty(
+        fx_json.get("pair"),
+        fx_json.get("primary_pair"),
+        fx_json.get("symbol"),
+    ) or ""
+
+    reason = first_non_empty(
+        fx_json.get("reason"),
+        fx_json.get("note"),
+        fx_json.get("message"),
+    ) or ""
+
+    action = first_non_empty(
+        fx_json.get("action"),
+        fx_json.get("recommendation"),
+    ) or ""
+
+    summary = first_non_empty(
+        fx_json.get("summary"),
+        fx_json.get("headline"),
+    )
+    if not summary:
+        summary_parts: List[str] = []
+        if pair:
+            summary_parts.append(pair)
+        if status:
+            summary_parts.append(status)
+        elif raw_status:
+            summary_parts.append(raw_status.upper())
+        if reason:
+            summary_parts.append(reason)
+        summary = ": ".join(summary_parts[:2]) if len(summary_parts) >= 2 else " ".join(summary_parts)
+
+    return {
+        "available": True,
+        "as_of": first_non_empty(
+            fx_json.get("as_of"),
+            fx_json.get("date"),
+            fx_json.get("generated_at"),
+            fx_json.get("updated"),
+        ) or "",
+        "generated_at": first_non_empty(
+            fx_json.get("generated_at"),
+            fx_json.get("updated"),
+        ) or "",
+        "status": status,
+        "raw_status": raw_status.upper() if raw_status else "",
+        "pair": pair,
+        "summary": summary or "",
+        "reason": reason,
+        "action": action,
+        "source": "analysis/fx/fx_decision_latest.json",
+    }
+
+
 def build_payload(
     date_value: str,
     summary_text: Optional[str],
@@ -247,6 +339,7 @@ def build_payload(
     highlights: List[str],
     daily_summary_json: Dict[str, Any],
     prediction_json: Dict[str, Any],
+    fx_json: Dict[str, Any],
 ) -> Dict[str, Any]:
     new_urls = daily_summary_json.get("new_urls")
     if not isinstance(new_urls, list):
@@ -257,6 +350,7 @@ def build_payload(
         n_events = len(titles)
 
     prediction_block = extract_prediction_block(prediction_json)
+    fx_block = extract_fx_block(fx_json)
 
     return {
         "status": "ok",
@@ -271,6 +365,7 @@ def build_payload(
             "new_url_count": len(new_urls),
         },
         "prediction": prediction_block,
+        "fx": fx_block,
     }
 
 
@@ -286,16 +381,19 @@ def main() -> None:
     digest_dir = root / "data" / "digest"
     digest_view_dir = digest_dir / "view"
     prediction_analysis_dir = root / "analysis" / "prediction"
+    fx_analysis_dir = root / "analysis" / "fx"
 
     daily_news_path = world_analysis_dir / f"daily_news_{args.date}.json"
     daily_summary_latest_path = world_analysis_dir / "daily_summary_latest.json"
     summary_json_path = world_analysis_dir / "summary.json"
     prediction_latest_path = prediction_analysis_dir / "prediction_latest.json"
+    fx_decision_latest_path = fx_analysis_dir / "fx_decision_latest.json"
 
     daily_news_json = load_json(daily_news_path)
     daily_summary_json = load_json(daily_summary_latest_path)
     summary_json = load_json(summary_json_path)
     prediction_json = load_json(prediction_latest_path)
+    fx_json = load_json(fx_decision_latest_path)
 
     summary_text = extract_summary_text(summary_json, daily_summary_json)
     titles = extract_titles(daily_news_json, daily_summary_json)
@@ -308,6 +406,7 @@ def main() -> None:
         highlights=highlights,
         daily_summary_json=daily_summary_json,
         prediction_json=prediction_json,
+        fx_json=fx_json,
     )
 
     dated_path = digest_view_dir / f"{args.date}.json"
@@ -334,6 +433,13 @@ def main() -> None:
         print(f"[OK] prediction confidence : {payload['prediction']['confidence_pct']}")
     else:
         print("[WARN] prediction missing (analysis/prediction/prediction_latest.json not found)")
+
+    if payload["fx"]["available"]:
+        print("[OK] fx integrated")
+        print(f"[OK] fx status            : {payload['fx']['status'] or payload['fx']['raw_status']}")
+        print(f"[OK] fx pair              : {payload['fx']['pair']}")
+    else:
+        print("[WARN] fx missing (analysis/fx/fx_decision_latest.json not found)")
 
 
 if __name__ == "__main__":

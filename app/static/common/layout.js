@@ -26,7 +26,18 @@
   }
 
   function isActiveNav(href) {
-    return currentPath() === normalizePath(href);
+    const now = currentPath();
+    const normalizedHref = normalizePath(href);
+
+    if (now === normalizedHref) {
+      return true;
+    }
+
+    if (now === "") {
+      return normalizedHref === "/static/index.html";
+    }
+
+    return false;
   }
 
   function buildNavHtml() {
@@ -55,6 +66,7 @@
             <div class="topbar-status" aria-label="Global status header">
               <span id="pillReady" class="pill">Ready</span>
               <span id="pillHealth" class="pill">Health: --</span>
+              <span id="pillFx" class="pill">FX: --</span>
               <span id="pillAsOf" class="pill">as_of: --</span>
             </div>
           </div>
@@ -77,20 +89,35 @@
 
   function injectHeader() {
     const root = document.getElementById("site-header");
-    if (!root) return;
+    if (!root) {
+      return;
+    }
     root.innerHTML = buildHeaderHtml();
   }
 
   function injectFooter() {
     const root = document.getElementById("site-footer");
-    if (!root) return;
+    if (!root) {
+      return;
+    }
     root.innerHTML = buildFooterHtml();
   }
 
   async function refreshSharedStatus() {
     try {
-      if (window.GenesisGlobalStatus && typeof window.GenesisGlobalStatus.refresh === "function") {
-        await window.GenesisGlobalStatus.refresh();
+      if (window.GenesisGlobalStatus) {
+        if (typeof window.GenesisGlobalStatus.init === "function") {
+          await window.GenesisGlobalStatus.init();
+          return;
+        }
+        if (typeof window.GenesisGlobalStatus.rerender === "function") {
+          await window.GenesisGlobalStatus.rerender();
+          return;
+        }
+        if (typeof window.GenesisGlobalStatus.refresh === "function") {
+          await window.GenesisGlobalStatus.refresh();
+          return;
+        }
       }
     } catch (_error) {
       // header skeleton remains visible even when status fetch fails
@@ -102,6 +129,9 @@
 
     injectHeader();
     injectFooter();
+
+    document.dispatchEvent(new CustomEvent("layout:mounted"));
+
     await refreshSharedStatus();
 
     document.documentElement.dataset.layoutReady = "1";

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Prediction - GenesisPrediction v2</title>
   <meta name="description" content="GenesisPrediction Prediction UI">
-  <link rel="stylesheet" href="/static/app.css?v=20260317-publish-ui-1">
+  <link rel="stylesheet" href="/static/app.css?v=20260318-prediction-fx-1">
   <style>
     .prediction-page{display:grid;gap:16px}
     .prediction-shell{display:grid;gap:16px}
@@ -24,6 +24,7 @@
     .hero-metric .metric-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.72;margin-bottom:6px}
     .hero-metric .metric-value{font-size:26px;line-height:1.05;font-weight:700;letter-spacing:-.02em;color:#eef4ff}
     .hero-metric .metric-sub{margin-top:4px;font-size:12px;opacity:.72;color:#c8d7f6;line-height:1.5}
+
     .chart-card{border:1px solid rgba(120,160,220,.12);border-radius:16px;padding:12px 14px;background:rgba(8,14,28,.18);min-width:0}
     .chart-card .chart-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.72;margin-bottom:6px}
     .chart-card .chart-value{font-size:24px;line-height:1.05;font-weight:700;letter-spacing:-.02em;color:#eef4ff;margin-bottom:10px}
@@ -32,7 +33,9 @@
     .chart-card .chart-value.neu{color:#eef4ff}
     .chart-card svg{width:100%;height:92px;display:block;border-radius:12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06)}
     .chart-note{margin-top:8px;font-size:12px;line-height:1.5;color:#c8d7f6;opacity:.8}
+
     .confidence-chip{display:inline-flex;align-items:center;justify-content:center;min-width:34px;min-height:28px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);font-size:12px;font-weight:700;line-height:1;letter-spacing:.03em;color:#93c5fd;width:max-content}
+
     .summary-text,.detail-text,.scenario-text,.signal-text,.trend-text{margin:0;color:#c8d7f6;line-height:1.8;font-size:15px}
     .detail-card,.scenario-card,.signal-card,.trend-card{border:1px solid rgba(120,160,220,.14);border-radius:16px;padding:12px 14px;background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));display:grid;gap:10px;min-width:0}
     .detail-eyebrow,.scenario-meta,.signal-meta,.trend-meta,.timeline-meta,.empty-meta{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.7}
@@ -46,12 +49,14 @@
     .progress-track{position:relative;height:10px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.08)}
     .progress-bar{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg, rgba(96,165,250,.95), rgba(59,130,246,.55))}
     .probability-value,.scenario-probability,.signal-strength,.trend-strength{font-size:13px;font-weight:700;opacity:.86;color:#c8d7f6}
+
     .scenario-card.scenario-best{border-color:rgba(96,165,250,.28);box-shadow:inset 0 0 0 1px rgba(96,165,250,.08)}
     .scenario-card.scenario-base{border-color:rgba(255,255,255,.10)}
     .scenario-card.scenario-worst{border-color:rgba(248,113,113,.28);box-shadow:inset 0 0 0 1px rgba(248,113,113,.08)}
     .scenario-card.scenario-best .scenario-meta span:first-child,.scenario-card.scenario-best .scenario-probability{color:#93c5fd}
     .scenario-card.scenario-base .scenario-meta span:first-child,.scenario-card.scenario-base .scenario-probability{color:#eef4ff}
     .scenario-card.scenario-worst .scenario-meta span:first-child,.scenario-card.scenario-worst .scenario-probability{color:#fca5a5}
+
     .signal-card.signal-low,.signal-card.signal-stable{border-color:rgba(125,211,252,.24);box-shadow:inset 0 0 0 1px rgba(125,211,252,.07)}
     .signal-card.signal-guarded{border-color:rgba(196,181,253,.24);box-shadow:inset 0 0 0 1px rgba(196,181,253,.07)}
     .signal-card.signal-elevated,.signal-card.signal-warn{border-color:rgba(250,204,21,.24);box-shadow:inset 0 0 0 1px rgba(250,204,21,.07)}
@@ -62,6 +67,7 @@
     .signal-card.signal-elevated .signal-badge,.signal-card.signal-warn .signal-badge{color:#facc15}
     .signal-card.signal-high .signal-badge{color:#fb923c}
     .signal-card.signal-critical .signal-badge{color:#f87171}
+
     .empty-card{min-height:160px;justify-content:center;text-align:center;border:1px solid rgba(120,160,220,.14);border-radius:16px;padding:14px;background:linear-gradient(180deg, rgba(10,16,30,.44), rgba(8,13,24,.28));display:grid;gap:8px}
     .empty-text{max-width:56ch;justify-self:center;color:#c8d7f6;line-height:1.7;margin:0}
     .muted{color:var(--text-muted, rgba(255,255,255,.72))}
@@ -69,12 +75,19 @@
     .status-item .status-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.72;margin-bottom:8px}
     .status-item .status-value{font-size:18px;line-height:1.2;font-weight:700;color:#eef4ff}
     .status-item .status-sub{margin-top:6px;font-size:12px;line-height:1.5;color:#c8d7f6;opacity:.8}
+
+    .fx-inline-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .fx-kpi-chip{display:inline-flex;align-items:center;justify-content:center;min-height:28px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);font-size:12px;font-weight:700;line-height:1}
+    .fx-kpi-chip.safe{color:#56efc1}
+    .fx-kpi-chip.caution{color:#ffcf6f}
+    .fx-kpi-chip.danger{color:#ff7e8d}
+    .fx-kpi-chip.neutral{color:#dbe6ff}
+
     @media (max-width:1100px){
       .hero-grid{grid-template-columns:1fr}
-      .global-status{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .fx-inline-grid{grid-template-columns:1fr}
     }
     @media (max-width:700px){
-      .global-status{grid-template-columns:1fr}
       .scenario-title-row,.signal-title-row,.trend-title-row,.timeline-title-row{flex-direction:column}
       .probability-row{grid-template-columns:1fr}
     }
@@ -124,46 +137,92 @@
             </aside>
           </section>
 
-          <section class="card global-status-panel">
-            <div class="global-status-head">
-              <div class="global-status-title">Global Status</div>
-              <div class="pillrow">
-                <span id="global-status-as-of" class="pill">as_of: --</span>
-                <span id="global-status-health" class="pill">Health: --</span>
-              </div>
+          <section class="card" style="margin-top:0;">
+            <div class="sectionTitle">
+              <h2>Global Status</h2>
+              <span class="hint">analysis/global_status_latest.json</span>
             </div>
+            <div data-global-status data-page="prediction"></div>
+          </section>
 
-            <div class="global-status">
-              <div class="status-item">
-                <div class="status-label">GLOBAL RISK</div>
-                <div class="status-value">—</div>
-                <div class="status-sub">loading</div>
+          <section class="content-grid">
+            <article class="card">
+              <div class="section-header">
+                <div>
+                  <h2 class="section-title">Prediction Summary</h2>
+                  <p class="section-subtitle">Topline interpretation of the current observation state.</p>
+                </div>
+                <div id="confidenceChip" class="confidence-chip">Confidence —</div>
               </div>
 
-              <div class="status-item">
-                <div class="status-label">SENTIMENT BALANCE</div>
-                <div class="status-value">—</div>
-                <div class="status-sub">loading</div>
-              </div>
+              <p id="predictionSummaryMain" class="summary-text">Loading prediction summary...</p>
 
-              <div class="status-item">
-                <div class="status-label">FX REGIME</div>
-                <div class="status-value">—</div>
-                <div class="status-sub">loading</div>
-              </div>
+              <div class="detail-grid" style="margin-top:14px;">
+                <article class="detail-card">
+                  <div class="detail-eyebrow">Confidence</div>
+                  <h3 class="detail-title">Confidence Context</h3>
+                  <p id="confidenceDetailText" class="detail-text">Loading...</p>
+                </article>
 
-              <div class="status-item">
-                <div class="status-label">ARTICLES</div>
-                <div class="status-value">—</div>
-                <div class="status-sub">loading</div>
+                <article class="detail-card">
+                  <div class="detail-eyebrow">Scenario Probability</div>
+                  <h3 class="detail-title">Relative Branch Weight</h3>
+                  <div id="scenarioProbabilityList" class="probability-stack"></div>
+                </article>
               </div>
+            </article>
 
-              <div class="status-item">
-                <div class="status-label">UPDATED</div>
-                <div class="status-value">—</div>
-                <div class="status-sub">loading</div>
-              </div>
-            </div>
+            <aside class="stack">
+              <article class="card">
+                <div class="section-header">
+                  <div>
+                    <h2 class="section-title">FX Summary</h2>
+                    <p class="section-subtitle">Current remittance / FX judgment aligned with the prediction layer.</p>
+                  </div>
+                </div>
+
+                <div class="fx-inline-grid">
+                  <div class="detail-card">
+                    <div class="detail-eyebrow">FX Status</div>
+                    <h3 id="fxStatusTitle" class="detail-title">—</h3>
+                    <div class="pillrow">
+                      <span id="fxPairChip" class="fx-kpi-chip neutral">pair: --</span>
+                      <span id="fxActionChip" class="fx-kpi-chip neutral">action: --</span>
+                    </div>
+                    <p id="fxSummaryText" class="detail-text">FX summary unavailable.</p>
+                  </div>
+
+                  <div class="detail-card">
+                    <div class="detail-eyebrow">FX Context</div>
+                    <h3 id="fxReasonTitle" class="detail-title">Decision Context</h3>
+                    <p id="fxReasonText" class="detail-text">FX reason unavailable.</p>
+                    <div class="pillrow">
+                      <span class="pill"><strong>as_of</strong><span id="fxAsof" style="margin-left:8px;">—</span></span>
+                    </div>
+                  </div>
+                </div>
+              </article>
+
+              <article class="card">
+                <div class="section-header">
+                  <div>
+                    <h2 class="section-title">Runtime Notes</h2>
+                    <p class="section-subtitle">Quick operating context for today's output.</p>
+                  </div>
+                </div>
+                <ul id="runtimeNoteList" class="plain-list"></ul>
+              </article>
+
+              <article class="card">
+                <div class="section-header">
+                  <div>
+                    <h2 class="section-title">Source Status</h2>
+                    <p class="section-subtitle">Prediction artifacts load state.</p>
+                  </div>
+                </div>
+                <div id="sourceStatusList" class="list-stack"></div>
+              </article>
+            </aside>
           </section>
 
           <section class="card">
@@ -227,56 +286,6 @@
                 <div class="chart-note">Recent risk movement using prediction history snapshots.</div>
               </div>
             </div>
-          </section>
-
-          <section class="content-grid">
-            <article class="card">
-              <div class="section-header">
-                <div>
-                  <h2 class="section-title">Prediction Summary</h2>
-                  <p class="section-subtitle">Topline interpretation of the current observation state.</p>
-                </div>
-                <div id="confidenceChip" class="confidence-chip">Confidence —</div>
-              </div>
-
-              <p id="predictionSummaryMain" class="summary-text">Loading prediction summary...</p>
-
-              <div class="detail-grid" style="margin-top:14px;">
-                <article class="detail-card">
-                  <div class="detail-eyebrow">Confidence</div>
-                  <h3 class="detail-title">Confidence Context</h3>
-                  <p id="confidenceDetailText" class="detail-text">Loading...</p>
-                </article>
-
-                <article class="detail-card">
-                  <div class="detail-eyebrow">Scenario Probability</div>
-                  <h3 class="detail-title">Relative Branch Weight</h3>
-                  <div id="scenarioProbabilityList" class="probability-stack"></div>
-                </article>
-              </div>
-            </article>
-
-            <aside class="stack">
-              <article class="card">
-                <div class="section-header">
-                  <div>
-                    <h2 class="section-title">Runtime Notes</h2>
-                    <p class="section-subtitle">Quick operating context for today's output.</p>
-                  </div>
-                </div>
-                <ul id="runtimeNoteList" class="plain-list"></ul>
-              </article>
-
-              <article class="card">
-                <div class="section-header">
-                  <div>
-                    <h2 class="section-title">Source Status</h2>
-                    <p class="section-subtitle">Prediction artifacts load state.</p>
-                  </div>
-                </div>
-                <div id="sourceStatusList" class="list-stack"></div>
-              </article>
-            </aside>
           </section>
 
           <section class="content-grid">
@@ -377,7 +386,8 @@
       warning: "/data/prediction/early_warning_latest.json",
       scenario: "/data/prediction/scenario_latest.json",
       prediction: "/data/prediction/prediction_latest.json",
-      historyIndex: "/data/prediction/prediction_history_index.json"
+      historyIndex: "/data/prediction/prediction_history_index.json",
+      fx: "/analysis/fx/fx_decision_latest.json"
     };
 
     function el(id){ return document.getElementById(id); }
@@ -394,23 +404,23 @@
 
     function safeArray(value){ return Array.isArray(value) ? value : []; }
 
-    function firstNonEmpty(...values){
-      for (const value of values){
+    function firstNonEmpty(){
+      for (const value of arguments){
         if (Array.isArray(value) && value.length) return value;
         if (value !== undefined && value !== null && value !== "") return value;
       }
       return null;
     }
 
-    function firstString(...values){
-      for (const value of values){
+    function firstString(){
+      for (const value of arguments){
         if (typeof value === "string" && value.trim()) return value.trim();
       }
       return "";
     }
 
-    function pickNumber(...values){
-      for (const value of values){
+    function pickNumber(){
+      for (const value of arguments){
         const n = Number(value);
         if (Number.isFinite(n)) return n;
       }
@@ -525,6 +535,22 @@
       return 0;
     }
 
+    function normalizeFxStatus(value){
+      const text = String(value || "").trim().toUpperCase();
+      if (["SAFE","OK","ON","BUY","RISK_ON"].includes(text)) return "SAFE";
+      if (["CAUTION","WARN","WARNING","HOLD","MIXED"].includes(text)) return "CAUTION";
+      if (["DANGER","OFF","SELL","RISK_OFF"].includes(text)) return "DANGER";
+      return text || "";
+    }
+
+    function fxClass(value){
+      const v = normalizeFxStatus(value);
+      if (v === "SAFE") return "safe";
+      if (v === "CAUTION") return "caution";
+      if (v === "DANGER") return "danger";
+      return "neutral";
+    }
+
     function normalizeHistoryIndexItem(item){
       return {
         date: firstString(item?.date, item?.as_of),
@@ -544,19 +570,6 @@
         signal_count: pickNumber(item?.signal_count),
         url: item?.date ? `/data/prediction/history/${item.date}/prediction.json` : ""
       };
-    }
-
-    async function loadHistorySnapshots(){
-      const historyIndexRes = await fetchJson(PREDICTION_SOURCES.historyIndex);
-      if (!historyIndexRes.ok || !historyIndexRes.data){
-        return [];
-      }
-
-      const items = safeArray(historyIndexRes.data.items)
-        .map(normalizeHistoryIndexItem)
-        .filter((item) => item.date);
-
-      return items.sort((a, b) => String(b.date).localeCompare(String(a.date)));
     }
 
     function normalizeScenarios(prediction, scenarioData){
@@ -735,6 +748,43 @@
       el("confidenceChip").textContent = `Confidence ${formatConfidence(firstNonEmpty(prediction?.confidence, prediction?.confidence_score, prediction?.confidence_pct))}`;
     }
 
+    function renderFxSummary(fxData){
+      const rawStatus = firstString(
+        fxData?.primary,
+        fxData?.decision,
+        fxData?.status,
+        fxData?.regime
+      );
+      const status = normalizeFxStatus(rawStatus) || "—";
+      const pair = firstString(fxData?.pair, fxData?.primary_pair, fxData?.symbol, "—");
+      const action = firstString(fxData?.action, fxData?.recommendation, "—");
+      const summary = firstString(fxData?.summary, fxData?.headline);
+      const reason = firstString(fxData?.reason, fxData?.note, fxData?.message);
+      const asOf = firstString(fxData?.as_of, fxData?.date, fxData?.generated_at, fxData?.updated);
+
+      el("fxStatusTitle").textContent = status;
+      el("fxSummaryText").textContent = summary || `${pair !== "—" ? pair + ": " : ""}${status}${reason ? " / " + reason : ""}`;
+      el("fxReasonText").textContent = reason || "FX decision context unavailable.";
+      el("fxAsof").textContent = formatDate(asOf);
+
+      const pairChip = el("fxPairChip");
+      const actionChip = el("fxActionChip");
+      if (pairChip){
+        pairChip.textContent = `pair: ${pair}`;
+        pairChip.className = `fx-kpi-chip ${fxClass(status)}`;
+      }
+      if (actionChip){
+        actionChip.textContent = `action: ${action}`;
+        actionChip.className = `fx-kpi-chip ${fxClass(status)}`;
+      }
+
+      const statusEl = el("fxStatusTitle");
+      if (statusEl){
+        statusEl.classList.remove("status-safe","status-caution","status-danger","status-neutral");
+        statusEl.classList.add(`status-${fxClass(status)}`);
+      }
+    }
+
     function renderMetricCards(prediction, signalData, scenarios){
       const signalCount = firstNonEmpty(prediction?.signal_count, normalizeSignals(signalData, prediction).length);
       const horizonDays = pickNumber(prediction?.horizon_days, prediction?.time_horizon_days, prediction?.forecast_horizon_days);
@@ -842,13 +892,15 @@
       `).join("");
     }
 
-    function renderRuntimeNotes(prediction, signalData, warningData, history){
+    function renderRuntimeNotes(prediction, signalData, warningData, history, fxData){
       const latestHistory = history[0] || null;
+      const fxStatus = normalizeFxStatus(firstString(fxData?.primary, fxData?.decision, fxData?.status, fxData?.regime));
       el("runtimeNoteList").innerHTML = [
         `As of: ${formatDate(firstString(prediction?.as_of, prediction?.date, prediction?.generated_at))}`,
         `Signal count: ${formatCount(firstNonEmpty(prediction?.signal_count, normalizeSignals(signalData, prediction).length))}`,
         `Warning count: ${formatCount(firstNonEmpty(warningData?.warning_count, warningData?.early_warning_count, prediction?.early_warning?.warning_score != null ? 1 : 0))}`,
         `Dominant scenario: ${titleize(firstString(prediction?.dominant_scenario?.label, prediction?.dominant_branch, prediction?.scenario, prediction?.regime))}`,
+        `FX status: ${fxStatus || "—"}`,
         `History rows: ${formatCount(history.length)}`,
         `Latest history: ${latestHistory ? formatShortDate(latestHistory.date || latestHistory.as_of) : "—"}`
       ].map((item) => `<li>${escapeHtml(item)}</li>`).join("");
@@ -861,6 +913,7 @@
         ["Early Warning", results.warning],
         ["Scenario", results.scenario],
         ["Prediction", results.prediction],
+        ["FX", results.fx],
         ["History Index", results.historyIndex]
       ];
 
@@ -1080,6 +1133,7 @@
       const warningData = results.warning?.data || {};
       const trendData = results.trend?.data || {};
       const scenarioData = results.scenario?.data || {};
+      const fxData = results.fx?.data || {};
       const history = (results.historyIndex?.ok && results.historyIndex?.data)
         ? safeArray(results.historyIndex.data.items).map(normalizeHistoryIndexItem).sort((a,b) => String(b.date).localeCompare(String(a.date)))
         : [];
@@ -1089,12 +1143,13 @@
       const trends = normalizeTrendItems(trendData, prediction);
 
       renderHero(prediction, warningData);
+      renderFxSummary(fxData);
       renderMetricCards(prediction, signalData, scenarios);
       renderProbabilityList(scenarios);
       renderScenarioCards(scenarios);
       renderSignalList(signals);
       renderTrendSummary(trends);
-      renderRuntimeNotes(prediction, signalData, warningData, history);
+      renderRuntimeNotes(prediction, signalData, warningData, history, fxData);
       renderPredictionHistory(history);
       renderCharts(prediction, scenarios, history);
 
@@ -1108,7 +1163,7 @@
 
     window.addEventListener("DOMContentLoaded", init);
   </script>
-  <script src="/static/common/global_status.js?v=20260317-publish-ui-1"></script>
-  <script src="/static/common/layout.js?v=20260317-publish-ui-1"></script>
+  <script src="/static/common/global_status.js?v=20260318-prediction-fx-1"></script>
+  <script src="/static/common/layout.js?v=20260318-prediction-fx-1"></script>
 </body>
 </html>

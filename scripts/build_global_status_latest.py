@@ -131,6 +131,19 @@ def _normalize_risk_level(value: Any) -> str:
     return ""
 
 
+def _normalize_fx_status(value: Any) -> str:
+    text = str(value or "").strip().upper()
+
+    if text in {"SAFE", "OK", "ON", "BUY", "RISK_ON"}:
+        return "SAFE"
+    if text in {"CAUTION", "WARN", "WARNING", "HOLD", "MIXED"}:
+        return "CAUTION"
+    if text in {"DANGER", "OFF", "SELL", "RISK_OFF"}:
+        return "DANGER"
+
+    return "--"
+
+
 def _risk_from_score(score: float | None) -> str:
     if score is None:
         return ""
@@ -259,12 +272,13 @@ def _derive_fx_value(fx_decision: dict[str, Any] | None) -> tuple[str, str]:
     if not isinstance(fx_decision, dict):
         return "--", "fx decision unavailable"
 
-    value = _first_non_empty(
+    raw_value = _first_non_empty(
         fx_decision.get("primary"),
         fx_decision.get("decision"),
         fx_decision.get("status"),
         fx_decision.get("regime"),
-    ).upper()
+    )
+    value = _normalize_fx_status(raw_value)
 
     sub = _first_non_empty(
         fx_decision.get("reason"),
@@ -273,7 +287,11 @@ def _derive_fx_value(fx_decision: dict[str, Any] | None) -> tuple[str, str]:
         fx_decision.get("source"),
     )
 
-    return value or "--", sub or "fx decision latest"
+    if raw_value and sub:
+        return value, f"{sub} (raw: {str(raw_value).strip().upper()})"
+    if raw_value:
+        return value, f"fx decision latest (raw: {str(raw_value).strip().upper()})"
+    return value, sub or "fx decision latest"
 
 
 def _derive_articles_value(summary: dict[str, Any] | None) -> tuple[str, str, int]:

@@ -3,8 +3,18 @@ Options -Indexes
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
+  # Root -> static home
   RewriteRule ^$ /static/index.html [L]
 
+  # Pretty page aliases -> /static/*.html
+  RewriteRule ^index\.html$ /static/index.html [L]
+  RewriteRule ^overlay\.html$ /static/overlay.html [L]
+  RewriteRule ^sentiment\.html$ /static/sentiment.html [L]
+  RewriteRule ^digest\.html$ /static/digest.html [L]
+  RewriteRule ^prediction\.html$ /static/prediction.html [L]
+  RewriteRule ^prediction_history\.html$ /static/prediction_history.html [L]
+
+  # Existing files / dirs pass through
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
