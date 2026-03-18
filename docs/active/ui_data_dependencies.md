@@ -2,10 +2,10 @@
 
 GenesisPrediction v2
 
-Version: 1.4
+Version: 1.5
 Status: Active
-Purpose: UI がどのデータを読むか、どの field に依存するか、fallback をどう扱うかを固定する
-Last Updated: 2026-03-08
+Purpose: UI がどのデータを読むか、どの field に依存するか、fallback をどう扱うか、さらに UI 用語の意味をどう固定するかを定義する
+Last Updated: 2026-03-18
 
 ---
 
@@ -20,6 +20,8 @@ Last Updated: 2026-03-08
 - fallback 挙動を明文化する
 - scripts / analysis / UI の責務を分離して保つ
 - 統一済み UI レイアウトとデータ依存を対応づける
+- UI に表示される主要用語の意味を固定する
+- Tooltip / detail / explanation layer の意味基盤を用意する
 
 重要原則:
 
@@ -28,7 +30,8 @@ scripts → analysis を生成
 analysis → Runtime SST
 UI → analysis を読む
 UI は再計算しない
-```
+UI は意味を再定義しない
+````
 
 つまり
 
@@ -38,6 +41,10 @@ analysis = Single Source of Truth
 
 UI 側でロジックを持つ場合も、それは表示や fallback のみであり、
 分析値そのものの決定は scripts / analysis 側で行う。
+
+また、UI に表示される言葉の意味は、
+場当たり的に各ページへ分散定義してはならない。
+意味定義は本ドキュメント内の UI Meaning Layer に集約する。
 
 ---
 
@@ -75,9 +82,9 @@ analysis/prediction/history/
 
 補足:
 
-- 全主要ページは共通 header / footer / layout.js を使う
-- レイアウト標準は `docs/ui_layout_standard.md` に従う
-- UI は data / analysis の latest または history を読む read-only レイヤである
+* 全主要ページは共通 header / footer / layout.js を使う
+* レイアウト標準は `docs/ui_layout_standard.md` に従う
+* UI は data / analysis の latest または history を読む read-only レイヤである
 
 ---
 
@@ -107,13 +114,13 @@ data/world_politics/analysis/sentiment_latest.json
 
 ## Notes
 
-- Home は集約表示ページ
-- Summary は `daily_summary_latest.json` を優先参照する
-- Events(today) は `data/digest/view_model_latest.json` の highlights / cards を使う
-- Data Health は `health_latest.json.summary.ok / warn / ng / total` を使う
-- Sentiment snapshot は Sentiment ページと揃えるため `data/world_politics/analysis/sentiment_latest.json` を優先参照する
-- 詳細分析は Sentiment / Digest / Overlay / Prediction 側で行う
-- latest alias の鮮度が重要
+* Home は集約表示ページ
+* Summary は `daily_summary_latest.json` を優先参照する
+* Events(today) は `data/digest/view_model_latest.json` の highlights / cards を使う
+* Data Health は `health_latest.json.summary.ok / warn / ng / total` を使う
+* Sentiment snapshot は Sentiment ページと揃えるため `data/world_politics/analysis/sentiment_latest.json` を優先参照する
+* 詳細分析は Sentiment / Digest / Overlay / Prediction 側で行う
+* latest alias の鮮度が重要
 
 ---
 
@@ -171,8 +178,8 @@ UI はこの fallback を使って表示を継続するが、
 
 補足:
 
-- 現在の repo では `fx_overlay_latest_usdthb.png` が存在しない場合がある
-- その場合 Overlay UI は `fx_multi_usd_thb_overlay.png` を fallback として使う
+* 現在の repo では `fx_overlay_latest_usdthb.png` が存在しない場合がある
+* その場合 Overlay UI は `fx_multi_usd_thb_overlay.png` を fallback として使う
 
 ### MULTI
 
@@ -210,8 +217,8 @@ Overlay decision JSON は以下の順で探索する。
 
 補足:
 
-- 現在の repo では `fx_decision_latest_usdthb.json` が存在しない場合がある
-- その場合 Overlay UI は `fx_decision_latest.json` を fallback として使う
+* 現在の repo では `fx_decision_latest_usdthb.json` が存在しない場合がある
+* その場合 Overlay UI は `fx_decision_latest.json` を fallback として使う
 
 ### MULTI
 
@@ -272,11 +279,11 @@ pair_note
 
 ## Notes
 
-- Overlay は FX 判断系の表示ページ
-- 主 source は `data/fx/`
-- UI は fallback を行うが、正式な latest 命名・pair 別成果物の整備は scripts 側責務
-- `USDTHB` は現状 fallback 表示で動作するが、将来的には pair-specific latest の生成が望ましい
-- 詳細仕様は docs/ui_system.md と docs/pipeline_system.md に従う
+* Overlay は FX 判断系の表示ページ
+* 主 source は `data/fx/`
+* UI は fallback を行うが、正式な latest 命名・pair 別成果物の整備は scripts 側責務
+* `USDTHB` は現状 fallback 表示で動作するが、将来的には pair-specific latest の生成が望ましい
+* 詳細仕様は docs/ui_system.md と docs/pipeline_system.md に従う
 
 ---
 
@@ -387,9 +394,9 @@ data/world_politics/analysis/sentiment_timeseries.csv
 
 ## Notes
 
-- Sentiment page は per-article sentiment 表示が主目的
-- score / net / risk / positive / uncertainty の表示は UI 側で再計算しない
-- label の判定は scripts/build_daily_sentiment.py 側を正とする
+* Sentiment page は per-article sentiment 表示が主目的
+* score / net / risk / positive / uncertainty の表示は UI 側で再計算しない
+* label の判定は scripts/build_daily_sentiment.py 側を正とする
 
 ---
 
@@ -546,8 +553,8 @@ items != sentiment_summary.articles
 
 理由:
 
-- `cards[]` は Top highlights 用の抽出結果
-- `sentiment_summary.articles` は全 article 件数
+* `cards[]` は Top highlights 用の抽出結果
+* `sentiment_summary.articles` は全 article 件数
 
 この違いは仕様であり、異常ではない。
 
@@ -583,9 +590,9 @@ newest
 
 重要原則:
 
-- risk / score は card.sentiment 側の値を利用
-- UI は再計算しない
-- 並び替えは表示順の変更のみ
+* risk / score は card.sentiment 側の値を利用
+* UI は再計算しない
+* 並び替えは表示順の変更のみ
 
 ## Sentiment Label Handling
 
@@ -601,11 +608,11 @@ card 直下に同名 field が存在する旧 schema にも、可能な限り後
 
 ## Notes
 
-- Digest の正式 source は `view_model_latest.json`
-- `daily_news_latest.json` は fallback 用
-- `unknown` が大量発生する場合は、まず `view_model_latest.json` の `cards[].sentiment` を確認する
-- KPI が cards 件数と一致しない場合、`sentiment_summary` を見て仕様通りか判断する
-- 現行 UI では Highlights は KPI 表示専用であり、記事カードは Articles セクションへ集約する
+* Digest の正式 source は `view_model_latest.json`
+* `daily_news_latest.json` は fallback 用
+* `unknown` が大量発生する場合は、まず `view_model_latest.json` の `cards[].sentiment` を確認する
+* KPI が cards 件数と一致しない場合、`sentiment_summary` を見て仕様通りか判断する
+* 現行 UI では Highlights は KPI 表示専用であり、記事カードは Articles セクションへ集約する
 
 ---
 
@@ -661,9 +668,9 @@ signal_count
 
 補足:
 
-- 実 runtime schema は進化してよい
-- UI は後方互換的に複数 field 名を拾ってよい
-- ただし UI が確率や risk を独自再計算してはならない
+* 実 runtime schema は進化してよい
+* UI は後方互換的に複数 field 名を拾ってよい
+* ただし UI が確率や risk を独自再計算してはならない
 
 ## Scenario Probabilities
 
@@ -718,10 +725,10 @@ UI は表示のために配列を整形してよいが、
 
 ## Notes
 
-- Prediction は runtime output の可視化ページ
-- 正式 source は `analysis/prediction/prediction_latest.json`
-- Global Status は共通UI用の補助表示であり、Prediction判定そのものではない
-- ボタンで JSON を開く場合も、prediction latest を最優先とする
+* Prediction は runtime output の可視化ページ
+* 正式 source は `analysis/prediction/prediction_latest.json`
+* Global Status は共通UI用の補助表示であり、Prediction判定そのものではない
+* ボタンで JSON を開く場合も、prediction latest を最優先とする
 
 ---
 
@@ -806,16 +813,16 @@ persistent watchpoints
 
 重要原則:
 
-- これは表示比較であり、分析再計算ではない
-- 元 snapshot の値を加工しすぎない
-- 過去値 → 現在値の比較表示に留める
+* これは表示比較であり、分析再計算ではない
+* 元 snapshot の値を加工しすぎない
+* 過去値 → 現在値の比較表示に留める
 
 ## Notes
 
-- Prediction History は時系列 review ページ
-- 上部 Global Status は他ページと同型の 5-card 横並びを標準とする
-- 本体は history snapshot の比較表示に集中する
-- latest と history の schema 差がある場合、UI は後方互換吸収をしてよい
+* Prediction History は時系列 review ページ
+* 上部 Global Status は他ページと同型の 5-card 横並びを標準とする
+* 本体は history snapshot の比較表示に集中する
+* latest と history の schema 差がある場合、UI は後方互換吸収をしてよい
 
 ---
 
@@ -948,8 +955,8 @@ MULTI:
 
 補足:
 
-- Global Status 用の補助表示だけは digest / summary / sentiment / fx latest を読んでよい
-- ただし本体の scenario / confidence / watchpoints は prediction latest なしで捏造しない
+* Global Status 用の補助表示だけは digest / summary / sentiment / fx latest を読んでよい
+* ただし本体の scenario / confidence / watchpoints は prediction latest なしで捏造しない
 
 ## Prediction History Fallback Priority
 
@@ -960,8 +967,8 @@ MULTI:
 
 補足:
 
-- History 本文に `prediction_latest.json` を代用しない
-- 履歴が無い場合は empty state を表示する
+* History 本文に `prediction_latest.json` を代用しない
+* 履歴が無い場合は empty state を表示する
 
 ## Thumbnail Fallback Priority
 
@@ -984,6 +991,7 @@ UI は analysis / digest latest / fx latest を読む
 scripts は UI を知らない
 data は壊れても再生成できる
 UI は再計算しない
+UI は意味を再発明しない
 ```
 
 つまり:
@@ -994,7 +1002,1058 @@ digest view_model = Digest UI 用の正規化済み表示レイヤ
 overlay fallback = 表示継続のための read-only 補助
 prediction latest = Prediction UI の正式 runtime output
 prediction history = Prediction History UI の正式 review source
+UI meaning layer = UI 用語の定義固定レイヤ
 ```
+
+---
+
+# UI Meaning Layer
+
+この章は、UI に表示される主要用語の意味を固定する。
+
+目的:
+
+* ページごとの言葉のぶれを防ぐ
+* Tooltip / detail / help panel の説明を統一する
+* AI や人間が同じ意味で UI を読むための辞書にする
+* 「何を意味するか」だけでなく「何を意味しないか」も固定する
+
+重要原則:
+
+```text
+意味は analysis / artifact に紐づく
+UI は意味を計算しない
+UI は意味を脚色しない
+tooltip はこの辞書に従う
+```
+
+---
+
+## Meaning Layer Rules
+
+### 1. Meaning Source Rule
+
+各用語は可能な限り source artifact と source field を持つこと。
+
+### 2. No UI-Side Redefinition
+
+UI 側で独自に意味説明を書き換えてはならない。
+
+### 3. Must-Not Rule
+
+誤解しやすい用語は
+「何を意味しないか」を明記すること。
+
+### 4. Fallback Meaning Rule
+
+fallback 表示中でも、
+元の用語の意味を勝手に変更してはならない。
+
+### 5. Page Consistency Rule
+
+同じ用語はページが違っても同じ意味で使うこと。
+
+---
+
+# Meaning Dictionary
+
+---
+
+## as_of
+
+* Label:
+  As Of
+* Domain:
+  Global / Prediction / History
+* Definition:
+  UI が現在表示しているデータ snapshot の基準日時
+* Why it matters:
+  ユーザーが「いつ時点の内容か」を誤解しないため
+* Source artifact:
+  various latest / history artifacts
+* Source field(s):
+  as_of
+* Used in UI:
+  Prediction / Prediction History / 共通 status 補助表示
+* Allowed values:
+  date or datetime string
+* Display rule:
+  可能な限り明示表示する
+* Must not be interpreted as:
+  現在時刻 / リアルタイム値 / 市場の最新 tick
+* Fallback behavior:
+  値が無ければ unknown または unavailable を表示
+* Notes:
+  updated とは意味が異なる
+
+---
+
+## updated
+
+* Label:
+  Updated
+* Domain:
+  Global
+* Definition:
+  artifact 自体が最後に更新または生成された時刻
+* Why it matters:
+  ファイルの鮮度確認に使うため
+* Source artifact:
+  various latest artifacts
+* Source field(s):
+  updated / generated_at
+* Used in UI:
+  header / status / meta 表示
+* Allowed values:
+  datetime string
+* Display rule:
+  as_of がある場合でも updated と混同しない
+* Must not be interpreted as:
+  イベント発生時刻 / 相場変動時刻 / 記事公開時刻
+* Fallback behavior:
+  値が無ければ unknown
+* Notes:
+  as_of は観測基準時刻、updated は成果物更新時刻
+
+---
+
+## global_risk
+
+* Label:
+  Global Risk
+* Domain:
+  Home / Global Status / Prediction support
+* Definition:
+  analysis 層が出した全体状況のリスク水準を要約した表示値
+* Why it matters:
+  まず何を警戒すべきかを短時間で把握できる
+* Source artifact:
+  page-specific latest artifact or global status mapping source
+* Source field(s):
+  global_risk / overall_risk / risk related mapped field
+* Used in UI:
+  Home / Prediction / Prediction History / 共通 status
+* Allowed values:
+  low / moderate / high / guarded / unknown
+* Display rule:
+  共通 status で短く表示し、必要なら detail で補足する
+* Must not be interpreted as:
+  将来保証 / 確率そのもの / 投資判断の断定
+* Fallback behavior:
+  source が無い場合は unknown
+* Notes:
+  ページごとの補助 overview であり、本体ページの source of truth を置き換えない
+
+---
+
+## health
+
+* Label:
+  Data Health
+* Domain:
+  System
+* Definition:
+  データ完全性、生成成功度、欠損状況などのシステム健全性を示す状態
+* Why it matters:
+  UI の表示異常がデータ欠損由来かどうかを即座に判定できる
+* Source artifact:
+  data/digest/health_latest.json
+* Source field(s):
+  summary.ok / summary.warn / summary.ng / summary.total / status
+* Used in UI:
+  Home / Global Status
+* Allowed values:
+  ok / warn / ng / error / unknown
+* Display rule:
+  市場意味ではなくシステム状態として表示する
+* Must not be interpreted as:
+  市況 / 世界情勢 / prediction risk
+* Fallback behavior:
+  値が取れなければ -- または unknown
+* Notes:
+  人間の健康や経済健康ではなく、パイプライン健全性である
+
+---
+
+## sentiment
+
+* Label:
+  Sentiment
+* Domain:
+  Sentiment / Digest / Home
+* Definition:
+  記事群のトーンや感情極性を analysis が分類・集計した結果
+* Why it matters:
+  当日のニュース空気感を定量・定性の両面で確認できる
+* Source artifact:
+  data/world_politics/analysis/sentiment_latest.json
+  data/digest/view_model_latest.json
+* Source field(s):
+  sentiment_label / sentiment / summary / today / sentiment_summary
+* Used in UI:
+  Sentiment / Digest / Home snapshot
+* Allowed values:
+  positive / negative / neutral / mixed / unknown
+* Display rule:
+  scripts 側の分類結果を表示し、UI は再分類しない
+* Must not be interpreted as:
+  price direction / direct trade signal / future guarantee
+* Fallback behavior:
+  source 欠損時のみ digest / daily_news を補助参照
+* Notes:
+  記事感情であり、Prediction の scenario とは別概念
+
+---
+
+## positive
+
+* Label:
+  Positive
+* Domain:
+  Sentiment
+* Definition:
+  記事トーンが比較的前向き、改善的、好材料寄りと分類された状態
+* Why it matters:
+  sentiment 構成比の一部として使う
+* Source artifact:
+  sentiment artifacts
+* Source field(s):
+  sentiment_label / sentiment / positive_count
+* Used in UI:
+  Sentiment KPI / Digest KPI
+* Allowed values:
+  label or count
+* Display rule:
+  count と label を混同しない
+* Must not be interpreted as:
+  必ず相場上昇 / 必ず世界が安定化
+* Fallback behavior:
+  unknown
+* Notes:
+  良いニュース全般を意味するとは限らない
+
+---
+
+## negative
+
+* Label:
+  Negative
+* Domain:
+  Sentiment
+* Definition:
+  記事トーンが比較的悪化、懸念、悪材料寄りと分類された状態
+* Why it matters:
+  risk 上昇や不安定化の補助把握に使える
+* Source artifact:
+  sentiment artifacts
+* Source field(s):
+  sentiment_label / sentiment / negative_count
+* Used in UI:
+  Sentiment KPI / Digest KPI
+* Allowed values:
+  label or count
+* Display rule:
+  count と label を混同しない
+* Must not be interpreted as:
+  必ず暴落 / 必ず危機発生
+* Fallback behavior:
+  unknown
+* Notes:
+  tone 判定であり future event 断定ではない
+
+---
+
+## neutral
+
+* Label:
+  Neutral
+* Domain:
+  Sentiment
+* Definition:
+  明確なポジティブ / ネガティブのどちらにも大きく寄らない記事分類
+* Why it matters:
+  極性の偏りを測る基準になる
+* Source artifact:
+  sentiment artifacts
+* Source field(s):
+  sentiment_label / sentiment / neutral_count
+* Used in UI:
+  Sentiment KPI / Digest KPI
+* Allowed values:
+  label or count
+* Display rule:
+  sentiment の一分類として表示
+* Must not be interpreted as:
+  無意味 / 情報価値が低い
+* Fallback behavior:
+  unknown
+* Notes:
+  中立記事でも重要イベントを含み得る
+
+---
+
+## mixed
+
+* Label:
+  Mixed
+* Domain:
+  Sentiment
+* Definition:
+  良材料と悪材料が同時に含まれ、単純な極性へ寄せにくい分類
+* Why it matters:
+  相反要素の強い日を認識しやすい
+* Source artifact:
+  sentiment artifacts
+* Source field(s):
+  sentiment_label / sentiment / mixed_count
+* Used in UI:
+  Sentiment KPI / Digest KPI
+* Allowed values:
+  label or count
+* Display rule:
+  neutral と混同しない
+* Must not be interpreted as:
+  分析失敗 / エラー
+* Fallback behavior:
+  unknown
+* Notes:
+  混合トーンは複雑な状況の兆候になり得る
+
+---
+
+## unknown
+
+* Label:
+  Unknown
+* Domain:
+  Global
+* Definition:
+  値が取得できない、未計算、未分類、または schema 上見つからない状態
+* Why it matters:
+  ユーザーに「未取得」であることを正直に示すため
+* Source artifact:
+  various
+* Source field(s):
+  various
+* Used in UI:
+  all pages
+* Allowed values:
+  literal unknown / placeholder
+* Display rule:
+  既知値のふりをしない
+* Must not be interpreted as:
+  zero / safe / neutral / no issue
+* Fallback behavior:
+  unknown のまま表示する
+* Notes:
+  unknown を都合よく他値へ変換しない
+
+---
+
+## summary
+
+* Label:
+  Summary
+* Domain:
+  Home / Digest / Prediction
+* Definition:
+  source artifact が持つ要約テキスト
+* Why it matters:
+  ページの主要内容を短時間で把握できる
+* Source artifact:
+  daily_summary_latest.json
+  data/digest/view_model_latest.json
+  analysis/prediction/prediction_latest.json
+* Source field(s):
+  summary / text_summary / daily_summary
+* Used in UI:
+  Home / Digest / Prediction
+* Allowed values:
+  text
+* Display rule:
+  ページ本体 source を優先し、暫定 fallback は明示的に扱う
+* Must not be interpreted as:
+  全記事全文 / 最終結論 / 未来断定
+* Fallback behavior:
+  page-specific fallback rules に従う
+* Notes:
+  Summary はページ文脈によって対象が異なる
+
+---
+
+## highlight
+
+* Label:
+  Highlight
+* Domain:
+  Digest / Home
+* Definition:
+  全記事から抽出された強調表示用の代表カードまたは主要項目
+* Why it matters:
+  ユーザーが重要項目へ最短で到達できる
+* Source artifact:
+  data/digest/view_model_latest.json
+* Source field(s):
+  sections[].cards[]
+* Used in UI:
+  Digest / Home Events(today)
+* Allowed values:
+  card list
+* Display rule:
+  全件リストとは分離して扱う
+* Must not be interpreted as:
+  全記事一覧 / 全体件数 / 唯一重要な記事群
+* Fallback behavior:
+  digest fallback source から暫定構築可
+* Notes:
+  highlights 件数と article 総数は一致しない場合がある
+
+---
+
+## article
+
+* Label:
+  Article
+* Domain:
+  Sentiment / Digest
+* Definition:
+  元ニュース記事または記事由来の正規化済み表示単位
+* Why it matters:
+  KPI や summary の根拠単位になる
+* Source artifact:
+  daily_news_latest.json
+  sentiment_latest.json
+  view_model_latest.json
+* Source field(s):
+  items[] / cards[]
+* Used in UI:
+  Sentiment / Digest
+* Allowed values:
+  object
+* Display rule:
+  article count と highlight count を混同しない
+* Must not be interpreted as:
+  summary そのもの / scenario そのもの
+* Fallback behavior:
+  no data / unavailable
+* Notes:
+  Digest では article が card として正規化される場合がある
+
+---
+
+## fx_signal
+
+* Label:
+  FX Signal
+* Domain:
+  Overlay / FX
+* Definition:
+  FX 分析系が出した方向性または判断補助の signal
+* Why it matters:
+  remittance や overlay の判断材料になる
+* Source artifact:
+  data/fx/fx_decision_latest*.json
+* Source field(s):
+  decision related fields / status related fields
+* Used in UI:
+  Overlay
+* Allowed values:
+  implementation dependent
+* Display rule:
+  pair ごとの source を優先し、general fallback を使う
+* Must not be interpreted as:
+  自動売買実行 / 必勝サイン / 確定利益
+* Fallback behavior:
+  pair-specific → generic fallback
+* Notes:
+  現状は decision 系 field 群の後方互換吸収を含む
+
+---
+
+## decision
+
+* Label:
+  Decision
+* Domain:
+  Overlay / FX
+* Definition:
+  FX overlay における最終判断ラベルまたは推奨状態
+* Why it matters:
+  ユーザーが当日判断を一目で確認できる
+* Source artifact:
+  data/fx/fx_decision_latest_<pair>.json
+  data/fx/fx_decision_latest.json
+* Source field(s):
+  decision / action / status / recommendation
+* Used in UI:
+  Overlay
+* Allowed values:
+  schema dependent
+* Display rule:
+  取得優先順に従って 1 値を採用
+* Must not be interpreted as:
+  自動執行 / 絶対推奨 / 将来保証
+* Fallback behavior:
+  field fallback と file fallback を許可
+* Notes:
+  旧 schema 吸収のため複数 field を見る
+
+---
+
+## reason
+
+* Label:
+  Reason
+* Domain:
+  Overlay / FX / Prediction
+* Definition:
+  decision や summary を支える説明文または根拠テキスト
+* Why it matters:
+  結果だけでなく理由を短く確認できる
+* Source artifact:
+  fx_decision / prediction artifacts
+* Source field(s):
+  reason / rationale / message / note / summary
+* Used in UI:
+  Overlay / Prediction
+* Allowed values:
+  text
+* Display rule:
+  取得可能な最短の説明を表示
+* Must not be interpreted as:
+  完全な分析ログ / 全根拠一覧
+* Fallback behavior:
+  empty state or unavailable
+* Notes:
+  reason は narrative 補助であり source of truth 自体ではない
+
+---
+
+## scenario
+
+* Label:
+  Scenario
+* Domain:
+  Prediction
+* Definition:
+  現在観測から導かれる将来展開の構造化された仮説分岐
+* Why it matters:
+  未来の可能性を単一路線でなく複数枝として捉えられる
+* Source artifact:
+  analysis/prediction/prediction_latest.json
+  analysis/prediction/scenario_latest.json
+* Source field(s):
+  scenarios / dominant_scenario / best_case / base_case / worst_case
+* Used in UI:
+  Prediction / Prediction History
+* Allowed values:
+  scenario list or named branches
+* Display rule:
+  runtime 出力をそのまま読む
+* Must not be interpreted as:
+  予言 / 確定未来 / 必ず起きる結果
+* Fallback behavior:
+  prediction latest 無しで捏造しない
+* Notes:
+  structured future narrative として扱う
+
+---
+
+## dominant_scenario
+
+* Label:
+  Dominant Scenario
+* Domain:
+  Prediction
+* Definition:
+  現時点で最も支持が強い scenario branch
+* Why it matters:
+  現在の主仮説を一目で示せる
+* Source artifact:
+  analysis/prediction/prediction_latest.json
+* Source field(s):
+  dominant_scenario
+* Used in UI:
+  Prediction / Prediction History
+* Allowed values:
+  best_case / base_case / worst_case / custom branch name
+* Display rule:
+  1 つの主枝として表示する
+* Must not be interpreted as:
+  唯一可能な未来 / 他シナリオ消滅
+* Fallback behavior:
+  unavailable
+* Notes:
+  dominant は current leader であって absolute truth ではない
+
+---
+
+## best_case
+
+* Label:
+  Best Case
+* Domain:
+  Prediction
+* Definition:
+  分岐群の中で相対的に最も良好な結果側の scenario branch
+* Why it matters:
+  上振れ可能性を把握できる
+* Source artifact:
+  prediction artifacts
+* Source field(s):
+  best_case / scenarios.best
+* Used in UI:
+  Prediction / Prediction History
+* Allowed values:
+  probability, weight, branch object, or display label depending on schema
+* Display rule:
+  schema に応じて読み替えてよいが意味は変えない
+* Must not be interpreted as:
+  願望 / 楽観バイアス / 推奨
+* Fallback behavior:
+  unavailable
+* Notes:
+  base / worst とセットで見る
+
+---
+
+## base_case
+
+* Label:
+  Base Case
+* Domain:
+  Prediction
+* Definition:
+  現在時点で基準線となる中心的 scenario branch
+* Why it matters:
+  日次判断の標準線になる
+* Source artifact:
+  prediction artifacts
+* Source field(s):
+  base_case / scenarios.base
+* Used in UI:
+  Prediction / Prediction History
+* Allowed values:
+  probability, weight, branch object, or display label depending on schema
+* Display rule:
+  best / worst と並べて表示する
+* Must not be interpreted as:
+  guaranteed outcome / 最終確定
+* Fallback behavior:
+  unavailable
+* Notes:
+  dominant_scenario と一致する場合もある
+
+---
+
+## worst_case
+
+* Label:
+  Worst Case
+* Domain:
+  Prediction
+* Definition:
+  分岐群の中で相対的に最も悪化側の scenario branch
+* Why it matters:
+  下振れや危険側の監視に使う
+* Source artifact:
+  prediction artifacts
+* Source field(s):
+  worst_case / scenarios.worst
+* Used in UI:
+  Prediction / Prediction History
+* Allowed values:
+  probability, weight, branch object, or display label depending on schema
+* Display rule:
+  警戒指標として目立たせてもよいが誇張しない
+* Must not be interpreted as:
+  必ず起きる破局 / 確定危機
+* Fallback behavior:
+  unavailable
+* Notes:
+  watchpoints とセットで読むと有効
+
+---
+
+## confidence
+
+* Label:
+  Confidence
+* Domain:
+  Prediction / History
+* Definition:
+  現在の signals / scenario / runtime judgment の整合強度または支持度
+* Why it matters:
+  prediction の確からしさの温度感を示せる
+* Source artifact:
+  analysis/prediction/prediction_latest.json
+  analysis/prediction/history/*/prediction.json
+* Source field(s):
+  confidence
+* Used in UI:
+  Prediction / Prediction History
+* Allowed values:
+  numeric score
+* Display rule:
+  runtime 出力値をそのまま表示し、UI は補正しない
+* Must not be interpreted as:
+  的中確率 / 成功確率 / 絶対確信
+* Fallback behavior:
+  unavailable
+* Notes:
+  explainability を高めるために最も誤読防止が必要な用語の一つ
+
+---
+
+## drivers
+
+* Label:
+  Drivers
+* Domain:
+  Prediction
+* Definition:
+  現在の scenario や prediction を支えている主要要因群
+* Why it matters:
+  なぜその結論になっているかを理解できる
+* Source artifact:
+  analysis/prediction/prediction_latest.json
+* Source field(s):
+  drivers[]
+* Used in UI:
+  Prediction
+* Allowed values:
+  list of text or structured items
+* Display rule:
+  配列整形のみ可
+* Must not be interpreted as:
+  全原因の完全列挙 / 数理モデル全文
+* Fallback behavior:
+  empty list / unavailable
+* Notes:
+  decision reason より広い背景要因
+
+---
+
+## watchpoints
+
+* Label:
+  Watchpoints
+* Domain:
+  Prediction / History
+* Definition:
+  今後 scenario 変化を監視するための注目条件または観測項目
+* Why it matters:
+  ユーザーが次に何を見るべきか分かる
+* Source artifact:
+  analysis/prediction/prediction_latest.json
+  analysis/prediction/history/*/prediction.json
+* Source field(s):
+  watchpoints[]
+* Used in UI:
+  Prediction / Prediction History
+* Allowed values:
+  list
+* Display rule:
+  監視項目として簡潔に見せる
+* Must not be interpreted as:
+  発生確定イベント / 命令 / 結論
+* Fallback behavior:
+  empty list / unavailable
+* Notes:
+  scenario drift の前兆監視に使う
+
+---
+
+## invalidation
+
+* Label:
+  Invalidation
+* Domain:
+  Prediction
+* Definition:
+  現在の scenario や prediction が崩れる条件群
+* Why it matters:
+  「どこで見立てが外れるか」を明示できる
+* Source artifact:
+  analysis/prediction/prediction_latest.json
+* Source field(s):
+  invalidation / invalidation[]
+* Used in UI:
+  Prediction
+* Allowed values:
+  list or text
+* Display rule:
+  watchpoints と区別して表示する
+* Must not be interpreted as:
+  直ちに失敗した証拠 / エラー状態
+* Fallback behavior:
+  empty list / unavailable
+* Notes:
+  must-not-pretend を防ぐ重要欄
+
+---
+
+## implications
+
+* Label:
+  Implications
+* Domain:
+  Prediction
+* Definition:
+  現在の prediction から想定される downstream effects
+* Why it matters:
+  予測が何に影響するかを把握できる
+* Source artifact:
+  analysis/prediction/prediction_latest.json
+* Source field(s):
+  implications[]
+* Used in UI:
+  Prediction
+* Allowed values:
+  list
+* Display rule:
+  予測結果の含意として表示
+* Must not be interpreted as:
+  実際に発生済みの事実
+* Fallback behavior:
+  empty list / unavailable
+* Notes:
+  observation ではなく forecast implication
+
+---
+
+## drift
+
+* Label:
+  Drift
+* Domain:
+  Prediction History
+* Definition:
+  過去 snapshot と現在 snapshot の間で観測される変化量またはずれ
+* Why it matters:
+  prediction がどう変化したかを時系列で追える
+* Source artifact:
+  analysis/prediction/history/*/prediction.json
+  UI comparison result
+* Source field(s):
+  overall_risk / confidence / scenario related fields
+* Used in UI:
+  Prediction History
+* Allowed values:
+  presentation-level comparison result
+* Display rule:
+  表示比較として扱い、元値を再定義しない
+* Must not be interpreted as:
+  prediction engine の再計算結果 / 故障 / 失敗確定
+* Fallback behavior:
+  履歴不足時は unavailable
+* Notes:
+  drift は history review の表示概念であり SST そのものではない
+
+---
+
+## risk drift
+
+* Label:
+  Risk Drift
+* Domain:
+  Prediction History
+* Definition:
+  overall_risk が過去から現在へどう変わったかを示す表示差分
+* Why it matters:
+  警戒感の上昇 / 低下を時系列で見られる
+* Source artifact:
+  prediction history snapshots
+* Source field(s):
+  overall_risk
+* Used in UI:
+  Prediction History
+* Allowed values:
+  presentation diff
+* Display rule:
+  before → after 比較に留める
+* Must not be interpreted as:
+  新しい risk 計算式
+* Fallback behavior:
+  unavailable
+* Notes:
+  derived presentation だが再分析ではない
+
+---
+
+## confidence drift
+
+* Label:
+  Confidence Drift
+* Domain:
+  Prediction History
+* Definition:
+  confidence が過去から現在へどう変わったかを示す表示差分
+* Why it matters:
+  主仮説の支持度変化を確認できる
+* Source artifact:
+  prediction history snapshots
+* Source field(s):
+  confidence
+* Used in UI:
+  Prediction History
+* Allowed values:
+  presentation diff
+* Display rule:
+  raw confidence との差を分かりやすく示す
+* Must not be interpreted as:
+  的中率改善の証明
+* Fallback behavior:
+  unavailable
+* Notes:
+  confidence の意味自体は変えない
+
+---
+
+## scenario shift
+
+* Label:
+  Scenario Shift
+* Domain:
+  Prediction History
+* Definition:
+  dominant_scenario または scenario balance が変化したことを示す review 表示
+* Why it matters:
+  見立ての中心が変わったタイミングを掴める
+* Source artifact:
+  prediction history snapshots
+* Source field(s):
+  dominant_scenario / best_case / base_case / worst_case
+* Used in UI:
+  Prediction History
+* Allowed values:
+  text or presentation marker
+* Display rule:
+  変化の有無を簡潔に示す
+* Must not be interpreted as:
+  engine bug / データ破損
+* Fallback behavior:
+  unavailable
+* Notes:
+  scenario balance 変化を説明する review 用語
+
+---
+
+## unavailable
+
+* Label:
+  Unavailable
+* Domain:
+  Global
+* Definition:
+  必要な artifact または field が取得できず、表示内容を構築できない状態
+* Why it matters:
+  欠損と既知値を区別できる
+* Source artifact:
+  various
+* Source field(s):
+  n/a
+* Used in UI:
+  all pages
+* Allowed values:
+  literal unavailable / empty state
+* Display rule:
+  no data と誠実に表示する
+* Must not be interpreted as:
+  zero / safe / same as previous
+* Fallback behavior:
+  empty state
+* Notes:
+  unknown より強い「非利用可能」表示として使う場合がある
+
+---
+
+## loading
+
+* Label:
+  Loading
+* Domain:
+  Global
+* Definition:
+  データ取得または描画処理の途中状態
+* Why it matters:
+  一時的未表示と恒久欠損を区別できる
+* Source artifact:
+  n/a
+* Source field(s):
+  n/a
+* Used in UI:
+  all pages
+* Allowed values:
+  transient state
+* Display rule:
+  final valueのふりをしない
+* Must not be interpreted as:
+  unavailable / unknown / error
+* Fallback behavior:
+  timeout 後は unavailable or error state
+* Notes:
+  runtime fetch 状態の表示語
+
+---
+
+## fallback
+
+* Label:
+  Fallback
+* Domain:
+  Global / UI behavior
+* Definition:
+  正式 source が取得不能なとき、表示継続のために用いる代替参照または代替表示
+* Why it matters:
+  UI を落とさず、かつ source of truth を偽装しないため
+* Source artifact:
+  page-specific fallback candidates
+* Source field(s):
+  page-specific
+* Used in UI:
+  all pages where allowed
+* Allowed values:
+  candidate file / field / placeholder
+* Display rule:
+  保険としてのみ使う
+* Must not be interpreted as:
+  正式 source の置き換え / 新しい真実
+* Fallback behavior:
+  documented priority に従う
+* Notes:
+  fallback は表示継続専用
+
+---
+
+# Meaning Layer Integration Guidance
+
+この Meaning Layer は将来的に以下へ接続してよい:
+
+```text
+tooltip
+detail panel
+help drawer
+page explanation section
+generated explanation artifact
+```
+
+ただし重要原則:
+
+```text
+UI は意味辞書を勝手に再編集しない
+scripts / docs 側で定義した意味を読む
+```
+
+将来、必要であれば explanation artifact を生成してもよい。
+例:
+
+```text
+analysis/ui/explanation_dictionary_latest.json
+```
+
+ただしその場合も、
+意味の上位定義は本ドキュメントと整合していなければならない。
 
 ---
 
@@ -1024,10 +2083,11 @@ Prediction History
 
 重要:
 
-- レイアウト共通化は表示構造の統一であり、データ依存の共通化ではない
-- 各ページは同じ骨格を持っても、読む JSON / PNG / history source は異なる
-- データ依存を変更したら `docs/ui_data_dependencies.md` を更新する
-- レイアウト標準を変更したら `docs/ui_layout_standard.md` を更新する
+* レイアウト共通化は表示構造の統一であり、データ依存の共通化ではない
+* 各ページは同じ骨格を持っても、読む JSON / PNG / history source は異なる
+* データ依存を変更したら `docs/ui_data_dependencies.md` を更新する
+* レイアウト標準を変更したら `docs/ui_layout_standard.md` を更新する
+* 意味定義を追加・変更した場合も `docs/ui_data_dependencies.md` を更新する
 
 ---
 
@@ -1040,8 +2100,9 @@ UI 変更時は必ず確認すること:
 3. 必要 field は何か
 4. fallback はどこまで許すか
 5. layout standard と矛盾していないか
-6. docs/ui_data_dependencies.md を更新したか
-7. 必要なら docs/ui_layout_standard.md も更新したか
+6. 用語の意味が本ドキュメントと一致しているか
+7. docs/ui_data_dependencies.md を更新したか
+8. 必要なら docs/ui_layout_standard.md も更新したか
 
 特に Digest を変更する場合は、
 以下の整合を必ず確認する:
@@ -1173,6 +2234,17 @@ sentiment_summary.articles は全件
 3. 他ページと同じ Global Status component / style を使っているか
 ```
 
+## Symptom: Tooltip の説明がページごとに違う
+
+確認順:
+
+```text
+1. 説明文が UI 側に直書きされていないか
+2. 本ドキュメントの Meaning Dictionary と一致しているか
+3. 同じ語に別ラベルを与えていないか
+4. 一部ページだけ独自説明を追加していないか
+```
+
 ---
 
 # Future Expansion
@@ -1190,11 +2262,20 @@ observation
 overlay_related_news
 prediction review notes
 scenario change log
+historical_pattern
+historical_analog
+pattern_confidence
+analog_confidence
+explanation artifact
+tooltip registry
+detail panel registry
 ```
 
 これらが UI に追加された場合、
-本ドキュメントへ依存関係を必ず記録する。
+本ドキュメントへ依存関係と意味定義を必ず記録する。
 
 ---
 
 END OF DOCUMENT
+
+```
