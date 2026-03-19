@@ -3,7 +3,7 @@ GenesisPrediction v2
 
 Status: Active  
 Purpose: GenesisPrediction v2 の Prediction Layer 設計原則を定義する  
-Last Updated: 2026-03-08
+Last Updated: 2026-03-19
 
 ---
 
@@ -22,6 +22,7 @@ Prediction Layer
 - 予測エンジン設計の判断軸を固定する
 - 未来予測を “当てもの” にしない
 - Observation / Trend / Signal / Scenario / Prediction の責務を分離する
+- Prediction の explainability を構造として固定する
 - 将来の Prediction System 強化時に構造破壊を防ぐ
 
 ---
@@ -384,7 +385,294 @@ invalidation_conditions
 
 ---
 
-# 11. Prediction Supports Humans
+# 11. Explanation Is Part of Prediction Layer
+
+GenesisPrediction において
+
+```text
+Explanation
+```
+
+は独立した真実層ではない。
+
+Explanation は
+
+```text
+Signal / Scenario / Prediction / FX Decision
+```
+
+などの判断結果を
+
+```text
+人間が理解可能な構造
+```
+
+へ変換するための説明層である。
+
+重要原則
+
+```text
+Explanation は新しい真実を作らない
+```
+
+Explanation が扱うものは
+
+* なぜその Prediction なのか
+* なぜその Scenario なのか
+* なぜその Signal なのか
+* なぜその FX 判断なのか
+* 世界で何が起きているのか
+
+である。
+
+ただしそれは
+
+```text
+analysis に存在する既存の判断結果
+```
+
+を言語化・構造化するものであり、
+元の判断ロジックを置き換えるものではない。
+
+---
+
+# 12. Explanation Layer Position
+
+実装上の流れは以下である。
+
+```text
+Observation
+↓
+Trend
+↓
+Signal
+↓
+Scenario
+↓
+Prediction
+↓
+Explanation
+↓
+UI
+```
+
+ただし意味上は
+
+```text
+Explanation = 公開用説明構造
+```
+
+であり、
+
+```text
+Prediction の下位本体
+```
+
+ではない。
+
+重要なのは
+
+```text
+説明は後段であって
+判断の代替ではない
+```
+
+ということである。
+
+---
+
+# 13. Explanation Structure, Not Free Generation
+
+GenesisPrediction の説明は
+
+```text
+自由作文
+```
+
+ではなく
+
+```text
+構造
+```
+
+として定義する。
+
+理由
+
+* UI 側で説明を再生成させないため
+* 説明品質を安定させるため
+* 予測ロジックと説明ロジックを分離するため
+* 多言語化時に意味を保ったまま展開しやすくするため
+
+重要原則
+
+```text
+説明は生成ではなく構造として定義する
+```
+
+---
+
+# 14. UI Must Not Compute Meaning
+
+UI は表示のみを担当する。
+
+UI がやってよいこと
+
+* explanation artifact を読む
+* headline を表示する
+* summary を表示する
+* drivers / watchpoints / invalidation を表示する
+* 用語 tooltip を出す
+* detail panel に説明を出す
+
+UI がやってはいけないこと
+
+* prediction から explanation を再推論する
+* signal の意味を UI 側で再定義する
+* confidence の意味を勝手に解釈する
+* FX reason を UI 側で作文する
+* 日付決定や判定ロジックを持つ
+
+重要原則
+
+```text
+UI は意味を計算しない
+```
+
+---
+
+# 15. Explanation Artifacts
+
+Prediction Layer の explainability を支える最小 artifact 例は以下である。
+
+```text
+analysis/explanation/
+
+prediction_explanation_latest.json
+scenario_explanation_latest.json
+signal_explanation_latest.json
+fx_explanation_latest.json
+world_explanation_latest.json
+```
+
+役割
+
+## prediction_explanation_latest.json
+
+なぜその Prediction なのかを説明する
+
+## scenario_explanation_latest.json
+
+なぜその未来分岐なのかを説明する
+
+## signal_explanation_latest.json
+
+なぜその Signal が立っているのかを説明する
+
+## fx_explanation_latest.json
+
+なぜその FX 判断なのかを説明する
+
+## world_explanation_latest.json
+
+世界で今何が起きているのかを要約する
+
+重要原則
+
+```text
+説明も artifact として固定する
+```
+
+---
+
+# 16. Common Explanation Schema
+
+Phase1 における説明 artifact は
+まず共通骨格を持つべきである。
+
+最小 schema 例
+
+```json
+{
+  "as_of": "YYYY-MM-DD",
+  "subject": "prediction | scenario | signal | fx | world",
+  "status": "ok | unavailable",
+  "headline": "短い一文",
+  "summary": "人間向けの要約",
+  "why_it_matters": "なぜ重要か",
+  "based_on": [
+    "参照artifactや主要要因"
+  ],
+  "drivers": [
+    "主要要因"
+  ],
+  "watchpoints": [
+    "今後の注視点"
+  ],
+  "invalidation": [
+    "見直し条件"
+  ],
+  "must_not_mean": [
+    "誤解してはいけない意味"
+  ],
+  "ui_terms": [
+    {
+      "term": "confidence",
+      "meaning": "この文脈での意味"
+    }
+  ]
+}
+```
+
+重要原則
+
+```text
+まず骨格を固定し
+文章美より意味の整合性を優先する
+```
+
+---
+
+# 17. Must-Not-Mean Principle
+
+説明では
+
+```text
+何を意味するか
+```
+
+だけでなく
+
+```text
+何を意味しないか
+```
+
+も持つべきである。
+
+理由
+
+* UI 利用者の誤読を防ぐ
+* confidence の誤解を防ぐ
+* risk 表示の過剰解釈を防ぐ
+* prediction を断定未来と誤認させないため
+
+例
+
+```text
+confidence は的中率ではない
+prediction は確定未来ではない
+watchpoint は確定警報ではない
+```
+
+重要原則
+
+```text
+説明は誤解防止まで含めて設計する
+```
+
+---
+
+# 18. Prediction Supports Humans
 
 Prediction Layer の目的は
 
@@ -420,7 +708,7 @@ Human
 
 ---
 
-# 12. Layer Responsibilities
+# 19. Layer Responsibilities
 
 Prediction Layer の責務分離
 
@@ -444,6 +732,10 @@ Prediction Layer の責務分離
 
 公開用サマリーを出す
 
+## Explanation
+
+判断結果を人間可読の構造へ変換する
+
 重要原則
 
 ```text
@@ -452,7 +744,7 @@ Prediction Layer の責務分離
 
 ---
 
-# 13. Minimal Output by Layer
+# 20. Minimal Output by Layer
 
 各層の最低出力例
 
@@ -521,9 +813,32 @@ watchpoints
 drivers
 ```
 
+## Explanation
+
+```text
+prediction_explanation_latest.json
+scenario_explanation_latest.json
+signal_explanation_latest.json
+fx_explanation_latest.json
+world_explanation_latest.json
+```
+
+例
+
+```text
+headline
+summary
+why_it_matters
+drivers
+watchpoints
+invalidation
+must_not_mean
+ui_terms
+```
+
 ---
 
-# 14. Failure Modes to Avoid
+# 21. Failure Modes to Avoid
 
 Prediction Layer 設計で避けるべき失敗
 
@@ -563,9 +878,27 @@ UI側で予測ロジックを持つ
 history を使わず latest のみで判断する
 ```
 
+## Failure 7
+
+```text
+UI側で explanation を作文する
+```
+
+## Failure 8
+
+```text
+explanation が元artifactと矛盾する
+```
+
+## Failure 9
+
+```text
+must_not_mean を持たず誤解を放置する
+```
+
 ---
 
-# 15. Integration with Morning Ritual
+# 22. Integration with Morning Ritual
 
 Prediction Layer は
 
@@ -590,6 +923,8 @@ scenario build
 ↓
 prediction build
 ↓
+explanation build
+↓
 prediction memory save
 ↓
 prediction history index build
@@ -605,7 +940,7 @@ Prediction は日次心拍で更新される仮説
 
 ---
 
-# 16. Role of Confidence
+# 23. Role of Confidence
 
 confidence は
 
@@ -638,7 +973,7 @@ confidence を飾りにしない
 
 ---
 
-# 17. Role of Watchpoints
+# 24. Role of Watchpoints
 
 watchpoints は Prediction Layer において非常に重要である。
 
@@ -664,7 +999,7 @@ Prediction は watchpoints を持つべきである
 
 ---
 
-# 18. GenesisPrediction-Specific Goal
+# 25. GenesisPrediction-Specific Goal
 
 GenesisPrediction における Prediction Layer の目的は
 
@@ -692,7 +1027,7 @@ GenesisPrediction における Prediction Layer の目的は
 
 ---
 
-# 19. Final Design Principle
+# 26. Final Design Principle
 
 Prediction Layer の設計原則を一言で言うと
 
@@ -711,7 +1046,7 @@ Explainable branching over single-shot prediction
 
 ---
 
-# 20. Final Summary
+# 27. Final Summary
 
 GenesisPrediction の Prediction Layer は
 
@@ -725,6 +1060,8 @@ Signal
 Scenario
 ↓
 Prediction
+↓
+Explanation
 ```
 
 で構成される。
@@ -750,6 +1087,15 @@ Scenario
 
 Prediction はその最終要約に過ぎない。
 
+そして Explanation は
+
+```text
+その判断結果を
+人間が理解可能な構造へ変換する公開用説明層
+```
+
+である。
+
 これを守ることで、
 GenesisPrediction は
 
@@ -769,4 +1115,4 @@ GenesisPrediction は
 
 END OF DOCUMENT
 
-````
+```
