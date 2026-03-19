@@ -107,6 +107,16 @@ function Refresh-KnownLatestArtifacts {
         @{
             Source      = (Join-Path $RepoRoot "analysis\prediction\prediction_latest.json")
             Destination = (Join-Path $RepoRoot "analysis\prediction_latest.json")
+        },
+
+        # explanation layer aliases into analysis/
+        @{
+            Source      = (Join-Path $RepoRoot "analysis\explanation\prediction_explanation_latest.json")
+            Destination = (Join-Path $RepoRoot "analysis\prediction_explanation_latest.json")
+        },
+        @{
+            Source      = (Join-Path $RepoRoot "analysis\explanation\scenario_explanation_latest.json")
+            Destination = (Join-Path $RepoRoot "analysis\scenario_explanation_latest.json")
         }
     )
 
@@ -221,6 +231,36 @@ function Publish-PredictionArtifacts {
     return $published
 }
 
+function Publish-ExplanationArtifacts {
+    param(
+        [string]$RepoRoot
+    )
+
+    $publishDir = Join-Path $RepoRoot "data\explanation"
+    Ensure-Directory -Path $publishDir
+
+    $publishRules = @(
+        @{
+            Source      = (Join-Path $RepoRoot "analysis\explanation\prediction_explanation_latest.json")
+            Destination = (Join-Path $publishDir "prediction_explanation_latest.json")
+        },
+        @{
+            Source      = (Join-Path $RepoRoot "analysis\explanation\scenario_explanation_latest.json")
+            Destination = (Join-Path $publishDir "scenario_explanation_latest.json")
+        }
+    )
+
+    $published = 0
+
+    foreach ($rule in $publishRules) {
+        if (Copy-IfExists -SourcePath $rule.Source -DestinationPath $rule.Destination) {
+            $published++
+        }
+    }
+
+    return $published
+}
+
 function Build-GlobalStatusLatest {
     param(
         [string]$RepoRoot,
@@ -250,6 +290,7 @@ function Show-Summary {
         [string]$RunDate,
         [int]$LatestCopied,
         [int]$PublishedCount,
+        [int]$ExplanationPublishedCount,
         [string]$PredictionHistoryPath,
         [bool]$HistoryIndexBuilt
     )
@@ -262,6 +303,7 @@ function Show-Summary {
     Write-Host "date                    : $RunDate"
     Write-Host "latest aliases copied   : $LatestCopied"
     Write-Host "prediction published    : $PublishedCount"
+    Write-Host "explanation published   : $ExplanationPublishedCount"
 
     if ($PredictionHistoryPath) {
         Write-Host "prediction history      : $PredictionHistoryPath"
@@ -305,25 +347,31 @@ try {
     Ensure-Directory -Path (Join-Path $repoRoot "analysis")
     Ensure-Directory -Path (Join-Path $repoRoot "analysis\prediction")
     Ensure-Directory -Path (Join-Path $repoRoot "analysis\prediction\history")
+    Ensure-Directory -Path (Join-Path $repoRoot "analysis\explanation")
     Ensure-Directory -Path (Join-Path $repoRoot "data\prediction")
+    Ensure-Directory -Path (Join-Path $repoRoot "data\explanation")
 
-    Write-Host "[1/5] refresh known latest artifacts" -ForegroundColor Cyan
+    Write-Host "[1/6] refresh known latest artifacts" -ForegroundColor Cyan
     $latestCopied = Refresh-KnownLatestArtifacts -RepoRoot $repoRoot
 
     Write-Host ""
-    Write-Host "[2/5] save prediction history snapshot" -ForegroundColor Cyan
+    Write-Host "[2/6] save prediction history snapshot" -ForegroundColor Cyan
     $predictionHistoryPath = Save-PredictionHistorySnapshot -RepoRoot $repoRoot -RunDate $runDate
 
     Write-Host ""
-    Write-Host "[3/5] build prediction history index" -ForegroundColor Cyan
+    Write-Host "[3/6] build prediction history index" -ForegroundColor Cyan
     [bool]$historyIndexBuilt = Build-PredictionHistoryIndex -RepoRoot $repoRoot
 
     Write-Host ""
-    Write-Host "[4/5] publish prediction artifacts" -ForegroundColor Cyan
+    Write-Host "[4/6] publish prediction artifacts" -ForegroundColor Cyan
     $publishedCount = Publish-PredictionArtifacts -RepoRoot $repoRoot
 
     Write-Host ""
-    Write-Host "[5/5] build analysis/global_status_latest.json" -ForegroundColor Cyan
+    Write-Host "[5/6] publish explanation artifacts" -ForegroundColor Cyan
+    $explanationPublishedCount = Publish-ExplanationArtifacts -RepoRoot $repoRoot
+
+    Write-Host ""
+    Write-Host "[6/6] build analysis/global_status_latest.json" -ForegroundColor Cyan
     Build-GlobalStatusLatest -RepoRoot $repoRoot -PrettyJson:$Pretty
 
     Show-Summary `
@@ -331,6 +379,7 @@ try {
         -RunDate $runDate `
         -LatestCopied $latestCopied `
         -PublishedCount $publishedCount `
+        -ExplanationPublishedCount $explanationPublishedCount `
         -PredictionHistoryPath $predictionHistoryPath `
         -HistoryIndexBuilt $historyIndexBuilt
 
