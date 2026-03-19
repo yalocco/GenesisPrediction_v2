@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Prediction - GenesisPrediction v2</title>
   <meta name="description" content="GenesisPrediction Prediction UI">
-  <link rel="stylesheet" href="/static/app.css?v=20260319-explanation-ui-8">
-  <link rel="stylesheet" href="/static/prediction.css?v=20260319-explanation-ui-8">
+  <link rel="stylesheet" href="/static/app.css?v=20260319-explanation-ui-4">
+  <link rel="stylesheet" href="/static/prediction.css?v=20260319-explanation-ui-4">
 </head>
 <body>
   <div id="site-header"></div>
@@ -245,12 +245,12 @@
           <section class="card explanation-section">
             <div class="sectionTitle explanation-section-title">
               <h2>Supporting Context</h2>
-              <div class="explanation-title-tools">
+              <div class="explanation-toolbar">
                 <span class="hint">context / why</span>
-                <div class="pillrow explanation-lang-row" aria-label="Explanation language">
-                  <button type="button" class="pill explanation-lang-btn is-active" data-exp-lang="ja" onclick="window.setExplanationLangAndRender('ja')">JA</button>
-                  <button type="button" class="pill explanation-lang-btn" data-exp-lang="en" onclick="window.setExplanationLangAndRender('en')">EN</button>
-                  <button type="button" class="pill explanation-lang-btn" data-exp-lang="th" onclick="window.setExplanationLangAndRender('th')">TH</button>
+                <div class="lang-switch" role="group" aria-label="Explanation language">
+                  <button type="button" class="lang-switch-btn" data-expl-lang="en">EN</button>
+                  <button type="button" class="lang-switch-btn" data-expl-lang="ja">JA</button>
+                  <button type="button" class="lang-switch-btn" data-expl-lang="th">TH</button>
                 </div>
               </div>
             </div>
@@ -260,7 +260,6 @@
                 <div class="detail-eyebrow">Prediction Explanation</div>
                 <h3 id="predictionExplanationHeadline" class="detail-title explanation-title">Loading...</h3>
                 <p id="predictionExplanationSummary" class="detail-text explanation-summary">Loading prediction explanation...</p>
-                <p id="predictionExplanationWhy" class="detail-text explanation-why">—</p>
                 <div class="pillrow">
                   <span class="pill"><strong>as_of</strong><span id="predictionExplanationAsof" style="margin-left:6px;">—</span></span>
                   <span class="pill"><strong>status</strong><span id="predictionExplanationStatus" style="margin-left:6px;">—</span></span>
@@ -271,7 +270,6 @@
                 <div class="detail-eyebrow">Scenario Explanation</div>
                 <h3 id="scenarioExplanationHeadline" class="detail-title explanation-title">Loading...</h3>
                 <p id="scenarioExplanationSummary" class="detail-text explanation-summary">Loading scenario explanation...</p>
-                <p id="scenarioExplanationWhy" class="detail-text explanation-why">—</p>
                 <div class="pillrow">
                   <span class="pill"><strong>as_of</strong><span id="scenarioExplanationAsof" style="margin-left:6px;">—</span></span>
                   <span class="pill"><strong>status</strong><span id="scenarioExplanationStatus" style="margin-left:6px;">—</span></span>
@@ -380,8 +378,8 @@
       prediction: "/data/prediction/prediction_latest.json",
       historyIndex: "/data/prediction/prediction_history_index.json",
       fx: "/analysis/fx/fx_decision_latest.json",
-      predictionExplanation: "/analysis/explanation/prediction_explanation_latest.json",
-      scenarioExplanation: "/analysis/explanation/scenario_explanation_latest.json"
+      predictionExplanation: "/data/explanation/prediction_explanation_latest.json",
+      scenarioExplanation: "/data/explanation/scenario_explanation_latest.json"
     };
 
     const UI_LIMITS = {
@@ -392,6 +390,43 @@
       history: 4,
       scenarioInline: 2,
       runtimeNotes: 6
+    };
+
+    const EXPLANATION_LANGS = ["en", "ja", "th"];
+    const EXPLANATION_LABELS = {
+      en: {
+        predictionUnavailable: "Prediction explanation is unavailable.",
+        scenarioUnavailable: "Scenario explanation is unavailable.",
+        artifactUnavailable: "Explanation artifact unavailable.",
+        driversUnavailable: "Explanation drivers unavailable",
+        watchpointsUnavailable: "Explanation watchpoints unavailable",
+        mustNotMeanUnavailable: "Explanation must-not-mean unavailable",
+        unavailable: "Unavailable"
+      },
+      ja: {
+        predictionUnavailable: "Prediction explanation は利用できません。",
+        scenarioUnavailable: "Scenario explanation は利用できません。",
+        artifactUnavailable: "Explanation artifact unavailable.",
+        driversUnavailable: "Explanation drivers は利用できません",
+        watchpointsUnavailable: "Explanation watchpoints は利用できません",
+        mustNotMeanUnavailable: "Explanation must-not-mean は利用できません",
+        unavailable: "Unavailable"
+      },
+      th: {
+        predictionUnavailable: "Prediction explanation ไม่พร้อมใช้งาน",
+        scenarioUnavailable: "Scenario explanation ไม่พร้อมใช้งาน",
+        artifactUnavailable: "Explanation artifact unavailable.",
+        driversUnavailable: "Explanation drivers ไม่พร้อมใช้งาน",
+        watchpointsUnavailable: "Explanation watchpoints ไม่พร้อมใช้งาน",
+        mustNotMeanUnavailable: "Explanation must-not-mean ไม่พร้อมใช้งาน",
+        unavailable: "Unavailable"
+      }
+    };
+
+    const PAGE_STATE = {
+      currentLang: localStorage.getItem("gp_prediction_expl_lang") || "ja",
+      predictionExplanation: null,
+      scenarioExplanation: null
     };
 
     function el(id){ return document.getElementById(id); }
@@ -1136,59 +1171,49 @@
     }
 
 
-    const EXPLANATION_LANG_KEY = "gp_explanation_lang";
-    let latestPredictionExplanation = null;
-    let latestScenarioExplanation = null;
+    function explanationLabels(){
+      return EXPLANATION_LABELS[PAGE_STATE.currentLang] || EXPLANATION_LABELS.ja;
+    }
 
-    function getExplanationLang(){
-      try {
-        const saved = localStorage.getItem(EXPLANATION_LANG_KEY);
-        return ["ja","en","th"].includes(saved) ? saved : "ja";
-      } catch (err) {
-        return "ja";
+    function normalizeLang(lang){
+      return EXPLANATION_LANGS.includes(lang) ? lang : "ja";
+    }
+
+    function getLocalizedField(data, key, fallbackValue){
+      if (!data) return fallbackValue;
+      const lang = normalizeLang(PAGE_STATE.currentLang);
+      const shadow = data[`${key}_i18n`];
+      if (shadow && typeof shadow === "object" && !Array.isArray(shadow)){
+        return firstNonEmpty(shadow[lang], shadow[data.lang_default], shadow.en, shadow.ja, shadow.th, fallbackValue);
       }
-    }
-
-    function updateExplanationLanguageButtons(lang){
-    }
-
-    function setExplanationLang(lang){
-      const next = ["ja","en","th"].includes(lang) ? lang : "ja";
-      try {
-        localStorage.setItem(EXPLANATION_LANG_KEY, next);
-      } catch (err) {}
-      updateExplanationLanguageButtons(next);
-      return next;
-    }
-
-    function pickI18nText(data, baseField, lang){
-      if (!data || typeof data !== "object") return "";
-      const shadow = data[`${baseField}_i18n`];
-      if (shadow && typeof shadow === "object"){
-        const value = shadow[lang] ?? shadow[data.lang_default] ?? shadow.ja ?? shadow.en ?? shadow.th;
-        if (typeof value === "string" && value.trim()) return value.trim();
+      const nested = data[key];
+      if (nested && typeof nested === "object" && !Array.isArray(nested)){
+        return firstNonEmpty(nested[lang], nested[data.lang_default], nested.en, nested.ja, nested.th, fallbackValue);
       }
-      const base = data[baseField];
-      return typeof base === "string" ? base.trim() : "";
+      return firstNonEmpty(nested, fallbackValue);
     }
 
-    function pickI18nList(data, baseField, lang){
-      if (!data || typeof data !== "object") return [];
-      const shadow = data[`${baseField}_i18n`];
-      if (shadow && typeof shadow === "object"){
-        const value = shadow[lang] ?? shadow[data.lang_default] ?? shadow.ja ?? shadow.en ?? shadow.th;
-        if (Array.isArray(value)) return value;
-      }
-      return Array.isArray(data[baseField]) ? data[baseField] : [];
+    function updateExplanationLanguageButtons(){
+      document.querySelectorAll("[data-expl-lang]").forEach((button) => {
+        const lang = button.getAttribute("data-expl-lang");
+        button.classList.toggle("active", lang === PAGE_STATE.currentLang);
+        button.setAttribute("aria-pressed", lang === PAGE_STATE.currentLang ? "true" : "false");
+      });
     }
 
-    window.setExplanationLangAndRender = function(lang){
-      const nextLang = setExplanationLang(lang);
-      if (latestPredictionExplanation || latestScenarioExplanation){
-        renderExplanationSection(latestPredictionExplanation, latestScenarioExplanation, nextLang);
-      }
-    };
-    function renderExplanationCard(prefix, data, emptySummary, lang){
+
+    PAGE_STATE.currentLang = normalizeLang(PAGE_STATE.currentLang);
+
+    function setExplanationLanguage(lang){
+      PAGE_STATE.currentLang = normalizeLang(lang);
+      localStorage.setItem("gp_prediction_expl_lang", PAGE_STATE.currentLang);
+      updateExplanationLanguageButtons();
+      renderExplanationSection(PAGE_STATE.predictionExplanation, PAGE_STATE.scenarioExplanation);
+    }
+
+
+    function renderExplanationCard(prefix, data, emptySummary){
+      const labels = explanationLabels();
       const headlineEl = el(`${prefix}Headline`);
       const summaryEl = el(`${prefix}Summary`);
       const whyEl = el(`${prefix}Why`);
@@ -1196,54 +1221,69 @@
       const statusEl = el(`${prefix}Status`);
 
       if (!data){
-        if (headlineEl) headlineEl.textContent = "Unavailable";
+        if (headlineEl) headlineEl.textContent = labels.unavailable;
         if (summaryEl) summaryEl.textContent = emptySummary;
-        if (whyEl) whyEl.textContent = "";
+        if (whyEl) whyEl.textContent = labels.artifactUnavailable;
         if (asofEl) asofEl.textContent = "—";
         if (statusEl) statusEl.textContent = "unavailable";
         return;
       }
 
-      if (headlineEl) headlineEl.textContent = pickI18nText(data, "headline", lang) || "Untitled explanation";
-      if (summaryEl) summaryEl.textContent = pickI18nText(data, "summary", lang) || emptySummary;
-      if (whyEl) whyEl.textContent = pickI18nText(data, "why_it_matters", lang) || "";
+      const headline = getLocalizedField(data, "headline", "Untitled explanation");
+      const summary = getLocalizedField(data, "summary", emptySummary);
+      const why = getLocalizedField(data, "why_it_matters", "—");
+
+      if (headlineEl) headlineEl.textContent = firstString(headline, "Untitled explanation");
+      if (summaryEl) summaryEl.textContent = firstString(summary, emptySummary);
+      if (whyEl) whyEl.textContent = firstString(why, "—");
       if (asofEl) asofEl.textContent = formatShortDate(firstString(data.as_of, data.date));
       if (statusEl) statusEl.textContent = firstString(data.status, "ok");
     }
 
-    function renderExplanationSection(predictionExplanation, scenarioExplanation, lang){
+    function renderExplanationSection(predictionExplanation, scenarioExplanation){
+      PAGE_STATE.predictionExplanation = predictionExplanation || null;
+      PAGE_STATE.scenarioExplanation = scenarioExplanation || null;
+
+      const labels = explanationLabels();
+
       renderExplanationCard(
         "predictionExplanation",
         predictionExplanation,
-        "Prediction explanation is unavailable.",
-        lang
+        labels.predictionUnavailable
       );
       renderExplanationCard(
         "scenarioExplanation",
         scenarioExplanation,
-        "Scenario explanation is unavailable.",
-        lang
+        labels.scenarioUnavailable
       );
 
       const combinedDrivers = uniqueLimitedItems([
-        ...pickI18nList(predictionExplanation, "drivers", lang),
-        ...pickI18nList(scenarioExplanation, "drivers", lang)
+        ...normalizeListItems(getLocalizedField(predictionExplanation, "drivers", [])),
+        ...normalizeListItems(getLocalizedField(scenarioExplanation, "drivers", []))
       ], UI_LIMITS.explanation);
 
       const combinedWatchpoints = uniqueLimitedItems([
-        ...pickI18nList(predictionExplanation, "watchpoints", lang),
-        ...pickI18nList(scenarioExplanation, "watchpoints", lang)
+        ...normalizeListItems(getLocalizedField(predictionExplanation, "watchpoints", [])),
+        ...normalizeListItems(getLocalizedField(scenarioExplanation, "watchpoints", []))
       ], UI_LIMITS.explanation);
 
       const combinedMustNotMean = uniqueLimitedItems([
-        ...pickI18nList(predictionExplanation, "must_not_mean", lang),
-        ...pickI18nList(scenarioExplanation, "must_not_mean", lang)
+        ...normalizeListItems(getLocalizedField(predictionExplanation, "must_not_mean", [])),
+        ...normalizeListItems(getLocalizedField(scenarioExplanation, "must_not_mean", []))
       ], UI_LIMITS.explanation);
 
-      renderList("explanationDriversList", combinedDrivers, "Explanation drivers unavailable", "D", UI_LIMITS.explanation);
-      renderList("explanationWatchpointsList", combinedWatchpoints, "Explanation watchpoints unavailable", "W", UI_LIMITS.explanation);
-      renderList("explanationMustNotMeanList", combinedMustNotMean, "Explanation must-not-mean unavailable", "M", UI_LIMITS.explanation);
+      renderList("explanationDriversList", combinedDrivers, labels.driversUnavailable, "D", UI_LIMITS.explanation);
+      renderList("explanationWatchpointsList", combinedWatchpoints, labels.watchpointsUnavailable, "W", UI_LIMITS.explanation);
+      renderList("explanationMustNotMeanList", combinedMustNotMean, labels.mustNotMeanUnavailable, "N", UI_LIMITS.explanation);
     }
+
+    document.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-expl-lang]");
+      if (!button) return;
+      setExplanationLanguage(button.getAttribute("data-expl-lang"));
+    });
+
+    updateExplanationLanguageButtons();
 
     async function init(){
       const entries = await Promise.all(
@@ -1283,11 +1323,7 @@
       renderRuntimeNotes(prediction, signalData, warningData, history, fxData);
       renderPredictionHistory(history);
       renderCharts(prediction, scenarios, history);
-
-      latestPredictionExplanation = predictionExplanation;
-      latestScenarioExplanation = scenarioExplanation;
-      const currentExpLang = setExplanationLang(getExplanationLang());
-      renderExplanationSection(predictionExplanation, scenarioExplanation, currentExpLang);
+      renderExplanationSection(predictionExplanation, scenarioExplanation);
 
       renderList("watchpointsList", firstNonEmpty(prediction?.watchpoints, prediction?.watch_points, scenarios.flatMap((s) => s.watchpoints).filter(Boolean)), "Watchpoints unavailable", "W", UI_LIMITS.lowerList);
       renderList("driversList", firstNonEmpty(prediction?.drivers, prediction?.key_drivers, scenarios.flatMap((s) => s.drivers).filter(Boolean)), "Drivers unavailable", "D", UI_LIMITS.lowerList);
@@ -1299,7 +1335,7 @@
 
     window.addEventListener("DOMContentLoaded", init);
   </script>
-  <script src="/static/common/global_status.js?v=20260319-explanation-ui-8"></script>
-  <script src="/static/common/layout.js?v=20260319-explanation-ui-8"></script>
+  <script src="/static/common/global_status.js?v=20260319-explanation-ui-4"></script>
+  <script src="/static/common/layout.js?v=20260319-explanation-ui-4"></script>
 </body>
 </html>
