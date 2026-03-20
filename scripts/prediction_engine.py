@@ -25,6 +25,10 @@ def utc_now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
+def today_str() -> str:
+    return datetime.now().strftime("%Y-%m-%d")
+
+
 def load_json(path: Path) -> Dict[str, Any]:
     if not path.exists():
         return {}
@@ -68,6 +72,20 @@ def unique_preserve_order(items: List[Any]) -> List[Any]:
         seen.add(key)
         out.append(item)
     return out
+
+
+def extract_memory_summary(scenario_data: Dict[str, Any]) -> str:
+    reference_memory = scenario_data.get("reference_memory", {})
+    if not isinstance(reference_memory, dict):
+        return ""
+    return str(reference_memory.get("summary") or "").strip()
+
+
+def extract_memory_status(scenario_data: Dict[str, Any]) -> str:
+    reference_memory = scenario_data.get("reference_memory", {})
+    if not isinstance(reference_memory, dict):
+        return "unavailable"
+    return str(reference_memory.get("status") or "unavailable").strip()
 
 
 def extract_scenario_map(scenario_data: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
@@ -203,6 +221,7 @@ def build_prediction_statement(
     confidence: float,
     dominant_pattern: str,
     dominant_analog: str,
+    memory_summary: str,
 ) -> str:
     sentence = (
         f"Primary outlook is {dominant_scenario} with {risk} risk and "
@@ -219,6 +238,9 @@ def build_prediction_statement(
     elif dominant_analog:
         sentence += f" Historical support is led by analog {dominant_analog}."
 
+    if memory_summary:
+        sentence += f" Memory context: {memory_summary}."
+
     return sentence
 
 
@@ -230,6 +252,11 @@ def build_action_bias(
     dominant = normalize_text(scenario_data.get("dominant_scenario"))
     risk = normalize_text(scenario_data.get("risk"))
     outcomes = set(normalize_text(x) for x in expected_outcomes)
+    memory_summary = normalize_text(extract_memory_summary(scenario_data))
+
+    # Memory is support-only, but crisis-pattern recall should harden bias.
+    if "financial_crisis" in memory_summary or "banking_crisis" in memory_summary:
+        return "defensive"
 
     if dominant == "worst_case":
         return "defensive"
@@ -303,6 +330,10 @@ def build_prediction_drivers(
         drivers.append(f"historical_pattern:{normalize_text(dominant_pattern)}")
     if dominant_analog:
         drivers.append(f"historical_analog:{normalize_text(dominant_analog)}")
+
+    memory_summary = extract_memory_summary(scenario_data)
+    if memory_summary:
+        drivers.append(f"memory:{normalize_text(memory_summary)}")
 
     return unique_preserve_order([x for x in drivers if x])[:14]
 
@@ -385,6 +416,12 @@ def calculate_prediction_confidence(
         + 0.10 * analog_conf
     )
 
+    # Mild support-only boost when memory recall is healthy and non-empty.
+    memory_status = normalize_text(extract_memory_status(scenario_data))
+    memory_summary = extract_memory_summary(scenario_data)
+    if memory_status == "ok" and memory_summary:
+        confidence += 0.05
+
     return round(clamp01(confidence), 4)
 
 
@@ -394,6 +431,7 @@ def build_summary(
     risk: str,
     confidence: float,
     historical_context: Dict[str, Any],
+    memory_summary: str,
 ) -> str:
     base = (
         f"Prediction is {direction}. "
@@ -405,6 +443,9 @@ def build_summary(
     historical_summary = historical_context.get("summary")
     if historical_summary:
         base += f" {historical_summary}"
+
+    if memory_summary:
+        base += f" Memory context: {memory_summary}"
 
     return base
 
@@ -427,6 +468,7 @@ def build_prediction_output(
 
     dominant_scenario = normalize_text(scenario_data.get("dominant_scenario")) or "base_case"
     risk = normalize_text(scenario_data.get("risk")) or "guarded"
+    memory_summary = extract_memory_summary(scenario_data)
 
     historical_context = build_historical_context(
         pattern_data=pattern_data,
@@ -473,6 +515,7 @@ def build_prediction_output(
         confidence=confidence,
         dominant_pattern=str(historical_context.get("dominant_pattern") or ""),
         dominant_analog=str(historical_context.get("dominant_analog") or ""),
+        memory_summary=memory_summary,
     )
 
     prediction_drivers = build_prediction_drivers(
@@ -489,12 +532,13 @@ def build_prediction_output(
         risk=risk,
         confidence=confidence,
         historical_context=historical_context,
+        memory_summary=memory_summary,
     )
 
     return {
         "as_of": as_of,
         "generated_at": utc_now_iso(),
-        "engine_version": "v2_historical",
+        "engine_version": "v3_memory_integrated",
         "direction": direction,
         "dominant_scenario": dominant_scenario,
         "risk": risk,
@@ -508,6 +552,7 @@ def build_prediction_output(
         "risk_flags": scenario_data.get("risk_flags", []),
         "historical_context": historical_context,
         "scenario_bias": scenario_data.get("scenario_bias", {}),
+        "reference_memory": scenario_data.get("reference_memory", {}),
         "summary": summary,
     }
 
