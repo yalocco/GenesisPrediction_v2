@@ -1,6 +1,8 @@
 (() => {
   "use strict";
 
+  const DEFAULT_LANG = "en";
+
   const NAV_ITEMS = [
     { href: "/static/index.html", label: "Home" },
     { href: "/static/overlay.html", label: "Overlay" },
@@ -9,6 +11,28 @@
     { href: "/static/prediction.html", label: "Prediction" },
     { href: "/static/prediction_history.html", label: "Prediction History" }
   ];
+
+  function getLang() {
+    try {
+      return localStorage.getItem("gp_lang") || DEFAULT_LANG;
+    } catch (_error) {
+      return DEFAULT_LANG;
+    }
+  }
+
+  function setLang(lang) {
+    try {
+      localStorage.setItem("gp_lang", lang);
+    } catch (_error) {
+      // ignore storage failure
+    }
+    window.GP_LANG = lang;
+    window.location.reload();
+  }
+
+  function initLang() {
+    window.GP_LANG = getLang();
+  }
 
   function normalizePath(path) {
     return String(path || "")
@@ -49,6 +73,20 @@
     }).join("");
   }
 
+  function buildLanguageHtml() {
+    const lang = window.GP_LANG || DEFAULT_LANG;
+    return `
+      <label class="lang-switch" for="langSwitch" aria-label="Language switch">
+        <span class="lang-switch-label">Lang</span>
+        <select id="langSwitch" class="lang-switch-select">
+          <option value="en"${lang === "en" ? " selected" : ""}>EN</option>
+          <option value="ja"${lang === "ja" ? " selected" : ""}>JA</option>
+          <option value="th"${lang === "th" ? " selected" : ""}>TH</option>
+        </select>
+      </label>
+    `;
+  }
+
   function buildHeaderHtml() {
     return `
       <header class="topbar">
@@ -68,6 +106,7 @@
               <span id="pillHealth" class="pill">Health: --</span>
               <span id="pillFx" class="pill">FX: --</span>
               <span id="pillAsOf" class="pill">as_of: --</span>
+              ${buildLanguageHtml()}
             </div>
           </div>
         </div>
@@ -93,6 +132,13 @@
       return;
     }
     root.innerHTML = buildHeaderHtml();
+
+    const langSwitch = document.getElementById("langSwitch");
+    if (langSwitch) {
+      langSwitch.addEventListener("change", (event) => {
+        setLang(event.target.value);
+      });
+    }
   }
 
   function injectFooter() {
@@ -125,6 +171,7 @@
   }
 
   async function boot() {
+    initLang();
     document.documentElement.dataset.layoutReady = "0";
 
     injectHeader();

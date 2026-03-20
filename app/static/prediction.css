@@ -2,745 +2,772 @@
    Prediction Page Layout (Explanation Layer Phase1 Tuning)
    ========================================================= */
 
+/* Header-safe guard
+   Prediction page must never expand header/topbar width. */
+   .prediction-page,
+   .prediction-shell,
+   .gp-main {
+     min-width: 0;
+     max-width: 100%;
+   }
+   
    .prediction-page {
-    display: grid;
-    gap: 12px;
-  }
-  
-  .prediction-shell {
-    display: grid;
-    gap: 12px;
-  }
-  
-  .prediction-page .card {
-    min-width: 0;
-  }
-  
-  .hero-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.24fr) minmax(320px, 0.76fr);
-    gap: 12px;
-    align-items: stretch;
-  }
-  
-  .hero-card,
-  .hero-side-card {
-    min-width: 0;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .hero-side-stack,
-  .prediction-side-stack {
-    display: grid;
-    gap: 10px;
-    height: 100%;
-  }
-  
-  .hero-intro-card {
-    padding: 0;
-    border: none;
-    background: transparent;
-    box-shadow: none;
-  }
-  
-  .hero-title {
-    font-size: 24px;
-    line-height: 1.16;
-    margin: 0;
-    letter-spacing: 0.01em;
-  }
-  
-  .hero-intro-card .sub {
-    margin: 8px 0 0;
-    font-size: 13px;
-    line-height: 1.55;
-    color: #c8d7f6;
-    opacity: 0.9;
-  }
-  
-  .hero-summary {
-    margin: 12px 0 0;
-    font-size: 15px;
-    line-height: 1.72;
-    color: #e7f0ff;
-    max-width: 98%;
-  }
-  
-  .hero-metric,
-  .compact-metric-card,
-  .detail-card,
-  .scenario-card,
-  .signal-card,
-  .trend-card,
-  .status-item {
-    border: 1px solid rgba(120, 160, 220, 0.12);
-    border-radius: 14px;
-    padding: 12px 14px;
-    background: linear-gradient(180deg, rgba(10, 16, 30, 0.42), rgba(8, 13, 24, 0.28));
-    display: grid;
-    gap: 8px;
-    min-width: 0;
-  }
-  
-  .hero-side-card {
-    padding: 10px;
-  }
-  
-  .hero-side-card .hero-metric {
-    min-height: 0;
-    padding: 11px 13px;
-  }
-  
-  .metric-label,
-  .detail-eyebrow,
-  .chart-label {
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    opacity: 0.76;
-    margin-bottom: 2px;
-  }
-  
-  .metric-value {
-    font-size: 18px;
-    line-height: 1.28;
-    font-weight: 700;
-    color: #eef4ff;
-    word-break: break-word;
-  }
-  
-  .hero-side-card .metric-value {
-    font-size: 15px;
-    line-height: 1.45;
-  }
-  
-  .metric-sub,
-  .chart-note,
-  .section-subtitle,
-  .explanation-mini-subtitle {
-    margin-top: 2px;
-    font-size: 12px;
-    line-height: 1.5;
-    opacity: 0.8;
-    color: #c8d7f6;
-  }
-  
-  .summary-text,
-  .detail-text,
-  .scenario-text,
-  .signal-text,
-  .trend-text,
-  .inline-text {
-    margin: 0;
-    font-size: 13px;
-    line-height: 1.68;
-    color: #d6e1f5;
-  }
-  
-  .detail-title,
-  .scenario-title,
-  .signal-title,
-  .trend-title,
-  .explanation-title,
-  .history-row-title {
-    font-size: 15px;
-    line-height: 1.35;
-    font-weight: 700;
-    color: #eef4ff;
-    margin: 0;
-  }
-  
-  .section-header {
-    margin-bottom: 10px;
-  }
-  
-  .section-title {
-    line-height: 1.24;
-    margin: 0;
-  }
-  
-  .content-grid.prediction-top {
-    grid-template-columns: minmax(0, 1.12fr) minmax(330px, 0.88fr);
-    align-items: start;
-    gap: 12px;
-  }
-  
-  .compact-content-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-  }
-  
-  .signal-grid,
-  .trend-stack,
-  .scenario-compact-grid,
-  .quad-grid,
-  .kpi-grid,
-  .fx-inline-grid,
-  .explanation-grid,
-  .explanation-compact-grid,
-  .compact-chart-grid,
-  .compact-scenario-grid,
-  .compact-quad-grid,
-  .compact-kpi-grid,
-  .source-compact-grid {
-    display: grid;
-    gap: 10px;
-  }
-  
-  .signal-grid,
-  .trend-stack,
-  .scenario-compact-grid,
-  .quad-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .kpi-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-  
-  .fx-inline-grid,
-  .explanation-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .explanation-compact-grid {
-    grid-template-columns: repeat(3, 1fr);
-    margin-top: 8px;
-  }
-  
-  .compact-chart-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  
-  .compact-card {
-    padding-top: 12px;
-    padding-bottom: 12px;
-  }
-  
-  .compact-section-header {
-    margin-bottom: 8px;
-  }
-  
-  .compact-detail-card,
-  .compact-chart-card {
-    padding: 11px 13px;
-  }
-  
-  .compact-list,
-  .compact-history-list,
-  .explanation-list {
-    gap: 8px;
-  }
-  
-  .compact-list-row,
-  .explanation-list .list-row,
-  .compact-history-row {
-    padding: 10px 12px;
-    gap: 10px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.028);
-    border: 1px solid rgba(120, 160, 220, 0.08);
-    align-items: flex-start;
-  }
-  
-  .compact-history-head,
-  .history-row-head,
-  .source-status-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-  }
-  
-  .compact-note-list {
-    margin: 0;
-    padding-left: 0;
-    list-style: none;
-    display: grid;
-    gap: 7px;
-  }
-  
-  .compact-note-list li {
-    margin: 0;
-    padding: 8px 10px;
-    font-size: 12px;
-    line-height: 1.5;
-    color: #c8d7f6;
-    border: 1px solid rgba(120, 160, 220, 0.1);
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.018);
-  }
-  
-  .compact-kpi-grid .metric-value {
-    font-size: 17px;
-  }
-  
-  .chart-card svg {
-    width: 100%;
-    height: 88px;
-  }
-  
-  .chart-value {
-    font-size: 13px;
-    font-weight: 700;
-    line-height: 1.35;
-  }
-  
-  .chart-value.pos { color: #9be59b; }
-  .chart-value.neg { color: #ffb2b2; }
-  .chart-value.neu { color: #d9e5ff; }
-  
-  .explanation-section {
-    border-color: rgba(120, 160, 220, 0.08);
-    background: linear-gradient(180deg, rgba(7, 10, 18, 0.24), rgba(5, 8, 14, 0.14));
-    margin-top: 2px;
-  }
-  
-  .explanation-section .sectionTitle {
-    margin-bottom: 8px;
-  }
-  
-  .explanation-section .hint {
-    opacity: 0.62;
-  }
-  
-  .explanation-section-title h2 {
-    font-size: 15px;
-    font-weight: 650;
-  }
-  
-  .explanation-card {
-    padding: 11px 13px;
-    gap: 6px;
-    border-color: rgba(120, 160, 220, 0.08);
-    background: linear-gradient(180deg, rgba(8, 12, 20, 0.22), rgba(6, 9, 16, 0.13));
-  }
-  
-  .explanation-summary {
-    font-size: 13px;
-    line-height: 1.65;
-    color: #ccd8eb;
-  }
-  
-  .explanation-why {
-    font-size: 12px;
-    line-height: 1.58;
-    color: #a8bbd7;
-  }
-  
-  .explanation-compact-card {
-    padding: 10px 12px;
-    gap: 6px;
-    border-color: rgba(120, 160, 220, 0.08);
-    background: linear-gradient(180deg, rgba(8, 12, 20, 0.18), rgba(6, 9, 16, 0.12));
-  }
-  
-  .explanation-list .pill,
-  .pill {
-    min-width: 24px;
-    text-align: center;
-    padding: 3px 8px;
-    font-size: 11px;
-    line-height: 1.2;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.06);
-    flex: 0 0 auto;
-  }
-  
-  .explanation-list .inline-text {
-    font-size: 12px;
-    line-height: 1.6;
-    color: #ccd8eb;
-  }
-  
-  .source-compact-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  
-  .source-compact-item {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    padding: 8px 10px;
-    border-radius: 10px;
-    border: 1px solid rgba(120, 160, 220, 0.1);
-    background: rgba(255, 255, 255, 0.022);
-    min-width: 0;
-  }
-  
-  .source-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
-    flex: 0 0 auto;
-  }
-  
-  .source-dot.ok { background: #8fd38f; }
-  .source-dot.ng { background: rgba(255, 255, 255, 0.28); }
-  
-  .source-name,
-  .source-state {
-    font-size: 12px;
-    line-height: 1.3;
-    color: #dbe6fb;
-  }
-  
-  .source-name {
-    flex: 1 1 auto;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  
-  .source-state {
-    opacity: 0.84;
-  }
-  
-  .probability-row {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 5px;
-    align-items: start;
-    padding: 6px 0;
-  }
-  
-  .probability-label,
-  .probability-value {
-    font-size: 13px;
-    line-height: 1.55;
-    color: #dbe6fb;
-  }
-  
-  .probability-note {
-    font-size: 12px;
-    line-height: 1.55;
-    color: #c8d7f6;
-  }
-  
-  .progress-track {
-    height: 8px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.07);
-    overflow: hidden;
-  }
-  
-  .progress-bar {
-    height: 100%;
-    border-radius: 999px;
-    background: linear-gradient(90deg, rgba(147, 197, 253, 0.82), rgba(99, 179, 237, 0.92));
-  }
-  
-  .compact-stack-grid .trend-card,
-  .compact-stack-grid .signal-card,
-  .compact-scenario-grid .scenario-card {
-    min-height: 0;
-  }
-  
-  .signal-meta,
-  .trend-meta,
-  .scenario-meta,
-  .scenario-title-row,
-  .signal-title-row,
-  .trend-title-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-  }
-  
-  .signal-badge,
-  .trend-badge,
-  .scenario-probability,
-  .signal-strength,
-  .trend-strength {
-    font-size: 11px;
-    padding: 3px 7px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.06);
-    color: #dbe6fb;
-  }
-  
-  .scenario-list,
-  .plain-list {
-    margin: 0;
-    padding-left: 18px;
-  }
-  
-  .compact-scenario-list li {
-    font-size: 12px;
-    line-height: 1.52;
-    color: #c8d7f6;
-    margin-bottom: 4px;
-  }
-  
-  .empty-card,
-  .compact-empty-card {
-    min-height: 60px;
-    display: grid;
-    gap: 4px;
-    text-align: center;
-    justify-content: center;
-    align-content: center;
-    padding: 8px 10px;
-  }
-  
-  .empty-text,
-  .empty-meta {
-    font-size: 12px;
-    line-height: 1.45;
-    color: #c8d7f6;
-  }
-  
-  .mt-compact {
-    margin-top: 10px;
-  }
-  
-  .section-no-margin {
-    margin-top: 0;
-  }
-  
-  .compact-meta-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 7px;
-    margin-top: 10px;
-  }
-  
-  .confidence-chip {
-    font-size: 12px;
-    padding: 4px 10px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(120, 160, 220, 0.1);
-    color: #dbe6fb;
-  }
-  
-  .fx-kpi-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 3px 8px;
-    border-radius: 999px;
-    font-size: 11px;
-    line-height: 1.2;
-    border: 1px solid rgba(120, 160, 220, 0.12);
-    background: rgba(255, 255, 255, 0.04);
-    color: #dbe6fb;
-  }
-  
-  .fx-kpi-chip.safe {
-    color: #b6f0b6;
-    border-color: rgba(86, 184, 106, 0.3);
-  }
-  
-  .fx-kpi-chip.caution {
-    color: #ffd77a;
-    border-color: rgba(224, 182, 63, 0.32);
-  }
-  
-  .fx-kpi-chip.danger {
-    color: #ffb6b6;
-    border-color: rgba(209, 94, 94, 0.32);
-  }
-  
-  .status-safe {
-    color: #b6f0b6;
-  }
-  
-  .status-caution {
-    color: #ffd77a;
-  }
-  
-  .status-danger {
-    color: #ffb6b6;
-  }
-  
-  .status-neutral {
-    color: #dbe6fb;
-  }
-  
-  #predictionStatementMain {
-    min-height: 0;
-    font-size: 14px;
-    line-height: 1.75;
-  }
-  
-  #primaryNarrativeText,
-  #fxSummaryText,
-  #fxReasonText {
-    min-height: 0;
-  }
-  
-  #expectedOutcomePreview {
-    display: grid;
-    gap: 6px;
-    min-height: 0;
-  }
-  
-  #keyDriversList,
-  #monitoringPrioritiesList,
-  #expectedOutcomesList,
-  #historicalContextList,
-  #referenceMemoryList,
-  #predictionHistoryList,
-  #risksList,
-  #invalidationList,
-  #mustNotMeanList,
-  #uiTermsList,
-  #explanationSummaryBlock {
-    min-height: 0;
-  }
-  
-  #monitoringPrioritiesList .empty-card,
-  #expectedOutcomesList .empty-card,
-  #historicalContextList .empty-card,
-  #referenceMemoryList .empty-card,
-  #expectedOutcomePreview .empty-card {
-    min-height: 52px;
-  }
-  
-  .prediction-side-stack > .card {
-    padding-top: 10px;
-    padding-bottom: 10px;
-  }
-  
-  .history-compact .compact-history-row {
-    align-items: start;
-  }
-  
-  .history-row-title {
-    margin: 0;
-  }
-  
-  .compact-history-row .inline-text {
-    margin-top: 4px;
-    font-size: 12px;
-    line-height: 1.55;
-  }
-  
-  .compact-chart-card {
-    min-height: 0;
-  }
-  
-  .compact-chart-card .chart-note {
-    margin-top: 4px;
-  }
-  
-  .compact-kpi-grid .metric-card {
-    min-height: 0;
-  }
-  
-  .explanation-mini-title {
-    font-size: 13px;
-  }
-  
-  .explanation-list .list-row {
-    min-height: 0;
-  }
-  
-  .explanation-section-title .hint {
-    text-transform: lowercase;
-  }
-  
-  .explanation-title {
-    font-size: 13px;
-    font-weight: 650;
-  }
-  
-  .explanation-summary {
-    display: block;
-    overflow: visible;
-  }
-  
-  .explanation-section .pillrow {
-    gap: 6px;
-  }
-  
-  .explanation-compact-grid {
-    margin-top: 8px;
-  }
-  
-  .explanation-compact-card .section-subtitle {
-    display: none;
-  }
-  
-  .compact-duo-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  
-  .duplicate-support-card {
-    display: none;
-  }
-  
-  @media (max-width: 1220px) {
-    .hero-grid,
-    .content-grid.prediction-top {
-      grid-template-columns: 1fr;
-    }
-  
-    .hero-summary {
-      max-width: 100%;
-    }
-  }
-  
-  @media (max-width: 1100px) {
-    .compact-content-grid,
-    .fx-inline-grid,
-    .explanation-grid,
-    .explanation-compact-grid,
-    .compact-chart-grid,
-    .source-compact-grid,
-    .signal-grid,
-    .trend-stack,
-    .scenario-compact-grid,
-    .quad-grid,
-    .compact-duo-grid {
-      grid-template-columns: 1fr;
-    }
-  
-    .kpi-grid,
-    .compact-kpi-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-  
-  @media (max-width: 700px) {
-    .kpi-grid,
-    .compact-kpi-grid,
-    .source-compact-grid {
-      grid-template-columns: 1fr;
-    }
-  
-    .hero-title {
-      font-size: 21px;
-    }
-  
-    .hero-summary {
-      font-size: 14px;
-      line-height: 1.66;
-    }
-  
-    .metric-value {
-      font-size: 16px;
-    }
-  
-    .hero-side-card .metric-value {
-      font-size: 14px;
-    }
-  
-    .summary-text,
-    .detail-text,
-    .scenario-text,
-    .signal-text,
-    .trend-text,
-    .inline-text {
-      font-size: 12px;
-      line-height: 1.6;
-    }
-  
-    .chart-card svg {
-      height: 76px;
-    }
-  }
+     display: grid;
+     gap: 12px;
+     overflow-x: hidden;
+   }
+   
+   .prediction-shell {
+     display: grid;
+     gap: 12px;
+   }
+   
+   .prediction-page .card {
+     min-width: 0;
+   }
+   
+   .prediction-page .hero-grid {
+     display: grid;
+     grid-template-columns: minmax(0, 1.24fr) minmax(320px, 0.76fr);
+     gap: 12px;
+     align-items: stretch;
+   }
+   
+   .prediction-page .hero-card,
+   .prediction-page .hero-side-card {
+     min-width: 0;
+     height: 100%;
+     display: flex;
+     flex-direction: column;
+   }
+   
+   .prediction-page .hero-side-stack,
+   .prediction-page .prediction-side-stack {
+     display: grid;
+     gap: 10px;
+     height: 100%;
+   }
+   
+   .prediction-page .hero-intro-card {
+     padding: 0;
+     border: none;
+     background: transparent;
+     box-shadow: none;
+   }
+   
+   .prediction-page .hero-title {
+     font-size: 24px;
+     line-height: 1.16;
+     margin: 0;
+     letter-spacing: 0.01em;
+   }
+   
+   .prediction-page .hero-intro-card .sub {
+     margin: 8px 0 0;
+     font-size: 13px;
+     line-height: 1.55;
+     color: #c8d7f6;
+     opacity: 0.9;
+   }
+   
+   .prediction-page .hero-summary {
+     margin: 12px 0 0;
+     font-size: 15px;
+     line-height: 1.72;
+     color: #e7f0ff;
+     max-width: 98%;
+   }
+   
+   .prediction-page .hero-metric,
+   .prediction-page .compact-metric-card,
+   .prediction-page .detail-card,
+   .prediction-page .scenario-card,
+   .prediction-page .signal-card,
+   .prediction-page .trend-card,
+   .prediction-page .status-item {
+     border: 1px solid rgba(120, 160, 220, 0.12);
+     border-radius: 14px;
+     padding: 12px 14px;
+     background: linear-gradient(180deg, rgba(10, 16, 30, 0.42), rgba(8, 13, 24, 0.28));
+     display: grid;
+     gap: 8px;
+     min-width: 0;
+   }
+   
+   .prediction-page .hero-side-card {
+     padding: 10px;
+   }
+   
+   .prediction-page .hero-side-card .hero-metric {
+     min-height: 0;
+     padding: 11px 13px;
+   }
+   
+   .prediction-page .metric-label,
+   .prediction-page .detail-eyebrow,
+   .prediction-page .chart-label {
+     font-size: 11px;
+     letter-spacing: 0.08em;
+     text-transform: uppercase;
+     opacity: 0.76;
+     margin-bottom: 2px;
+   }
+   
+   .prediction-page .metric-value {
+     font-size: 18px;
+     line-height: 1.28;
+     font-weight: 700;
+     color: #eef4ff;
+     word-break: break-word;
+   }
+   
+   .prediction-page .hero-side-card .metric-value {
+     font-size: 15px;
+     line-height: 1.45;
+   }
+   
+   .prediction-page .metric-sub,
+   .prediction-page .chart-note,
+   .prediction-page .section-subtitle,
+   .prediction-page .explanation-mini-subtitle {
+     margin-top: 2px;
+     font-size: 12px;
+     line-height: 1.5;
+     opacity: 0.8;
+     color: #c8d7f6;
+   }
+   
+   .prediction-page .summary-text,
+   .prediction-page .detail-text,
+   .prediction-page .scenario-text,
+   .prediction-page .signal-text,
+   .prediction-page .trend-text,
+   .prediction-page .inline-text {
+     margin: 0;
+     font-size: 13px;
+     line-height: 1.68;
+     color: #d6e1f5;
+     min-width: 0;
+   }
+   
+   .prediction-page .detail-title,
+   .prediction-page .scenario-title,
+   .prediction-page .signal-title,
+   .prediction-page .trend-title,
+   .prediction-page .explanation-title,
+   .prediction-page .history-row-title {
+     font-size: 15px;
+     line-height: 1.35;
+     font-weight: 700;
+     color: #eef4ff;
+     margin: 0;
+   }
+   
+   .prediction-page .section-header {
+     margin-bottom: 10px;
+   }
+   
+   .prediction-page .section-title {
+     line-height: 1.24;
+     margin: 0;
+   }
+   
+   .prediction-page .content-grid.prediction-top {
+     display: grid;
+     grid-template-columns: minmax(0, 1.12fr) minmax(330px, 0.88fr);
+     align-items: start;
+     gap: 12px;
+     min-width: 0;
+     max-width: 100%;
+   }
+   
+   .prediction-page .content-grid.prediction-top > * {
+     min-width: 0;
+   }
+   
+   .prediction-page .compact-content-grid {
+     display: grid;
+     grid-template-columns: repeat(2, minmax(0, 1fr));
+     gap: 12px;
+     min-width: 0;
+   }
+   
+   .prediction-page .signal-grid,
+   .prediction-page .trend-stack,
+   .prediction-page .scenario-compact-grid,
+   .prediction-page .quad-grid,
+   .prediction-page .kpi-grid,
+   .prediction-page .fx-inline-grid,
+   .prediction-page .explanation-grid,
+   .prediction-page .explanation-compact-grid,
+   .prediction-page .compact-chart-grid,
+   .prediction-page .compact-scenario-grid,
+   .prediction-page .compact-quad-grid,
+   .prediction-page .compact-kpi-grid,
+   .prediction-page .source-compact-grid {
+     display: grid;
+     gap: 10px;
+     min-width: 0;
+   }
+   
+   .prediction-page .signal-grid,
+   .prediction-page .trend-stack,
+   .prediction-page .scenario-compact-grid,
+   .prediction-page .quad-grid {
+     grid-template-columns: repeat(2, minmax(0, 1fr));
+   }
+   
+   .prediction-page .kpi-grid {
+     grid-template-columns: repeat(4, minmax(0, 1fr));
+   }
+   
+   .prediction-page .fx-inline-grid,
+   .prediction-page .explanation-grid {
+     grid-template-columns: repeat(2, minmax(0, 1fr));
+   }
+   
+   .prediction-page .explanation-compact-grid {
+     grid-template-columns: repeat(3, minmax(0, 1fr));
+     margin-top: 8px;
+   }
+   
+   .prediction-page .compact-chart-grid {
+     grid-template-columns: repeat(3, minmax(0, 1fr));
+   }
+   
+   .prediction-page .compact-card {
+     padding-top: 12px;
+     padding-bottom: 12px;
+   }
+   
+   .prediction-page .compact-section-header {
+     margin-bottom: 8px;
+   }
+   
+   .prediction-page .compact-detail-card,
+   .prediction-page .compact-chart-card {
+     padding: 11px 13px;
+   }
+   
+   .prediction-page .compact-list,
+   .prediction-page .compact-history-list,
+   .prediction-page .explanation-list {
+     gap: 8px;
+   }
+   
+   .prediction-page .compact-list-row,
+   .prediction-page .explanation-list .list-row,
+   .prediction-page .compact-history-row {
+     padding: 10px 12px;
+     gap: 10px;
+     border-radius: 12px;
+     background: rgba(255, 255, 255, 0.028);
+     border: 1px solid rgba(120, 160, 220, 0.08);
+     align-items: flex-start;
+     min-width: 0;
+   }
+   
+   .prediction-page .compact-history-head,
+   .prediction-page .history-row-head,
+   .prediction-page .source-status-head {
+     display: flex;
+     align-items: center;
+     justify-content: space-between;
+     gap: 10px;
+     min-width: 0;
+   }
+   
+   .prediction-page .compact-note-list {
+     margin: 0;
+     padding-left: 0;
+     list-style: none;
+     display: grid;
+     gap: 7px;
+   }
+   
+   .prediction-page .compact-note-list li {
+     margin: 0;
+     padding: 8px 10px;
+     font-size: 12px;
+     line-height: 1.5;
+     color: #c8d7f6;
+     border: 1px solid rgba(120, 160, 220, 0.1);
+     border-radius: 999px;
+     background: rgba(255, 255, 255, 0.018);
+     min-width: 0;
+   }
+   
+   .prediction-page .compact-kpi-grid .metric-value {
+     font-size: 17px;
+   }
+   
+   .prediction-page .chart-card svg {
+     width: 100%;
+     height: 88px;
+   }
+   
+   .prediction-page .chart-value {
+     font-size: 13px;
+     font-weight: 700;
+     line-height: 1.35;
+   }
+   
+   .prediction-page .chart-value.pos { color: #9be59b; }
+   .prediction-page .chart-value.neg { color: #ffb2b2; }
+   .prediction-page .chart-value.neu { color: #d9e5ff; }
+   
+   .prediction-page .explanation-section {
+     border-color: rgba(120, 160, 220, 0.08);
+     background: linear-gradient(180deg, rgba(7, 10, 18, 0.24), rgba(5, 8, 14, 0.14));
+     margin-top: 2px;
+   }
+   
+   .prediction-page .explanation-section .sectionTitle {
+     margin-bottom: 8px;
+   }
+   
+   .prediction-page .explanation-section .hint {
+     opacity: 0.62;
+   }
+   
+   .prediction-page .explanation-section-title h2 {
+     font-size: 15px;
+     font-weight: 650;
+   }
+   
+   .prediction-page .explanation-card {
+     padding: 11px 13px;
+     gap: 6px;
+     border-color: rgba(120, 160, 220, 0.08);
+     background: linear-gradient(180deg, rgba(8, 12, 20, 0.22), rgba(6, 9, 16, 0.13));
+     min-width: 0;
+   }
+   
+   .prediction-page .explanation-summary {
+     font-size: 13px;
+     line-height: 1.65;
+     color: #ccd8eb;
+   }
+   
+   .prediction-page .explanation-why {
+     font-size: 12px;
+     line-height: 1.58;
+     color: #a8bbd7;
+   }
+   
+   .prediction-page .explanation-compact-card {
+     padding: 10px 12px;
+     gap: 6px;
+     border-color: rgba(120, 160, 220, 0.08);
+     background: linear-gradient(180deg, rgba(8, 12, 20, 0.18), rgba(6, 9, 16, 0.12));
+     min-width: 0;
+   }
+   
+   .prediction-page .explanation-list .pill,
+   .prediction-page .pill {
+     min-width: 24px;
+     text-align: center;
+     padding: 3px 8px;
+     font-size: 11px;
+     line-height: 1.2;
+     border-radius: 999px;
+     background: rgba(255, 255, 255, 0.06);
+     flex: 0 0 auto;
+   }
+   
+   .prediction-page .explanation-list .inline-text {
+     font-size: 12px;
+     line-height: 1.6;
+     color: #ccd8eb;
+   }
+   
+   .prediction-page .source-compact-grid {
+     grid-template-columns: repeat(2, minmax(0, 1fr));
+   }
+   
+   .prediction-page .source-compact-item {
+     display: flex;
+     align-items: center;
+     gap: 7px;
+     padding: 8px 10px;
+     border-radius: 10px;
+     border: 1px solid rgba(120, 160, 220, 0.1);
+     background: rgba(255, 255, 255, 0.022);
+     min-width: 0;
+   }
+   
+   .prediction-page .source-dot {
+     width: 8px;
+     height: 8px;
+     border-radius: 999px;
+     flex: 0 0 auto;
+   }
+   
+   .prediction-page .source-dot.ok { background: #8fd38f; }
+   .prediction-page .source-dot.ng { background: rgba(255, 255, 255, 0.28); }
+   
+   .prediction-page .source-name,
+   .prediction-page .source-state {
+     font-size: 12px;
+     line-height: 1.3;
+     color: #dbe6fb;
+   }
+   
+   .prediction-page .source-name {
+     flex: 1 1 auto;
+     white-space: nowrap;
+     overflow: hidden;
+     text-overflow: ellipsis;
+   }
+   
+   .prediction-page .source-state {
+     opacity: 0.84;
+   }
+   
+   .prediction-page .probability-row {
+     display: grid;
+     grid-template-columns: 1fr;
+     gap: 5px;
+     align-items: start;
+     padding: 6px 0;
+   }
+   
+   .prediction-page .probability-label,
+   .prediction-page .probability-value {
+     font-size: 13px;
+     line-height: 1.55;
+     color: #dbe6fb;
+   }
+   
+   .prediction-page .probability-note {
+     font-size: 12px;
+     line-height: 1.55;
+     color: #c8d7f6;
+   }
+   
+   .prediction-page .progress-track {
+     height: 8px;
+     border-radius: 999px;
+     background: rgba(255, 255, 255, 0.07);
+     overflow: hidden;
+   }
+   
+   .prediction-page .progress-bar {
+     height: 100%;
+     border-radius: 999px;
+     background: linear-gradient(90deg, rgba(147, 197, 253, 0.82), rgba(99, 179, 237, 0.92));
+   }
+   
+   .prediction-page .compact-stack-grid .trend-card,
+   .prediction-page .compact-stack-grid .signal-card,
+   .prediction-page .compact-scenario-grid .scenario-card {
+     min-height: 0;
+   }
+   
+   .prediction-page .signal-meta,
+   .prediction-page .trend-meta,
+   .prediction-page .scenario-meta,
+   .prediction-page .scenario-title-row,
+   .prediction-page .signal-title-row,
+   .prediction-page .trend-title-row {
+     display: flex;
+     align-items: center;
+     justify-content: space-between;
+     gap: 8px;
+     min-width: 0;
+   }
+   
+   .prediction-page .signal-badge,
+   .prediction-page .trend-badge,
+   .prediction-page .scenario-probability,
+   .prediction-page .signal-strength,
+   .prediction-page .trend-strength {
+     font-size: 11px;
+     padding: 3px 7px;
+     border-radius: 999px;
+     background: rgba(255, 255, 255, 0.06);
+     color: #dbe6fb;
+   }
+   
+   .prediction-page .scenario-list,
+   .prediction-page .plain-list {
+     margin: 0;
+     padding-left: 18px;
+   }
+   
+   .prediction-page .compact-scenario-list li {
+     font-size: 12px;
+     line-height: 1.52;
+     color: #c8d7f6;
+     margin-bottom: 4px;
+   }
+   
+   .prediction-page .empty-card,
+   .prediction-page .compact-empty-card {
+     min-height: 60px;
+     display: grid;
+     gap: 4px;
+     text-align: center;
+     justify-content: center;
+     align-content: center;
+     padding: 8px 10px;
+   }
+   
+   .prediction-page .empty-text,
+   .prediction-page .empty-meta {
+     font-size: 12px;
+     line-height: 1.45;
+     color: #c8d7f6;
+   }
+   
+   .prediction-page .mt-compact {
+     margin-top: 10px;
+   }
+   
+   .prediction-page .section-no-margin {
+     margin-top: 0;
+   }
+   
+   .prediction-page .compact-meta-row {
+     display: flex;
+     flex-wrap: wrap;
+     gap: 7px;
+     margin-top: 10px;
+   }
+   
+   .prediction-page .confidence-chip {
+     font-size: 12px;
+     padding: 4px 10px;
+     border-radius: 999px;
+     background: rgba(255, 255, 255, 0.04);
+     border: 1px solid rgba(120, 160, 220, 0.1);
+     color: #dbe6fb;
+   }
+   
+   .prediction-page .fx-kpi-chip {
+     display: inline-flex;
+     align-items: center;
+     gap: 4px;
+     padding: 3px 8px;
+     border-radius: 999px;
+     font-size: 11px;
+     line-height: 1.2;
+     border: 1px solid rgba(120, 160, 220, 0.12);
+     background: rgba(255, 255, 255, 0.04);
+     color: #dbe6fb;
+   }
+   
+   .prediction-page .fx-kpi-chip.safe {
+     color: #b6f0b6;
+     border-color: rgba(86, 184, 106, 0.3);
+   }
+   
+   .prediction-page .fx-kpi-chip.caution {
+     color: #ffd77a;
+     border-color: rgba(224, 182, 63, 0.32);
+   }
+   
+   .prediction-page .fx-kpi-chip.danger {
+     color: #ffb6b6;
+     border-color: rgba(209, 94, 94, 0.32);
+   }
+   
+   .prediction-page .status-safe {
+     color: #b6f0b6;
+   }
+   
+   .prediction-page .status-caution {
+     color: #ffd77a;
+   }
+   
+   .prediction-page .status-danger {
+     color: #ffb6b6;
+   }
+   
+   .prediction-page .status-neutral {
+     color: #dbe6fb;
+   }
+   
+   .prediction-page #predictionStatementMain {
+     min-height: 0;
+     font-size: 14px;
+     line-height: 1.75;
+   }
+   
+   .prediction-page #primaryNarrativeText,
+   .prediction-page #fxSummaryText,
+   .prediction-page #fxReasonText {
+     min-height: 0;
+   }
+   
+   .prediction-page #expectedOutcomePreview {
+     display: grid;
+     gap: 6px;
+     min-height: 0;
+   }
+   
+   .prediction-page #keyDriversList,
+   .prediction-page #monitoringPrioritiesList,
+   .prediction-page #expectedOutcomesList,
+   .prediction-page #historicalContextList,
+   .prediction-page #referenceMemoryList,
+   .prediction-page #predictionHistoryList,
+   .prediction-page #risksList,
+   .prediction-page #invalidationList,
+   .prediction-page #mustNotMeanList,
+   .prediction-page #uiTermsList,
+   .prediction-page #explanationSummaryBlock {
+     min-height: 0;
+   }
+   
+   .prediction-page #monitoringPrioritiesList .empty-card,
+   .prediction-page #expectedOutcomesList .empty-card,
+   .prediction-page #historicalContextList .empty-card,
+   .prediction-page #referenceMemoryList .empty-card,
+   .prediction-page #expectedOutcomePreview .empty-card {
+     min-height: 52px;
+   }
+   
+   .prediction-page .prediction-side-stack > .card {
+     padding-top: 10px;
+     padding-bottom: 10px;
+   }
+   
+   .prediction-page .history-compact .compact-history-row {
+     align-items: start;
+   }
+   
+   .prediction-page .history-row-title {
+     margin: 0;
+   }
+   
+   .prediction-page .compact-history-row .inline-text {
+     margin-top: 4px;
+     font-size: 12px;
+     line-height: 1.55;
+   }
+   
+   .prediction-page .compact-chart-card {
+     min-height: 0;
+   }
+   
+   .prediction-page .compact-chart-card .chart-note {
+     margin-top: 4px;
+   }
+   
+   .prediction-page .compact-kpi-grid .metric-card {
+     min-height: 0;
+   }
+   
+   .prediction-page .explanation-mini-title {
+     font-size: 13px;
+   }
+   
+   .prediction-page .explanation-list .list-row {
+     min-height: 0;
+   }
+   
+   .prediction-page .explanation-section-title .hint {
+     text-transform: lowercase;
+   }
+   
+   .prediction-page .explanation-title {
+     font-size: 13px;
+     font-weight: 650;
+   }
+   
+   .prediction-page .explanation-summary {
+     display: block;
+     overflow: visible;
+   }
+   
+   .prediction-page .explanation-section .pillrow {
+     gap: 6px;
+   }
+   
+   .prediction-page .explanation-compact-grid {
+     margin-top: 8px;
+   }
+   
+   .prediction-page .explanation-compact-card .section-subtitle {
+     display: none;
+   }
+   
+   .prediction-page .compact-duo-grid {
+     grid-template-columns: repeat(2, minmax(0, 1fr));
+   }
+   
+   .prediction-page .duplicate-support-card {
+     display: none;
+   }
+   
+   @media (max-width: 1220px) {
+     .prediction-page .hero-grid,
+     .prediction-page .content-grid.prediction-top {
+       grid-template-columns: 1fr;
+     }
+   
+     .prediction-page .hero-summary {
+       max-width: 100%;
+     }
+   }
+   
+   @media (max-width: 1100px) {
+     .prediction-page .compact-content-grid,
+     .prediction-page .fx-inline-grid,
+     .prediction-page .explanation-grid,
+     .prediction-page .explanation-compact-grid,
+     .prediction-page .compact-chart-grid,
+     .prediction-page .source-compact-grid,
+     .prediction-page .signal-grid,
+     .prediction-page .trend-stack,
+     .prediction-page .scenario-compact-grid,
+     .prediction-page .quad-grid,
+     .prediction-page .compact-duo-grid {
+       grid-template-columns: 1fr;
+     }
+   
+     .prediction-page .kpi-grid,
+     .prediction-page .compact-kpi-grid {
+       grid-template-columns: repeat(2, 1fr);
+     }
+   }
+   
+   @media (max-width: 700px) {
+     .prediction-page .kpi-grid,
+     .prediction-page .compact-kpi-grid,
+     .prediction-page .source-compact-grid {
+       grid-template-columns: 1fr;
+     }
+   
+     .prediction-page .hero-title {
+       font-size: 21px;
+     }
+   
+     .prediction-page .hero-summary {
+       font-size: 14px;
+       line-height: 1.66;
+     }
+   
+     .prediction-page .metric-value {
+       font-size: 16px;
+     }
+   
+     .prediction-page .hero-side-card .metric-value {
+       font-size: 14px;
+     }
+   
+     .prediction-page .summary-text,
+     .prediction-page .detail-text,
+     .prediction-page .scenario-text,
+     .prediction-page .signal-text,
+     .prediction-page .trend-text,
+     .prediction-page .inline-text {
+       font-size: 12px;
+       line-height: 1.6;
+     }
+   
+     .prediction-page .chart-card svg {
+       height: 76px;
+     }
+   }
