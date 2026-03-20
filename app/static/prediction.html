@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Prediction - GenesisPrediction v2</title>
   <meta name="description" content="GenesisPrediction Prediction UI">
-  <link rel="stylesheet" href="/static/app.css?v=20260319-explanation-ui-8">
-  <link rel="stylesheet" href="/static/prediction.css?v=20260319-explanation-ui-8">
+  <link rel="stylesheet" href="/static/app.css?v=20260320-prediction-ui-phase4-2">
+  <link rel="stylesheet" href="/static/prediction.css?v=20260320-prediction-ui-phase4-2">
 </head>
 <body>
   <div id="site-header"></div>
@@ -18,34 +18,33 @@
 
           <section class="hero-grid">
             <article class="hero-card hero-intro-card">
-              <h1 id="heroHeadline" class="hero-title">Trend / Signal / Scenario / Prediction</h1>
+              <h1 id="heroHeadline" class="hero-title">Prediction</h1>
               <p class="sub">
-                Prediction は、現在の世界状況をもとに将来の展開を推定するレイヤです。
-                シナリオ・シグナル・トレンドを統合し、「どの方向に進む可能性が高いか」を提示します。
-                ここでは確定ではなく、「確率と方向性」を読み取ります。
+                Prediction は、analysis 層で確定した prediction_latest.json をそのまま表示するレイヤです。
+                UI は表示のみを担い、推論・補完・再計算は行いません。
               </p>
-              <p id="heroSummary" class="hero-summary">Loading latest prediction summary...</p>
+              <p id="heroSummary" class="hero-summary">Loading latest prediction statement...</p>
 
               <div class="compact-meta-row pillrow">
                 <span class="pill"><strong>As of</strong><span id="metaAsof" style="margin-left:6px;">—</span></span>
                 <span class="pill"><strong>Dominant</strong><span id="metaDominant" style="margin-left:6px;">—</span></span>
                 <span class="pill"><strong>Confidence</strong><span id="metaConfidence" style="margin-left:6px;">—</span></span>
-                <span class="pill"><strong>Early Warning</strong><span id="metaWarning" style="margin-left:6px;">—</span></span>
+                <span class="pill"><strong>Risk</strong><span id="metaRisk" style="margin-left:6px;">—</span></span>
               </div>
             </article>
 
             <aside class="card hero-side-card">
               <div class="hero-side-stack">
                 <div class="hero-metric">
-                  <div class="metric-label">Overall Risk</div>
+                  <div class="metric-label">Prediction Statement</div>
                   <div id="riskChipText" class="metric-value">—</div>
-                  <div id="riskChipSub" class="metric-sub">prediction latest</div>
+                  <div id="riskChipSub" class="metric-sub">topline statement</div>
                 </div>
 
                 <div class="hero-metric">
-                  <div class="metric-label">Prediction Summary</div>
+                  <div class="metric-label">Narrative</div>
                   <div id="summaryMini" class="metric-value">—</div>
-                  <div id="summaryMiniSub" class="metric-sub">latest summary</div>
+                  <div id="summaryMiniSub" class="metric-sub">primary narrative</div>
                 </div>
 
                 <div class="hero-metric">
@@ -69,25 +68,25 @@
             <article class="card">
               <div class="section-header">
                 <div>
-                  <h2 class="section-title">Prediction Summary</h2>
-                  <p class="section-subtitle">Topline interpretation of the current observation state.</p>
+                  <h2 class="section-title">Prediction Statement</h2>
+                  <p class="section-subtitle">Primary output from prediction_latest.json</p>
                 </div>
                 <div id="confidenceChip" class="confidence-chip">Confidence —</div>
               </div>
 
-              <p id="predictionSummaryMain" class="summary-text">Loading prediction summary...</p>
+              <p id="predictionStatementMain" class="summary-text">Loading prediction statement...</p>
 
               <div class="detail-grid mt-compact">
                 <article class="detail-card">
-                  <div class="detail-eyebrow">Confidence</div>
-                  <h3 class="detail-title">Confidence Context</h3>
-                  <p id="confidenceDetailText" class="detail-text">Loading...</p>
+                  <div class="detail-eyebrow">Narrative</div>
+                  <h3 class="detail-title">Primary Narrative</h3>
+                  <p id="primaryNarrativeText" class="detail-text">Loading...</p>
                 </article>
 
                 <article class="detail-card">
-                  <div class="detail-eyebrow">Scenario Probability</div>
-                  <h3 class="detail-title">Relative Branch Weight</h3>
-                  <div id="scenarioProbabilityList" class="probability-stack"></div>
+                  <div class="detail-eyebrow">Expected Outcomes</div>
+                  <h3 class="detail-title">Near-term Outlook</h3>
+                  <div id="expectedOutcomePreview" class="probability-stack"></div>
                 </article>
               </div>
             </article>
@@ -145,7 +144,57 @@
             </aside>
           </section>
 
-          
+          <section class="content-grid compact-content-grid">
+            <article class="card compact-card">
+              <div class="section-header compact-section-header">
+                <div>
+                  <h2 class="section-title">Key Drivers</h2>
+                  <p class="section-subtitle">Top factors currently supporting the prediction.</p>
+                </div>
+              </div>
+              <div id="keyDriversList" class="list-stack compact-list"></div>
+            </article>
+
+            <article class="card compact-card">
+              <div class="section-header compact-section-header">
+                <div>
+                  <h2 class="section-title">Monitoring Priorities</h2>
+                  <p class="section-subtitle">Next-cycle items to watch closely.</p>
+                </div>
+              </div>
+              <div id="monitoringPrioritiesList" class="list-stack compact-list"></div>
+            </article>
+          </section>
+
+          <section class="card compact-card">
+            <div class="sectionTitle">
+              <h2>Expected Outcomes</h2>
+              <span class="hint">prediction_output</span>
+            </div>
+            <div id="expectedOutcomesList" class="list-stack compact-list"></div>
+          </section>
+
+          <section class="content-grid compact-content-grid">
+            <article class="card compact-card">
+              <div class="section-header compact-section-header">
+                <div>
+                  <h2 class="section-title">Historical Context</h2>
+                  <p class="section-subtitle">Historical analog / context supplied by analysis.</p>
+                </div>
+              </div>
+              <div id="historicalContextList" class="list-stack compact-list"></div>
+            </article>
+
+            <article class="card compact-card">
+              <div class="section-header compact-section-header">
+                <div>
+                  <h2 class="section-title">Reference Memory</h2>
+                  <p class="section-subtitle">Reference-only memory context supplied by analysis.</p>
+                </div>
+              </div>
+              <div id="referenceMemoryList" class="list-stack compact-list"></div>
+            </article>
+          </section>
 
           <section class="card compact-card">
             <div class="sectionTitle">
@@ -155,27 +204,27 @@
 
             <div class="kpi-grid compact-kpi-grid">
               <div class="metric-card compact-metric-card">
-                <div class="metric-label">Signal Count</div>
-                <div id="metricSignalCount" class="metric-value">—</div>
-                <div id="metricSignalSub" class="metric-sub">loading</div>
+                <div class="metric-label">Driver Count</div>
+                <div id="metricDriverCount" class="metric-value">—</div>
+                <div id="metricDriverSub" class="metric-sub">key drivers</div>
               </div>
 
               <div class="metric-card compact-metric-card">
-                <div class="metric-label">Scenario Count</div>
-                <div id="metricScenarioCount" class="metric-value">—</div>
-                <div id="metricScenarioSub" class="metric-sub">loading</div>
+                <div class="metric-label">Monitoring Count</div>
+                <div id="metricMonitoringCount" class="metric-value">—</div>
+                <div id="metricMonitoringSub" class="metric-sub">priorities</div>
               </div>
 
               <div class="metric-card compact-metric-card">
-                <div class="metric-label">Prediction Branch</div>
-                <div id="metricBranch" class="metric-value">—</div>
-                <div id="metricBranchSub" class="metric-sub">loading</div>
+                <div class="metric-label">Outcome Count</div>
+                <div id="metricOutcomeCount" class="metric-value">—</div>
+                <div id="metricOutcomeSub" class="metric-sub">expected outcomes</div>
               </div>
 
               <div class="metric-card compact-metric-card">
-                <div class="metric-label">Time Horizon</div>
-                <div id="metricHorizon" class="metric-value">—</div>
-                <div id="metricHorizonSub" class="metric-sub">loading</div>
+                <div class="metric-label">Historical / Memory</div>
+                <div id="metricContextCount" class="metric-value">—</div>
+                <div id="metricContextSub" class="metric-sub">support context</div>
               </div>
             </div>
           </section>
@@ -195,10 +244,10 @@
               </div>
 
               <div class="chart-card compact-chart-card">
-                <div class="chart-label">Scenario Probability</div>
+                <div class="chart-label">Context Count</div>
                 <div id="scenarioChartValue" class="chart-value neu">—</div>
-                <svg id="scenarioChart" viewBox="0 0 320 92" preserveAspectRatio="none" aria-label="scenario probability"></svg>
-                <div class="chart-note">Best / Base / Worst branch weight.</div>
+                <svg id="scenarioChart" viewBox="0 0 320 92" preserveAspectRatio="none" aria-label="context count"></svg>
+                <div class="chart-note">Drivers / monitoring / outcomes snapshot.</div>
               </div>
 
               <div class="chart-card compact-chart-card">
@@ -208,150 +257,6 @@
                 <div class="chart-note">Recent risk movement.</div>
               </div>
             </div>
-          </section>
-
-          <section class="content-grid compact-content-grid">
-            <article class="card compact-card">
-              <div class="section-header compact-section-header">
-                <div>
-                  <h2 class="section-title">Trend Summary</h2>
-                  <p class="section-subtitle">Trend layer interpretation.</p>
-                </div>
-              </div>
-              <div id="trendSummaryList" class="trend-stack compact-stack-grid"></div>
-            </article>
-
-            <article class="card compact-card">
-              <div class="section-header compact-section-header">
-                <div>
-                  <h2 class="section-title">Signal List</h2>
-                  <p class="section-subtitle">Current active signal inputs.</p>
-                </div>
-              </div>
-              <div id="signalList" class="signal-grid compact-stack-grid"></div>
-            </article>
-          </section>
-
-          <section class="card compact-card">
-            <div class="section-header compact-section-header">
-              <div>
-                <h2 class="section-title">Scenario Cards</h2>
-                <p class="section-subtitle">Best / base / worst branches.</p>
-              </div>
-            </div>
-            <div id="scenarioCardGrid" class="scenario-compact-grid compact-scenario-grid"></div>
-          </section>
-
-          <section class="card explanation-section">
-            <div class="sectionTitle explanation-section-title">
-              <h2>Supporting Context</h2>
-              <div class="explanation-title-tools">
-                <span class="hint">context / why</span>
-                <div class="pillrow explanation-lang-row" aria-label="Explanation language">
-                  <button type="button" class="pill explanation-lang-btn is-active" data-exp-lang="ja" onclick="window.setExplanationLangAndRender('ja')">JA</button>
-                  <button type="button" class="pill explanation-lang-btn" data-exp-lang="en" onclick="window.setExplanationLangAndRender('en')">EN</button>
-                  <button type="button" class="pill explanation-lang-btn" data-exp-lang="th" onclick="window.setExplanationLangAndRender('th')">TH</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="explanation-grid">
-              <article class="detail-card explanation-card">
-                <div class="detail-eyebrow">Prediction Explanation</div>
-                <h3 id="predictionExplanationHeadline" class="detail-title explanation-title">Loading...</h3>
-                <p id="predictionExplanationSummary" class="detail-text explanation-summary">Loading prediction explanation...</p>
-                <p id="predictionExplanationWhy" class="detail-text explanation-why">—</p>
-                <div class="pillrow">
-                  <span class="pill"><strong>as_of</strong><span id="predictionExplanationAsof" style="margin-left:6px;">—</span></span>
-                  <span class="pill"><strong>status</strong><span id="predictionExplanationStatus" style="margin-left:6px;">—</span></span>
-                </div>
-              </article>
-
-              <article class="detail-card explanation-card">
-                <div class="detail-eyebrow">Scenario Explanation</div>
-                <h3 id="scenarioExplanationHeadline" class="detail-title explanation-title">Loading...</h3>
-                <p id="scenarioExplanationSummary" class="detail-text explanation-summary">Loading scenario explanation...</p>
-                <p id="scenarioExplanationWhy" class="detail-text explanation-why">—</p>
-                <div class="pillrow">
-                  <span class="pill"><strong>as_of</strong><span id="scenarioExplanationAsof" style="margin-left:6px;">—</span></span>
-                  <span class="pill"><strong>status</strong><span id="scenarioExplanationStatus" style="margin-left:6px;">—</span></span>
-                </div>
-              </article>
-            </div>
-
-            <div class="explanation-compact-grid">
-              <article class="card explanation-compact-card">
-                <div class="section-header explanation-mini-header">
-                  <div>
-                    <h2 class="section-title explanation-mini-title">Drivers</h2>
-                    <p class="section-subtitle explanation-mini-subtitle">current view support</p>
-                  </div>
-                </div>
-                <div id="explanationDriversList" class="list-stack explanation-list"></div>
-              </article>
-
-              <article class="card explanation-compact-card">
-                <div class="section-header explanation-mini-header">
-                  <div>
-                    <h2 class="section-title explanation-mini-title">Watchpoints</h2>
-                    <p class="section-subtitle explanation-mini-subtitle">next-cycle focus</p>
-                  </div>
-                </div>
-                <div id="explanationWatchpointsList" class="list-stack explanation-list"></div>
-              </article>
-
-              <article class="card explanation-compact-card">
-                <div class="section-header explanation-mini-header">
-                  <div>
-                    <h2 class="section-title explanation-mini-title">Must Not Mean</h2>
-                    <p class="section-subtitle explanation-mini-subtitle">misreadings explicitly excluded</p>
-                  </div>
-                </div>
-                <div id="explanationMustNotMeanList" class="list-stack explanation-list"></div>
-              </article>
-            </div>
-          </section>
-
-          <section class="quad-grid compact-quad-grid compact-duo-grid">
-            <article class="card compact-card duplicate-support-card" aria-hidden="true">
-              <div class="section-header compact-section-header">
-                <div>
-                  <h2 class="section-title">Watchpoints</h2>
-                  <p class="section-subtitle">Moved to Supporting Context.</p>
-                </div>
-              </div>
-              <div id="watchpointsList" class="list-stack compact-list"></div>
-            </article>
-
-            <article class="card compact-card duplicate-support-card" aria-hidden="true">
-              <div class="section-header compact-section-header">
-                <div>
-                  <h2 class="section-title">Drivers</h2>
-                  <p class="section-subtitle">Moved to Supporting Context.</p>
-                </div>
-              </div>
-              <div id="driversList" class="list-stack compact-list"></div>
-            </article>
-
-            <article class="card compact-card">
-              <div class="section-header compact-section-header">
-                <div>
-                  <h2 class="section-title">Invalidation Conditions</h2>
-                  <p class="section-subtitle">What breaks the view.</p>
-                </div>
-              </div>
-              <div id="invalidationList" class="list-stack compact-list"></div>
-            </article>
-
-            <article class="card compact-card">
-              <div class="section-header compact-section-header">
-                <div>
-                  <h2 class="section-title">Implications</h2>
-                  <p class="section-subtitle">Operational consequences.</p>
-                </div>
-              </div>
-              <div id="implicationsList" class="list-stack compact-list"></div>
-            </article>
           </section>
 
           <section class="card history-compact compact-card">
@@ -373,24 +278,18 @@
 
   <script>
     const PREDICTION_SOURCES = {
-      trend: "/data/prediction/trend_latest.json",
-      signal: "/data/prediction/signal_latest.json",
-      warning: "/data/prediction/early_warning_latest.json",
-      scenario: "/data/prediction/scenario_latest.json",
       prediction: "/data/prediction/prediction_latest.json",
       historyIndex: "/data/prediction/prediction_history_index.json",
-      fx: "/analysis/fx/fx_decision_latest.json",
-      predictionExplanation: "/analysis/explanation/prediction_explanation_latest.json",
-      scenarioExplanation: "/analysis/explanation/scenario_explanation_latest.json"
+      fx: "/analysis/fx/fx_decision_latest.json"
     };
 
     const UI_LIMITS = {
-      explanation: 3,
-      lowerList: 5,
-      trend: 5,
-      signal: 4,
+      drivers: 3,
+      monitoring: 3,
+      expectedOutcomes: 6,
+      historical: 4,
+      memory: 4,
       history: 4,
-      scenarioInline: 2,
       runtimeNotes: 6
     };
 
@@ -400,20 +299,14 @@
       try{
         const res = await fetch(url, { cache: "no-store" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return { ok:true, data: await res.json(), url };
+        return { ok: true, data: await res.json(), url };
       }catch(err){
-        return { ok:false, error:String(err), url };
+        return { ok: false, error: String(err), url };
       }
     }
 
-    function safeArray(value){ return Array.isArray(value) ? value : []; }
-
-    function firstNonEmpty(){
-      for (const value of arguments){
-        if (Array.isArray(value) && value.length) return value;
-        if (value !== undefined && value !== null && value !== "") return value;
-      }
-      return null;
+    function safeArray(value){
+      return Array.isArray(value) ? value : [];
     }
 
     function firstString(){
@@ -421,6 +314,14 @@
         if (typeof value === "string" && value.trim()) return value.trim();
       }
       return "";
+    }
+
+    function firstNonEmpty(){
+      for (const value of arguments){
+        if (Array.isArray(value) && value.length) return value;
+        if (value !== undefined && value !== null && value !== "") return value;
+      }
+      return null;
     }
 
     function pickNumber(){
@@ -445,11 +346,11 @@
       const d = new Date(value);
       if (Number.isNaN(d.getTime())) return String(value);
       return d.toLocaleString("ja-JP", {
-        year:"numeric",
-        month:"2-digit",
-        day:"2-digit",
-        hour:"2-digit",
-        minute:"2-digit"
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
       });
     }
 
@@ -470,11 +371,6 @@
       return n <= 1 ? n * 100 : n;
     }
 
-    function formatProbability(value){
-      const percent = normalizePercentNumber(value);
-      return percent == null ? "—" : `${percent.toFixed(0)}%`;
-    }
-
     function formatConfidence(value){
       const percent = normalizePercentNumber(value);
       return percent == null ? (value == null || value === "" ? "—" : String(value)) : `${percent.toFixed(0)}%`;
@@ -490,7 +386,7 @@
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
-        .replace(/\"/g, "&quot;")
+        .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
     }
 
@@ -507,8 +403,7 @@
               item.description,
               item.message,
               item.text,
-              item.signal,
-              item.kind,
+              item.note,
               item.meaning
             );
           }
@@ -517,7 +412,7 @@
         .filter(Boolean);
     }
 
-    function uniqueLimitedItems(value, limit = 3){
+    function uniqueLimitedItems(value, limit){
       const seen = new Set();
       const result = [];
       for (const item of normalizeListItems(value)){
@@ -528,29 +423,6 @@
         if (result.length >= limit) break;
       }
       return result;
-    }
-
-    function signalSeverityBadge(raw){
-      const value = firstString(raw).toLowerCase();
-      if (!value) return "Signal";
-      if (value.includes("critical")) return "Critical";
-      if (value.includes("high")) return "High";
-      if (value.includes("warn")) return "Warn";
-      if (value.includes("guard")) return "Guarded";
-      if (value.includes("elevated")) return "Elevated";
-      if (value.includes("low")) return "Low";
-      if (value.includes("stable")) return "Stable";
-      return titleize(value);
-    }
-
-    function riskRank(risk){
-      const value = firstString(risk).toLowerCase();
-      if (value.includes("critical")) return 5;
-      if (value.includes("high")) return 4;
-      if (value.includes("elevated") || value.includes("warn")) return 3;
-      if (value.includes("guard")) return 2;
-      if (value.includes("low") || value.includes("stable")) return 1;
-      return 0;
     }
 
     function normalizeFxStatus(value){
@@ -569,201 +441,123 @@
       return "neutral";
     }
 
+    function riskRank(risk){
+      const value = firstString(risk).toLowerCase();
+      if (value.includes("critical")) return 5;
+      if (value.includes("high")) return 4;
+      if (value.includes("elevated") || value.includes("warn")) return 3;
+      if (value.includes("guard")) return 2;
+      if (value.includes("low") || value.includes("stable")) return 1;
+      return 0;
+    }
+
     function normalizeHistoryIndexItem(item){
       return {
         date: firstString(item?.date, item?.as_of),
         as_of: firstString(item?.as_of, item?.date),
         generated_at: firstString(item?.generated_at),
         horizon: firstString(item?.horizon),
-        overall_risk: firstString(item?.overall_risk),
-        confidence: pickNumber(item?.confidence),
-        dominant_scenario: firstString(item?.dominant_scenario),
-        best_case: pickNumber(item?.best_case),
-        base_case: pickNumber(item?.base_case),
-        worst_case: pickNumber(item?.worst_case),
-        summary: firstString(item?.summary),
-        watchpoints: safeArray(item?.watchpoints),
-        drivers: safeArray(item?.drivers),
-        invalidation_conditions: safeArray(item?.invalidation_conditions),
-        signal_count: pickNumber(item?.signal_count),
-        url: item?.date ? `/data/prediction/history/${item.date}/prediction.json` : ""
+        overall_risk: firstString(item?.overall_risk, item?.overall_risk_level, item?.risk_level),
+        confidence: pickNumber(item?.confidence, item?.confidence_score, item?.confidence_pct),
+        dominant_scenario: firstString(item?.dominant_scenario, item?.dominant_branch),
+        prediction_statement: firstString(item?.prediction_statement, item?.summary),
+        key_driver_count: pickNumber(item?.key_driver_count, safeArray(item?.key_drivers).length, safeArray(item?.drivers).length),
+        monitoring_count: pickNumber(item?.monitoring_count, safeArray(item?.monitoring_priorities).length, safeArray(item?.watchpoints).length),
+        expected_outcome_count: pickNumber(item?.expected_outcome_count, safeArray(item?.expected_outcomes).length)
       };
     }
 
-    function normalizeScenarios(prediction, scenarioData){
-      const preferredList = safeArray(
-        firstNonEmpty(
-          prediction?.scenarios,
-          prediction?.scenario_cards,
-          scenarioData?.scenarios,
-          scenarioData?.scenario_cards
-        )
+    function normalizePredictionV3(data){
+      const statement = firstString(
+        data?.prediction_statement,
+        data?.summary,
+        data?.prediction_summary,
+        data?.outlook
       );
 
-      if (preferredList.length){
-        return preferredList.slice(0, 3).map((item, index) => ({
-          key: firstString(item.key, item.name, item.id, `scenario_${index + 1}`),
-          title: firstString(item.title, item.name, item.label, `Scenario ${index + 1}`),
-          summary: firstString(item.summary, item.description, item.outlook),
-          probability: firstNonEmpty(item.probability, item.weight, item.score),
-          confidence: firstString(item.confidence, item.confidence_label),
-          drivers: normalizeListItems(firstNonEmpty(item.drivers, item.key_drivers)),
-          watchpoints: normalizeListItems(firstNonEmpty(item.watchpoints, item.watch_points)),
-          invalidation: normalizeListItems(firstNonEmpty(item.invalidation_conditions, item.invalidation, item.invalidate_if))
-        }));
-      }
+      const narrative = firstString(
+        data?.primary_narrative,
+        data?.narrative,
+        data?.primary_summary
+      );
 
-      const map = prediction?.scenario_probabilities || {};
-      const dominantBranch = firstString(prediction?.dominant_branch);
-      const dominantScenario = prediction?.dominant_scenario || {};
-      const fallbackSummaries = {
-        best_case:"Favorable stabilization path.",
-        base_case:"Most likely baseline continuation.",
-        worst_case:"Downside destabilization path."
+      const keyDrivers = uniqueLimitedItems(
+        firstNonEmpty(data?.key_drivers, data?.drivers),
+        UI_LIMITS.drivers
+      );
+
+      const monitoringPriorities = uniqueLimitedItems(
+        firstNonEmpty(data?.monitoring_priorities, data?.watchpoints, data?.watch_points),
+        UI_LIMITS.monitoring
+      );
+
+      const expectedOutcomes = uniqueLimitedItems(
+        firstNonEmpty(data?.expected_outcomes, data?.implications, data?.actions, data?.notes),
+        UI_LIMITS.expectedOutcomes
+      );
+
+      const historicalContext = uniqueLimitedItems(
+        firstNonEmpty(data?.historical_context, data?.historical_analog_context, data?.historical_analogs),
+        UI_LIMITS.historical
+      );
+
+      const referenceMemory = uniqueLimitedItems(
+        firstNonEmpty(data?.reference_memory, data?.memory_context, data?.memory_references),
+        UI_LIMITS.memory
+      );
+
+      return {
+        asOf: firstString(data?.as_of, data?.date, data?.generated_at),
+        dominant: firstString(
+          data?.dominant_scenario?.label,
+          data?.dominant_branch,
+          data?.dominant_scenario,
+          data?.scenario,
+          data?.regime
+        ),
+        risk: firstString(
+          data?.overall_risk_level,
+          data?.overall_risk,
+          data?.risk_level,
+          data?.warning_level
+        ),
+        confidence: firstNonEmpty(
+          data?.confidence,
+          data?.confidence_score,
+          data?.confidence_pct
+        ),
+        statement,
+        narrative,
+        keyDrivers,
+        monitoringPriorities,
+        expectedOutcomes,
+        historicalContext,
+        referenceMemory
       };
-      const fallbackTitles = {
-        best_case:"Best Case",
-        base_case:"Base Case",
-        worst_case:"Worst Case"
-      };
-
-      return ["best_case","base_case","worst_case"].map((key) => {
-        const sameAsDominant = dominantBranch && key === dominantBranch;
-        const source = sameAsDominant ? dominantScenario : null;
-        return {
-          key,
-          title: firstString(source?.label, source?.name, fallbackTitles[key]),
-          summary: firstString(source?.summary, prediction?.summary, fallbackSummaries[key]),
-          probability: map[key],
-          confidence: sameAsDominant ? formatConfidence(prediction?.confidence) : "",
-          drivers: sameAsDominant ? normalizeListItems(prediction?.drivers) : [],
-          watchpoints: sameAsDominant ? normalizeListItems(prediction?.watchpoints) : [],
-          invalidation: sameAsDominant ? normalizeListItems(prediction?.invalidation_conditions) : []
-        };
-      }).filter((item) => item.probability != null || item.summary);
     }
 
-    function normalizeSignals(signalData, prediction){
-      const rawSignals = safeArray(firstNonEmpty(signalData?.signals, signalData?.items, signalData?.list));
-      if (rawSignals.length){
-        return rawSignals.map((item, index) => ({
-          title: firstString(item.title, item.name, item.label, item.kind, `Signal ${index + 1}`),
-          summary: firstString(item.summary, item.description, item.message, item.text, item.note),
-          severity: firstString(item.severity, item.level, item.status, item.signal_level),
-          strength: firstNonEmpty(item.score, item.weight, item.probability)
-        }));
-      }
+    function renderHero(prediction){
+      const statement = prediction.statement || "No prediction statement available.";
+      const narrativeMini = prediction.narrative || "Primary narrative unavailable.";
 
-      const drivers = normalizeListItems(prediction?.drivers);
-      const warningText = firstString(prediction?.early_warning?.warning, prediction?.early_warning?.note, prediction?.early_warning?.summary);
-      const dominant = firstString(prediction?.dominant_branch, prediction?.dominant_scenario?.name, prediction?.dominant_scenario?.label);
-      const derived = [];
+      el("heroSummary").textContent = statement;
+      el("predictionStatementMain").textContent = statement;
+      el("primaryNarrativeText").textContent = prediction.narrative || "Primary narrative unavailable.";
 
-      if (drivers.length){
-        drivers.slice(0, 4).forEach((text, index) => {
-          derived.push({
-            title:`Driver ${index + 1}`,
-            summary:text,
-            severity:prediction?.signal || prediction?.overall_risk_level || "guarded",
-            strength:prediction?.confidence
-          });
-        });
-      }
-      if (warningText){
-        derived.push({
-          title:"Early Warning",
-          summary:warningText,
-          severity:prediction?.early_warning?.warning_level || prediction?.overall_risk_level || "guarded",
-          strength:prediction?.early_warning?.warning_score
-        });
-      }
-      if (dominant){
-        derived.push({
-          title:"Dominant Branch",
-          summary:`${titleize(dominant)} is currently the leading path.`,
-          severity:prediction?.signal || "guarded",
-          strength:prediction?.dominant_probability
-        });
-      }
-      return derived;
-    }
+      el("metaAsof").textContent = formatDate(prediction.asOf);
+      el("metaDominant").textContent = titleize(prediction.dominant);
+      el("metaConfidence").textContent = formatConfidence(prediction.confidence);
+      el("metaRisk").textContent = titleize(prediction.risk);
 
-    function normalizeTrendItems(trendData, prediction){
-      const raw = safeArray(firstNonEmpty(trendData?.trends, trendData?.items, trendData?.list));
-      if (raw.length){
-        return raw.map((item, index) => ({
-          title: firstString(item.title, item.name, item.label, `Trend ${index + 1}`),
-          summary: firstString(item.summary, item.description, item.message, item.text),
-          state: firstString(item.state, item.status, item.regime, item.direction),
-          score: firstNonEmpty(item.score, item.weight, item.strength)
-        }));
-      }
+      el("riskChipText").textContent = statement;
+      el("riskChipSub").textContent = "prediction statement";
+      el("summaryMini").textContent = narrativeMini;
+      el("summaryMiniSub").textContent = "primary narrative";
 
-      const items = [];
-      const regime = firstString(prediction?.regime, prediction?.dominant_scenario?.regime);
-      if (regime){
-        items.push({
-          title:"Regime",
-          summary:`Current regime is ${titleize(regime)}.`,
-          state:regime,
-          score:prediction?.overall_risk_score
-        });
-      }
-      const risk = firstString(prediction?.overall_risk_level, prediction?.overall_risk);
-      if (risk){
-        items.push({
-          title:"Overall Risk",
-          summary:`Overall risk is assessed as ${titleize(risk)}.`,
-          state:risk,
-          score:prediction?.overall_risk_score
-        });
-      }
-      const signal = firstString(prediction?.signal);
-      if (signal){
-        items.push({
-          title:"Signal State",
-          summary:`Signal layer currently reads ${titleize(signal)}.`,
-          state:signal,
-          score:prediction?.confidence
-        });
-      }
-      return items;
-    }
-
-    function renderHero(prediction, warningData){
-      const summary = firstString(
-        prediction?.summary,
-        prediction?.prediction_summary,
-        prediction?.outlook,
-        prediction?.narrative
-      ) || "No prediction summary available.";
-
-      const riskText = titleize(firstString(
-        prediction?.overall_risk_level,
-        prediction?.overall_risk,
-        prediction?.risk_level,
-        prediction?.warning_level
-      ) || "guarded");
-
-      el("heroSummary").textContent = summary;
-      el("predictionSummaryMain").textContent = summary;
-      el("metaAsof").textContent = formatDate(firstString(prediction?.as_of, prediction?.date, prediction?.generated_at));
-      el("metaDominant").textContent = titleize(firstString(prediction?.dominant_scenario?.label, prediction?.dominant_branch, prediction?.scenario, prediction?.regime));
-      el("metaConfidence").textContent = formatConfidence(firstNonEmpty(prediction?.confidence, prediction?.confidence_score, prediction?.confidence_pct));
-      el("metaWarning").textContent = titleize(firstString(
-        prediction?.early_warning?.warning_level,
-        prediction?.early_warning_status,
-        warningData?.status,
-        warningData?.warning_level
-      ) || "unknown");
-
-      el("riskChipText").textContent = riskText;
-      el("riskChipSub").textContent = firstString(prediction?.regime, prediction?.phase, "current regime");
-      el("summaryMini").textContent = titleize(firstString(prediction?.dominant_scenario?.label, prediction?.dominant_branch, prediction?.scenario, "prediction"));
-      el("summaryMiniSub").textContent = "dominant branch";
       el("runtimeMini").textContent = "Ready";
       el("runtimeMiniSub").textContent = "prediction artifacts loaded";
-      el("confidenceChip").textContent = `Confidence ${formatConfidence(firstNonEmpty(prediction?.confidence, prediction?.confidence_score, prediction?.confidence_pct))}`;
+
+      el("confidenceChip").textContent = `Confidence ${formatConfidence(prediction.confidence)}`;
     }
 
     function renderFxSummary(fxData){
@@ -798,105 +592,33 @@
 
       const statusEl = el("fxStatusTitle");
       if (statusEl){
-        statusEl.classList.remove("status-safe","status-caution","status-danger","status-neutral");
+        statusEl.classList.remove("status-safe", "status-caution", "status-danger", "status-neutral");
         statusEl.classList.add(`status-${fxClass(status)}`);
       }
     }
 
-    function renderMetricCards(prediction, signalData, scenarios){
-      const signalCount = firstNonEmpty(prediction?.signal_count, normalizeSignals(signalData, prediction).length);
-      const horizonDays = pickNumber(prediction?.horizon_days, prediction?.time_horizon_days, prediction?.forecast_horizon_days);
-
-      el("metricSignalCount").textContent = formatCount(signalCount);
-      el("metricSignalSub").textContent = firstString(prediction?.signal, prediction?.signal_state, signalData?.status, "active inputs");
-
-      el("metricScenarioCount").textContent = formatCount(scenarios.length);
-      el("metricScenarioSub").textContent = "scenario branches";
-
-      el("metricBranch").textContent = titleize(firstString(prediction?.dominant_scenario?.label, prediction?.dominant_branch, prediction?.scenario, prediction?.regime));
-      el("metricBranchSub").textContent = firstString(prediction?.phase, prediction?.mode, "current branch");
-
-      el("metricHorizon").textContent = horizonDays == null ? "—" : `${horizonDays}d`;
-      el("metricHorizonSub").textContent = "forecast window";
-
-      el("confidenceDetailText").textContent = firstString(
-        prediction?.dominant_scenario?.summary,
-        prediction?.confidence_note,
-        prediction?.confidence_text,
-        prediction?.confidence_reason,
-        prediction?.confidence_summary,
-        "Confidence reflects how strongly the current observation supports the displayed scenario structure."
-      );
-    }
-
-    function renderProbabilityList(scenarios){
-      const root = el("scenarioProbabilityList");
+    function renderExpectedOutcomePreview(items){
+      const root = el("expectedOutcomePreview");
       if (!root) return;
 
-      if (!scenarios.length){
-        root.innerHTML = `<article class="empty-card"><div class="empty-meta">No scenario probabilities</div><p class="empty-text">scenario 情報が不足しています。</p></article>`;
+      const list = safeArray(items).slice(0, 3);
+      if (!list.length){
+        root.innerHTML = '<article class="empty-card compact-empty-card"><div class="empty-meta">Expected outcomes unavailable</div><p class="empty-text">No items available.</p></article>';
         return;
       }
 
-      root.innerHTML = scenarios.map((scenario) => {
-        const percent = normalizePercentNumber(scenario.probability);
-        return `
-          <div class="probability-row">
-            <div class="probability-label">${escapeHtml(scenario.title)}</div>
-            <div class="progress-track"><div class="progress-bar" style="width:${percent == null ? 0 : Math.max(4, Math.min(percent, 100))}%"></div></div>
-            <div class="probability-value">${escapeHtml(formatProbability(scenario.probability))}</div>
-          </div>
-        `;
-      }).join("");
-    }
-
-    function renderInlineListPreview(label, items){
-      const list = safeArray(items).slice(0, UI_LIMITS.scenarioInline);
-      if (!list.length) return `<li><strong>${escapeHtml(label)}:</strong> <span class="muted">—</span></li>`;
-      return `<li><strong>${escapeHtml(label)}:</strong> ${list.map((item) => escapeHtml(String(item))).join(" / ")}</li>`;
-    }
-
-    function renderScenarioCards(scenarios){
-      const root = el("scenarioCardGrid");
-      if (!root) return;
-
-      if (!scenarios.length){
-        root.innerHTML = `<article class="empty-card"><div class="empty-meta">Scenario unavailable</div><p class="empty-text">best / base / worst を取得できませんでした。</p></article>`;
-        return;
-      }
-
-      root.innerHTML = scenarios.slice(0, 3).map((scenario) => {
-        const key = String(scenario.key || "").toLowerCase();
-        let scenarioClass = "scenario-base";
-        if (key.includes("best")) scenarioClass = "scenario-best";
-        else if (key.includes("worst")) scenarioClass = "scenario-worst";
-
-        return `
-          <article class="scenario-card ${scenarioClass}">
-            <div class="scenario-meta">
-              <span>${escapeHtml(titleize(scenario.key))}</span>
-              <span>${escapeHtml(firstString(scenario.confidence, ""))}</span>
-            </div>
-            <div class="scenario-title-row">
-              <h3 class="scenario-title">${escapeHtml(scenario.title)}</h3>
-              <span class="scenario-probability">${escapeHtml(formatProbability(scenario.probability))}</span>
-            </div>
-            <p class="scenario-text">${escapeHtml(scenario.summary || "No scenario summary.")}</p>
-            <ul class="scenario-list compact-scenario-list">
-              ${renderInlineListPreview("Drivers", scenario.drivers)}
-              ${renderInlineListPreview("Watchpoints", scenario.watchpoints)}
-              ${renderInlineListPreview("Invalidation", scenario.invalidation)}
-            </ul>
-          </article>
-        `;
-      }).join("");
+      root.innerHTML = list.map((item) => `
+        <div class="probability-row">
+          <div class="probability-label">${escapeHtml(String(item))}</div>
+        </div>
+      `).join("");
     }
 
     function renderList(rootId, items, emptyLabel, badge, limit){
       const root = el(rootId);
       if (!root) return;
 
-      const list = uniqueLimitedItems(items, limit || UI_LIMITS.lowerList);
+      const list = uniqueLimitedItems(items, limit);
       if (!list.length){
         root.innerHTML = `<article class="empty-card compact-empty-card"><div class="empty-meta">${escapeHtml(emptyLabel)}</div><p class="empty-text">No items available.</p></article>`;
         return;
@@ -910,14 +632,30 @@
       `).join("");
     }
 
-    function renderRuntimeNotes(prediction, signalData, warningData, history, fxData){
+    function renderMetricCards(prediction){
+      el("metricDriverCount").textContent = formatCount(prediction.keyDrivers.length);
+      el("metricDriverSub").textContent = "key drivers";
+
+      el("metricMonitoringCount").textContent = formatCount(prediction.monitoringPriorities.length);
+      el("metricMonitoringSub").textContent = "priorities";
+
+      el("metricOutcomeCount").textContent = formatCount(prediction.expectedOutcomes.length);
+      el("metricOutcomeSub").textContent = "expected outcomes";
+
+      const contextTotal = prediction.historicalContext.length + prediction.referenceMemory.length;
+      el("metricContextCount").textContent = formatCount(contextTotal);
+      el("metricContextSub").textContent = "historical + memory";
+    }
+
+    function renderRuntimeNotes(prediction, history, fxData){
       const latestHistory = history[0] || null;
       const fxStatus = normalizeFxStatus(firstString(fxData?.primary, fxData?.decision, fxData?.status, fxData?.regime));
       const notes = [
-        `As of: ${formatDate(firstString(prediction?.as_of, prediction?.date, prediction?.generated_at))}`,
-        `Signal count: ${formatCount(firstNonEmpty(prediction?.signal_count, normalizeSignals(signalData, prediction).length))}`,
-        `Warning count: ${formatCount(firstNonEmpty(warningData?.warning_count, warningData?.early_warning_count, prediction?.early_warning?.warning_score != null ? 1 : 0))}`,
-        `Dominant scenario: ${titleize(firstString(prediction?.dominant_scenario?.label, prediction?.dominant_branch, prediction?.scenario, prediction?.regime))}`,
+        `As of: ${formatDate(prediction.asOf)}`,
+        `Dominant: ${titleize(prediction.dominant)}`,
+        `Confidence: ${formatConfidence(prediction.confidence)}`,
+        `Key drivers: ${formatCount(prediction.keyDrivers.length)}`,
+        `Monitoring: ${formatCount(prediction.monitoringPriorities.length)}`,
         `FX status: ${fxStatus || "—"}`,
         `Latest history: ${latestHistory ? formatShortDate(latestHistory.date || latestHistory.as_of) : "—"}`
       ].slice(0, UI_LIMITS.runtimeNotes);
@@ -927,81 +665,16 @@
 
     function renderSourceStatus(results){
       const rows = [
-        ["Trend", results.trend],
-        ["Signal", results.signal],
-        ["Warning", results.warning],
-        ["Scenario", results.scenario],
         ["Prediction", results.prediction],
-        ["Pred Exp", results.predictionExplanation],
-        ["Scn Exp", results.scenarioExplanation],
         ["FX", results.fx],
         ["History", results.historyIndex]
       ];
 
       el("sourceStatusList").innerHTML = rows.map(([name, result]) => `
-        <article class="source-compact-item ${result?.ok ? 'ok' : 'ng'}">
-          <span class="source-dot ${result?.ok ? 'ok' : 'ng'}"></span>
+        <article class="source-compact-item ${result?.ok ? "ok" : "ng"}">
+          <span class="source-dot ${result?.ok ? "ok" : "ng"}"></span>
           <span class="source-name">${escapeHtml(name)}</span>
-          <span class="source-state">${result?.ok ? 'OK' : '—'}</span>
-        </article>
-      `).join("");
-    }
-
-    function renderSignalList(signals){
-      const root = el("signalList");
-      if (!root) return;
-
-      const limited = signals.slice(0, UI_LIMITS.signal);
-      if (!limited.length){
-        root.innerHTML = `<article class="empty-card compact-empty-card"><div class="empty-meta">Signals unavailable</div><p class="empty-text">signal list を取得できませんでした。</p></article>`;
-        return;
-      }
-
-      root.innerHTML = limited.map((signal, index) => {
-        const severityRaw = firstString(signal.severity).toLowerCase();
-        let signalClass = "signal-guarded";
-        if (severityRaw.includes("critical")) signalClass = "signal-critical";
-        else if (severityRaw.includes("high")) signalClass = "signal-high";
-        else if (severityRaw.includes("elevated")) signalClass = "signal-elevated";
-        else if (severityRaw.includes("warn")) signalClass = "signal-warn";
-        else if (severityRaw.includes("low")) signalClass = "signal-low";
-        else if (severityRaw.includes("stable")) signalClass = "signal-stable";
-
-        return `
-          <article class="signal-card ${signalClass}">
-            <div class="signal-meta">
-              <span class="signal-badge">${escapeHtml(signalSeverityBadge(signal.severity))}</span>
-              <span class="signal-strength">${escapeHtml(formatConfidence(signal.strength))}</span>
-            </div>
-            <div class="signal-title-row">
-              <h3 class="signal-title">${escapeHtml(signal.title || `Signal ${index + 1}`)}</h3>
-            </div>
-            <p class="signal-text">${escapeHtml(signal.summary || "No signal summary.")}</p>
-          </article>
-        `;
-      }).join("");
-    }
-
-    function renderTrendSummary(items){
-      const root = el("trendSummaryList");
-      if (!root) return;
-
-      const limited = items.slice(0, UI_LIMITS.trend);
-      if (!limited.length){
-        root.innerHTML = `<article class="empty-card compact-empty-card"><div class="empty-meta">Trend unavailable</div><p class="empty-text">trend 情報を取得できませんでした。</p></article>`;
-        return;
-      }
-
-      root.innerHTML = limited.map((item, index) => `
-        <article class="trend-card">
-          <div class="trend-meta">
-            <span class="trend-badge">${escapeHtml(titleize(item.state || "trend"))}</span>
-            <span class="trend-strength">${escapeHtml(formatConfidence(item.score))}</span>
-          </div>
-          <div class="trend-title-row">
-            <h3 class="trend-title">${escapeHtml(item.title || `Trend ${index + 1}`)}</h3>
-          </div>
-          <p class="trend-text">${escapeHtml(item.summary || "No trend summary.")}</p>
+          <span class="source-state">${result?.ok ? "OK" : "—"}</span>
         </article>
       `).join("");
     }
@@ -1011,7 +684,7 @@
       if (!root) return;
 
       if (!history.length){
-        root.innerHTML = `<article class="empty-card compact-empty-card"><div class="empty-meta">History unavailable</div><p class="empty-text">prediction_history_index.json を取得できませんでした。</p></article>`;
+        root.innerHTML = '<article class="empty-card compact-empty-card"><div class="empty-meta">History unavailable</div><p class="empty-text">prediction_history_index.json を取得できませんでした。</p></article>';
         return;
       }
 
@@ -1023,7 +696,7 @@
               <h2 class="history-row-title">${escapeHtml(titleize(item.dominant_scenario || "snapshot"))}</h2>
               <span class="hint mono">${escapeHtml(formatShortDate(item.date || item.as_of))}</span>
             </div>
-            <p class="inline-text">${escapeHtml(item.summary || "Prediction snapshot")} / ${escapeHtml(formatConfidence(item.confidence))} / ${escapeHtml(titleize(item.overall_risk))}</p>
+            <p class="inline-text">${escapeHtml(item.prediction_statement || "Prediction snapshot")} / ${escapeHtml(formatConfidence(item.confidence))} / ${escapeHtml(titleize(item.overall_risk))}</p>
           </div>
         </article>
       `).join("");
@@ -1052,7 +725,7 @@
       const dots = pts.map((p) => `<circle cx="${p[0]}" cy="${p[1]}" r="2.5" fill="rgba(147,197,253,.95)"></circle>`).join("");
 
       svg.innerHTML =
-        `<line x1="${pad}" y1="${height-pad}" x2="${width-pad}" y2="${height-pad}" stroke="rgba(255,255,255,.12)" stroke-width="1"></line>` +
+        `<line x1="${pad}" y1="${height - pad}" x2="${width - pad}" y2="${height - pad}" stroke="rgba(255,255,255,.12)" stroke-width="1"></line>` +
         `<polyline fill="none" stroke="rgba(147,197,253,.95)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="${pl}"></polyline>` +
         dots;
     }
@@ -1082,10 +755,9 @@
       }).join("");
     }
 
-    function renderCharts(prediction, scenarios, history){
-      const scenarioMap = prediction?.scenario_probabilities || {};
-      const latestConfidence = normalizePercentNumber(firstNonEmpty(prediction?.confidence, prediction?.confidence_score, prediction?.confidence_pct));
-      const latestRiskText = titleize(firstString(prediction?.overall_risk_level, prediction?.overall_risk, prediction?.risk_level, "guarded"));
+    function renderCharts(prediction, history){
+      const latestConfidence = normalizePercentNumber(prediction.confidence);
+      const latestRiskText = titleize(prediction.risk || "guarded");
 
       const historyChronological = [...history].reverse();
       const confidenceValues = historyChronological.map((item) => {
@@ -1099,11 +771,12 @@
       polyline("riskChart", riskValues, 0, 5);
 
       const barsValues = [
-        normalizePercentNumber(firstNonEmpty(scenarioMap.best_case, scenarios[0]?.probability)) || 0,
-        normalizePercentNumber(firstNonEmpty(scenarioMap.base_case, scenarios[1]?.probability)) || 0,
-        normalizePercentNumber(firstNonEmpty(scenarioMap.worst_case, scenarios[2]?.probability)) || 0
-      ];
-      bars("scenarioChart", barsValues, ["Best", "Base", "Worst"]);
+        prediction.keyDrivers.length * 20,
+        prediction.monitoringPriorities.length * 20,
+        prediction.expectedOutcomes.length * 16
+      ].map((v) => Math.max(0, Math.min(100, v)));
+
+      bars("scenarioChart", barsValues, ["Drivers", "Monitor", "Outcomes"]);
 
       const confidenceDelta = confidenceValues.length >= 2
         ? Math.round(confidenceValues[confidenceValues.length - 1] - confidenceValues[0])
@@ -1111,7 +784,6 @@
       const riskDelta = riskValues.length >= 2
         ? riskValues[riskValues.length - 1] - riskValues[0]
         : 0;
-      const dominantTitle = titleize(firstString(prediction?.dominant_scenario?.label, prediction?.dominant_branch, prediction?.scenario));
 
       const confidenceValueEl = el("confidenceChartValue");
       const riskValueEl = el("riskChartValue");
@@ -1130,119 +802,9 @@
       }
 
       if (scenarioValueEl){
-        scenarioValueEl.textContent = dominantTitle || "—";
+        scenarioValueEl.textContent = `${prediction.keyDrivers.length}/${prediction.monitoringPriorities.length}/${prediction.expectedOutcomes.length}`;
         scenarioValueEl.className = "chart-value neu";
       }
-    }
-
-
-    const EXPLANATION_LANG_KEY = "gp_explanation_lang";
-    let latestPredictionExplanation = null;
-    let latestScenarioExplanation = null;
-
-    function getExplanationLang(){
-      try {
-        const saved = localStorage.getItem(EXPLANATION_LANG_KEY);
-        return ["ja","en","th"].includes(saved) ? saved : "ja";
-      } catch (err) {
-        return "ja";
-      }
-    }
-
-    function updateExplanationLanguageButtons(lang){
-    }
-
-    function setExplanationLang(lang){
-      const next = ["ja","en","th"].includes(lang) ? lang : "ja";
-      try {
-        localStorage.setItem(EXPLANATION_LANG_KEY, next);
-      } catch (err) {}
-      updateExplanationLanguageButtons(next);
-      return next;
-    }
-
-    function pickI18nText(data, baseField, lang){
-      if (!data || typeof data !== "object") return "";
-      const shadow = data[`${baseField}_i18n`];
-      if (shadow && typeof shadow === "object"){
-        const value = shadow[lang] ?? shadow[data.lang_default] ?? shadow.ja ?? shadow.en ?? shadow.th;
-        if (typeof value === "string" && value.trim()) return value.trim();
-      }
-      const base = data[baseField];
-      return typeof base === "string" ? base.trim() : "";
-    }
-
-    function pickI18nList(data, baseField, lang){
-      if (!data || typeof data !== "object") return [];
-      const shadow = data[`${baseField}_i18n`];
-      if (shadow && typeof shadow === "object"){
-        const value = shadow[lang] ?? shadow[data.lang_default] ?? shadow.ja ?? shadow.en ?? shadow.th;
-        if (Array.isArray(value)) return value;
-      }
-      return Array.isArray(data[baseField]) ? data[baseField] : [];
-    }
-
-    window.setExplanationLangAndRender = function(lang){
-      const nextLang = setExplanationLang(lang);
-      if (latestPredictionExplanation || latestScenarioExplanation){
-        renderExplanationSection(latestPredictionExplanation, latestScenarioExplanation, nextLang);
-      }
-    };
-    function renderExplanationCard(prefix, data, emptySummary, lang){
-      const headlineEl = el(`${prefix}Headline`);
-      const summaryEl = el(`${prefix}Summary`);
-      const whyEl = el(`${prefix}Why`);
-      const asofEl = el(`${prefix}Asof`);
-      const statusEl = el(`${prefix}Status`);
-
-      if (!data){
-        if (headlineEl) headlineEl.textContent = "Unavailable";
-        if (summaryEl) summaryEl.textContent = emptySummary;
-        if (whyEl) whyEl.textContent = "";
-        if (asofEl) asofEl.textContent = "—";
-        if (statusEl) statusEl.textContent = "unavailable";
-        return;
-      }
-
-      if (headlineEl) headlineEl.textContent = pickI18nText(data, "headline", lang) || "Untitled explanation";
-      if (summaryEl) summaryEl.textContent = pickI18nText(data, "summary", lang) || emptySummary;
-      if (whyEl) whyEl.textContent = pickI18nText(data, "why_it_matters", lang) || "";
-      if (asofEl) asofEl.textContent = formatShortDate(firstString(data.as_of, data.date));
-      if (statusEl) statusEl.textContent = firstString(data.status, "ok");
-    }
-
-    function renderExplanationSection(predictionExplanation, scenarioExplanation, lang){
-      renderExplanationCard(
-        "predictionExplanation",
-        predictionExplanation,
-        "Prediction explanation is unavailable.",
-        lang
-      );
-      renderExplanationCard(
-        "scenarioExplanation",
-        scenarioExplanation,
-        "Scenario explanation is unavailable.",
-        lang
-      );
-
-      const combinedDrivers = uniqueLimitedItems([
-        ...pickI18nList(predictionExplanation, "drivers", lang),
-        ...pickI18nList(scenarioExplanation, "drivers", lang)
-      ], UI_LIMITS.explanation);
-
-      const combinedWatchpoints = uniqueLimitedItems([
-        ...pickI18nList(predictionExplanation, "watchpoints", lang),
-        ...pickI18nList(scenarioExplanation, "watchpoints", lang)
-      ], UI_LIMITS.explanation);
-
-      const combinedMustNotMean = uniqueLimitedItems([
-        ...pickI18nList(predictionExplanation, "must_not_mean", lang),
-        ...pickI18nList(scenarioExplanation, "must_not_mean", lang)
-      ], UI_LIMITS.explanation);
-
-      renderList("explanationDriversList", combinedDrivers, "Explanation drivers unavailable", "D", UI_LIMITS.explanation);
-      renderList("explanationWatchpointsList", combinedWatchpoints, "Explanation watchpoints unavailable", "W", UI_LIMITS.explanation);
-      renderList("explanationMustNotMeanList", combinedMustNotMean, "Explanation must-not-mean unavailable", "M", UI_LIMITS.explanation);
     }
 
     async function init(){
@@ -1251,55 +813,43 @@
       );
       const results = Object.fromEntries(entries);
 
+      renderSourceStatus(results);
+
       if (!results.prediction?.ok || !results.prediction?.data){
         el("heroSummary").textContent = "prediction_latest.json を取得できませんでした。Prediction 本体は fallback で捏造しません。";
-        renderExplanationSection(null, null);
+        el("runtimeMini").textContent = "Unavailable";
+        el("runtimeMiniSub").textContent = "prediction artifact missing";
         return;
       }
 
-      const prediction = results.prediction.data;
-      const signalData = results.signal?.data || {};
-      const warningData = results.warning?.data || {};
-      const trendData = results.trend?.data || {};
-      const scenarioData = results.scenario?.data || {};
+      const predictionRaw = results.prediction.data || {};
+      const prediction = normalizePredictionV3(predictionRaw);
       const fxData = results.fx?.data || {};
-      const predictionExplanation = results.predictionExplanation?.data || null;
-      const scenarioExplanation = results.scenarioExplanation?.data || null;
       const history = (results.historyIndex?.ok && results.historyIndex?.data)
-        ? safeArray(results.historyIndex.data.items).map(normalizeHistoryIndexItem).sort((a,b) => String(b.date).localeCompare(String(a.date)))
+        ? safeArray(results.historyIndex.data.items)
+            .map(normalizeHistoryIndexItem)
+            .sort((a, b) => String(b.date).localeCompare(String(a.date)))
         : [];
 
-      const scenarios = normalizeScenarios(prediction, scenarioData);
-      const signals = normalizeSignals(signalData, prediction);
-      const trends = normalizeTrendItems(trendData, prediction);
-
-      renderHero(prediction, warningData);
+      renderHero(prediction);
       renderFxSummary(fxData);
-      renderMetricCards(prediction, signalData, scenarios);
-      renderProbabilityList(scenarios);
-      renderScenarioCards(scenarios);
-      renderSignalList(signals);
-      renderTrendSummary(trends);
-      renderRuntimeNotes(prediction, signalData, warningData, history, fxData);
+
+      renderList("keyDriversList", prediction.keyDrivers, "Key drivers unavailable", "D", UI_LIMITS.drivers);
+      renderList("monitoringPrioritiesList", prediction.monitoringPriorities, "Monitoring priorities unavailable", "M", UI_LIMITS.monitoring);
+      renderList("expectedOutcomesList", prediction.expectedOutcomes, "Expected outcomes unavailable", "O", UI_LIMITS.expectedOutcomes);
+      renderList("historicalContextList", prediction.historicalContext, "Historical context unavailable", "H", UI_LIMITS.historical);
+      renderList("referenceMemoryList", prediction.referenceMemory, "Reference memory unavailable", "R", UI_LIMITS.memory);
+
+      renderExpectedOutcomePreview(prediction.expectedOutcomes);
+      renderMetricCards(prediction);
+      renderRuntimeNotes(prediction, history, fxData);
       renderPredictionHistory(history);
-      renderCharts(prediction, scenarios, history);
-
-      latestPredictionExplanation = predictionExplanation;
-      latestScenarioExplanation = scenarioExplanation;
-      const currentExpLang = setExplanationLang(getExplanationLang());
-      renderExplanationSection(predictionExplanation, scenarioExplanation, currentExpLang);
-
-      renderList("watchpointsList", firstNonEmpty(prediction?.watchpoints, prediction?.watch_points, scenarios.flatMap((s) => s.watchpoints).filter(Boolean)), "Watchpoints unavailable", "W", UI_LIMITS.lowerList);
-      renderList("driversList", firstNonEmpty(prediction?.drivers, prediction?.key_drivers, scenarios.flatMap((s) => s.drivers).filter(Boolean)), "Drivers unavailable", "D", UI_LIMITS.lowerList);
-      renderList("invalidationList", firstNonEmpty(prediction?.invalidation_conditions, prediction?.invalidation, prediction?.invalidate_if, scenarios.flatMap((s) => s.invalidation).filter(Boolean)), "Invalidation unavailable", "I", 3);
-      renderList("implicationsList", firstNonEmpty(prediction?.implications, prediction?.actions, prediction?.notes, prediction?.dominant_scenario?.summary), "Implications unavailable", "M", 3);
-
-      renderSourceStatus(results);
+      renderCharts(prediction, history);
     }
 
     window.addEventListener("DOMContentLoaded", init);
   </script>
-  <script src="/static/common/global_status.js?v=20260319-explanation-ui-8"></script>
-  <script src="/static/common/layout.js?v=20260319-explanation-ui-8"></script>
+  <script src="/static/common/global_status.js?v=20260320-prediction-ui-phase4-2"></script>
+  <script src="/static/common/layout.js?v=20260320-prediction-ui-phase4-2"></script>
 </body>
 </html>
