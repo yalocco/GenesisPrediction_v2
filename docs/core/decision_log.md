@@ -2,7 +2,7 @@
 
 Status: Active  
 Purpose: Architecture decision record  
-Last Updated: 2026-03-06
+Last Updated: 2026-03-20
 
 ---
 
@@ -26,40 +26,153 @@ GenesisPrediction v2 の
 
 # 2026-03
 
+## Decision: Introduce Vector Memory Architecture (Qdrant)
+
+対象
+
+```text
+docs/active/vector_memory_architecture.md
+Qdrant
+scripts/build_vector_memory.py
+scripts/vector_recall.py
+scripts/scenario_engine.py
+scripts/prediction_engine.py
+````
+
+背景
+
+GenesisPrediction は
+
+```text
+Observation
+↓
+Trend
+↓
+Signal
+↓
+Scenario
+↓
+Prediction
+```
+
+の構造を持つ。
+
+ただし latest だけでは
+
+* 過去の似た判断
+* 類似 scenario
+* 類似 signal
+* historical analog
+* decision history
+
+を十分に活かせない。
+
+また、
+
+```text
+decision_log
+historical pattern
+prediction history
+explanation artifacts
+```
+
+を
+
+**検索可能な参照記憶**
+
+として使いたい要求が生まれた。
+
+問題
+
+既存構造を壊したまま memory を追加すると、
+
+* analysis 以外に「真実」が増える
+* UI が記憶検索を始める
+* prediction が black-box 化する
+* docs / analysis / memory の責務が混ざる
+* 再現性が下がる
+
+危険がある。
+
+結論
+
+GenesisPrediction では
+
+```text
+Vector Memory = reference-only memory
+```
+
+とする。
+
+固定ルール
+
+```text
+analysis = Single Source of Truth
+Vector DB = reference memory only
+UI must not query vector memory directly
+scripts / engines only may use vector recall
+vector memory must never overwrite analysis
+```
+
+採用方針
+
+* Qdrant を external reference memory service として使う
+* まずは docs / analysis 由来の memory のみを index する
+* Scenario / Prediction が recall を補助入力として使う
+* recall 結果は必要に応じて analysis 側へ materialize する
+* Qdrant 停止時でも pipeline は継続する
+
+優先 memory 対象
+
+```text
+1. decision_log memory
+2. prediction / scenario history memory
+3. historical pattern / analog memory
+4. explanation memory
+```
+
+主な接続先
+
+```text
+scenario_engine.py
+prediction_engine.py
+```
+
+重要原則
+
+```text
+Vector Memory は判断補助
+Prediction / Scenario の代替ではない
+```
+
+---
+
 ## Decision: WorldDate = LOCAL DATE
 
 対象
 
-```
-
+```text
 scripts/run_morning_ritual.ps1
-
 ```
 
 旧仕様
 
-```
-
+```text
 WorldDate = UTC yesterday
-
 ```
 
 問題
 
-```
-
+```text
 missing raw news
-
 ```
 
 原因
 
 ニュース raw データは
 
-```
-
+```text
 data/world_politics/YYYY-MM-DD.json
-
 ```
 
 として
@@ -68,28 +181,22 @@ data/world_politics/YYYY-MM-DD.json
 
 そのため
 
-```
-
+```text
 UTC yesterday
-
 ```
 
 と
 
-```
-
+```text
 LOCAL DATE
-
 ```
 
 がズレるケースが発生した。
 
 結論
 
-```
-
+```text
 WorldDate = LOCAL DATE
-
 ```
 
 ---
@@ -100,23 +207,19 @@ WorldDate = LOCAL DATE
 
 GenesisPrediction v2 の真実は
 
-```
-
+```text
 analysis/
-
 ```
 
 のみ。
 
 理由
 
-```
-
+```text
 scripts = 生成
 data = 素材
 analysis = 最終成果
 UI = 表示
-
 ```
 
 責務分離を明確化するため。
@@ -127,25 +230,21 @@ UI = 表示
 
 対象
 
-```
-
+```text
 app/static/*.html
-
 ```
 
 ルール
 
-```
-
+```text
 UIはanalysisを読むだけ
-
 ```
 
 理由
 
-- 再現性
-- デバッグ容易性
-- 責務分離
+* 再現性
+* デバッグ容易性
+* 責務分離
 
 ---
 
@@ -153,17 +252,15 @@ UIはanalysisを読むだけ
 
 ルール
 
-```
-
+```text
 差分提案禁止
 完全ファイルのみ
-
 ```
 
 理由
 
-- コピペ事故防止
-- AI生成の途中欠落防止
+* コピペ事故防止
+* AI生成の途中欠落防止
 
 ---
 
@@ -171,17 +268,19 @@ UIはanalysisを読むだけ
 
 将来ここに追加予定
 
-```
-
+```text
 Prediction engine architecture
 Trend3 logic
 Scenario engine
 Risk scoring
 FX decision model
-
+Vector memory implementation freeze
+Reference memory artifact schema freeze
+Qdrant operational rule
 ```
 
 ---
 
 END OF DOCUMENT
+
 ```

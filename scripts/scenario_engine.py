@@ -16,6 +16,7 @@ TREND_LATEST_PATH = PREDICTION_DIR / "trend_latest.json"
 SIGNAL_LATEST_PATH = PREDICTION_DIR / "signal_latest.json"
 HISTORICAL_PATTERN_LATEST_PATH = PREDICTION_DIR / "historical_pattern_latest.json"
 HISTORICAL_ANALOG_LATEST_PATH = PREDICTION_DIR / "historical_analog_latest.json"
+REFERENCE_MEMORY_PATH = PREDICTION_DIR / "reference_memory_latest.json"
 
 SCENARIO_LATEST_PATH = PREDICTION_DIR / "scenario_latest.json"
 
@@ -68,7 +69,11 @@ def unique_preserve_order(items: List[Any]) -> List[Any]:
     seen = set()
     out: List[Any] = []
     for item in items:
-        key = json.dumps(item, ensure_ascii=False, sort_keys=True) if isinstance(item, (dict, list)) else str(item)
+        key = (
+            json.dumps(item, ensure_ascii=False, sort_keys=True)
+            if isinstance(item, (dict, list))
+            else str(item)
+        )
         if key in seen:
             continue
         seen.add(key)
@@ -168,6 +173,43 @@ def extract_trend_tags(trend_data: Dict[str, Any]) -> List[str]:
         tags.extend(collect_strings(trend_data))
 
     return unique_preserve_order([t for t in tags if t])
+
+
+def load_reference_memory() -> Dict[str, Any]:
+    data = load_json(REFERENCE_MEMORY_PATH, default={}) or {}
+    return data if isinstance(data, dict) else {}
+
+
+def extract_reference_watchpoints(reference_memory: Dict[str, Any]) -> List[str]:
+    watchpoints: List[str] = []
+
+    for bucket_name in ("historical_patterns", "historical_analogs", "similar_cases"):
+        for item in reference_memory.get(bucket_name, []) or []:
+            if not isinstance(item, dict):
+                continue
+            tags = item.get("tags", [])
+            if isinstance(tags, list):
+                watchpoints.extend(str(x) for x in tags if x is not None)
+
+    return unique_preserve_order([normalize_text(x) for x in watchpoints if normalize_text(x)])
+
+
+def extract_reference_drivers(reference_memory: Dict[str, Any]) -> List[str]:
+    drivers: List[str] = []
+
+    for item in reference_memory.get("historical_patterns", []) or []:
+        if isinstance(item, dict) and item.get("title"):
+            drivers.append(f"pattern:{normalize_text(item.get('title'))}")
+
+    for item in reference_memory.get("historical_analogs", []) or []:
+        if isinstance(item, dict) and item.get("title"):
+            drivers.append(f"analog:{normalize_text(item.get('title'))}")
+
+    for item in reference_memory.get("similar_cases", []) or []:
+        if isinstance(item, dict) and item.get("title"):
+            drivers.append(f"similar_case:{normalize_text(item.get('title'))}")
+
+    return unique_preserve_order([x for x in drivers if x])
 
 
 def extract_historical_watchpoints(pattern_data: Dict[str, Any], analog_data: Dict[str, Any]) -> List[str]:
@@ -401,7 +443,10 @@ def calculate_scenario_confidence(
     signal_conf = 0.0
     signals = signal_data.get("signals", [])
     if isinstance(signals, list) and signals:
-        signal_conf = sum(safe_float(item.get("confidence", 0.0)) for item in signals if isinstance(item, dict)) / len(signals)
+        signal_conf = (
+            sum(safe_float(item.get("confidence", 0.0)) for item in signals if isinstance(item, dict))
+            / len(signals)
+        )
     pattern_conf = safe_float(historical_pattern_data.get("pattern_confidence", 0.0))
     analog_conf = safe_float(historical_analog_data.get("analog_confidence", 0.0))
 
@@ -609,6 +654,7 @@ def build_scenario_output(
     signal_data: Dict[str, Any],
     historical_pattern_data: Dict[str, Any],
     historical_analog_data: Dict[str, Any],
+    reference_memory_data: Dict[str, Any],
 ) -> Dict[str, Any]:
     as_of = (
         signal_data.get("as_of")
@@ -625,7 +671,11 @@ def build_scenario_output(
     dominant_analog = historical_analog_data.get("dominant_analog")
 
     expected_outcomes = extract_expected_outcomes(historical_pattern_data, historical_analog_data)
+
     watchpoints = extract_historical_watchpoints(historical_pattern_data, historical_analog_data)
+    reference_watchpoints = extract_reference_watchpoints(reference_memory_data)
+    watchpoints = unique_preserve_order(watchpoints + reference_watchpoints)
+
     stress_vector = get_current_stress_vector(historical_pattern_data)
 
     scenario_bias = derive_scenario_bias(historical_pattern_data, historical_analog_data)
@@ -675,6 +725,7 @@ def build_scenario_output(
         dominant_pattern=dominant_pattern,
         expected_outcomes=expected_outcomes,
     )
+    key_drivers = unique_preserve_order(key_drivers + extract_reference_drivers(reference_memory_data))
 
     risk_flags = build_risk_flags(
         signal_tags=signal_tags,
@@ -696,14 +747,14 @@ def build_scenario_output(
     return {
         "as_of": as_of,
         "generated_at": utc_now_iso(),
-        "engine_version": "v2_historical",
+        "engine_version": "v3_with_memory",
         "dominant_scenario": dominant_scenario,
         "risk": risk_label,
         "confidence": confidence,
         "scenario_bias": scenario_bias,
         "key_drivers": key_drivers,
         "risk_flags": risk_flags,
-        "watchpoints": watchpoints[:10],
+        "watchpoints": watchpoints[:12],
         "expected_outcomes": expected_outcomes[:10],
         "historical_context": {
             "dominant_pattern": dominant_pattern,
@@ -712,6 +763,14 @@ def build_scenario_output(
             "analog_confidence": round(safe_float(historical_analog_data.get("analog_confidence")), 4),
             "current_stress_vector": {k: round(v, 4) for k, v in stress_vector.items()},
             "historical_watchpoints": watchpoints[:10],
+        },
+        "reference_memory": {
+            "status": reference_memory_data.get("status", "unavailable"),
+            "summary": reference_memory_data.get("recall_summary"),
+            "decision_ref_count": len(reference_memory_data.get("decision_refs", []) or []),
+            "similar_case_count": len(reference_memory_data.get("similar_cases", []) or []),
+            "historical_pattern_count": len(reference_memory_data.get("historical_patterns", []) or []),
+            "historical_analog_count": len(reference_memory_data.get("historical_analogs", []) or []),
         },
         "scenarios": scenarios,
         "summary": summary,
@@ -729,12 +788,14 @@ def main() -> None:
     signal_data = load_json(SIGNAL_LATEST_PATH, default={}) or {}
     historical_pattern_data = load_json(HISTORICAL_PATTERN_LATEST_PATH, default={}) or {}
     historical_analog_data = load_json(HISTORICAL_ANALOG_LATEST_PATH, default={}) or {}
+    reference_memory_data = load_reference_memory()
 
     scenario_output = build_scenario_output(
         trend_data=trend_data,
         signal_data=signal_data,
         historical_pattern_data=historical_pattern_data,
         historical_analog_data=historical_analog_data,
+        reference_memory_data=reference_memory_data,
     )
 
     write_json(SCENARIO_LATEST_PATH, scenario_output)
