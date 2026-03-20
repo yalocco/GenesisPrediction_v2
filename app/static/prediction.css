@@ -1,15 +1,15 @@
 /* =========================================================
-   Prediction Page Layout (Phase4 Compact Final)
+   Prediction Page Layout (Explanation Layer Phase1 Tuning)
    ========================================================= */
 
    .prediction-page {
     display: grid;
-    gap: 8px;
+    gap: 12px;
   }
   
   .prediction-shell {
     display: grid;
-    gap: 8px;
+    gap: 12px;
   }
   
   .prediction-page .card {
@@ -18,8 +18,8 @@
   
   .hero-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
-    gap: 8px;
+    grid-template-columns: minmax(0, 1.24fr) minmax(320px, 0.76fr);
+    gap: 12px;
     align-items: stretch;
   }
   
@@ -34,7 +34,7 @@
   .hero-side-stack,
   .prediction-side-stack {
     display: grid;
-    gap: 6px;
+    gap: 10px;
     height: 100%;
   }
   
@@ -46,25 +46,26 @@
   }
   
   .hero-title {
-    font-size: 18px;
-    line-height: 1.15;
+    font-size: 24px;
+    line-height: 1.16;
     margin: 0;
+    letter-spacing: 0.01em;
   }
   
   .hero-intro-card .sub {
-    margin: 3px 0 0;
-    font-size: 11px;
-    line-height: 1.35;
+    margin: 8px 0 0;
+    font-size: 13px;
+    line-height: 1.55;
     color: #c8d7f6;
-    opacity: 0.84;
+    opacity: 0.9;
   }
   
   .hero-summary {
-    margin: 5px 0 0;
-    font-size: 12px;
-    line-height: 1.42;
+    margin: 12px 0 0;
+    font-size: 15px;
+    line-height: 1.72;
     color: #e7f0ff;
-    max-width: 96%;
+    max-width: 98%;
   }
   
   .hero-metric,
@@ -74,54 +75,55 @@
   .signal-card,
   .trend-card,
   .status-item {
-    border: 1px solid rgba(120, 160, 220, 0.11);
-    border-radius: 12px;
-    padding: 7px 9px;
-    background: linear-gradient(180deg, rgba(10, 16, 30, 0.38), rgba(8, 13, 24, 0.24));
+    border: 1px solid rgba(120, 160, 220, 0.12);
+    border-radius: 14px;
+    padding: 12px 14px;
+    background: linear-gradient(180deg, rgba(10, 16, 30, 0.42), rgba(8, 13, 24, 0.28));
     display: grid;
-    gap: 5px;
+    gap: 8px;
     min-width: 0;
   }
   
   .hero-side-card {
-    padding: 8px;
+    padding: 10px;
   }
   
   .hero-side-card .hero-metric {
     min-height: 0;
-    padding: 7px 9px;
+    padding: 11px 13px;
   }
   
   .metric-label,
   .detail-eyebrow,
   .chart-label {
-    font-size: 10px;
+    font-size: 11px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    opacity: 0.7;
-    margin-bottom: 1px;
+    opacity: 0.76;
+    margin-bottom: 2px;
   }
   
   .metric-value {
-    font-size: 16px;
-    line-height: 1.12;
+    font-size: 18px;
+    line-height: 1.28;
     font-weight: 700;
     color: #eef4ff;
+    word-break: break-word;
   }
   
   .hero-side-card .metric-value {
-    font-size: 14px;
-    line-height: 1.25;
+    font-size: 15px;
+    line-height: 1.45;
   }
   
   .metric-sub,
   .chart-note,
   .section-subtitle,
   .explanation-mini-subtitle {
-    margin-top: 1px;
-    font-size: 10px;
-    line-height: 1.32;
-    opacity: 0.72;
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 1.5;
+    opacity: 0.8;
     color: #c8d7f6;
   }
   
@@ -132,9 +134,9 @@
   .trend-text,
   .inline-text {
     margin: 0;
-    font-size: 12px;
-    line-height: 1.44;
-    color: #c8d7f6;
+    font-size: 13px;
+    line-height: 1.68;
+    color: #d6e1f5;
   }
   
   .detail-title,
@@ -143,28 +145,31 @@
   .trend-title,
   .explanation-title,
   .history-row-title {
-    font-size: 13px;
+    font-size: 15px;
+    line-height: 1.35;
     font-weight: 700;
     color: #eef4ff;
+    margin: 0;
   }
   
   .section-header {
-    margin-bottom: 6px;
+    margin-bottom: 10px;
   }
   
   .section-title {
-    line-height: 1.18;
+    line-height: 1.24;
+    margin: 0;
   }
   
   .content-grid.prediction-top {
-    grid-template-columns: minmax(0, 1.14fr) minmax(300px, 0.86fr);
+    grid-template-columns: minmax(0, 1.12fr) minmax(330px, 0.88fr);
     align-items: start;
-    gap: 8px;
+    gap: 12px;
   }
   
   .compact-content-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    gap: 12px;
   }
   
   .signal-grid,
@@ -181,7 +186,7 @@
   .compact-kpi-grid,
   .source-compact-grid {
     display: grid;
-    gap: 6px;
+    gap: 10px;
   }
   
   .signal-grid,
@@ -202,7 +207,7 @@
   
   .explanation-compact-grid {
     grid-template-columns: repeat(3, 1fr);
-    margin-top: 4px;
+    margin-top: 8px;
   }
   
   .compact-chart-grid {
@@ -210,32 +215,34 @@
   }
   
   .compact-card {
-    padding-top: 7px;
-    padding-bottom: 7px;
+    padding-top: 12px;
+    padding-bottom: 12px;
   }
   
   .compact-section-header {
-    margin-bottom: 5px;
+    margin-bottom: 8px;
   }
   
   .compact-detail-card,
   .compact-chart-card {
-    padding: 7px 9px;
+    padding: 11px 13px;
   }
   
   .compact-list,
   .compact-history-list,
   .explanation-list {
-    gap: 5px;
+    gap: 8px;
   }
   
   .compact-list-row,
   .explanation-list .list-row,
   .compact-history-row {
-    padding: 6px 8px;
-    gap: 7px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.022);
+    padding: 10px 12px;
+    gap: 10px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.028);
+    border: 1px solid rgba(120, 160, 220, 0.08);
+    align-items: flex-start;
   }
   
   .compact-history-head,
@@ -244,42 +251,41 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: 10px;
   }
   
   .compact-note-list {
     margin: 0;
     padding-left: 0;
     list-style: none;
+    display: grid;
+    gap: 7px;
   }
   
   .compact-note-list li {
-    margin: 0 0 4px;
-    padding: 5px 8px;
-    font-size: 11px;
-    line-height: 1.35;
+    margin: 0;
+    padding: 8px 10px;
+    font-size: 12px;
+    line-height: 1.5;
     color: #c8d7f6;
     border: 1px solid rgba(120, 160, 220, 0.1);
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.018);
   }
   
-  .compact-note-list li:last-child {
-    margin-bottom: 0;
-  }
-  
   .compact-kpi-grid .metric-value {
-    font-size: 15px;
+    font-size: 17px;
   }
   
   .chart-card svg {
     width: 100%;
-    height: 78px;
+    height: 88px;
   }
   
   .chart-value {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 700;
+    line-height: 1.35;
   }
   
   .chart-value.pos { color: #9be59b; }
@@ -293,70 +299,71 @@
   }
   
   .explanation-section .sectionTitle {
-    margin-bottom: 6px;
+    margin-bottom: 8px;
   }
   
   .explanation-section .hint {
-    opacity: 0.58;
+    opacity: 0.62;
   }
   
   .explanation-section-title h2 {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 650;
   }
   
   .explanation-card {
-    padding: 7px 9px;
-    gap: 4px;
+    padding: 11px 13px;
+    gap: 6px;
     border-color: rgba(120, 160, 220, 0.08);
     background: linear-gradient(180deg, rgba(8, 12, 20, 0.22), rgba(6, 9, 16, 0.13));
   }
   
   .explanation-summary {
-    font-size: 11px;
-    line-height: 1.42;
-    color: #bccae3;
+    font-size: 13px;
+    line-height: 1.65;
+    color: #ccd8eb;
   }
   
   .explanation-why {
-    font-size: 11px;
-    line-height: 1.35;
-    color: #98abc8;
+    font-size: 12px;
+    line-height: 1.58;
+    color: #a8bbd7;
   }
   
   .explanation-compact-card {
-    padding: 6px 8px;
-    gap: 4px;
+    padding: 10px 12px;
+    gap: 6px;
     border-color: rgba(120, 160, 220, 0.08);
     background: linear-gradient(180deg, rgba(8, 12, 20, 0.18), rgba(6, 9, 16, 0.12));
   }
   
   .explanation-list .pill,
   .pill {
-    min-width: 20px;
+    min-width: 24px;
     text-align: center;
-    padding: 2px 7px;
-    font-size: 10px;
-    line-height: 1.15;
+    padding: 3px 8px;
+    font-size: 11px;
+    line-height: 1.2;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.06);
+    flex: 0 0 auto;
   }
   
   .explanation-list .inline-text {
-    font-size: 11px;
-    line-height: 1.35;
-    color: #bccae3;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #ccd8eb;
   }
   
   .source-compact-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   
   .source-compact-item {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 5px 7px;
+    gap: 7px;
+    padding: 8px 10px;
     border-radius: 10px;
     border: 1px solid rgba(120, 160, 220, 0.1);
     background: rgba(255, 255, 255, 0.022);
@@ -364,8 +371,8 @@
   }
   
   .source-dot {
-    width: 7px;
-    height: 7px;
+    width: 8px;
+    height: 8px;
     border-radius: 999px;
     flex: 0 0 auto;
   }
@@ -375,8 +382,8 @@
   
   .source-name,
   .source-state {
-    font-size: 11px;
-    line-height: 1.2;
+    font-size: 12px;
+    line-height: 1.3;
     color: #dbe6fb;
   }
   
@@ -388,21 +395,28 @@
   }
   
   .source-state {
-    opacity: 0.82;
+    opacity: 0.84;
   }
   
   .probability-row {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 4px;
+    gap: 5px;
     align-items: start;
-    padding: 4px 0;
+    padding: 6px 0;
   }
   
   .probability-label,
   .probability-value {
-    font-size: 12px;
+    font-size: 13px;
+    line-height: 1.55;
     color: #dbe6fb;
+  }
+  
+  .probability-note {
+    font-size: 12px;
+    line-height: 1.55;
+    color: #c8d7f6;
   }
   
   .progress-track {
@@ -441,8 +455,8 @@
   .scenario-probability,
   .signal-strength,
   .trend-strength {
-    font-size: 10px;
-    padding: 2px 6px;
+    font-size: 11px;
+    padding: 3px 7px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.06);
     color: #dbe6fb;
@@ -451,35 +465,36 @@
   .scenario-list,
   .plain-list {
     margin: 0;
-    padding-left: 16px;
+    padding-left: 18px;
   }
   
   .compact-scenario-list li {
-    font-size: 11px;
-    line-height: 1.35;
+    font-size: 12px;
+    line-height: 1.52;
     color: #c8d7f6;
-    margin-bottom: 2px;
+    margin-bottom: 4px;
   }
   
   .empty-card,
   .compact-empty-card {
-    min-height: 48px;
+    min-height: 60px;
     display: grid;
-    gap: 3px;
+    gap: 4px;
     text-align: center;
     justify-content: center;
     align-content: center;
-    padding: 4px 6px;
+    padding: 8px 10px;
   }
   
   .empty-text,
   .empty-meta {
-    font-size: 11px;
+    font-size: 12px;
+    line-height: 1.45;
     color: #c8d7f6;
   }
   
   .mt-compact {
-    margin-top: 6px;
+    margin-top: 10px;
   }
   
   .section-no-margin {
@@ -489,13 +504,13 @@
   .compact-meta-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
-    margin-top: 5px;
+    gap: 7px;
+    margin-top: 10px;
   }
   
   .confidence-chip {
-    font-size: 11px;
-    padding: 3px 8px;
+    font-size: 12px;
+    padding: 4px 10px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(120, 160, 220, 0.1);
@@ -506,10 +521,10 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 2px 7px;
+    padding: 3px 8px;
     border-radius: 999px;
-    font-size: 10px;
-    line-height: 1.15;
+    font-size: 11px;
+    line-height: 1.2;
     border: 1px solid rgba(120, 160, 220, 0.12);
     background: rgba(255, 255, 255, 0.04);
     color: #dbe6fb;
@@ -548,6 +563,8 @@
   
   #predictionStatementMain {
     min-height: 0;
+    font-size: 14px;
+    line-height: 1.75;
   }
   
   #primaryNarrativeText,
@@ -558,7 +575,7 @@
   
   #expectedOutcomePreview {
     display: grid;
-    gap: 4px;
+    gap: 6px;
     min-height: 0;
   }
   
@@ -567,7 +584,12 @@
   #expectedOutcomesList,
   #historicalContextList,
   #referenceMemoryList,
-  #predictionHistoryList {
+  #predictionHistoryList,
+  #risksList,
+  #invalidationList,
+  #mustNotMeanList,
+  #uiTermsList,
+  #explanationSummaryBlock {
     min-height: 0;
   }
   
@@ -576,12 +598,12 @@
   #historicalContextList .empty-card,
   #referenceMemoryList .empty-card,
   #expectedOutcomePreview .empty-card {
-    min-height: 40px;
+    min-height: 52px;
   }
   
   .prediction-side-stack > .card {
-    padding-top: 7px;
-    padding-bottom: 7px;
+    padding-top: 10px;
+    padding-bottom: 10px;
   }
   
   .history-compact .compact-history-row {
@@ -593,9 +615,9 @@
   }
   
   .compact-history-row .inline-text {
-    margin-top: 2px;
-    font-size: 11px;
-    line-height: 1.38;
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.55;
   }
   
   .compact-chart-card {
@@ -603,7 +625,7 @@
   }
   
   .compact-chart-card .chart-note {
-    margin-top: 2px;
+    margin-top: 4px;
   }
   
   .compact-kpi-grid .metric-card {
@@ -611,7 +633,7 @@
   }
   
   .explanation-mini-title {
-    font-size: 12px;
+    font-size: 13px;
   }
   
   .explanation-list .list-row {
@@ -623,23 +645,21 @@
   }
   
   .explanation-title {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 650;
   }
   
   .explanation-summary {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    display: block;
+    overflow: visible;
   }
   
   .explanation-section .pillrow {
-    gap: 4px;
+    gap: 6px;
   }
   
   .explanation-compact-grid {
-    margin-top: 4px;
+    margin-top: 8px;
   }
   
   .explanation-compact-card .section-subtitle {
@@ -654,9 +674,18 @@
     display: none;
   }
   
-  @media (max-width: 1100px) {
+  @media (max-width: 1220px) {
     .hero-grid,
-    .content-grid.prediction-top,
+    .content-grid.prediction-top {
+      grid-template-columns: 1fr;
+    }
+  
+    .hero-summary {
+      max-width: 100%;
+    }
+  }
+  
+  @media (max-width: 1100px) {
     .compact-content-grid,
     .fx-inline-grid,
     .explanation-grid,
@@ -671,34 +700,47 @@
       grid-template-columns: 1fr;
     }
   
-    .kpi-grid {
+    .kpi-grid,
+    .compact-kpi-grid {
       grid-template-columns: repeat(2, 1fr);
-    }
-  
-    .hero-summary {
-      max-width: 100%;
     }
   }
   
   @media (max-width: 700px) {
     .kpi-grid,
-    .compact-kpi-grid {
+    .compact-kpi-grid,
+    .source-compact-grid {
       grid-template-columns: 1fr;
     }
   
     .hero-title {
-      font-size: 17px;
+      font-size: 21px;
+    }
+  
+    .hero-summary {
+      font-size: 14px;
+      line-height: 1.66;
     }
   
     .metric-value {
-      font-size: 15px;
+      font-size: 16px;
     }
   
     .hero-side-card .metric-value {
-      font-size: 13px;
+      font-size: 14px;
+    }
+  
+    .summary-text,
+    .detail-text,
+    .scenario-text,
+    .signal-text,
+    .trend-text,
+    .inline-text {
+      font-size: 12px;
+      line-height: 1.6;
     }
   
     .chart-card svg {
-      height: 72px;
+      height: 76px;
     }
   }

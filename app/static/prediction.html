@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Prediction - GenesisPrediction v2</title>
   <meta name="description" content="GenesisPrediction Prediction UI">
-  <link rel="stylesheet" href="/static/app.css?v=20260320-prediction-ui-phase4-2">
-  <link rel="stylesheet" href="/static/prediction.css?v=20260320-prediction-ui-phase4-2">
+  <link rel="stylesheet" href="/static/app.css?v=20260321-three-layer-1">
+  <link rel="stylesheet" href="/static/prediction.css?v=20260321-three-layer-1">
 </head>
 <body>
   <div id="site-header"></div>
@@ -20,9 +20,16 @@
             <article class="hero-card hero-intro-card">
               <h1 id="heroHeadline" class="hero-title">Prediction</h1>
               <p class="sub">
-                Prediction は、analysis 層で確定した prediction_latest.json をそのまま表示するレイヤです。
+                Prediction は、analysis 層で確定した prediction_latest.json / prediction_explanation_latest.json をそのまま表示するレイヤです。
                 UI は表示のみを担い、推論・補完・再計算は行いません。
               </p>
+
+              <div class="detail-card hero-decision-card mt-compact">
+                <div class="detail-eyebrow">Decision</div>
+                <h2 id="heroDecisionLine" class="detail-title">Loading decision line...</h2>
+                <p id="heroInterpretation" class="detail-text">Loading interpretation...</p>
+              </div>
+
               <p id="heroSummary" class="hero-summary">Loading latest prediction statement...</p>
 
               <div class="compact-meta-row pillrow">
@@ -36,15 +43,15 @@
             <aside class="card hero-side-card">
               <div class="hero-side-stack">
                 <div class="hero-metric">
-                  <div class="metric-label">Prediction Statement</div>
-                  <div id="riskChipText" class="metric-value">—</div>
-                  <div id="riskChipSub" class="metric-sub">topline statement</div>
+                  <div class="metric-label">Decision Line</div>
+                  <div id="decisionMini" class="metric-value">—</div>
+                  <div id="decisionMiniSub" class="metric-sub">operating read from explanation</div>
                 </div>
 
                 <div class="hero-metric">
-                  <div class="metric-label">Narrative</div>
-                  <div id="summaryMini" class="metric-value">—</div>
-                  <div id="summaryMiniSub" class="metric-sub">primary narrative</div>
+                  <div class="metric-label">Interpretation</div>
+                  <div id="interpretationMini" class="metric-value">—</div>
+                  <div id="interpretationMiniSub" class="metric-sub">how to read current state</div>
                 </div>
 
                 <div class="hero-metric">
@@ -62,6 +69,35 @@
               <span class="hint">analysis/global_status_latest.json</span>
             </div>
             <div data-global-status data-page="prediction"></div>
+          </section>
+
+          <section class="card compact-card">
+            <div class="sectionTitle">
+              <h2>Three-Layer Intelligence</h2>
+              <span class="hint">signal → scenario → prediction</span>
+            </div>
+
+            <div class="content-grid compact-content-grid">
+              <article class="card compact-card">
+                <div class="section-header compact-section-header">
+                  <div>
+                    <h2 class="section-title">Signal Layer</h2>
+                    <p class="section-subtitle">What is starting to happen now.</p>
+                  </div>
+                </div>
+                <div id="signalLayerBlock" class="list-stack compact-list"></div>
+              </article>
+
+              <article class="card compact-card">
+                <div class="section-header compact-section-header">
+                  <div>
+                    <h2 class="section-title">Scenario Layer</h2>
+                    <p class="section-subtitle">How the future is branching.</p>
+                  </div>
+                </div>
+                <div id="scenarioLayerBlock" class="list-stack compact-list"></div>
+              </article>
+            </div>
           </section>
 
           <section class="content-grid prediction-top">
@@ -144,6 +180,14 @@
             </aside>
           </section>
 
+          <section class="card compact-card">
+            <div class="sectionTitle">
+              <h2>Prediction Explanation Summary</h2>
+              <span class="hint">analysis/explanation/prediction_explanation_latest.json</span>
+            </div>
+            <div id="explanationSummaryBlock" class="list-stack compact-list"></div>
+          </section>
+
           <section class="content-grid compact-content-grid">
             <article class="card compact-card">
               <div class="section-header compact-section-header">
@@ -169,7 +213,7 @@
           <section class="card compact-card">
             <div class="sectionTitle">
               <h2>Expected Outcomes</h2>
-              <span class="hint">prediction_output</span>
+              <span class="hint">prediction / explanation</span>
             </div>
             <div id="expectedOutcomesList" class="list-stack compact-list"></div>
           </section>
@@ -193,6 +237,50 @@
                 </div>
               </div>
               <div id="referenceMemoryList" class="list-stack compact-list"></div>
+            </article>
+          </section>
+
+          <section class="content-grid compact-content-grid">
+            <article class="card compact-card">
+              <div class="section-header compact-section-header">
+                <div>
+                  <h2 class="section-title">Risks</h2>
+                  <p class="section-subtitle">Risk reading supplied by explanation artifact.</p>
+                </div>
+              </div>
+              <div id="risksList" class="list-stack compact-list"></div>
+            </article>
+
+            <article class="card compact-card">
+              <div class="section-header compact-section-header">
+                <div>
+                  <h2 class="section-title">Invalidation</h2>
+                  <p class="section-subtitle">Conditions that would weaken or overturn the current read.</p>
+                </div>
+              </div>
+              <div id="invalidationList" class="list-stack compact-list"></div>
+            </article>
+          </section>
+
+          <section class="content-grid compact-content-grid">
+            <article class="card compact-card">
+              <div class="section-header compact-section-header">
+                <div>
+                  <h2 class="section-title">Must Not Mean</h2>
+                  <p class="section-subtitle">Misreadings explicitly rejected by analysis.</p>
+                </div>
+              </div>
+              <div id="mustNotMeanList" class="list-stack compact-list"></div>
+            </article>
+
+            <article class="card compact-card">
+              <div class="section-header compact-section-header">
+                <div>
+                  <h2 class="section-title">UI Terms</h2>
+                  <p class="section-subtitle">Field meanings supplied by analysis.</p>
+                </div>
+              </div>
+              <div id="uiTermsList" class="list-stack compact-list"></div>
             </article>
           </section>
 
@@ -279,6 +367,9 @@
   <script>
     const PREDICTION_SOURCES = {
       prediction: "/data/prediction/prediction_latest.json",
+      predictionExplanation: "/analysis/explanation/prediction_explanation_latest.json",
+      scenarioExplanation: "/analysis/explanation/scenario_explanation_latest.json",
+      signalExplanation: "/analysis/explanation/signal_explanation_latest.json",
       historyIndex: "/data/prediction/prediction_history_index.json",
       fx: "/analysis/fx/fx_decision_latest.json"
     };
@@ -290,7 +381,16 @@
       historical: 4,
       memory: 4,
       history: 4,
-      runtimeNotes: 6
+      runtimeNotes: 8,
+      risks: 4,
+      invalidation: 4,
+      mustNotMean: 4,
+      uiTerms: 5,
+      narrativeFlow: 4,
+      signalItems: 4,
+      scenarioDrivers: 4,
+      scenarioWatchpoints: 4,
+      signalImplications: 4
     };
 
     function el(id){ return document.getElementById(id); }
@@ -404,7 +504,9 @@
               item.message,
               item.text,
               item.note,
-              item.meaning
+              item.meaning,
+              item.signal,
+              item.item
             );
           }
           return "";
@@ -536,28 +638,163 @@
       };
     }
 
-    function renderHero(prediction){
-      const statement = prediction.statement || "No prediction statement available.";
-      const narrativeMini = prediction.narrative || "Primary narrative unavailable.";
+    function normalizePredictionExplanation(data){
+      const drivers = safeArray(data?.drivers).slice(0, UI_LIMITS.drivers).map((item) => ({
+        driver: firstString(item?.driver, item?.name, item?.title),
+        why: firstString(item?.why, item?.reason, item?.summary, item?.description),
+        impact: firstString(item?.impact, item?.meaning, item?.path, item?.effect)
+      })).filter((item) => item.driver || item.why || item.impact);
 
-      el("heroSummary").textContent = statement;
+      const monitor = safeArray(data?.monitor).slice(0, UI_LIMITS.monitoring).map((item) => ({
+        item: firstString(item?.item, item?.name, item?.title, item?.watchpoint),
+        trigger: firstString(item?.trigger, item?.condition, item?.threshold),
+        meaning: firstString(item?.meaning, item?.why, item?.reason, item?.summary)
+      })).filter((item) => item.item || item.trigger || item.meaning);
+
+      const historical = safeArray(data?.historical).slice(0, UI_LIMITS.historical).map((item) => ({
+        pattern: firstString(item?.pattern, item?.name, item?.title),
+        similarity: firstString(item?.similarity, item?.summary, item?.reason),
+        difference: firstString(item?.difference, item?.notes, item?.warning),
+        confidence: firstNonEmpty(item?.confidence, item?.match_score)
+      })).filter((item) => item.pattern || item.similarity || item.difference);
+
+      const implications = safeArray(data?.implications).slice(0, UI_LIMITS.expectedOutcomes).map((item) => ({
+        outcome: firstString(item?.outcome, item?.name, item?.title, item?.label),
+        path: firstString(item?.path, item?.reason, item?.summary, item?.description, item?.impact),
+        confidence: firstNonEmpty(item?.confidence, item?.probability)
+      })).filter((item) => item.outcome || item.path);
+
+      const uiTerms = safeArray(data?.ui_terms).slice(0, UI_LIMITS.uiTerms).map((item) => ({
+        term: firstString(item?.term, item?.name, item?.title),
+        meaning: firstString(item?.meaning, item?.summary, item?.description)
+      })).filter((item) => item.term || item.meaning);
+
+      return {
+        status: firstString(data?.status),
+        asOf: firstString(data?.as_of, data?.date, data?.generated_at),
+        subject: firstString(data?.subject),
+        headline: firstString(data?.headline),
+        decisionLine: firstString(data?.decision_line),
+        summary: firstString(data?.summary),
+        interpretation: firstString(data?.interpretation),
+        whyItMatters: firstString(data?.why_it_matters),
+        narrativeFlow: safeArray(data?.narrative_flow).slice(0, UI_LIMITS.narrativeFlow).map((item) => firstString(item)).filter(Boolean),
+        drivers,
+        monitor,
+        watchpoints: uniqueLimitedItems(data?.watchpoints, UI_LIMITS.monitoring),
+        historical,
+        implications,
+        risks: uniqueLimitedItems(data?.risks, UI_LIMITS.risks),
+        invalidation: uniqueLimitedItems(data?.invalidation, UI_LIMITS.invalidation),
+        mustNotMean: uniqueLimitedItems(data?.must_not_mean, UI_LIMITS.mustNotMean),
+        uiTerms,
+        referenceMemory: uniqueLimitedItems(data?.reference_memory, UI_LIMITS.memory)
+      };
+    }
+
+    function normalizeScenarioExplanation(data){
+      return {
+        status: firstString(data?.status),
+        asOf: firstString(data?.as_of, data?.date, data?.generated_at),
+        headline: firstString(data?.headline),
+        summary: firstString(data?.summary),
+        whyItMatters: firstString(data?.why_it_matters),
+        dominant: firstString(data?.scenario_structure?.dominant),
+        balance: firstString(data?.scenario_structure?.balance),
+        alternatives: safeArray(data?.scenario_structure?.alternatives).map((item) => firstString(item)).filter(Boolean),
+        drivers: uniqueLimitedItems(data?.drivers, UI_LIMITS.scenarioDrivers),
+        watchpoints: uniqueLimitedItems(data?.watchpoints, UI_LIMITS.scenarioWatchpoints),
+        invalidation: uniqueLimitedItems(data?.invalidation, UI_LIMITS.invalidation),
+        mustNotMean: uniqueLimitedItems(data?.must_not_mean, UI_LIMITS.mustNotMean),
+        uiTerms: safeArray(data?.ui_terms).slice(0, UI_LIMITS.uiTerms).map((item) => ({
+          term: firstString(item?.term),
+          meaning: firstString(item?.meaning)
+        })).filter((item) => item.term || item.meaning)
+      };
+    }
+
+    function normalizeSignalExplanation(data){
+      const signals = safeArray(data?.signals).slice(0, UI_LIMITS.signalItems).map((item) => ({
+        signal: firstString(item?.signal, item?.name, item?.title, item?.label),
+        meaning: firstString(item?.meaning, item?.summary, item?.description, item?.reason)
+      })).filter((item) => item.signal || item.meaning);
+
+      return {
+        status: firstString(data?.status),
+        asOf: firstString(data?.as_of, data?.date, data?.generated_at),
+        headline: firstString(data?.headline),
+        summary: firstString(data?.summary),
+        interpretation: firstString(data?.interpretation),
+        whyItMatters: firstString(data?.why_it_matters),
+        signalState: {
+          count: pickNumber(data?.signal_state?.count),
+          dominantType: firstString(data?.signal_state?.dominant_type),
+          strength: firstString(data?.signal_state?.strength),
+          confidence: firstNonEmpty(data?.signal_state?.confidence)
+        },
+        signals,
+        watchpoints: uniqueLimitedItems(data?.watchpoints, UI_LIMITS.monitoring),
+        implications: uniqueLimitedItems(data?.implications, UI_LIMITS.signalImplications),
+        invalidation: uniqueLimitedItems(data?.invalidation, UI_LIMITS.invalidation),
+        mustNotMean: uniqueLimitedItems(data?.must_not_mean, UI_LIMITS.mustNotMean),
+        uiTerms: safeArray(data?.ui_terms).slice(0, UI_LIMITS.uiTerms).map((item) => ({
+          term: firstString(item?.term),
+          meaning: firstString(item?.meaning)
+        })).filter((item) => item.term || item.meaning)
+      };
+    }
+
+    function buildViewModel(prediction, predictionExplanation){
+      return {
+        asOf: predictionExplanation?.asOf || prediction.asOf,
+        dominant: prediction.dominant,
+        risk: prediction.risk,
+        confidence: prediction.confidence,
+        statement: prediction.statement || predictionExplanation?.headline || "No prediction statement available.",
+        narrative: prediction.narrative || predictionExplanation?.summary || "Primary narrative unavailable.",
+        decisionLine: predictionExplanation?.decisionLine || predictionExplanation?.headline || prediction.statement || "No decision line available.",
+        interpretation: predictionExplanation?.interpretation || predictionExplanation?.whyItMatters || prediction.narrative || "Interpretation unavailable.",
+        explanationHeadline: predictionExplanation?.headline || "",
+        explanationSummary: predictionExplanation?.summary || "",
+        whyItMatters: predictionExplanation?.whyItMatters || "",
+        narrativeFlow: predictionExplanation?.narrativeFlow || [],
+        keyDrivers: (predictionExplanation?.drivers?.length ? predictionExplanation.drivers : prediction.keyDrivers),
+        monitoringPriorities: (predictionExplanation?.monitor?.length ? predictionExplanation.monitor : prediction.monitoringPriorities),
+        expectedOutcomes: (predictionExplanation?.implications?.length ? predictionExplanation.implications : prediction.expectedOutcomes),
+        historicalContext: (predictionExplanation?.historical?.length ? predictionExplanation.historical : prediction.historicalContext),
+        referenceMemory: (predictionExplanation?.referenceMemory?.length ? predictionExplanation.referenceMemory : prediction.referenceMemory),
+        risks: predictionExplanation?.risks || [],
+        invalidation: predictionExplanation?.invalidation || [],
+        mustNotMean: predictionExplanation?.mustNotMean || [],
+        uiTerms: predictionExplanation?.uiTerms || []
+      };
+    }
+
+    function renderHero(viewModel, predictionExplanation){
+      const statement = viewModel.statement || "No prediction statement available.";
+      const narrativeMini = viewModel.narrative || "Primary narrative unavailable.";
+
+      el("heroHeadline").textContent = predictionExplanation?.headline || "Prediction";
+      el("heroDecisionLine").textContent = viewModel.decisionLine || "No decision line available.";
+      el("heroInterpretation").textContent = viewModel.interpretation || "Interpretation unavailable.";
+      el("heroSummary").textContent = predictionExplanation?.summary || statement;
       el("predictionStatementMain").textContent = statement;
-      el("primaryNarrativeText").textContent = prediction.narrative || "Primary narrative unavailable.";
+      el("primaryNarrativeText").textContent = viewModel.narrative || "Primary narrative unavailable.";
 
-      el("metaAsof").textContent = formatDate(prediction.asOf);
-      el("metaDominant").textContent = titleize(prediction.dominant);
-      el("metaConfidence").textContent = formatConfidence(prediction.confidence);
-      el("metaRisk").textContent = titleize(prediction.risk);
+      el("metaAsof").textContent = formatDate(viewModel.asOf);
+      el("metaDominant").textContent = titleize(viewModel.dominant);
+      el("metaConfidence").textContent = formatConfidence(viewModel.confidence);
+      el("metaRisk").textContent = titleize(viewModel.risk);
 
-      el("riskChipText").textContent = statement;
-      el("riskChipSub").textContent = "prediction statement";
-      el("summaryMini").textContent = narrativeMini;
-      el("summaryMiniSub").textContent = "primary narrative";
+      el("decisionMini").textContent = viewModel.decisionLine || statement;
+      el("decisionMiniSub").textContent = "decision line";
+      el("interpretationMini").textContent = viewModel.interpretation || narrativeMini;
+      el("interpretationMiniSub").textContent = predictionExplanation?.whyItMatters ? "interpretation / why it matters" : "primary narrative";
 
-      el("runtimeMini").textContent = "Ready";
-      el("runtimeMiniSub").textContent = "prediction artifacts loaded";
+      el("runtimeMini").textContent = predictionExplanation?.status ? titleize(predictionExplanation.status) : "Ready";
+      el("runtimeMiniSub").textContent = predictionExplanation?.status ? "signal + scenario + prediction artifacts loaded" : "prediction artifacts loaded";
 
-      el("confidenceChip").textContent = `Confidence ${formatConfidence(prediction.confidence)}`;
+      el("confidenceChip").textContent = `Confidence ${formatConfidence(viewModel.confidence)}`;
     }
 
     function renderFxSummary(fxData){
@@ -597,6 +834,98 @@
       }
     }
 
+    function renderPredictionExplanationSummary(predictionExplanation, viewModel){
+      const root = el("explanationSummaryBlock");
+      if (!root) return;
+
+      if (!predictionExplanation){
+        root.innerHTML = '<article class="empty-card compact-empty-card"><div class="empty-meta">Explanation unavailable</div><p class="empty-text">prediction_explanation_latest.json を取得できませんでした。</p></article>';
+        return;
+      }
+
+      const summary = predictionExplanation.summary || "Summary unavailable.";
+      const interpretation = viewModel.interpretation || "Interpretation unavailable.";
+      const why = predictionExplanation.whyItMatters || "Why-it-matters unavailable.";
+      const status = predictionExplanation.status || "—";
+      const flow = safeArray(viewModel.narrativeFlow);
+
+      root.innerHTML = `
+        <article class="list-row compact-list-row">
+          <span class="pill">P</span>
+          <div>
+            <p class="inline-text"><strong>${escapeHtml(predictionExplanation.headline || "Prediction Explanation")}</strong></p>
+            <p class="inline-text"><strong>Decision:</strong> ${escapeHtml(viewModel.decisionLine || "—")}</p>
+            <p class="inline-text">${escapeHtml(summary)}</p>
+            <p class="inline-text">${escapeHtml(interpretation)}</p>
+            <p class="inline-text">${escapeHtml(why)}</p>
+            ${flow.length ? `<p class="inline-text">Flow: ${escapeHtml(flow.join(" / "))}</p>` : ""}
+            <p class="inline-text">status: ${escapeHtml(status)} / as_of: ${escapeHtml(formatShortDate(predictionExplanation.asOf))}</p>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderSignalLayer(signalExplanation){
+      const root = el("signalLayerBlock");
+      if (!root) return;
+
+      if (!signalExplanation){
+        root.innerHTML = '<article class="empty-card compact-empty-card"><div class="empty-meta">Signal explanation unavailable</div><p class="empty-text">signal_explanation_latest.json を取得できませんでした。</p></article>';
+        return;
+      }
+
+      const signals = safeArray(signalExplanation.signals);
+      const implications = safeArray(signalExplanation.implications);
+      const watchpoints = safeArray(signalExplanation.watchpoints);
+      const state = signalExplanation.signalState || {};
+
+      root.innerHTML = `
+        <article class="list-row compact-list-row">
+          <span class="pill">S</span>
+          <div>
+            <p class="inline-text"><strong>${escapeHtml(signalExplanation.headline || "Signal Layer")}</strong></p>
+            <p class="inline-text">${escapeHtml(signalExplanation.summary || "Summary unavailable.")}</p>
+            <p class="inline-text">${escapeHtml(signalExplanation.interpretation || "Interpretation unavailable.")}</p>
+            <p class="inline-text"><strong>State:</strong> count=${escapeHtml(formatCount(state.count))} / type=${escapeHtml(titleize(state.dominantType || "unknown"))} / strength=${escapeHtml(titleize(state.strength || "unknown"))}${state.confidence != null ? ` / confidence=${escapeHtml(formatConfidence(state.confidence))}` : ""}</p>
+            ${signals.length ? `<p class="inline-text"><strong>Signals:</strong> ${escapeHtml(signals.map((item) => item.signal || item.meaning).filter(Boolean).join(" / "))}</p>` : ""}
+            ${implications.length ? `<p class="inline-text"><strong>Implications:</strong> ${escapeHtml(implications.join(" / "))}</p>` : ""}
+            ${watchpoints.length ? `<p class="inline-text"><strong>Watch:</strong> ${escapeHtml(watchpoints.join(" / "))}</p>` : ""}
+            <p class="inline-text">status: ${escapeHtml(signalExplanation.status || "—")} / as_of: ${escapeHtml(formatShortDate(signalExplanation.asOf))}</p>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderScenarioLayer(scenarioExplanation){
+      const root = el("scenarioLayerBlock");
+      if (!root) return;
+
+      if (!scenarioExplanation){
+        root.innerHTML = '<article class="empty-card compact-empty-card"><div class="empty-meta">Scenario explanation unavailable</div><p class="empty-text">scenario_explanation_latest.json を取得できませんでした。</p></article>';
+        return;
+      }
+
+      const drivers = safeArray(scenarioExplanation.drivers);
+      const watchpoints = safeArray(scenarioExplanation.watchpoints);
+      const alternatives = safeArray(scenarioExplanation.alternatives);
+
+      root.innerHTML = `
+        <article class="list-row compact-list-row">
+          <span class="pill">C</span>
+          <div>
+            <p class="inline-text"><strong>${escapeHtml(scenarioExplanation.headline || "Scenario Layer")}</strong></p>
+            <p class="inline-text">${escapeHtml(scenarioExplanation.summary || "Summary unavailable.")}</p>
+            <p class="inline-text">${escapeHtml(scenarioExplanation.whyItMatters || "Why-it-matters unavailable.")}</p>
+            <p class="inline-text"><strong>Structure:</strong> dominant=${escapeHtml(titleize(scenarioExplanation.dominant || "unknown"))} / alternatives=${escapeHtml(alternatives.length ? alternatives.map((item) => titleize(item)).join(", ") : "—")}</p>
+            <p class="inline-text"><strong>Balance:</strong> ${escapeHtml(scenarioExplanation.balance || "—")}</p>
+            ${drivers.length ? `<p class="inline-text"><strong>Drivers:</strong> ${escapeHtml(drivers.join(" / "))}</p>` : ""}
+            ${watchpoints.length ? `<p class="inline-text"><strong>Watch:</strong> ${escapeHtml(watchpoints.join(" / "))}</p>` : ""}
+            <p class="inline-text">status: ${escapeHtml(scenarioExplanation.status || "—")} / as_of: ${escapeHtml(formatShortDate(scenarioExplanation.asOf))}</p>
+          </div>
+        </article>
+      `;
+    }
+
     function renderExpectedOutcomePreview(items){
       const root = el("expectedOutcomePreview");
       if (!root) return;
@@ -607,14 +936,24 @@
         return;
       }
 
-      root.innerHTML = list.map((item) => `
-        <div class="probability-row">
-          <div class="probability-label">${escapeHtml(String(item))}</div>
-        </div>
-      `).join("");
+      root.innerHTML = list.map((item) => {
+        if (typeof item === "string"){
+          return `
+            <div class="probability-row">
+              <div class="probability-label">${escapeHtml(String(item))}</div>
+            </div>
+          `;
+        }
+        return `
+          <div class="probability-row">
+            <div class="probability-label">${escapeHtml(item.outcome || "Outcome")}</div>
+            <div class="probability-note">${escapeHtml(item.path || "")}${item.confidence != null ? ` / ${escapeHtml(formatConfidence(item.confidence))}` : ""}</div>
+          </div>
+        `;
+      }).join("");
     }
 
-    function renderList(rootId, items, emptyLabel, badge, limit){
+    function renderSimpleList(rootId, items, emptyLabel, badge, limit){
       const root = el(rootId);
       if (!root) return;
 
@@ -632,30 +971,186 @@
       `).join("");
     }
 
-    function renderMetricCards(prediction){
-      el("metricDriverCount").textContent = formatCount(prediction.keyDrivers.length);
+    function renderDrivers(rootId, items){
+      const root = el(rootId);
+      if (!root) return;
+
+      const list = safeArray(items).slice(0, UI_LIMITS.drivers);
+      if (!list.length){
+        root.innerHTML = '<article class="empty-card compact-empty-card"><div class="empty-meta">Key drivers unavailable</div><p class="empty-text">No items available.</p></article>';
+        return;
+      }
+
+      root.innerHTML = list.map((item) => {
+        if (typeof item === "string"){
+          return `
+            <article class="list-row compact-list-row">
+              <span class="pill">D</span>
+              <div><p class="inline-text">${escapeHtml(item)}</p></div>
+            </article>
+          `;
+        }
+        return `
+          <article class="list-row compact-list-row">
+            <span class="pill">D</span>
+            <div>
+              <p class="inline-text"><strong>${escapeHtml(item.driver || "Driver")}</strong></p>
+              <p class="inline-text">${escapeHtml(item.why || "")}</p>
+              <p class="inline-text">${escapeHtml(item.impact || "")}</p>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderMonitor(rootId, items){
+      const root = el(rootId);
+      if (!root) return;
+
+      const list = safeArray(items).slice(0, UI_LIMITS.monitoring);
+      if (!list.length){
+        root.innerHTML = '<article class="empty-card compact-empty-card"><div class="empty-meta">Monitoring priorities unavailable</div><p class="empty-text">No items available.</p></article>';
+        return;
+      }
+
+      root.innerHTML = list.map((item) => {
+        if (typeof item === "string"){
+          return `
+            <article class="list-row compact-list-row">
+              <span class="pill">M</span>
+              <div><p class="inline-text">${escapeHtml(item)}</p></div>
+            </article>
+          `;
+        }
+        return `
+          <article class="list-row compact-list-row">
+            <span class="pill">M</span>
+            <div>
+              <p class="inline-text"><strong>${escapeHtml(item.item || "Monitor")}</strong></p>
+              <p class="inline-text">Trigger: ${escapeHtml(item.trigger || "—")}</p>
+              <p class="inline-text">${escapeHtml(item.meaning || "")}</p>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderImplications(rootId, items){
+      const root = el(rootId);
+      if (!root) return;
+
+      const list = safeArray(items).slice(0, UI_LIMITS.expectedOutcomes);
+      if (!list.length){
+        root.innerHTML = '<article class="empty-card compact-empty-card"><div class="empty-meta">Expected outcomes unavailable</div><p class="empty-text">No items available.</p></article>';
+        return;
+      }
+
+      root.innerHTML = list.map((item) => {
+        if (typeof item === "string"){
+          return `
+            <article class="list-row compact-list-row">
+              <span class="pill">O</span>
+              <div><p class="inline-text">${escapeHtml(item)}</p></div>
+            </article>
+          `;
+        }
+        return `
+          <article class="list-row compact-list-row">
+            <span class="pill">O</span>
+            <div>
+              <p class="inline-text"><strong>${escapeHtml(item.outcome || "Outcome")}</strong></p>
+              <p class="inline-text">${escapeHtml(item.path || "")}</p>
+              <p class="inline-text">${item.confidence != null ? `confidence: ${escapeHtml(formatConfidence(item.confidence))}` : ""}</p>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderHistorical(rootId, items){
+      const root = el(rootId);
+      if (!root) return;
+
+      const list = safeArray(items).slice(0, UI_LIMITS.historical);
+      if (!list.length){
+        root.innerHTML = '<article class="empty-card compact-empty-card"><div class="empty-meta">Historical context unavailable</div><p class="empty-text">No items available.</p></article>';
+        return;
+      }
+
+      root.innerHTML = list.map((item) => {
+        if (typeof item === "string"){
+          return `
+            <article class="list-row compact-list-row">
+              <span class="pill">H</span>
+              <div><p class="inline-text">${escapeHtml(item)}</p></div>
+            </article>
+          `;
+        }
+        return `
+          <article class="list-row compact-list-row">
+            <span class="pill">H</span>
+            <div>
+              <p class="inline-text"><strong>${escapeHtml(item.pattern || "Historical pattern")}</strong></p>
+              <p class="inline-text">Similarity: ${escapeHtml(item.similarity || "—")}</p>
+              <p class="inline-text">Difference: ${escapeHtml(item.difference || "—")}</p>
+              <p class="inline-text">${item.confidence != null ? `confidence: ${escapeHtml(formatConfidence(item.confidence))}` : ""}</p>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderUiTerms(rootId, items){
+      const root = el(rootId);
+      if (!root) return;
+
+      const list = safeArray(items).slice(0, UI_LIMITS.uiTerms);
+      if (!list.length){
+        root.innerHTML = '<article class="empty-card compact-empty-card"><div class="empty-meta">UI terms unavailable</div><p class="empty-text">No items available.</p></article>';
+        return;
+      }
+
+      root.innerHTML = list.map((item) => `
+        <article class="list-row compact-list-row">
+          <span class="pill">T</span>
+          <div>
+            <p class="inline-text"><strong>${escapeHtml(item.term || "Term")}</strong></p>
+            <p class="inline-text">${escapeHtml(item.meaning || "")}</p>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function renderMetricCards(viewModel){
+      const driverCount = safeArray(viewModel.keyDrivers).length;
+      const monitoringCount = safeArray(viewModel.monitoringPriorities).length;
+      const outcomeCount = safeArray(viewModel.expectedOutcomes).length;
+      const contextTotal = safeArray(viewModel.historicalContext).length + safeArray(viewModel.referenceMemory).length;
+
+      el("metricDriverCount").textContent = formatCount(driverCount);
       el("metricDriverSub").textContent = "key drivers";
 
-      el("metricMonitoringCount").textContent = formatCount(prediction.monitoringPriorities.length);
+      el("metricMonitoringCount").textContent = formatCount(monitoringCount);
       el("metricMonitoringSub").textContent = "priorities";
 
-      el("metricOutcomeCount").textContent = formatCount(prediction.expectedOutcomes.length);
+      el("metricOutcomeCount").textContent = formatCount(outcomeCount);
       el("metricOutcomeSub").textContent = "expected outcomes";
 
-      const contextTotal = prediction.historicalContext.length + prediction.referenceMemory.length;
       el("metricContextCount").textContent = formatCount(contextTotal);
       el("metricContextSub").textContent = "historical + memory";
     }
 
-    function renderRuntimeNotes(prediction, history, fxData){
+    function renderRuntimeNotes(viewModel, predictionExplanation, scenarioExplanation, signalExplanation, history, fxData){
       const latestHistory = history[0] || null;
       const fxStatus = normalizeFxStatus(firstString(fxData?.primary, fxData?.decision, fxData?.status, fxData?.regime));
       const notes = [
-        `As of: ${formatDate(prediction.asOf)}`,
-        `Dominant: ${titleize(prediction.dominant)}`,
-        `Confidence: ${formatConfidence(prediction.confidence)}`,
-        `Key drivers: ${formatCount(prediction.keyDrivers.length)}`,
-        `Monitoring: ${formatCount(prediction.monitoringPriorities.length)}`,
+        `As of: ${formatDate(viewModel.asOf)}`,
+        `Signal status: ${signalExplanation?.status || "—"}`,
+        `Scenario status: ${scenarioExplanation?.status || "—"}`,
+        `Prediction status: ${predictionExplanation?.status || "—"}`,
+        `Dominant: ${titleize(viewModel.dominant)}`,
+        `Confidence: ${formatConfidence(viewModel.confidence)}`,
+        `Decision: ${viewModel.decisionLine || "—"}`,
         `FX status: ${fxStatus || "—"}`,
         `Latest history: ${latestHistory ? formatShortDate(latestHistory.date || latestHistory.as_of) : "—"}`
       ].slice(0, UI_LIMITS.runtimeNotes);
@@ -666,6 +1161,9 @@
     function renderSourceStatus(results){
       const rows = [
         ["Prediction", results.prediction],
+        ["Pred Exp", results.predictionExplanation],
+        ["Scen Exp", results.scenarioExplanation],
+        ["Sig Exp", results.signalExplanation],
         ["FX", results.fx],
         ["History", results.historyIndex]
       ];
@@ -755,9 +1253,9 @@
       }).join("");
     }
 
-    function renderCharts(prediction, history){
-      const latestConfidence = normalizePercentNumber(prediction.confidence);
-      const latestRiskText = titleize(prediction.risk || "guarded");
+    function renderCharts(viewModel, history){
+      const latestConfidence = normalizePercentNumber(viewModel.confidence);
+      const latestRiskText = titleize(viewModel.risk || "guarded");
 
       const historyChronological = [...history].reverse();
       const confidenceValues = historyChronological.map((item) => {
@@ -771,9 +1269,9 @@
       polyline("riskChart", riskValues, 0, 5);
 
       const barsValues = [
-        prediction.keyDrivers.length * 20,
-        prediction.monitoringPriorities.length * 20,
-        prediction.expectedOutcomes.length * 16
+        safeArray(viewModel.keyDrivers).length * 20,
+        safeArray(viewModel.monitoringPriorities).length * 20,
+        safeArray(viewModel.expectedOutcomes).length * 16
       ].map((v) => Math.max(0, Math.min(100, v)));
 
       bars("scenarioChart", barsValues, ["Drivers", "Monitor", "Outcomes"]);
@@ -802,7 +1300,7 @@
       }
 
       if (scenarioValueEl){
-        scenarioValueEl.textContent = `${prediction.keyDrivers.length}/${prediction.monitoringPriorities.length}/${prediction.expectedOutcomes.length}`;
+        scenarioValueEl.textContent = `${safeArray(viewModel.keyDrivers).length}/${safeArray(viewModel.monitoringPriorities).length}/${safeArray(viewModel.expectedOutcomes).length}`;
         scenarioValueEl.className = "chart-value neu";
       }
     }
@@ -819,11 +1317,22 @@
         el("heroSummary").textContent = "prediction_latest.json を取得できませんでした。Prediction 本体は fallback で捏造しません。";
         el("runtimeMini").textContent = "Unavailable";
         el("runtimeMiniSub").textContent = "prediction artifact missing";
+        el("heroDecisionLine").textContent = "Decision unavailable";
+        el("heroInterpretation").textContent = "Interpretation unavailable";
         return;
       }
 
       const predictionRaw = results.prediction.data || {};
+      const predictionExplanationRaw = results.predictionExplanation?.ok ? (results.predictionExplanation.data || {}) : null;
+      const scenarioExplanationRaw = results.scenarioExplanation?.ok ? (results.scenarioExplanation.data || {}) : null;
+      const signalExplanationRaw = results.signalExplanation?.ok ? (results.signalExplanation.data || {}) : null;
+
       const prediction = normalizePredictionV3(predictionRaw);
+      const predictionExplanation = predictionExplanationRaw ? normalizePredictionExplanation(predictionExplanationRaw) : null;
+      const scenarioExplanation = scenarioExplanationRaw ? normalizeScenarioExplanation(scenarioExplanationRaw) : null;
+      const signalExplanation = signalExplanationRaw ? normalizeSignalExplanation(signalExplanationRaw) : null;
+      const viewModel = buildViewModel(prediction, predictionExplanation);
+
       const fxData = results.fx?.data || {};
       const history = (results.historyIndex?.ok && results.historyIndex?.data)
         ? safeArray(results.historyIndex.data.items)
@@ -831,25 +1340,38 @@
             .sort((a, b) => String(b.date).localeCompare(String(a.date)))
         : [];
 
-      renderHero(prediction);
+      renderHero(viewModel, predictionExplanation);
       renderFxSummary(fxData);
+      renderSignalLayer(signalExplanation);
+      renderScenarioLayer(scenarioExplanation);
+      renderPredictionExplanationSummary(predictionExplanation, viewModel);
 
-      renderList("keyDriversList", prediction.keyDrivers, "Key drivers unavailable", "D", UI_LIMITS.drivers);
-      renderList("monitoringPrioritiesList", prediction.monitoringPriorities, "Monitoring priorities unavailable", "M", UI_LIMITS.monitoring);
-      renderList("expectedOutcomesList", prediction.expectedOutcomes, "Expected outcomes unavailable", "O", UI_LIMITS.expectedOutcomes);
-      renderList("historicalContextList", prediction.historicalContext, "Historical context unavailable", "H", UI_LIMITS.historical);
-      renderList("referenceMemoryList", prediction.referenceMemory, "Reference memory unavailable", "R", UI_LIMITS.memory);
+      renderDrivers("keyDriversList", viewModel.keyDrivers);
+      renderMonitor("monitoringPrioritiesList", viewModel.monitoringPriorities);
+      renderImplications("expectedOutcomesList", viewModel.expectedOutcomes);
+      renderHistorical("historicalContextList", viewModel.historicalContext);
 
-      renderExpectedOutcomePreview(prediction.expectedOutcomes);
-      renderMetricCards(prediction);
-      renderRuntimeNotes(prediction, history, fxData);
+      if (safeArray(viewModel.referenceMemory).length && typeof viewModel.referenceMemory[0] !== "string"){
+        renderHistorical("referenceMemoryList", viewModel.referenceMemory);
+      } else {
+        renderSimpleList("referenceMemoryList", viewModel.referenceMemory, "Reference memory unavailable", "R", UI_LIMITS.memory);
+      }
+
+      renderSimpleList("risksList", viewModel.risks, "Risks unavailable", "R", UI_LIMITS.risks);
+      renderSimpleList("invalidationList", viewModel.invalidation, "Invalidation unavailable", "I", UI_LIMITS.invalidation);
+      renderSimpleList("mustNotMeanList", viewModel.mustNotMean, "Must-not-mean unavailable", "N", UI_LIMITS.mustNotMean);
+      renderUiTerms("uiTermsList", viewModel.uiTerms);
+
+      renderExpectedOutcomePreview(viewModel.expectedOutcomes);
+      renderMetricCards(viewModel);
+      renderRuntimeNotes(viewModel, predictionExplanation, scenarioExplanation, signalExplanation, history, fxData);
       renderPredictionHistory(history);
-      renderCharts(prediction, history);
+      renderCharts(viewModel, history);
     }
 
     window.addEventListener("DOMContentLoaded", init);
   </script>
-  <script src="/static/common/global_status.js?v=20260320-prediction-ui-phase4-2"></script>
-  <script src="/static/common/layout.js?v=20260320-prediction-ui-phase4-2"></script>
+  <script src="/static/common/global_status.js?v=20260321-three-layer-1"></script>
+  <script src="/static/common/layout.js?v=20260321-three-layer-1"></script>
 </body>
 </html>

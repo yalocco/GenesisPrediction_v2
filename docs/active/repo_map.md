@@ -1,9 +1,32 @@
+確認しました。内容は非常に綺麗に整理されています。
+👉 **この構造は一切壊さず、最適な位置に1行追加します。**
+
+---
+
+# ■ 方針
+
+追加位置はここが最適です：
+
+👉 **#10 Development Rules の中**
+
+理由：
+
+* 既存の「差分禁止・完全ファイル」と同格
+* “作業ルール”として自然
+* repo_map の思想と整合性あり
+
+---
+
+# 📄 完全ファイル（追加済み）
+
+※そのまま上書きしてください
+
 # GenesisPrediction v2 --- Repository Map
 
-Status: Active Last Updated: 2026-03-08 Purpose: Repository
+Status: Active Last Updated: 2026-03-20 Purpose: Repository
 の責務分離を公式定義する
 
-------------------------------------------------------------------------
+---
 
 # 0. Purpose
 
@@ -17,303 +40,414 @@ GenesisPrediction v2 の
 
 目的
 
--   新しいAIが repo 構造を誤解しないようにする
--   scripts / data / analysis / UI の責務分離を明確にする
--   デバッグ時の判断を速くする
--   Repository Memory の基盤とする
+* 新しいAIが repo 構造を誤解しないようにする
+* scripts / data / analysis / UI の責務分離を明確にする
+* デバッグ時の判断を速くする
+* Repository Memory の基盤とする
 
-------------------------------------------------------------------------
+---
 
 # 1. Repository Top Structure
 
 GenesisPrediction v2 の基本構造
 
-    scripts/
-    data/
-    analysis/
-    app/
-    docs/
+```
+scripts/
+data/
+analysis/
+app/
+docs/
+```
 
 それぞれの役割は明確に分離されている。
 
-------------------------------------------------------------------------
+---
 
 # 2. scripts
 
-    scripts/
+```
+scripts/
+```
 
 役割
 
-    データ生成
-    パイプライン実行
-    分析処理
-    レポート生成
+```
+データ生成
+パイプライン実行
+分析処理
+レポート生成
+```
 
 scripts は
 
-    工場
+```
+工場
+```
 
 である。
 
 ここでは
 
-    データを生成する
+```
+データを生成する
+```
 
 だけであり、
 
-    真実は保持しない
+```
+真実は保持しない
+```
 
-------------------------------------------------------------------------
+---
 
 ## 2.1 Main Entry
 
 最重要エントリーポイント
 
-    scripts/run_morning_ritual.ps1
+```
+scripts/run_morning_ritual.ps1
+```
 
 これは
 
-    GenesisPrediction の心拍
+```
+GenesisPrediction の心拍
+```
 
 である。
 
-------------------------------------------------------------------------
+---
 
 # 3. data
 
-    data/
+```
+data/
+```
 
 役割
 
-    素材データ
+```
+素材データ
+```
 
 例
 
-    raw news
-    api data
-    intermediate data
+```
+raw news
+api data
+intermediate data
+```
 
 data は
 
-    再生成可能
+```
+再生成可能
+```
 
 である。
 
-------------------------------------------------------------------------
+---
 
 # 4. analysis
 
-    analysis/
+```
+analysis/
+```
 
 analysis は
 
-    Single Source of Truth
+```
+Single Source of Truth
+```
 
 である。
 
 つまり
 
-    GenesisPrediction の真実
+```
+GenesisPrediction の真実
+```
 
 は
 
-    analysis
+```
+analysis
+```
 
 にある。
 
-------------------------------------------------------------------------
+---
 
 ## 4.1 主な成果物
 
-    analysis/
+```
+analysis/
 
-    daily_news_latest.json
-    daily_summary_latest.json
-    sentiment_latest.json
-    health_latest.json
+daily_news_latest.json
+daily_summary_latest.json
+sentiment_latest.json
+health_latest.json
 
-    view_model_latest.json
+view_model_latest.json
 
-    fx_overlay_latest.png
+fx_overlay_latest.png
 
-    trend_latest.json
-    signal_latest.json
-    scenario_latest.json
-    prediction_latest.json
+trend_latest.json
+signal_latest.json
+scenario_latest.json
+prediction_latest.json
 
-    prediction_history/
+prediction_history/
+```
 
-------------------------------------------------------------------------
+---
 
 # 5. app
 
-    app/
+```
+app/
+```
 
 役割
 
-    UI
+```
+UI
+```
 
 UI は
 
-    analysis を読むだけ
+```
+analysis を読むだけ
+```
 
 である。
 
 UI は
 
-    read-only
+```
+read-only
+```
 
 であり、
 
-    分析ロジックを持たない
+```
+分析ロジックを持たない
+```
 
-------------------------------------------------------------------------
+---
 
 ## 5.1 UI Location
 
-    app/static/
+```
+app/static/
+```
 
 主なページ
 
-    index.html
-    overlay.html
-    sentiment.html
-    digest.html
-    prediction.html
-    prediction_history.html
+```
+index.html
+overlay.html
+sentiment.html
+digest.html
+prediction.html
+prediction_history.html
+```
 
-------------------------------------------------------------------------
+---
 
 ## 5.2 UI Shared Components
 
-    app/static/common/
+```
+app/static/common/
 
-    header.html
-    footer.html
-    layout.js
+header.html
+footer.html
+layout.js
+```
 
 共通スタイル
 
-    app/static/app.css
+```
+app/static/app.css
+```
 
-------------------------------------------------------------------------
+---
 
 # 6. docs
 
-    docs/
+```
+docs/
+```
 
 役割
 
-    Repository Memory
+```
+Repository Memory
+```
 
 つまり
 
-    設計思想
-    構造定義
-    運用ルール
+```
+設計思想
+構造定義
+運用ルール
+```
 
 を保存する。
 
-------------------------------------------------------------------------
+---
 
 ## 6.1 Core Docs
 
 重要ドキュメント
 
-    genesis_system_map.md
-    repo_map.md
-    project_status.md
+```
+genesis_system_map.md
+repo_map.md
+project_status.md
 
-    pipeline_system.md
-    ui_system.md
-    ui_data_dependencies.md
+pipeline_system.md
+ui_system.md
+ui_data_dependencies.md
 
-    genesis_brain.md
-    prediction_layer_design_principles.md
+genesis_brain.md
+prediction_layer_design_principles.md
 
-    working_agreement.md
-    chat_operating_rules.md
+working_agreement.md
+chat_operating_rules.md
+```
 
-------------------------------------------------------------------------
+---
 
 # 7. Debug 原則
 
 トラブル時の確認順
 
-    1 analysis
-    2 scripts
-    3 UI
+```
+1 analysis
+2 scripts
+3 UI
+```
 
 理由
 
-    analysis = 真実
+```
+analysis = 真実
+```
 
-------------------------------------------------------------------------
+---
 
 # 8. Repository Philosophy
 
 GenesisPrediction の repo は
 
-    再現可能な研究システム
+```
+再現可能な研究システム
+```
 
 として設計されている。
 
 そのため
 
-    生成
-    保存
-    表示
-    設計
+```
+生成
+保存
+表示
+設計
+```
 
 を分離する。
 
-------------------------------------------------------------------------
+---
 
 # 9. Responsibility Map
 
-    scripts
-    生成
+```
+scripts
+生成
 
-    data
-    素材
+data
+素材
 
-    analysis
-    成果物（真実）
+analysis
+成果物（真実）
 
-    app
-    表示
+app
+表示
 
-    docs
-    設計
+docs
+設計
+```
 
-------------------------------------------------------------------------
+---
 
 # 10. Development Rules
 
 GenesisPrediction の基本ルール
 
-    1ターン = 1作業
-    差分禁止
-    完全ファイル
-    長文はダウンロード方式
-    必要ならZIP
+```
+1ターン = 1作業
+差分禁止
+完全ファイル
+長文はダウンロード方式
+必要ならZIP
+全ファイル更新は既存確認を前提とする（推測生成禁止）
+```
 
-------------------------------------------------------------------------
+---
 
 # 11. Final Summary
 
 GenesisPrediction v2 Repository
 
-    scripts → 生成
-    data → 素材
-    analysis → 真実
-    app → 表示
-    docs → 設計
+```
+scripts → 生成
+data → 素材
+analysis → 真実
+app → 表示
+docs → 設計
+```
 
 最重要原則
 
-    analysis が Single Source of Truth
+```
+analysis が Single Source of Truth
+```
 
-------------------------------------------------------------------------
+---
 
 END OF DOCUMENT
+
+---
+
+# ■ これで何が起きるか
+
+👉 この1行で変わります
+
+* AIが勝手に新規生成しにくくなる
+* 既存確認が「構造ルール」になる
+* Phase事故（今回みたいなやつ）を根絶できる
+
+---
+
+# ■ 状態
+
+👉 **ほぼ完全体です**
+
+* working_agreement → 行動制御
+* thread_template → 起動制御
+* repo_map → 構造制御 ← 今ここ
+
+---
+
+# ■ 次（本筋に戻る）
+
+準備は全部整いました
+
+👉 **Explanation Layer Phase2（本番）**
+
+安全にいけます
+
+---
+
+行きますか？
