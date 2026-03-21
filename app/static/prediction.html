@@ -18,14 +18,14 @@
 
           <section class="hero-grid">
             <article class="hero-card hero-intro-card">
-              <h1 id="heroHeadline" class="hero-title" data-i18n="hero_title">Prediction</h1>
+              <h1 id="heroHeadline" class="hero-title">Prediction</h1>
               <p class="sub">
                 Prediction は、analysis 層で確定した prediction_latest.json / prediction_explanation_latest.json をそのまま表示するレイヤです。
                 UI は表示のみを担い、推論・補完・再計算は行いません。
               </p>
 
               <div class="detail-card hero-decision-card mt-compact">
-                <div class="detail-eyebrow" data-i18n="eyebrow_decision">Decision</div>
+                <div class="detail-eyebrow">Decision</div>
                 <h2 id="heroDecisionLine" class="detail-title">Loading decision line...</h2>
                 <p id="heroInterpretation" class="detail-text">Loading interpretation...</p>
               </div>
@@ -43,19 +43,19 @@
             <aside class="card hero-side-card">
               <div class="hero-side-stack">
                 <div class="hero-metric">
-                  <div class="metric-label" data-i18n="metric_decision_line">Decision Line</div>
+                  <div class="metric-label">Decision Line</div>
                   <div id="decisionMini" class="metric-value">—</div>
                   <div id="decisionMiniSub" class="metric-sub">operating read from explanation</div>
                 </div>
 
                 <div class="hero-metric">
-                  <div class="metric-label" data-i18n="metric_interpretation">Interpretation</div>
+                  <div class="metric-label">Interpretation</div>
                   <div id="interpretationMini" class="metric-value">—</div>
                   <div id="interpretationMiniSub" class="metric-sub">how to read current state</div>
                 </div>
 
                 <div class="hero-metric">
-                  <div class="metric-label" data-i18n="metric_runtime_status">Runtime Status</div>
+                  <div class="metric-label">Runtime Status</div>
                   <div id="runtimeMini" class="metric-value">Loading</div>
                   <div id="runtimeMiniSub" class="metric-sub">artifact check</div>
                 </div>
@@ -65,7 +65,7 @@
 
           <section class="card section-no-margin">
             <div class="sectionTitle">
-              <h2 data-i18n="section_global_status">Global Status</h2>
+              <h2>Global Status</h2>
               <span class="hint">analysis/global_status_latest.json</span>
             </div>
             <div data-global-status data-page="prediction"></div>
@@ -73,7 +73,7 @@
 
           <section class="card compact-card">
             <div class="sectionTitle">
-              <h2 data-i18n="section_three_layer">Three-Layer Intelligence</h2>
+              <h2>Three-Layer Intelligence</h2>
               <span class="hint">signal → scenario → prediction</span>
             </div>
 
@@ -81,8 +81,8 @@
               <article class="card compact-card">
                 <div class="section-header compact-section-header">
                   <div>
-                    <h2 class="section-title" data-i18n="section_signal_layer">Signal Layer</h2>
-                    <p class="section-subtitle" data-i18n="subtitle_signal_layer">What is starting to happen now.</p>
+                    <h2 class="section-title">Signal Layer</h2>
+                    <p class="section-subtitle">What is starting to happen now.</p>
                   </div>
                 </div>
                 <div id="signalLayerBlock" class="list-stack compact-list"></div>
@@ -91,8 +91,8 @@
               <article class="card compact-card">
                 <div class="section-header compact-section-header">
                   <div>
-                    <h2 class="section-title" data-i18n="section_scenario_layer">Scenario Layer</h2>
-                    <p class="section-subtitle" data-i18n="subtitle_scenario_layer">How the future is branching.</p>
+                    <h2 class="section-title">Scenario Layer</h2>
+                    <p class="section-subtitle">How the future is branching.</p>
                   </div>
                 </div>
                 <div id="scenarioLayerBlock" class="list-stack compact-list"></div>
@@ -104,8 +104,8 @@
             <article class="card">
               <div class="section-header">
                 <div>
-                  <h2 class="section-title" data-i18n="section_prediction_statement">Prediction Statement</h2>
-                  <p class="section-subtitle" data-i18n="subtitle_prediction_statement">Primary output from prediction_latest.json</p>
+                  <h2 class="section-title">Prediction Statement</h2>
+                  <p class="section-subtitle">Primary output from prediction_latest.json</p>
                 </div>
                 <div id="confidenceChip" class="confidence-chip">Confidence —</div>
               </div>
@@ -114,14 +114,14 @@
 
               <div class="detail-grid mt-compact">
                 <article class="detail-card">
-                  <div class="detail-eyebrow" data-i18n="eyebrow_narrative">Narrative</div>
-                  <h3 class="detail-title" data-i18n="title_primary_narrative">Primary Narrative</h3>
+                  <div class="detail-eyebrow">Narrative</div>
+                  <h3 class="detail-title">Primary Narrative</h3>
                   <p id="primaryNarrativeText" class="detail-text">Loading...</p>
                 </article>
 
                 <article class="detail-card">
-                  <div class="detail-eyebrow" data-i18n="eyebrow_expected_outcomes">Expected Outcomes</div>
-                  <h3 class="detail-title" data-i18n="title_near_term_outlook">Near-term Outlook</h3>
+                  <div class="detail-eyebrow">Expected Outcomes</div>
+                  <h3 class="detail-title">Near-term Outlook</h3>
                   <div id="expectedOutcomePreview" class="probability-stack"></div>
                 </article>
               </div>
@@ -131,14 +131,14 @@
               <article class="card">
                 <div class="section-header">
                   <div>
-                    <h2 class="section-title" data-i18n="section_fx_summary">FX Summary</h2>
-                    <p class="section-subtitle" data-i18n="subtitle_fx_summary">Current remittance / FX judgment aligned with the prediction layer.</p>
+                    <h2 class="section-title">FX Summary</h2>
+                    <p class="section-subtitle">Current remittance / FX judgment aligned with the prediction layer.</p>
                   </div>
                 </div>
 
                 <div class="fx-inline-grid">
                   <div class="detail-card compact-detail-card">
-                    <div class="detail-eyebrow" data-i18n="eyebrow_fx_status">FX Status</div>
+                    <div class="detail-eyebrow">FX Status</div>
                     <h3 id="fxStatusTitle" class="detail-title">—</h3>
                     <div class="pillrow">
                       <span id="fxPairChip" class="fx-kpi-chip neutral">pair: --</span>
@@ -148,8 +148,8 @@
                   </div>
 
                   <div class="detail-card compact-detail-card">
-                    <div class="detail-eyebrow" data-i18n="eyebrow_fx_context">FX Context</div>
-                    <h3 id="fxReasonTitle" class="detail-title" data-i18n="title_decision_context">Decision Context</h3>
+                    <div class="detail-eyebrow">FX Context</div>
+                    <h3 id="fxReasonTitle" class="detail-title">Decision Context</h3>
                     <p id="fxReasonText" class="detail-text">FX reason unavailable.</p>
                     <div class="pillrow">
                       <span class="pill"><strong>as_of</strong><span id="fxAsof" style="margin-left:6px;">—</span></span>
@@ -161,8 +161,8 @@
               <article class="card compact-card">
                 <div class="section-header compact-section-header">
                   <div>
-                    <h2 class="section-title" data-i18n="section_runtime_notes">Runtime Notes</h2>
-                    <p class="section-subtitle" data-i18n="subtitle_runtime_notes">Quick operating context.</p>
+                    <h2 class="section-title">Runtime Notes</h2>
+                    <p class="section-subtitle">Quick operating context.</p>
                   </div>
                 </div>
                 <ul id="runtimeNoteList" class="plain-list compact-note-list"></ul>
@@ -171,8 +171,8 @@
               <article class="card compact-card">
                 <div class="section-header compact-section-header">
                   <div>
-                    <h2 class="section-title" data-i18n="section_source_status">Source Status</h2>
-                    <p class="section-subtitle" data-i18n="subtitle_source_status">Artifact load summary.</p>
+                    <h2 class="section-title">Source Status</h2>
+                    <p class="section-subtitle">Artifact load summary.</p>
                   </div>
                 </div>
                 <div id="sourceStatusList" class="source-compact-grid"></div>
@@ -182,7 +182,7 @@
 
           <section class="card compact-card">
             <div class="sectionTitle">
-              <h2 data-i18n="section_prediction_expl_summary">Prediction Explanation Summary</h2>
+              <h2>Prediction Explanation Summary</h2>
               <span class="hint">analysis/explanation/prediction_explanation_latest.json</span>
             </div>
             <div id="explanationSummaryBlock" class="list-stack compact-list"></div>
@@ -192,8 +192,8 @@
             <article class="card compact-card">
               <div class="section-header compact-section-header">
                 <div>
-                  <h2 class="section-title" data-i18n="section_key_drivers">Key Drivers</h2>
-                  <p class="section-subtitle" data-i18n="subtitle_key_drivers">Top factors currently supporting the prediction.</p>
+                  <h2 class="section-title">Key Drivers</h2>
+                  <p class="section-subtitle">Top factors currently supporting the prediction.</p>
                 </div>
               </div>
               <div id="keyDriversList" class="list-stack compact-list"></div>
@@ -202,8 +202,8 @@
             <article class="card compact-card">
               <div class="section-header compact-section-header">
                 <div>
-                  <h2 class="section-title" data-i18n="section_monitoring_priorities">Monitoring Priorities</h2>
-                  <p class="section-subtitle" data-i18n="subtitle_monitoring_priorities">Next-cycle items to watch closely.</p>
+                  <h2 class="section-title">Monitoring Priorities</h2>
+                  <p class="section-subtitle">Next-cycle items to watch closely.</p>
                 </div>
               </div>
               <div id="monitoringPrioritiesList" class="list-stack compact-list"></div>
@@ -212,7 +212,7 @@
 
           <section class="card compact-card">
             <div class="sectionTitle">
-              <h2 data-i18n="section_expected_outcomes">Expected Outcomes</h2>
+              <h2>Expected Outcomes</h2>
               <span class="hint">prediction / explanation</span>
             </div>
             <div id="expectedOutcomesList" class="list-stack compact-list"></div>
@@ -222,8 +222,8 @@
             <article class="card compact-card">
               <div class="section-header compact-section-header">
                 <div>
-                  <h2 class="section-title" data-i18n="section_historical_context">Historical Context</h2>
-                  <p class="section-subtitle" data-i18n="subtitle_historical_context">Historical analog / context supplied by analysis.</p>
+                  <h2 class="section-title">Historical Context</h2>
+                  <p class="section-subtitle">Historical analog / context supplied by analysis.</p>
                 </div>
               </div>
               <div id="historicalContextList" class="list-stack compact-list"></div>
@@ -232,8 +232,8 @@
             <article class="card compact-card">
               <div class="section-header compact-section-header">
                 <div>
-                  <h2 class="section-title" data-i18n="section_reference_memory">Reference Memory</h2>
-                  <p class="section-subtitle" data-i18n="subtitle_reference_memory">Reference-only memory context supplied by analysis.</p>
+                  <h2 class="section-title">Reference Memory</h2>
+                  <p class="section-subtitle">Reference-only memory context supplied by analysis.</p>
                 </div>
               </div>
               <div id="referenceMemoryList" class="list-stack compact-list"></div>
@@ -244,8 +244,8 @@
             <article class="card compact-card">
               <div class="section-header compact-section-header">
                 <div>
-                  <h2 class="section-title" data-i18n="section_risks">Risks</h2>
-                  <p class="section-subtitle" data-i18n="subtitle_risks">Risk reading supplied by explanation artifact.</p>
+                  <h2 class="section-title">Risks</h2>
+                  <p class="section-subtitle">Risk reading supplied by explanation artifact.</p>
                 </div>
               </div>
               <div id="risksList" class="list-stack compact-list"></div>
@@ -254,8 +254,8 @@
             <article class="card compact-card">
               <div class="section-header compact-section-header">
                 <div>
-                  <h2 class="section-title" data-i18n="section_invalidation">Invalidation</h2>
-                  <p class="section-subtitle" data-i18n="subtitle_invalidation">Conditions that would weaken or overturn the current read.</p>
+                  <h2 class="section-title">Invalidation</h2>
+                  <p class="section-subtitle">Conditions that would weaken or overturn the current read.</p>
                 </div>
               </div>
               <div id="invalidationList" class="list-stack compact-list"></div>
@@ -266,8 +266,8 @@
             <article class="card compact-card">
               <div class="section-header compact-section-header">
                 <div>
-                  <h2 class="section-title" data-i18n="section_must_not_mean">Must Not Mean</h2>
-                  <p class="section-subtitle" data-i18n="subtitle_must_not_mean">Misreadings explicitly rejected by analysis.</p>
+                  <h2 class="section-title">Must Not Mean</h2>
+                  <p class="section-subtitle">Misreadings explicitly rejected by analysis.</p>
                 </div>
               </div>
               <div id="mustNotMeanList" class="list-stack compact-list"></div>
@@ -276,8 +276,8 @@
             <article class="card compact-card">
               <div class="section-header compact-section-header">
                 <div>
-                  <h2 class="section-title" data-i18n="section_ui_terms">UI Terms</h2>
-                  <p class="section-subtitle" data-i18n="subtitle_ui_terms">Field meanings supplied by analysis.</p>
+                  <h2 class="section-title">UI Terms</h2>
+                  <p class="section-subtitle">Field meanings supplied by analysis.</p>
                 </div>
               </div>
               <div id="uiTermsList" class="list-stack compact-list"></div>
@@ -286,7 +286,7 @@
 
           <section class="card compact-card">
             <div class="sectionTitle">
-              <h2 data-i18n="section_prediction_kpis">Prediction KPIs</h2>
+              <h2>Prediction KPIs</h2>
               <span class="hint">latest snapshot</span>
             </div>
 
@@ -319,7 +319,7 @@
 
           <section class="card compact-card">
             <div class="sectionTitle">
-              <h2 data-i18n="section_prediction_trend">Prediction Trend</h2>
+              <h2>Prediction Trend</h2>
               <span class="hint">quick visual summary</span>
             </div>
 
@@ -350,8 +350,8 @@
           <section class="card history-compact compact-card">
             <div class="section-header compact-section-header">
               <div>
-                <h2 class="section-title" data-i18n="section_prediction_history">Prediction History</h2>
-                <p class="section-subtitle" data-i18n="subtitle_prediction_history">Recent published snapshots.</p>
+                <h2 class="section-title">Prediction History</h2>
+                <p class="section-subtitle">Recent published snapshots.</p>
               </div>
             </div>
             <div id="predictionHistoryList" class="list-stack compact-history-list"></div>
@@ -393,305 +393,6 @@
       signalImplications: 4
     };
 
-
-    const PAGE_I18N = {
-      en: {
-        hero_title: "Prediction",
-        eyebrow_decision: "Decision",
-        metric_decision_line: "Decision Line",
-        metric_interpretation: "Interpretation",
-        metric_runtime_status: "Runtime Status",
-        section_global_status: "Global Status",
-        section_three_layer: "Three-Layer Intelligence",
-        section_signal_layer: "Signal Layer",
-        subtitle_signal_layer: "What is starting to happen now.",
-        section_scenario_layer: "Scenario Layer",
-        subtitle_scenario_layer: "How the future is branching.",
-        section_prediction_statement: "Prediction Statement",
-        subtitle_prediction_statement: "Primary output from prediction_latest.json",
-        eyebrow_narrative: "Narrative",
-        title_primary_narrative: "Primary Narrative",
-        eyebrow_expected_outcomes: "Expected Outcomes",
-        title_near_term_outlook: "Near-term Outlook",
-        section_fx_summary: "FX Summary",
-        subtitle_fx_summary: "Current remittance / FX judgment aligned with the prediction layer.",
-        eyebrow_fx_status: "FX Status",
-        eyebrow_fx_context: "FX Context",
-        title_decision_context: "Decision Context",
-        section_runtime_notes: "Runtime Notes",
-        subtitle_runtime_notes: "Quick operating context.",
-        section_source_status: "Source Status",
-        subtitle_source_status: "Artifact load summary.",
-        section_prediction_expl_summary: "Prediction Explanation Summary",
-        section_key_drivers: "Key Drivers",
-        subtitle_key_drivers: "Top factors currently supporting the prediction.",
-        section_monitoring_priorities: "Monitoring Priorities",
-        subtitle_monitoring_priorities: "Next-cycle items to watch closely.",
-        section_expected_outcomes: "Expected Outcomes",
-        section_historical_context: "Historical Context",
-        subtitle_historical_context: "Historical analog / context supplied by analysis.",
-        section_reference_memory: "Reference Memory",
-        subtitle_reference_memory: "Reference-only memory context supplied by analysis.",
-        section_risks: "Risks",
-        subtitle_risks: "Risk reading supplied by explanation artifact.",
-        section_invalidation: "Invalidation",
-        subtitle_invalidation: "Conditions that would weaken or overturn the current read.",
-        section_must_not_mean: "Must Not Mean",
-        subtitle_must_not_mean: "Misreadings explicitly rejected by analysis.",
-        section_ui_terms: "UI Terms",
-        subtitle_ui_terms: "Field meanings supplied by analysis.",
-        section_prediction_kpis: "Prediction KPIs",
-        section_prediction_trend: "Prediction Trend",
-        section_prediction_history: "Prediction History",
-        subtitle_prediction_history: "Recent published snapshots.",
-        no_prediction_statement: t("no_prediction_statement"),
-        primary_narrative_unavailable: t("primary_narrative_unavailable"),
-        no_decision_line: t("no_decision_line"),
-        interpretation_unavailable: t("interpretation_unavailable"),
-        decision_line_sub: t("decision_line_sub"),
-        interpretation_why_sub: t("interpretation_why_sub"),
-        primary_narrative_sub: t("primary_narrative_sub"),
-        ready: t("ready"),
-        prediction_artifacts_loaded: t("prediction_artifacts_loaded"),
-        all_prediction_artifacts_loaded: t("all_prediction_artifacts_loaded"),
-        fx_context_unavailable: t("fx_context_unavailable"),
-        explanation_unavailable: "Explanation unavailable",
-        explanation_fetch_failed: "ไม่สามารถโหลด prediction_explanation_latest.json ได้",
-        summary_unavailable: "t("summary_unavailable")",
-        why_it_matters_unavailable: "t("why_it_matters_unavailable")",
-        signal_explanation_unavailable: "Signal explanation unavailable",
-        signal_fetch_failed: "ไม่สามารถโหลด signal_explanation_latest.json ได้",
-        scenario_explanation_unavailable: "Scenario explanation unavailable",
-        scenario_fetch_failed: "ไม่สามารถโหลด scenario_explanation_latest.json ได้",
-        expected_outcomes_unavailable: "Expected outcomes unavailable"expected_outcomes_unavailable"))}",
-        no_items_available: "ไม่มีรายการที่ใช้งานได้"no_items_available"))}",
-        key_drivers_unavailable: "Key drivers unavailable"key_drivers_unavailable"))}",
-        monitoring_priorities_unavailable: "Monitoring priorities unavailable"monitoring_priorities_unavailable"))}",
-        reference_memory_unavailable: "Reference memory unavailable"reference_memory_unavailable"))}",
-        risks_unavailable: "Risks unavailable"risks_unavailable"))}",
-        invalidation_unavailable: "Invalidation unavailable"invalidation_unavailable"))}",
-        must_not_mean_unavailable: "Must-not-mean unavailable"must_not_mean_unavailable"))}",
-        ui_terms_unavailable: "UI terms unavailable"ui_terms_unavailable"))}",
-        prediction_artifact_missing: "prediction artifact missing",
-        prediction_unavailable: "Decision unavailable",
-        prediction_core_missing: "prediction_latest.json could not be loaded. Core prediction content is never fabricated by fallback."
-      },
-      ja: {
-        hero_title: "Prediction",
-        eyebrow_decision: "Decision",
-        metric_decision_line: "Decision Line",
-        metric_interpretation: "Interpretation",
-        metric_runtime_status: "Runtime Status",
-        section_global_status: "Global Status",
-        section_three_layer: "Three-Layer Intelligence",
-        section_signal_layer: "Signal Layer",
-        subtitle_signal_layer: "何が今、立ち上がり始めているか。",
-        section_scenario_layer: "Scenario Layer",
-        subtitle_scenario_layer: "未来がどう分岐しているか。",
-        section_prediction_statement: "Prediction Statement",
-        subtitle_prediction_statement: "prediction_latest.json の主出力",
-        eyebrow_narrative: "Narrative",
-        title_primary_narrative: "Primary Narrative",
-        eyebrow_expected_outcomes: "Expected Outcomes",
-        title_near_term_outlook: "Near-term Outlook",
-        section_fx_summary: "FX Summary",
-        subtitle_fx_summary: "Prediction layer と整合した現在の送金 / FX 判断。",
-        eyebrow_fx_status: "FX Status",
-        eyebrow_fx_context: "FX Context",
-        title_decision_context: "Decision Context",
-        section_runtime_notes: "Runtime Notes",
-        subtitle_runtime_notes: "運用上の簡易コンテキスト。",
-        section_source_status: "Source Status",
-        subtitle_source_status: "artifact 読み込み状況。",
-        section_prediction_expl_summary: "Prediction Explanation Summary",
-        section_key_drivers: "Key Drivers",
-        subtitle_key_drivers: "現在の prediction を支える主要因。",
-        section_monitoring_priorities: "Monitoring Priorities",
-        subtitle_monitoring_priorities: "次サイクルで重点監視する項目。",
-        section_expected_outcomes: "Expected Outcomes",
-        section_historical_context: "Historical Context",
-        subtitle_historical_context: "analysis が供給する歴史的文脈 / 類推。",
-        section_reference_memory: "Reference Memory",
-        subtitle_reference_memory: "analysis が供給する参照専用メモリ文脈。",
-        section_risks: "Risks",
-        subtitle_risks: "説明 artifact が示すリスク読解。",
-        section_invalidation: "Invalidation",
-        subtitle_invalidation: "現在の見立てを弱める / 覆す条件。",
-        section_must_not_mean: "Must Not Mean",
-        subtitle_must_not_mean: "analysis が明示的に退ける誤読。",
-        section_ui_terms: "UI Terms",
-        subtitle_ui_terms: "analysis が供給する用語意味。",
-        section_prediction_kpis: "Prediction KPIs",
-        section_prediction_trend: "Prediction Trend",
-        section_prediction_history: "Prediction History",
-        subtitle_prediction_history: "最近公開されたスナップショット。",
-        no_prediction_statement: "prediction statement はまだありません。",
-        primary_narrative_unavailable: "primary narrative は未提供です。",
-        no_decision_line: "decision line は未提供です。",
-        interpretation_unavailable: "interpretation は未提供です。",
-        decision_line_sub: t("decision_line_sub"),
-        interpretation_why_sub: t("interpretation_why_sub"),
-        primary_narrative_sub: t("primary_narrative_sub"),
-        ready: t("ready"),
-        prediction_artifacts_loaded: t("prediction_artifacts_loaded"),
-        all_prediction_artifacts_loaded: t("all_prediction_artifacts_loaded"),
-        fx_context_unavailable: "FX decision context は未提供です。",
-        explanation_unavailable: "Explanation unavailable",
-        explanation_fetch_failed: "" + escapeHtml(t("explanation_fetch_failed")) + "",
-        summary_unavailable: "summary は未提供です。",
-        why_it_matters_unavailable: "why_it_matters は未提供です。",
-        signal_explanation_unavailable: "Signal explanation unavailable",
-        signal_fetch_failed: "" + escapeHtml(t("signal_fetch_failed")) + "",
-        scenario_explanation_unavailable: "Scenario explanation unavailable",
-        scenario_fetch_failed: "" + escapeHtml(t("scenario_fetch_failed")) + "",
-        expected_outcomes_unavailable: "${escapeHtml(t("expected_outcomes_unavailable"))}",
-        no_items_available: "利用できる項目がありません。",
-        key_drivers_unavailable: "${escapeHtml(t("key_drivers_unavailable"))}",
-        monitoring_priorities_unavailable: "${escapeHtml(t("monitoring_priorities_unavailable"))}",
-        reference_memory_unavailable: t("reference_memory_unavailable"),
-        risks_unavailable: t("risks_unavailable"),
-        invalidation_unavailable: t("invalidation_unavailable"),
-        must_not_mean_unavailable: t("must_not_mean_unavailable"),
-        ui_terms_unavailable: "${escapeHtml(t("ui_terms_unavailable"))}",
-        prediction_artifact_missing: "prediction artifact missing",
-        prediction_unavailable: "Decision unavailable",
-        prediction_core_missing: "prediction_latest.json を取得できませんでした。Prediction 本体は fallback で捏造しません。"
-      },
-      th: {
-        hero_title: "Prediction",
-        eyebrow_decision: "Decision",
-        metric_decision_line: "Decision Line",
-        metric_interpretation: "Interpretation",
-        metric_runtime_status: "Runtime Status",
-        section_global_status: "Global Status",
-        section_three_layer: "Three-Layer Intelligence",
-        section_signal_layer: "Signal Layer",
-        subtitle_signal_layer: "สิ่งที่กำลังเริ่มเกิดขึ้นตอนนี้",
-        section_scenario_layer: "Scenario Layer",
-        subtitle_scenario_layer: "อนาคตกำลังแตกแขนงอย่างไร",
-        section_prediction_statement: "Prediction Statement",
-        subtitle_prediction_statement: "ผลลัพธ์หลักจาก prediction_latest.json",
-        eyebrow_narrative: "Narrative",
-        title_primary_narrative: "Primary Narrative",
-        eyebrow_expected_outcomes: "Expected Outcomes",
-        title_near_term_outlook: "Near-term Outlook",
-        section_fx_summary: "FX Summary",
-        subtitle_fx_summary: "สถานะการโอน / การตัดสินใจ FX ปัจจุบันที่สอดคล้องกับ prediction layer",
-        eyebrow_fx_status: "FX Status",
-        eyebrow_fx_context: "FX Context",
-        title_decision_context: "Decision Context",
-        section_runtime_notes: "Runtime Notes",
-        subtitle_runtime_notes: "บริบทการทำงานแบบย่อ",
-        section_source_status: "Source Status",
-        subtitle_source_status: "สรุปการโหลด artifact",
-        section_prediction_expl_summary: "Prediction Explanation Summary",
-        section_key_drivers: "Key Drivers",
-        subtitle_key_drivers: "ปัจจัยหลักที่กำลังสนับสนุน prediction ปัจจุบัน",
-        section_monitoring_priorities: "Monitoring Priorities",
-        subtitle_monitoring_priorities: "สิ่งที่ต้องติดตามใกล้ชิดในรอบถัดไป",
-        section_expected_outcomes: "Expected Outcomes",
-        section_historical_context: "Historical Context",
-        subtitle_historical_context: "บริบท / อุปมาทางประวัติศาสตร์จาก analysis",
-        section_reference_memory: "Reference Memory",
-        subtitle_reference_memory: "บริบทหน่วยความจำอ้างอิงอย่างเดียวจาก analysis",
-        section_risks: "Risks",
-        subtitle_risks: "การอ่านความเสี่ยงจาก explanation artifact",
-        section_invalidation: "Invalidation",
-        subtitle_invalidation: "เงื่อนไขที่จะทำให้มุมมองปัจจุบันอ่อนลงหรือถูกล้มล้าง",
-        section_must_not_mean: "Must Not Mean",
-        subtitle_must_not_mean: "การตีความผิดที่ analysis ปฏิเสธอย่างชัดเจน",
-        section_ui_terms: "UI Terms",
-        subtitle_ui_terms: "ความหมายของฟิลด์ที่มาจาก analysis",
-        section_prediction_kpis: "Prediction KPIs",
-        section_prediction_trend: "Prediction Trend",
-        section_prediction_history: "Prediction History",
-        subtitle_prediction_history: "สแน็ปช็อตที่เผยแพร่ล่าสุด",
-        no_prediction_statement: "ยังไม่มี prediction statement",
-        primary_narrative_unavailable: "ยังไม่มี primary narrative",
-        no_decision_line: "ยังไม่มี decision line",
-        interpretation_unavailable: "ยังไม่มี interpretation",
-        decision_line_sub: t("decision_line_sub"),
-        interpretation_why_sub: t("interpretation_why_sub"),
-        primary_narrative_sub: t("primary_narrative_sub"),
-        ready: t("ready"),
-        prediction_artifacts_loaded: t("prediction_artifacts_loaded"),
-        all_prediction_artifacts_loaded: t("all_prediction_artifacts_loaded"),
-        fx_context_unavailable: "ยังไม่มีบริบทการตัดสินใจ FX",
-        explanation_unavailable: "Explanation unavailable",
-        explanation_fetch_failed: "ไม่สามารถโหลด prediction_explanation_latest.json ได้",
-        summary_unavailable: "ยังไม่มี summary",
-        why_it_matters_unavailable: "ยังไม่มี why_it_matters",
-        signal_explanation_unavailable: "Signal explanation unavailable",
-        signal_fetch_failed: "ไม่สามารถโหลด signal_explanation_latest.json ได้",
-        scenario_explanation_unavailable: "Scenario explanation unavailable",
-        scenario_fetch_failed: "ไม่สามารถโหลด scenario_explanation_latest.json ได้",
-        expected_outcomes_unavailable: "${escapeHtml(t("expected_outcomes_unavailable"))}",
-        no_items_available: "ไม่มีรายการที่ใช้งานได้",
-        key_drivers_unavailable: "${escapeHtml(t("key_drivers_unavailable"))}",
-        monitoring_priorities_unavailable: "${escapeHtml(t("monitoring_priorities_unavailable"))}",
-        reference_memory_unavailable: t("reference_memory_unavailable"),
-        risks_unavailable: t("risks_unavailable"),
-        invalidation_unavailable: t("invalidation_unavailable"),
-        must_not_mean_unavailable: t("must_not_mean_unavailable"),
-        ui_terms_unavailable: "${escapeHtml(t("ui_terms_unavailable"))}",
-        prediction_artifact_missing: "prediction artifact missing",
-        prediction_unavailable: "Decision unavailable",
-        prediction_core_missing: "ไม่สามารถโหลด prediction_latest.json ได้ และจะไม่สร้างเนื้อหา prediction ขึ้นเองจาก fallback"
-      }
-    };
-
-    function currentLang(){
-      return window.GP_LANG || localStorage.getItem("gp_lang") || document.documentElement.lang || "en";
-    }
-
-    function t(key){
-      const lang=currentLang();
-      return PAGE_I18N[lang]?.[key] || PAGE_I18N.en[key] || key;
-    }
-
-    function setDocumentLang(){
-      document.documentElement.lang = currentLang();
-    }
-
-    function applyStaticI18n(){
-      document.querySelectorAll('[data-i18n]').forEach((node)=>{
-        const key=node.getAttribute('data-i18n');
-        const text=t(key);
-        if (text) node.textContent=text;
-      });
-    }
-
-    function pickI18nValue(data, base, fallback=""){
-      if (!data || typeof data !== 'object') return firstString(fallback);
-      const lang=currentLang();
-      const direct=data[base];
-      if (direct && typeof direct === 'object' && !Array.isArray(direct)){
-        const v=firstString(direct[lang], direct[data.lang_default], direct.en, direct.ja, direct.th);
-        if (v) return v;
-      }
-      const obj=data[`${base}_i18n`];
-      if (obj && typeof obj === 'object'){
-        const v=firstString(obj[lang], obj[data.lang_default], obj.en, obj.ja, obj.th);
-        if (v) return v;
-      }
-      return firstString(direct, fallback);
-    }
-
-    function pickI18nList(data, base, fallback){
-      const lang=currentLang();
-      const direct=data?.[base];
-      if (direct && typeof direct === 'object' && !Array.isArray(direct)){
-        const v = direct[lang] ?? direct[data?.lang_default] ?? direct.en ?? direct.ja ?? direct.th;
-        if (Array.isArray(v)) return v;
-      }
-      const obj=data?.[`${base}_i18n`];
-      if (obj && typeof obj === 'object'){
-        const v = obj[lang] ?? obj[data?.lang_default] ?? obj.en ?? obj.ja ?? obj.th;
-        if (Array.isArray(v)) return v;
-      }
-      return Array.isArray(fallback) ? fallback : [];
-    }
-
     function el(id){ return document.getElementById(id); }
 
     async function fetchJson(url){
@@ -721,6 +422,38 @@
         if (value !== undefined && value !== null && value !== "") return value;
       }
       return null;
+    }
+
+
+    function getCurrentLang(){
+      const lang = String(window.GP_LANG || "ja").toLowerCase();
+      return ["en","ja","th"].includes(lang) ? lang : "ja";
+    }
+
+    function pickI18n(i18nValue, fallback){
+      const fb = typeof fallback === "string" ? fallback : firstString(fallback);
+      if (!i18nValue) return fb || "";
+      if (typeof i18nValue === "string") return i18nValue.trim() || fb || "";
+      if (Array.isArray(i18nValue)) {
+        const arr = i18nValue.map((item) => firstString(item)).filter(Boolean);
+        return arr.length ? arr[0] : (fb || "");
+      }
+      if (typeof i18nValue === "object"){
+        const lang = getCurrentLang();
+        return firstString(i18nValue[lang], i18nValue.ja, i18nValue.en, i18nValue.th, fb);
+      }
+      return fb || "";
+    }
+
+    function pickI18nList(i18nValue){
+      if (!i18nValue) return [];
+      if (Array.isArray(i18nValue)) return i18nValue;
+      if (typeof i18nValue === "object"){
+        const lang = getCurrentLang();
+        const picked = i18nValue[lang] ?? i18nValue.ja ?? i18nValue.en ?? i18nValue.th;
+        return Array.isArray(picked) ? picked : [];
+      }
+      return [];
     }
 
     function pickNumber(){
@@ -870,16 +603,16 @@
 
     function normalizePredictionV3(data){
       const statement = firstString(
-        pickI18nValue(data, "prediction_statement"),
-        pickI18nValue(data, "summary"),
-        pickI18nValue(data, "prediction_summary"),
-        pickI18nValue(data, "outlook")
+        data?.prediction_statement,
+        data?.summary,
+        data?.prediction_summary,
+        data?.outlook
       );
 
       const narrative = firstString(
-        pickI18nValue(data, "primary_narrative"),
-        pickI18nValue(data, "narrative"),
-        pickI18nValue(data, "primary_summary")
+        data?.primary_narrative,
+        data?.narrative,
+        data?.primary_summary
       );
 
       const keyDrivers = uniqueLimitedItems(
@@ -938,107 +671,113 @@
     }
 
     function normalizePredictionExplanation(data){
-      const drivers = safeArray(data?.drivers).slice(0, UI_LIMITS.drivers).map((item) => ({
-        driver: firstString(item?.driver, item?.name, item?.title),
-        why: firstString(item?.why, item?.reason, item?.summary, item?.description),
-        impact: firstString(item?.impact, item?.meaning, item?.path, item?.effect)
+      const driversRaw = pickI18nList(data?.drivers_i18n);
+      const drivers = (driversRaw.length ? driversRaw : safeArray(data?.drivers)).slice(0, UI_LIMITS.drivers).map((item) => ({
+        driver: pickI18n(item?.driver_i18n, firstString(item?.driver, item?.name, item?.title)),
+        why: pickI18n(item?.why_i18n, firstString(item?.why, item?.reason, item?.summary, item?.description)),
+        impact: pickI18n(item?.impact_i18n, firstString(item?.impact, item?.meaning, item?.path, item?.effect))
       })).filter((item) => item.driver || item.why || item.impact);
 
-      const monitor = safeArray(data?.monitor).slice(0, UI_LIMITS.monitoring).map((item) => ({
-        item: firstString(item?.item, item?.name, item?.title, item?.watchpoint),
-        trigger: firstString(item?.trigger, item?.condition, item?.threshold),
-        meaning: firstString(item?.meaning, item?.why, item?.reason, item?.summary)
+      const monitorRaw = pickI18nList(data?.monitor_i18n);
+      const monitor = (monitorRaw.length ? monitorRaw : safeArray(data?.monitor)).slice(0, UI_LIMITS.monitoring).map((item) => ({
+        item: pickI18n(item?.item_i18n, firstString(item?.item, item?.name, item?.title, item?.watchpoint)),
+        trigger: pickI18n(item?.trigger_i18n, firstString(item?.trigger, item?.condition, item?.threshold)),
+        meaning: pickI18n(item?.meaning_i18n, firstString(item?.meaning, item?.why, item?.reason, item?.summary))
       })).filter((item) => item.item || item.trigger || item.meaning);
 
-      const historical = safeArray(data?.historical).slice(0, UI_LIMITS.historical).map((item) => ({
-        pattern: firstString(item?.pattern, item?.name, item?.title),
-        similarity: firstString(item?.similarity, item?.summary, item?.reason),
-        difference: firstString(item?.difference, item?.notes, item?.warning),
+      const historicalRaw = pickI18nList(data?.historical_i18n);
+      const historical = (historicalRaw.length ? historicalRaw : safeArray(data?.historical)).slice(0, UI_LIMITS.historical).map((item) => ({
+        pattern: pickI18n(item?.pattern_i18n, firstString(item?.pattern, item?.name, item?.title)),
+        similarity: pickI18n(item?.similarity_i18n, firstString(item?.similarity, item?.summary, item?.reason)),
+        difference: pickI18n(item?.difference_i18n, firstString(item?.difference, item?.notes, item?.warning)),
         confidence: firstNonEmpty(item?.confidence, item?.match_score)
       })).filter((item) => item.pattern || item.similarity || item.difference);
 
-      const implications = safeArray(data?.implications).slice(0, UI_LIMITS.expectedOutcomes).map((item) => ({
-        outcome: firstString(item?.outcome, item?.name, item?.title, item?.label),
-        path: firstString(item?.path, item?.reason, item?.summary, item?.description, item?.impact),
+      const implicationsRaw = pickI18nList(data?.implications_i18n);
+      const implications = (implicationsRaw.length ? implicationsRaw : safeArray(data?.implications)).slice(0, UI_LIMITS.expectedOutcomes).map((item) => ({
+        outcome: pickI18n(item?.outcome_i18n, firstString(item?.outcome, item?.name, item?.title, item?.label)),
+        path: pickI18n(item?.path_i18n, firstString(item?.path, item?.reason, item?.summary, item?.description, item?.impact)),
         confidence: firstNonEmpty(item?.confidence, item?.probability)
       })).filter((item) => item.outcome || item.path);
 
       const uiTerms = safeArray(data?.ui_terms).slice(0, UI_LIMITS.uiTerms).map((item) => ({
         term: firstString(item?.term, item?.name, item?.title),
-        meaning: firstString(item?.meaning, item?.summary, item?.description)
+        meaning: pickI18n(item?.meaning_i18n, firstString(item?.meaning, item?.summary, item?.description))
       })).filter((item) => item.term || item.meaning);
 
       return {
         status: firstString(data?.status),
         asOf: firstString(data?.as_of, data?.date, data?.generated_at),
         subject: firstString(data?.subject),
-        headline: pickI18nValue(data, "headline"),
-        decisionLine: pickI18nValue(data, "decision_line"),
-        summary: pickI18nValue(data, "summary"),
-        interpretation: pickI18nValue(data, "interpretation"),
-        whyItMatters: pickI18nValue(data, "why_it_matters"),
-        narrativeFlow: safeArray(data?.narrative_flow).slice(0, UI_LIMITS.narrativeFlow).map((item) => firstString(item)).filter(Boolean),
+        headline: pickI18n(data?.headline_i18n, firstString(data?.headline)),
+        decisionLine: pickI18n(data?.decision_line_i18n, firstString(data?.decision_line, data?.headline, data?.summary)),
+        summary: pickI18n(data?.summary_i18n, firstString(data?.summary)),
+        interpretation: pickI18n(data?.interpretation_i18n, firstString(data?.interpretation, data?.why_it_matters)),
+        whyItMatters: pickI18n(data?.why_it_matters_i18n, firstString(data?.why_it_matters)),
+        narrativeFlow: pickI18nList(data?.narrative_flow_i18n).slice(0, UI_LIMITS.narrativeFlow).length ? pickI18nList(data?.narrative_flow_i18n).slice(0, UI_LIMITS.narrativeFlow) : pickI18nList(data?.narrative_flow).slice(0, UI_LIMITS.narrativeFlow),
         drivers,
         monitor,
-        watchpoints: uniqueLimitedItems(pickI18nList(data, "watchpoints", data?.watchpoints), UI_LIMITS.monitoring),
+        watchpoints: pickI18nList(data?.watchpoints_i18n).slice(0, UI_LIMITS.monitoring).length ? pickI18nList(data?.watchpoints_i18n).slice(0, UI_LIMITS.monitoring) : uniqueLimitedItems(data?.watchpoints, UI_LIMITS.monitoring),
         historical,
         implications,
-        risks: uniqueLimitedItems(pickI18nList(data, "risks", data?.risks), UI_LIMITS.risks),
-        invalidation: uniqueLimitedItems(pickI18nList(data, "invalidation", data?.invalidation), UI_LIMITS.invalidation),
-        mustNotMean: uniqueLimitedItems(pickI18nList(data, "must_not_mean", data?.must_not_mean), UI_LIMITS.mustNotMean),
+        risks: pickI18nList(data?.risks_i18n).slice(0, UI_LIMITS.risks).length ? pickI18nList(data?.risks_i18n).slice(0, UI_LIMITS.risks) : uniqueLimitedItems(data?.risks, UI_LIMITS.risks),
+        invalidation: pickI18nList(data?.invalidation_i18n).slice(0, UI_LIMITS.invalidation).length ? pickI18nList(data?.invalidation_i18n).slice(0, UI_LIMITS.invalidation) : uniqueLimitedItems(data?.invalidation, UI_LIMITS.invalidation),
+        mustNotMean: pickI18nList(data?.must_not_mean_i18n).slice(0, UI_LIMITS.mustNotMean).length ? pickI18nList(data?.must_not_mean_i18n).slice(0, UI_LIMITS.mustNotMean) : uniqueLimitedItems(data?.must_not_mean, UI_LIMITS.mustNotMean),
         uiTerms,
-        referenceMemory: uniqueLimitedItems(data?.reference_memory, UI_LIMITS.memory)
+        referenceMemory: pickI18nList(data?.reference_memory_i18n).slice(0, UI_LIMITS.memory).length ? pickI18nList(data?.reference_memory_i18n).slice(0, UI_LIMITS.memory) : uniqueLimitedItems(data?.reference_memory, UI_LIMITS.memory)
       };
     }
 
     function normalizeScenarioExplanation(data){
+      const uiTerms = safeArray(data?.ui_terms).slice(0, UI_LIMITS.uiTerms).map((item) => ({
+        term: firstString(item?.term),
+        meaning: pickI18n(item?.meaning_i18n, firstString(item?.meaning))
+      })).filter((item) => item.term || item.meaning);
       return {
         status: firstString(data?.status),
         asOf: firstString(data?.as_of, data?.date, data?.generated_at),
-        headline: pickI18nValue(data, "headline"),
-        summary: pickI18nValue(data, "summary"),
-        whyItMatters: pickI18nValue(data, "why_it_matters"),
-        dominant: firstString(data?.scenario_structure?.dominant),
-        balance: firstString(data?.scenario_structure?.balance),
-        alternatives: safeArray(data?.scenario_structure?.alternatives).map((item) => firstString(item)).filter(Boolean),
-        drivers: uniqueLimitedItems(data?.drivers, UI_LIMITS.scenarioDrivers),
-        watchpoints: uniqueLimitedItems(data?.watchpoints, UI_LIMITS.scenarioWatchpoints),
-        invalidation: uniqueLimitedItems(pickI18nList(data, "invalidation", data?.invalidation), UI_LIMITS.invalidation),
-        mustNotMean: uniqueLimitedItems(pickI18nList(data, "must_not_mean", data?.must_not_mean), UI_LIMITS.mustNotMean),
-        uiTerms: safeArray(data?.ui_terms).slice(0, UI_LIMITS.uiTerms).map((item) => ({
-          term: firstString(item?.term),
-          meaning: firstString(item?.meaning)
-        })).filter((item) => item.term || item.meaning)
+        headline: pickI18n(data?.headline_i18n, firstString(data?.headline)),
+        summary: pickI18n(data?.summary_i18n, firstString(data?.summary)),
+        whyItMatters: pickI18n(data?.why_it_matters_i18n, firstString(data?.why_it_matters)),
+        dominant: pickI18n(data?.scenario_structure?.dominant_i18n, firstString(data?.scenario_structure?.dominant)),
+        balance: pickI18n(data?.scenario_structure?.balance_i18n, firstString(data?.scenario_structure?.balance)),
+        alternatives: pickI18nList(data?.scenario_structure?.alternatives_i18n).length ? pickI18nList(data?.scenario_structure?.alternatives_i18n) : safeArray(data?.scenario_structure?.alternatives).map((item) => firstString(item)).filter(Boolean),
+        drivers: pickI18nList(data?.drivers_i18n).slice(0, UI_LIMITS.scenarioDrivers).length ? pickI18nList(data?.drivers_i18n).slice(0, UI_LIMITS.scenarioDrivers) : uniqueLimitedItems(data?.drivers, UI_LIMITS.scenarioDrivers),
+        watchpoints: pickI18nList(data?.watchpoints_i18n).slice(0, UI_LIMITS.scenarioWatchpoints).length ? pickI18nList(data?.watchpoints_i18n).slice(0, UI_LIMITS.scenarioWatchpoints) : uniqueLimitedItems(data?.watchpoints, UI_LIMITS.scenarioWatchpoints),
+        invalidation: pickI18nList(data?.invalidation_i18n).slice(0, UI_LIMITS.invalidation).length ? pickI18nList(data?.invalidation_i18n).slice(0, UI_LIMITS.invalidation) : uniqueLimitedItems(data?.invalidation, UI_LIMITS.invalidation),
+        mustNotMean: pickI18nList(data?.must_not_mean_i18n).slice(0, UI_LIMITS.mustNotMean).length ? pickI18nList(data?.must_not_mean_i18n).slice(0, UI_LIMITS.mustNotMean) : uniqueLimitedItems(data?.must_not_mean, UI_LIMITS.mustNotMean),
+        uiTerms
       };
     }
 
     function normalizeSignalExplanation(data){
-      const signals = safeArray(data?.signals).slice(0, UI_LIMITS.signalItems).map((item) => ({
-        signal: firstString(item?.signal, item?.name, item?.title, item?.label),
-        meaning: firstString(item?.meaning, item?.summary, item?.description, item?.reason)
+      const signalsRaw = pickI18nList(data?.signals_i18n);
+      const signals = (signalsRaw.length ? signalsRaw : safeArray(data?.signals)).slice(0, UI_LIMITS.signalItems).map((item) => ({
+        signal: pickI18n(item?.signal_i18n, firstString(item?.signal, item?.name, item?.title, item?.label)),
+        meaning: pickI18n(item?.meaning_i18n, firstString(item?.meaning, item?.summary, item?.description, item?.reason))
       })).filter((item) => item.signal || item.meaning);
 
       return {
         status: firstString(data?.status),
         asOf: firstString(data?.as_of, data?.date, data?.generated_at),
-        headline: pickI18nValue(data, "headline"),
-        summary: pickI18nValue(data, "summary"),
-        interpretation: pickI18nValue(data, "interpretation"),
-        whyItMatters: pickI18nValue(data, "why_it_matters"),
+        headline: pickI18n(data?.headline_i18n, firstString(data?.headline)),
+        summary: pickI18n(data?.summary_i18n, firstString(data?.summary)),
+        interpretation: pickI18n(data?.interpretation_i18n, firstString(data?.interpretation)),
+        whyItMatters: pickI18n(data?.why_it_matters_i18n, firstString(data?.why_it_matters)),
         signalState: {
           count: pickNumber(data?.signal_state?.count),
-          dominantType: firstString(data?.signal_state?.dominant_type),
-          strength: firstString(data?.signal_state?.strength),
+          dominantType: pickI18n(data?.signal_state?.dominant_type_i18n, firstString(data?.signal_state?.dominant_type)),
+          strength: pickI18n(data?.signal_state?.strength_i18n, firstString(data?.signal_state?.strength)),
           confidence: firstNonEmpty(data?.signal_state?.confidence)
         },
         signals,
-        watchpoints: uniqueLimitedItems(pickI18nList(data, "watchpoints", data?.watchpoints), UI_LIMITS.monitoring),
-        implications: uniqueLimitedItems(pickI18nList(data, "implications", data?.implications), UI_LIMITS.signalImplications),
-        invalidation: uniqueLimitedItems(data?.invalidation, UI_LIMITS.invalidation),
-        mustNotMean: uniqueLimitedItems(data?.must_not_mean, UI_LIMITS.mustNotMean),
+        watchpoints: pickI18nList(data?.watchpoints_i18n).slice(0, UI_LIMITS.monitoring).length ? pickI18nList(data?.watchpoints_i18n).slice(0, UI_LIMITS.monitoring) : uniqueLimitedItems(data?.watchpoints, UI_LIMITS.monitoring),
+        implications: pickI18nList(data?.implications_i18n).slice(0, UI_LIMITS.signalImplications).length ? pickI18nList(data?.implications_i18n).slice(0, UI_LIMITS.signalImplications) : uniqueLimitedItems(data?.implications, UI_LIMITS.signalImplications),
+        invalidation: pickI18nList(data?.invalidation_i18n).slice(0, UI_LIMITS.invalidation).length ? pickI18nList(data?.invalidation_i18n).slice(0, UI_LIMITS.invalidation) : uniqueLimitedItems(data?.invalidation, UI_LIMITS.invalidation),
+        mustNotMean: pickI18nList(data?.must_not_mean_i18n).slice(0, UI_LIMITS.mustNotMean).length ? pickI18nList(data?.must_not_mean_i18n).slice(0, UI_LIMITS.mustNotMean) : uniqueLimitedItems(data?.must_not_mean, UI_LIMITS.mustNotMean),
         uiTerms: safeArray(data?.ui_terms).slice(0, UI_LIMITS.uiTerms).map((item) => ({
           term: firstString(item?.term),
-          meaning: firstString(item?.meaning)
+          meaning: pickI18n(item?.meaning_i18n, firstString(item?.meaning))
         })).filter((item) => item.term || item.meaning)
       };
     }
@@ -1049,10 +788,10 @@
         dominant: prediction.dominant,
         risk: prediction.risk,
         confidence: prediction.confidence,
-        statement: prediction.statement || predictionExplanation?.headline || t("no_prediction_statement"),
-        narrative: prediction.narrative || predictionExplanation?.summary || t("primary_narrative_unavailable"),
-        decisionLine: predictionExplanation?.decisionLine || predictionExplanation?.headline || prediction.statement || t("no_decision_line"),
-        interpretation: predictionExplanation?.interpretation || predictionExplanation?.whyItMatters || prediction.narrative || t("interpretation_unavailable"),
+        statement: prediction.statement || predictionExplanation?.headline || "No prediction statement available.",
+        narrative: prediction.narrative || predictionExplanation?.summary || "Primary narrative unavailable.",
+        decisionLine: predictionExplanation?.decisionLine || predictionExplanation?.headline || prediction.statement || "No decision line available.",
+        interpretation: predictionExplanation?.interpretation || predictionExplanation?.whyItMatters || prediction.narrative || "Interpretation unavailable.",
         explanationHeadline: predictionExplanation?.headline || "",
         explanationSummary: predictionExplanation?.summary || "",
         whyItMatters: predictionExplanation?.whyItMatters || "",
@@ -1070,15 +809,15 @@
     }
 
     function renderHero(viewModel, predictionExplanation){
-      const statement = viewModel.statement || t("no_prediction_statement");
-      const narrativeMini = viewModel.narrative || t("primary_narrative_unavailable");
+      const statement = viewModel.statement || "No prediction statement available.";
+      const narrativeMini = viewModel.narrative || "Primary narrative unavailable.";
 
       el("heroHeadline").textContent = predictionExplanation?.headline || "Prediction";
-      el("heroDecisionLine").textContent = viewModel.decisionLine || t("no_decision_line");
-      el("heroInterpretation").textContent = viewModel.interpretation || t("interpretation_unavailable");
+      el("heroDecisionLine").textContent = viewModel.decisionLine || "No decision line available.";
+      el("heroInterpretation").textContent = viewModel.interpretation || "Interpretation unavailable.";
       el("heroSummary").textContent = predictionExplanation?.summary || statement;
       el("predictionStatementMain").textContent = statement;
-      el("primaryNarrativeText").textContent = viewModel.narrative || t("primary_narrative_unavailable");
+      el("primaryNarrativeText").textContent = viewModel.narrative || "Primary narrative unavailable.";
 
       el("metaAsof").textContent = formatDate(viewModel.asOf);
       el("metaDominant").textContent = titleize(viewModel.dominant);
@@ -1086,12 +825,12 @@
       el("metaRisk").textContent = titleize(viewModel.risk);
 
       el("decisionMini").textContent = viewModel.decisionLine || statement;
-      el("decisionMiniSub").textContent = t("decision_line_sub");
+      el("decisionMiniSub").textContent = "decision line";
       el("interpretationMini").textContent = viewModel.interpretation || narrativeMini;
-      el("interpretationMiniSub").textContent = predictionExplanation?.whyItMatters ? t("interpretation_why_sub") : t("primary_narrative_sub");
+      el("interpretationMiniSub").textContent = predictionExplanation?.whyItMatters ? "interpretation / why it matters" : "primary narrative";
 
-      el("runtimeMini").textContent = predictionExplanation?.status ? titleize(predictionExplanation.status) : t("ready");
-      el("runtimeMiniSub").textContent = predictionExplanation?.status ? t("all_prediction_artifacts_loaded") : t("prediction_artifacts_loaded");
+      el("runtimeMini").textContent = predictionExplanation?.status ? titleize(predictionExplanation.status) : "Ready";
+      el("runtimeMiniSub").textContent = predictionExplanation?.status ? "signal + scenario + prediction artifacts loaded" : "prediction artifacts loaded";
 
       el("confidenceChip").textContent = `Confidence ${formatConfidence(viewModel.confidence)}`;
     }
@@ -1112,7 +851,7 @@
 
       el("fxStatusTitle").textContent = status;
       el("fxSummaryText").textContent = summary || `${pair !== "—" ? pair + ": " : ""}${status}${reason ? " / " + reason : ""}`;
-      el("fxReasonText").textContent = reason || t("fx_context_unavailable");
+      el("fxReasonText").textContent = reason || "FX decision context unavailable.";
       el("fxAsof").textContent = formatDate(asOf);
 
       const pairChip = el("fxPairChip");
@@ -1138,13 +877,13 @@
       if (!root) return;
 
       if (!predictionExplanation){
-        root.innerHTML = `<article class="empty-card compact-empty-card"><div class="empty-meta">${escapeHtml(t("explanation_unavailable"))}</div><p class="empty-text">${escapeHtml(t("explanation_fetch_failed"))}</p></article>`;
+        root.innerHTML = '<article class="empty-card compact-empty-card"><div class="empty-meta">Explanation unavailable</div><p class="empty-text">prediction_explanation_latest.json を取得できませんでした。</p></article>';
         return;
       }
 
-      const summary = predictionExplanation.summary || "t("summary_unavailable")";
-      const interpretation = viewModel.interpretation || t("interpretation_unavailable");
-      const why = predictionExplanation.whyItMatters || "t("why_it_matters_unavailable")";
+      const summary = predictionExplanation.summary || "Summary unavailable.";
+      const interpretation = viewModel.interpretation || "Interpretation unavailable.";
+      const why = predictionExplanation.whyItMatters || "Why-it-matters unavailable.";
       const status = predictionExplanation.status || "—";
       const flow = safeArray(viewModel.narrativeFlow);
 
@@ -1169,7 +908,7 @@
       if (!root) return;
 
       if (!signalExplanation){
-        root.innerHTML = `<article class="empty-card compact-empty-card"><div class="empty-meta">${escapeHtml(t("signal_explanation_unavailable"))}</div><p class="empty-text">${escapeHtml(t("signal_fetch_failed"))}</p></article>`;
+        root.innerHTML = '<article class="empty-card compact-empty-card"><div class="empty-meta">Signal explanation unavailable</div><p class="empty-text">signal_explanation_latest.json を取得できませんでした。</p></article>';
         return;
       }
 
@@ -1183,8 +922,8 @@
           <span class="pill">S</span>
           <div>
             <p class="inline-text"><strong>${escapeHtml(signalExplanation.headline || "Signal Layer")}</strong></p>
-            <p class="inline-text">${escapeHtml(signalExplanation.summary || "t("summary_unavailable")")}</p>
-            <p class="inline-text">${escapeHtml(signalExplanation.interpretation || t("interpretation_unavailable"))}</p>
+            <p class="inline-text">${escapeHtml(signalExplanation.summary || "Summary unavailable.")}</p>
+            <p class="inline-text">${escapeHtml(signalExplanation.interpretation || "Interpretation unavailable.")}</p>
             <p class="inline-text"><strong>State:</strong> count=${escapeHtml(formatCount(state.count))} / type=${escapeHtml(titleize(state.dominantType || "unknown"))} / strength=${escapeHtml(titleize(state.strength || "unknown"))}${state.confidence != null ? ` / confidence=${escapeHtml(formatConfidence(state.confidence))}` : ""}</p>
             ${signals.length ? `<p class="inline-text"><strong>Signals:</strong> ${escapeHtml(signals.map((item) => item.signal || item.meaning).filter(Boolean).join(" / "))}</p>` : ""}
             ${implications.length ? `<p class="inline-text"><strong>Implications:</strong> ${escapeHtml(implications.join(" / "))}</p>` : ""}
@@ -1200,7 +939,7 @@
       if (!root) return;
 
       if (!scenarioExplanation){
-        root.innerHTML = `<article class="empty-card compact-empty-card"><div class="empty-meta">${escapeHtml(t("scenario_explanation_unavailable"))}</div><p class="empty-text">${escapeHtml(t("scenario_fetch_failed"))}</p></article>`;
+        root.innerHTML = '<article class="empty-card compact-empty-card"><div class="empty-meta">Scenario explanation unavailable</div><p class="empty-text">scenario_explanation_latest.json を取得できませんでした。</p></article>';
         return;
       }
 
@@ -1213,8 +952,8 @@
           <span class="pill">C</span>
           <div>
             <p class="inline-text"><strong>${escapeHtml(scenarioExplanation.headline || "Scenario Layer")}</strong></p>
-            <p class="inline-text">${escapeHtml(scenarioExplanation.summary || "t("summary_unavailable")")}</p>
-            <p class="inline-text">${escapeHtml(scenarioExplanation.whyItMatters || "t("why_it_matters_unavailable")")}</p>
+            <p class="inline-text">${escapeHtml(scenarioExplanation.summary || "Summary unavailable.")}</p>
+            <p class="inline-text">${escapeHtml(scenarioExplanation.whyItMatters || "Why-it-matters unavailable.")}</p>
             <p class="inline-text"><strong>Structure:</strong> dominant=${escapeHtml(titleize(scenarioExplanation.dominant || "unknown"))} / alternatives=${escapeHtml(alternatives.length ? alternatives.map((item) => titleize(item)).join(", ") : "—")}</p>
             <p class="inline-text"><strong>Balance:</strong> ${escapeHtml(scenarioExplanation.balance || "—")}</p>
             ${drivers.length ? `<p class="inline-text"><strong>Drivers:</strong> ${escapeHtml(drivers.join(" / "))}</p>` : ""}
@@ -1231,7 +970,7 @@
 
       const list = safeArray(items).slice(0, 3);
       if (!list.length){
-        root.innerHTML = `<article class="empty-card compact-empty-card"><div class="empty-meta">${escapeHtml(t("expected_outcomes_unavailable"))}</div><p class="empty-text">${escapeHtml(t("no_items_available"))}</p></article>`;
+        root.innerHTML = '<article class="empty-card compact-empty-card"><div class="empty-meta">Expected outcomes unavailable</div><p class="empty-text">No items available.</p></article>';
         return;
       }
 
@@ -1258,7 +997,7 @@
 
       const list = uniqueLimitedItems(items, limit);
       if (!list.length){
-        root.innerHTML = `<article class="empty-card compact-empty-card"><div class="empty-meta">${escapeHtml(emptyLabel)}</div><p class="empty-text">${escapeHtml(t("no_items_available"))}</p></article>`;
+        root.innerHTML = `<article class="empty-card compact-empty-card"><div class="empty-meta">${escapeHtml(emptyLabel)}</div><p class="empty-text">No items available.</p></article>`;
         return;
       }
 
@@ -1276,7 +1015,7 @@
 
       const list = safeArray(items).slice(0, UI_LIMITS.drivers);
       if (!list.length){
-        root.innerHTML = `<article class="empty-card compact-empty-card"><div class="empty-meta">${escapeHtml(t("key_drivers_unavailable"))}</div><p class="empty-text">${escapeHtml(t("no_items_available"))}</p></article>`;
+        root.innerHTML = '<article class="empty-card compact-empty-card"><div class="empty-meta">Key drivers unavailable</div><p class="empty-text">No items available.</p></article>';
         return;
       }
 
@@ -1308,7 +1047,7 @@
 
       const list = safeArray(items).slice(0, UI_LIMITS.monitoring);
       if (!list.length){
-        root.innerHTML = `<article class="empty-card compact-empty-card"><div class="empty-meta">${escapeHtml(t("monitoring_priorities_unavailable"))}</div><p class="empty-text">${escapeHtml(t("no_items_available"))}</p></article>`;
+        root.innerHTML = '<article class="empty-card compact-empty-card"><div class="empty-meta">Monitoring priorities unavailable</div><p class="empty-text">No items available.</p></article>';
         return;
       }
 
@@ -1340,7 +1079,7 @@
 
       const list = safeArray(items).slice(0, UI_LIMITS.expectedOutcomes);
       if (!list.length){
-        root.innerHTML = `<article class="empty-card compact-empty-card"><div class="empty-meta">${escapeHtml(t("expected_outcomes_unavailable"))}</div><p class="empty-text">${escapeHtml(t("no_items_available"))}</p></article>`;
+        root.innerHTML = '<article class="empty-card compact-empty-card"><div class="empty-meta">Expected outcomes unavailable</div><p class="empty-text">No items available.</p></article>';
         return;
       }
 
@@ -1372,7 +1111,7 @@
 
       const list = safeArray(items).slice(0, UI_LIMITS.historical);
       if (!list.length){
-        root.innerHTML = `<article class="empty-card compact-empty-card"><div class="empty-meta">Historical context unavailable</div><p class="empty-text">${escapeHtml(t("no_items_available"))}</p></article>`;
+        root.innerHTML = '<article class="empty-card compact-empty-card"><div class="empty-meta">Historical context unavailable</div><p class="empty-text">No items available.</p></article>';
         return;
       }
 
@@ -1405,7 +1144,7 @@
 
       const list = safeArray(items).slice(0, UI_LIMITS.uiTerms);
       if (!list.length){
-        root.innerHTML = `<article class="empty-card compact-empty-card"><div class="empty-meta">${escapeHtml(t("ui_terms_unavailable"))}</div><p class="empty-text">${escapeHtml(t("no_items_available"))}</p></article>`;
+        root.innerHTML = '<article class="empty-card compact-empty-card"><div class="empty-meta">UI terms unavailable</div><p class="empty-text">No items available.</p></article>';
         return;
       }
 
@@ -1605,9 +1344,6 @@
     }
 
     async function init(){
-      setDocumentLang();
-      applyStaticI18n();
-
       const entries = await Promise.all(
         Object.entries(PREDICTION_SOURCES).map(async ([key, url]) => [key, await fetchJson(url)])
       );
@@ -1616,11 +1352,11 @@
       renderSourceStatus(results);
 
       if (!results.prediction?.ok || !results.prediction?.data){
-        el("heroSummary").textContent = t("prediction_core_missing");
+        el("heroSummary").textContent = "prediction_latest.json を取得できませんでした。Prediction 本体は fallback で捏造しません。";
         el("runtimeMini").textContent = "Unavailable";
-        el("runtimeMiniSub").textContent = t("prediction_artifact_missing");
-        el("heroDecisionLine").textContent = t("prediction_unavailable");
-        el("heroInterpretation").textContent = t("interpretation_unavailable");
+        el("runtimeMiniSub").textContent = "prediction artifact missing";
+        el("heroDecisionLine").textContent = "Decision unavailable";
+        el("heroInterpretation").textContent = "Interpretation unavailable";
         return;
       }
 
@@ -1656,12 +1392,12 @@
       if (safeArray(viewModel.referenceMemory).length && typeof viewModel.referenceMemory[0] !== "string"){
         renderHistorical("referenceMemoryList", viewModel.referenceMemory);
       } else {
-        renderSimpleList("referenceMemoryList", viewModel.referenceMemory, t("reference_memory_unavailable"), "R", UI_LIMITS.memory);
+        renderSimpleList("referenceMemoryList", viewModel.referenceMemory, "Reference memory unavailable", "R", UI_LIMITS.memory);
       }
 
-      renderSimpleList("risksList", viewModel.risks, t("risks_unavailable"), "R", UI_LIMITS.risks);
-      renderSimpleList("invalidationList", viewModel.invalidation, t("invalidation_unavailable"), "I", UI_LIMITS.invalidation);
-      renderSimpleList("mustNotMeanList", viewModel.mustNotMean, t("must_not_mean_unavailable"), "N", UI_LIMITS.mustNotMean);
+      renderSimpleList("risksList", viewModel.risks, "Risks unavailable", "R", UI_LIMITS.risks);
+      renderSimpleList("invalidationList", viewModel.invalidation, "Invalidation unavailable", "I", UI_LIMITS.invalidation);
+      renderSimpleList("mustNotMeanList", viewModel.mustNotMean, "Must-not-mean unavailable", "N", UI_LIMITS.mustNotMean);
       renderUiTerms("uiTermsList", viewModel.uiTerms);
 
       renderExpectedOutcomePreview(viewModel.expectedOutcomes);

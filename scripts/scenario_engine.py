@@ -20,6 +20,412 @@ REFERENCE_MEMORY_PATH = PREDICTION_DIR / "reference_memory_latest.json"
 
 SCENARIO_LATEST_PATH = PREDICTION_DIR / "scenario_latest.json"
 
+LANG_DEFAULT = "ja"
+SUPPORTED_LANGUAGES = ["en", "ja", "th"]
+
+SCENARIO_LABELS = {
+    "best_case": {
+        "en": "Best Case",
+        "ja": "最良シナリオ",
+        "th": "กรณีดีที่สุด",
+    },
+    "base_case": {
+        "en": "Base Case",
+        "ja": "基本シナリオ",
+        "th": "กรณีฐาน",
+    },
+    "worst_case": {
+        "en": "Worst Case",
+        "ja": "最悪シナリオ",
+        "th": "กรณีเลวร้ายที่สุด",
+    },
+}
+
+RISK_LABELS = {
+    "stable": {
+        "en": "stable",
+        "ja": "安定",
+        "th": "ทรงตัว",
+    },
+    "guarded": {
+        "en": "guarded",
+        "ja": "警戒",
+        "th": "เฝ้าระวัง",
+    },
+    "high": {
+        "en": "high",
+        "ja": "高",
+        "th": "สูง",
+    },
+    "critical": {
+        "en": "critical",
+        "ja": "重大",
+        "th": "วิกฤต",
+    },
+}
+
+WATCHPOINT_LABELS = {
+    "bank_funding_stress": {
+        "en": "bank funding stress",
+        "ja": "銀行の資金調達ストレス",
+        "th": "ความตึงตัวของเงินทุนธนาคาร",
+    },
+    "credit_spread_widening": {
+        "en": "credit spread widening",
+        "ja": "信用スプレッド拡大",
+        "th": "ส่วนต่างเครดิตขยายกว้าง",
+    },
+    "loan_loss_increase": {
+        "en": "loan loss increase",
+        "ja": "貸倒増加",
+        "th": "หนี้เสียเพิ่มขึ้น",
+    },
+    "housing_or_equity_drawdown": {
+        "en": "housing or equity drawdown",
+        "ja": "住宅・株式価格の下落",
+        "th": "ราคาที่อยู่อาศัยหรือหุ้นปรับลดลง",
+    },
+    "policy_emergency_liquidity": {
+        "en": "policy emergency liquidity",
+        "ja": "緊急流動性政策",
+        "th": "มาตรการสภาพคล่องฉุกเฉิน",
+    },
+    "fx_reserve_drop": {
+        "en": "FX reserve drop",
+        "ja": "外貨準備低下",
+        "th": "ทุนสำรองระหว่างประเทศลดลง",
+    },
+    "forward_market_stress": {
+        "en": "forward market stress",
+        "ja": "先物市場ストレス",
+        "th": "ความตึงเครียดในตลาดล่วงหน้า",
+    },
+    "sovereign_spread_widening": {
+        "en": "sovereign spread widening",
+        "ja": "国債スプレッド拡大",
+        "th": "ส่วนต่างพันธบัตรรัฐบาลขยายกว้าง",
+    },
+    "import_price_surge": {
+        "en": "import price surge",
+        "ja": "輸入価格急騰",
+        "th": "ราคานำเข้าพุ่งสูง",
+    },
+    "capital_control_discussion": {
+        "en": "capital control discussion",
+        "ja": "資本規制議論",
+        "th": "การถกเถียงเรื่องควบคุมเงินทุน",
+    },
+    "repo_stress": {
+        "en": "repo stress",
+        "ja": "レポ市場ストレス",
+        "th": "ความตึงเครียดในตลาดรีโป",
+    },
+    "interbank_spread_surge": {
+        "en": "interbank spread surge",
+        "ja": "短期市場スプレッド急拡大",
+        "th": "ส่วนต่างตลาดเงินระหว่างธนาคารพุ่งสูง",
+    },
+    "money_market_dislocation": {
+        "en": "money market dislocation",
+        "ja": "短期金融市場の混乱",
+        "th": "ความผิดปกติในตลาดเงิน",
+    },
+    "emergency_swap_lines": {
+        "en": "emergency swap lines",
+        "ja": "緊急スワップライン",
+        "th": "วงเงินสว็อปฉุกเฉิน",
+    },
+    "forced_asset_sales": {
+        "en": "forced asset sales",
+        "ja": "資産の投げ売り",
+        "th": "การขายสินทรัพย์แบบถูกบีบ",
+    },
+    "capital_outflow": {
+        "en": "capital outflow",
+        "ja": "資本流出",
+        "th": "เงินทุนไหลออก",
+    },
+    "banking_stress": {
+        "en": "banking stress",
+        "ja": "銀行ストレス",
+        "th": "ความตึงเครียดในระบบธนาคาร",
+    },
+    "currency_instability": {
+        "en": "currency instability",
+        "ja": "通貨不安定",
+        "th": "ความไม่เสถียรของค่าเงิน",
+    },
+}
+
+OUTCOME_LABELS = {
+    "equities_down": {
+        "en": "equities down",
+        "ja": "株式下落",
+        "th": "หุ้นปรับตัวลง",
+    },
+    "credit_spreads_up": {
+        "en": "credit spreads up",
+        "ja": "信用スプレッド拡大",
+        "th": "ส่วนต่างเครดิตเพิ่มขึ้น",
+    },
+    "growth_down": {
+        "en": "growth down",
+        "ja": "成長減速",
+        "th": "การเติบโตชะลอลง",
+    },
+    "unemployment_up": {
+        "en": "unemployment up",
+        "ja": "失業率上昇",
+        "th": "การว่างงานเพิ่มขึ้น",
+    },
+    "safe_haven_up": {
+        "en": "safe haven up",
+        "ja": "安全資産選好",
+        "th": "ความต้องการสินทรัพย์ปลอดภัยเพิ่มขึ้น",
+    },
+    "currency_down": {
+        "en": "currency down",
+        "ja": "通貨下落",
+        "th": "ค่าเงินอ่อนตัว",
+    },
+    "inflation_up": {
+        "en": "inflation up",
+        "ja": "インフレ上昇",
+        "th": "เงินเฟ้อเพิ่มขึ้น",
+    },
+    "rates_up": {
+        "en": "rates up",
+        "ja": "金利上昇",
+        "th": "อัตราดอกเบี้ยเพิ่มขึ้น",
+    },
+    "default_risk_up": {
+        "en": "default risk up",
+        "ja": "デフォルトリスク上昇",
+        "th": "ความเสี่ยงผิดนัดชำระเพิ่มขึ้น",
+    },
+    "volatility_up": {
+        "en": "volatility up",
+        "ja": "変動率上昇",
+        "th": "ความผันผวนเพิ่มขึ้น",
+    },
+    "equities_stabilizes": {
+        "en": "equities stabilize",
+        "ja": "株式安定化",
+        "th": "หุ้นเริ่มทรงตัว",
+    },
+    "credit_spreads_moderates": {
+        "en": "credit spreads moderate",
+        "ja": "信用スプレッド縮小",
+        "th": "ส่วนต่างเครดิตเริ่มผ่อนคลาย",
+    },
+    "growth_stabilizes": {
+        "en": "growth stabilizes",
+        "ja": "成長安定化",
+        "th": "การเติบโตเริ่มทรงตัว",
+    },
+    "unemployment_moderates": {
+        "en": "unemployment moderates",
+        "ja": "失業率悪化が和らぐ",
+        "th": "การว่างงานเริ่มผ่อนคลาย",
+    },
+    "safe_haven_moderates": {
+        "en": "safe haven demand moderates",
+        "ja": "安全資産偏重が和らぐ",
+        "th": "แรงซื้อสินทรัพย์ปลอดภัยเริ่มผ่อนคลาย",
+    },
+    "currency_stabilizes": {
+        "en": "currency stabilizes",
+        "ja": "通貨安定化",
+        "th": "ค่าเงินเริ่มทรงตัว",
+    },
+    "currency_sharp_down": {
+        "en": "sharp currency weakness",
+        "ja": "急激な通貨下落",
+        "th": "ค่าเงินอ่อนตัวรุนแรง",
+    },
+    "equities_sharp_down": {
+        "en": "sharp equities decline",
+        "ja": "急激な株式下落",
+        "th": "หุ้นร่วงแรง",
+    },
+    "growth_sharp_down": {
+        "en": "sharp growth slowdown",
+        "ja": "急激な成長悪化",
+        "th": "การเติบโตทรุดตัวแรง",
+    },
+}
+
+DRIVER_LABELS = {
+    "de-escalation": {
+        "en": "de-escalation",
+        "ja": "緊張緩和",
+        "th": "การคลี่คลาย",
+    },
+    "policy stabilization": {
+        "en": "policy stabilization",
+        "ja": "政策安定化",
+        "th": "นโยบายช่วยพยุงเสถียรภาพ",
+    },
+    "supply adaptation": {
+        "en": "supply adaptation",
+        "ja": "供給適応",
+        "th": "การปรับตัวด้านอุปทาน",
+    },
+    "confidence recovery": {
+        "en": "confidence recovery",
+        "ja": "信認回復",
+        "th": "ความเชื่อมั่นฟื้นตัว",
+    },
+    "persistent stress": {
+        "en": "persistent stress",
+        "ja": "ストレス持続",
+        "th": "แรงกดดันยังคงอยู่",
+    },
+    "slow adjustment": {
+        "en": "slow adjustment",
+        "ja": "緩慢な調整",
+        "th": "การปรับตัวอย่างช้า ๆ",
+    },
+    "partial policy response": {
+        "en": "partial policy response",
+        "ja": "部分的政策対応",
+        "th": "มาตรการตอบสนองเพียงบางส่วน",
+    },
+    "selective spillover": {
+        "en": "selective spillover",
+        "ja": "選択的波及",
+        "th": "ผลกระทบลุกลามแบบจำกัดวง",
+    },
+    "escalation": {
+        "en": "escalation",
+        "ja": "エスカレーション",
+        "th": "การยกระดับ",
+    },
+    "confidence breakdown": {
+        "en": "confidence breakdown",
+        "ja": "信認崩れ",
+        "th": "ความเชื่อมั่นพังลง",
+    },
+    "policy failure": {
+        "en": "policy failure",
+        "ja": "政策失敗",
+        "th": "นโยบายล้มเหลว",
+    },
+    "cross-domain contagion": {
+        "en": "cross-domain contagion",
+        "ja": "領域横断の波及",
+        "th": "การลุกลามข้ามภาคส่วน",
+    },
+}
+
+PHRASE_I18N = {
+    "geopolitical escalation": {
+        "en": "geopolitical escalation",
+        "ja": "地政学的エスカレーション",
+        "th": "การยกระดับทางภูมิรัฐศาสตร์",
+    },
+    "military tension": {
+        "en": "military tension",
+        "ja": "軍事緊張",
+        "th": "ความตึงเครียดทางทหาร",
+    },
+    "sanctions fragmentation": {
+        "en": "sanctions fragmentation",
+        "ja": "制裁分断",
+        "th": "การแบ่งแยกจากมาตรการคว่ำบาตร",
+    },
+    "energy inflation": {
+        "en": "energy inflation",
+        "ja": "エネルギーインフレ",
+        "th": "เงินเฟ้อด้านพลังงาน",
+    },
+    "energy stress": {
+        "en": "energy stress",
+        "ja": "エネルギーストレス",
+        "th": "แรงกดดันด้านพลังงาน",
+    },
+    "debt fragility": {
+        "en": "debt fragility",
+        "ja": "債務脆弱性",
+        "th": "ความเปราะบางของหนี้",
+    },
+    "banking stress": {
+        "en": "banking stress",
+        "ja": "銀行ストレス",
+        "th": "ความตึงเครียดในระบบธนาคาร",
+    },
+    "currency weakness": {
+        "en": "currency weakness",
+        "ja": "通貨弱含み",
+        "th": "ค่าเงินอ่อนตัว",
+    },
+    "trade disruption": {
+        "en": "trade disruption",
+        "ja": "貿易混乱",
+        "th": "การค้าสะดุด",
+    },
+    "supply chain disruption": {
+        "en": "supply chain disruption",
+        "ja": "供給網混乱",
+        "th": "ห่วงโซ่อุปทานสะดุด",
+    },
+    "food inflation risk": {
+        "en": "food inflation risk",
+        "ja": "食料インフレリスク",
+        "th": "ความเสี่ยงเงินเฟ้ออาหาร",
+    },
+    "grain stress": {
+        "en": "grain stress",
+        "ja": "穀物ストレス",
+        "th": "แรงกดดันด้านธัญพืช",
+    },
+    "agricultural shock": {
+        "en": "agricultural shock",
+        "ja": "農業ショック",
+        "th": "ช็อกภาคเกษตร",
+    },
+    "infrastructure disruption": {
+        "en": "infrastructure disruption",
+        "ja": "インフラ混乱",
+        "th": "โครงสร้างพื้นฐานสะดุด",
+    },
+    "health-system disruption": {
+        "en": "health-system disruption",
+        "ja": "医療体制混乱",
+        "th": "ระบบสาธารณสุขสะดุด",
+    },
+    "social unrest": {
+        "en": "social unrest",
+        "ja": "社会不安",
+        "th": "ความไม่สงบทางสังคม",
+    },
+    "hegemonic transition": {
+        "en": "hegemonic transition",
+        "ja": "覇権移行",
+        "th": "การเปลี่ยนผ่านมหาอำนาจนำ",
+    },
+    "order transition stress": {
+        "en": "order transition stress",
+        "ja": "秩序移行ストレス",
+        "th": "แรงกดดันจากการเปลี่ยนระเบียบโลก",
+    },
+    "broad civilizational stress": {
+        "en": "broad civilizational stress",
+        "ja": "広域文明ストレス",
+        "th": "แรงกดดันเชิงอารยธรรมในวงกว้าง",
+    },
+    "multi-domain stress": {
+        "en": "multi-domain stress",
+        "ja": "多領域ストレス",
+        "th": "แรงกดดันหลายมิติ",
+    },
+    "acute stress concentration": {
+        "en": "acute stress concentration",
+        "ja": "急性ストレス集中",
+        "th": "แรงกดดันเฉียบพลันกระจุกตัว",
+    },
+}
+
 
 def load_json(path: Path, default: Any = None) -> Any:
     if not path.exists():
@@ -105,6 +511,101 @@ def collect_strings(obj: Any) -> List[str]:
     return unique_preserve_order(results)
 
 
+def ensure_lang_map(value: Any) -> Dict[str, str]:
+    if not isinstance(value, dict):
+        return {}
+    out: Dict[str, str] = {}
+    for lang in SUPPORTED_LANGUAGES:
+        text = value.get(lang)
+        if text is None:
+            continue
+        text_str = str(text).strip()
+        if text_str:
+            out[lang] = text_str
+    return out
+
+
+def finalize_text_i18n(base_en: str, partial: Dict[str, str]) -> Dict[str, str]:
+    en_text = str(partial.get("en") or base_en or "").strip()
+    ja_text = str(partial.get("ja") or en_text).strip()
+    th_text = str(partial.get("th") or en_text).strip()
+    return {
+        "en": en_text,
+        "ja": ja_text,
+        "th": th_text,
+    }
+
+
+def label_from_map(value: str, mapping: Dict[str, Dict[str, str]]) -> Dict[str, str]:
+    key = normalize_text(value)
+    mapped = mapping.get(key)
+    if mapped:
+        return finalize_text_i18n(str(mapped.get("en") or value or ""), mapped)
+    base = str(value or "").strip()
+    return {
+        "en": base,
+        "ja": base,
+        "th": base,
+    }
+
+
+def item_i18n(value: Any, mapping: Dict[str, Dict[str, str]]) -> Dict[str, str]:
+    key = normalize_text(value)
+    if key in mapping:
+        return finalize_text_i18n(str(mapping[key].get("en") or value or ""), mapping[key])
+
+    base = str(value or "").strip()
+    if ":" in base:
+        prefix, suffix = base.split(":", 1)
+        translated_prefix = item_i18n(prefix, DRIVER_LABELS)
+        suffix_clean = suffix.strip()
+        return {
+            "en": f"{translated_prefix['en']}: {suffix_clean}",
+            "ja": f"{translated_prefix['ja']}: {suffix_clean}",
+            "th": f"{translated_prefix['th']}: {suffix_clean}",
+        }
+
+    phrase = PHRASE_I18N.get(base)
+    if phrase:
+        return finalize_text_i18n(str(phrase.get("en") or base), phrase)
+
+    pretty_en = base.replace("_", " ").strip()
+    if pretty_en:
+        pretty_en = pretty_en[0].upper() + pretty_en[1:]
+
+    return {
+        "en": pretty_en or base,
+        "ja": base,
+        "th": base,
+    }
+
+
+def list_i18n(values: List[Any], mapping: Dict[str, Dict[str, str]]) -> Dict[str, List[str]]:
+    en_list: List[str] = []
+    ja_list: List[str] = []
+    th_list: List[str] = []
+
+    for value in values:
+        translated = item_i18n(value, mapping)
+        if translated["en"]:
+            en_list.append(translated["en"])
+        if translated["ja"]:
+            ja_list.append(translated["ja"])
+        if translated["th"]:
+            th_list.append(translated["th"])
+
+    return {
+        "en": en_list,
+        "ja": ja_list,
+        "th": th_list,
+    }
+
+
+def load_reference_memory() -> Dict[str, Any]:
+    data = load_json(REFERENCE_MEMORY_PATH, default={}) or {}
+    return data if isinstance(data, dict) else {}
+
+
 def extract_signal_tags(signal_data: Dict[str, Any]) -> List[str]:
     tags: List[str] = []
 
@@ -173,11 +674,6 @@ def extract_trend_tags(trend_data: Dict[str, Any]) -> List[str]:
         tags.extend(collect_strings(trend_data))
 
     return unique_preserve_order([t for t in tags if t])
-
-
-def load_reference_memory() -> Dict[str, Any]:
-    data = load_json(REFERENCE_MEMORY_PATH, default={}) or {}
-    return data if isinstance(data, dict) else {}
 
 
 def extract_reference_watchpoints(reference_memory: Dict[str, Any]) -> List[str]:
@@ -290,7 +786,7 @@ def build_risk_flags(
         "energy": "energy stress",
         "debt": "debt fragility",
         "bank": "banking stress",
-        "currency": "currency instability",
+        "currency": "currency weakness",
         "devaluation": "currency weakness",
         "trade": "trade disruption",
         "shipping": "supply chain disruption",
@@ -461,6 +957,96 @@ def calculate_scenario_confidence(
     return round(clamp01(confidence), 4)
 
 
+def build_best_case_narrative_i18n(risk_label: str) -> Dict[str, str]:
+    if risk_label == "stable":
+        return {
+            "en": (
+                "Current pressures remain limited and adaptive capacity is sufficient "
+                "to prevent a major regime shift."
+            ),
+            "ja": (
+                "現在の圧力は限定的で、適応余地もまだあり、大きなレジーム転換を回避できる可能性が高い。"
+            ),
+            "th": (
+                "แรงกดดันปัจจุบันยังอยู่ในวงจำกัด และระบบยังมีความสามารถในการปรับตัวเพียงพอ "
+                "ที่จะหลีกเลี่ยงการเปลี่ยนระบอบครั้งใหญ่"
+            ),
+        }
+    return {
+        "en": (
+            "Escalation pressures stabilize, supply disruptions remain contained, "
+            "and policy or market adaptation prevents broad spillover."
+        ),
+        "ja": (
+            "エスカレーション圧力が落ち着き、供給混乱も封じ込められ、政策または市場の適応によって広範な波及が防がれる。"
+        ),
+        "th": (
+            "แรงกดดันการยกระดับเริ่มทรงตัว ความปั่นป่วนด้านอุปทานยังถูกจำกัดไว้ "
+            "และการปรับตัวของนโยบายหรือของตลาดช่วยป้องกันการลุกลามในวงกว้าง"
+        ),
+    }
+
+
+def build_base_case_narrative_i18n(risk_label: str) -> Dict[str, str]:
+    if risk_label == "high":
+        return {
+            "en": (
+                "The most likely path is continued deterioration without immediate collapse, "
+                "producing a sustained guarded-risk regime."
+            ),
+            "ja": (
+                "最も起こりやすい道筋は、直ちに崩壊はしないものの悪化が続き、警戒リスクが長引く展開である。"
+            ),
+            "th": (
+                "เส้นทางที่เป็นไปได้มากที่สุดคือการเสื่อมลงต่อเนื่องโดยยังไม่พังทลายในทันที "
+                "ทำให้ระบอบความเสี่ยงแบบเฝ้าระวังคงอยู่นาน"
+            ),
+        }
+    return {
+        "en": (
+            "Current pressures persist in a guarded but manageable form, "
+            "with continued volatility and selective downstream stress."
+        ),
+        "ja": (
+            "現在の圧力は、警戒を要するものの管理可能な形で持続し、変動と選択的な下流ストレスが続く。"
+        ),
+        "th": (
+            "แรงกดดันปัจจุบันยังคงอยู่ในลักษณะที่ต้องเฝ้าระวังแต่ยังพอจัดการได้ "
+            "โดยความผันผวนและแรงกดดันปลายน้ำบางส่วนยังดำเนินต่อไป"
+        ),
+    }
+
+
+def build_worst_case_narrative_i18n(risk_label: str) -> Dict[str, str]:
+    if risk_label == "stable":
+        return {
+            "en": (
+                "A low-probability but important adverse path remains: seemingly contained "
+                "pressures could still cascade if watchpoints worsen rapidly."
+            ),
+            "ja": (
+                "確率は低いが重要な悪化シナリオは残る。いまは抑え込まれて見える圧力でも、監視点が急悪化すれば連鎖的に波及しうる。"
+            ),
+            "th": (
+                "ยังมีเส้นทางเชิงลบที่มีโอกาสต่ำแต่สำคัญอยู่ แม้แรงกดดันจะดูถูกควบคุมได้ในตอนนี้ "
+                "แต่ก็อาจลุกลามเป็นลูกโซ่หากจุดเฝ้าระวังแย่ลงอย่างรวดเร็ว"
+            ),
+        }
+    return {
+        "en": (
+            "Current pressures intensify into a broader systemic regime, "
+            "with cross-domain spillover into trade, currency, political, or social stability."
+        ),
+        "ja": (
+            "現在の圧力がより広いシステム局面へと強まり、貿易・通貨・政治・社会安定へ横断的に波及する。"
+        ),
+        "th": (
+            "แรงกดดันปัจจุบันทวีความรุนแรงจนกลายเป็นภาวะเชิงระบบที่กว้างขึ้น "
+            "และลุกลามข้ามมิติไปยังการค้า ค่าเงิน การเมือง และเสถียรภาพทางสังคม"
+        ),
+    }
+
+
 def build_best_case(
     risk_label: str,
     expected_outcomes: List[str],
@@ -469,16 +1055,8 @@ def build_best_case(
     dominant_pattern: Optional[str],
     dominant_analog: Optional[str],
 ) -> Dict[str, Any]:
-    narrative = (
-        "Escalation pressures stabilize, supply disruptions remain contained, "
-        "and policy or market adaptation prevents broad spillover."
-    )
-
-    if risk_label == "stable":
-        narrative = (
-            "Current pressures remain limited and adaptive capacity is sufficient "
-            "to prevent a major regime shift."
-        )
+    narrative_i18n = build_best_case_narrative_i18n(risk_label)
+    narrative = narrative_i18n["en"]
 
     drivers = [
         "de-escalation",
@@ -498,14 +1076,22 @@ def build_best_case(
         else:
             outcomes.append(item)
 
+    outcomes = unique_preserve_order(outcomes[:6])
+    watchpoints = unique_preserve_order(watchpoints[:6])
+
     return {
         "scenario_id": "best_case",
         "label": "Best Case",
+        "label_i18n": label_from_map("best_case", SCENARIO_LABELS),
         "probability_hint": "lower",
         "narrative": narrative,
+        "narrative_i18n": narrative_i18n,
         "drivers": unique_preserve_order(drivers),
-        "expected_outcomes": unique_preserve_order(outcomes[:6]),
-        "watchpoints": unique_preserve_order(watchpoints[:6]),
+        "drivers_i18n": list_i18n(unique_preserve_order(drivers), DRIVER_LABELS),
+        "expected_outcomes": outcomes,
+        "expected_outcomes_i18n": list_i18n(outcomes, OUTCOME_LABELS),
+        "watchpoints": watchpoints,
+        "watchpoints_i18n": list_i18n(watchpoints, WATCHPOINT_LABELS),
         "historical_support": {
             "dominant_pattern": dominant_pattern,
             "dominant_analog": dominant_analog,
@@ -522,16 +1108,8 @@ def build_base_case(
     dominant_pattern: Optional[str],
     dominant_analog: Optional[str],
 ) -> Dict[str, Any]:
-    narrative = (
-        "Current pressures persist in a guarded but manageable form, "
-        "with continued volatility and selective downstream stress."
-    )
-
-    if risk_label == "high":
-        narrative = (
-            "The most likely path is continued deterioration without immediate collapse, "
-            "producing a sustained guarded-risk regime."
-        )
+    narrative_i18n = build_base_case_narrative_i18n(risk_label)
+    narrative = narrative_i18n["en"]
 
     drivers = [
         "persistent stress",
@@ -542,14 +1120,22 @@ def build_base_case(
     if dominant_analog:
         drivers.append(f"historical_similarity:{dominant_analog}")
 
+    expected_outcomes = unique_preserve_order(expected_outcomes[:6])
+    watchpoints = unique_preserve_order(watchpoints[:8])
+
     return {
         "scenario_id": "base_case",
         "label": "Base Case",
+        "label_i18n": label_from_map("base_case", SCENARIO_LABELS),
         "probability_hint": "highest",
         "narrative": narrative,
+        "narrative_i18n": narrative_i18n,
         "drivers": unique_preserve_order(drivers),
-        "expected_outcomes": unique_preserve_order(expected_outcomes[:6]),
-        "watchpoints": unique_preserve_order(watchpoints[:8]),
+        "drivers_i18n": list_i18n(unique_preserve_order(drivers), DRIVER_LABELS),
+        "expected_outcomes": expected_outcomes,
+        "expected_outcomes_i18n": list_i18n(expected_outcomes, OUTCOME_LABELS),
+        "watchpoints": watchpoints,
+        "watchpoints_i18n": list_i18n(watchpoints, WATCHPOINT_LABELS),
         "historical_support": {
             "dominant_pattern": dominant_pattern,
             "dominant_analog": dominant_analog,
@@ -566,16 +1152,8 @@ def build_worst_case(
     dominant_pattern: Optional[str],
     dominant_analog: Optional[str],
 ) -> Dict[str, Any]:
-    narrative = (
-        "Current pressures intensify into a broader systemic regime, "
-        "with cross-domain spillover into trade, currency, political, or social stability."
-    )
-
-    if risk_label == "stable":
-        narrative = (
-            "A low-probability but important adverse path remains: seemingly contained "
-            "pressures could still cascade if watchpoints worsen rapidly."
-        )
+    narrative_i18n = build_worst_case_narrative_i18n(risk_label)
+    narrative = narrative_i18n["en"]
 
     intensified_outcomes = []
     for item in expected_outcomes:
@@ -595,14 +1173,22 @@ def build_worst_case(
     if dominant_pattern:
         drivers.append(f"historical_escalation_path:{dominant_pattern}")
 
+    intensified_outcomes = unique_preserve_order(intensified_outcomes[:6])
+    watchpoints = unique_preserve_order(watchpoints[:10])
+
     return {
         "scenario_id": "worst_case",
         "label": "Worst Case",
+        "label_i18n": label_from_map("worst_case", SCENARIO_LABELS),
         "probability_hint": "meaningful_tail_risk",
         "narrative": narrative,
+        "narrative_i18n": narrative_i18n,
         "drivers": unique_preserve_order(drivers),
-        "expected_outcomes": unique_preserve_order(intensified_outcomes[:6]),
-        "watchpoints": unique_preserve_order(watchpoints[:10]),
+        "drivers_i18n": list_i18n(unique_preserve_order(drivers), DRIVER_LABELS),
+        "expected_outcomes": intensified_outcomes,
+        "expected_outcomes_i18n": list_i18n(intensified_outcomes, OUTCOME_LABELS),
+        "watchpoints": watchpoints,
+        "watchpoints_i18n": list_i18n(watchpoints, WATCHPOINT_LABELS),
         "historical_support": {
             "dominant_pattern": dominant_pattern,
             "dominant_analog": dominant_analog,
@@ -647,6 +1233,53 @@ def build_summary(
     if dominant_analog:
         parts.append(f"historical analog is {dominant_analog}")
     return ". ".join(parts) + "."
+
+
+def build_summary_i18n(
+    dominant_scenario: str,
+    risk_label: str,
+    dominant_pattern: Optional[str],
+    dominant_analog: Optional[str],
+    confidence: float,
+    summary_en: str,
+) -> Dict[str, str]:
+    scenario_label = label_from_map(dominant_scenario, SCENARIO_LABELS)
+    risk_label_i18n = label_from_map(risk_label, RISK_LABELS)
+
+    en_parts = [
+        f"Dominant scenario is {scenario_label['en']}",
+        f"risk is {risk_label_i18n['en']}",
+        f"confidence is {confidence:.2f}",
+    ]
+    ja_parts = [
+        f"主要シナリオは {scenario_label['ja']}",
+        f"リスクは {risk_label_i18n['ja']}",
+        f"信頼度は {confidence:.2f}",
+    ]
+    th_parts = [
+        f"สถานการณ์หลักคือ {scenario_label['th']}",
+        f"ความเสี่ยงอยู่ที่ {risk_label_i18n['th']}",
+        f"ความเชื่อมั่นอยู่ที่ {confidence:.2f}",
+    ]
+
+    if dominant_pattern:
+        en_parts.append(f"historical pattern is {dominant_pattern}")
+        ja_parts.append(f"歴史パターンは {dominant_pattern}")
+        th_parts.append(f"historical pattern คือ {dominant_pattern}")
+
+    if dominant_analog:
+        en_parts.append(f"historical analog is {dominant_analog}")
+        ja_parts.append(f"歴史アナログは {dominant_analog}")
+        th_parts.append(f"historical analog คือ {dominant_analog}")
+
+    return finalize_text_i18n(
+        summary_en,
+        {
+            "en": ". ".join(en_parts) + ".",
+            "ja": "。".join(ja_parts) + "。",
+            "th": ". ".join(th_parts) + ".",
+        },
+    )
 
 
 def build_scenario_output(
@@ -743,19 +1376,35 @@ def build_scenario_output(
         dominant_analog=dominant_analog,
         confidence=confidence,
     )
+    summary_i18n = build_summary_i18n(
+        dominant_scenario=dominant_scenario,
+        risk_label=risk_label,
+        dominant_pattern=dominant_pattern,
+        dominant_analog=dominant_analog,
+        confidence=confidence,
+        summary_en=summary,
+    )
 
     return {
         "as_of": as_of,
         "generated_at": utc_now_iso(),
-        "engine_version": "v3_with_memory",
+        "engine_version": "v3_with_memory_i18n_phase1",
+        "lang_default": LANG_DEFAULT,
+        "languages": SUPPORTED_LANGUAGES,
         "dominant_scenario": dominant_scenario,
+        "dominant_scenario_i18n": label_from_map(dominant_scenario, SCENARIO_LABELS),
         "risk": risk_label,
+        "risk_i18n": label_from_map(risk_label, RISK_LABELS),
         "confidence": confidence,
         "scenario_bias": scenario_bias,
         "key_drivers": key_drivers,
+        "key_drivers_i18n": list_i18n(key_drivers, DRIVER_LABELS),
         "risk_flags": risk_flags,
+        "risk_flags_i18n": list_i18n(risk_flags, PHRASE_I18N),
         "watchpoints": watchpoints[:12],
+        "watchpoints_i18n": list_i18n(watchpoints[:12], WATCHPOINT_LABELS),
         "expected_outcomes": expected_outcomes[:10],
+        "expected_outcomes_i18n": list_i18n(expected_outcomes[:10], OUTCOME_LABELS),
         "historical_context": {
             "dominant_pattern": dominant_pattern,
             "pattern_confidence": round(safe_float(historical_pattern_data.get("pattern_confidence")), 4),
@@ -763,6 +1412,7 @@ def build_scenario_output(
             "analog_confidence": round(safe_float(historical_analog_data.get("analog_confidence")), 4),
             "current_stress_vector": {k: round(v, 4) for k, v in stress_vector.items()},
             "historical_watchpoints": watchpoints[:10],
+            "historical_watchpoints_i18n": list_i18n(watchpoints[:10], WATCHPOINT_LABELS),
         },
         "reference_memory": {
             "status": reference_memory_data.get("status", "unavailable"),
@@ -774,6 +1424,7 @@ def build_scenario_output(
         },
         "scenarios": scenarios,
         "summary": summary,
+        "summary_i18n": summary_i18n,
     }
 
 

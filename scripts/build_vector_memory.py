@@ -21,6 +21,9 @@ DEFAULT_BATCH_SIZE = 32
 MAX_DOC_CHARS = 3500
 DEFAULT_QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 
+LANG_DEFAULT = "ja"
+SUPPORTED_LANGUAGES = ["en", "ja", "th"]
+
 
 @dataclass(slots=True)
 class MemoryItem:
@@ -136,6 +139,45 @@ def rel_path_str(path: Path, root: Path) -> str:
     return path.resolve().relative_to(root.resolve()).as_posix()
 
 
+def ensure_lang_map(value: Any) -> dict[str, str]:
+    if not isinstance(value, dict):
+        return {}
+    out: dict[str, str] = {}
+    for lang in SUPPORTED_LANGUAGES:
+        text = value.get(lang)
+        if text is None:
+            continue
+        text_str = str(text).strip()
+        if text_str:
+            out[lang] = text_str
+    return out
+
+
+def finalize_text_i18n(base_en: str, partial: dict[str, str]) -> dict[str, str]:
+    en_text = str(partial.get("en") or base_en or "").strip()
+    ja_text = str(partial.get("ja") or en_text).strip()
+    th_text = str(partial.get("th") or en_text).strip()
+    return {
+        "en": en_text,
+        "ja": ja_text,
+        "th": th_text,
+    }
+
+
+def choose_i18n_text_map(data: dict[str, Any], base_key: str) -> dict[str, str]:
+    base_text = str(data.get(base_key) or "").strip()
+    partial = ensure_lang_map(data.get(f"{base_key}_i18n"))
+    return finalize_text_i18n(base_text, partial)
+
+
+def preferred_lang_text(i18n_map: dict[str, str], fallback: str = "") -> str:
+    return (
+        str(i18n_map.get(LANG_DEFAULT) or "").strip()
+        or str(i18n_map.get("en") or "").strip()
+        or fallback
+    )
+
+
 def extract_markdown_sections(text: str) -> list[tuple[str, str]]:
     matches = list(HEADING_RE.finditer(text))
     if not matches:
@@ -199,6 +241,24 @@ def add_items(
     )
 
 
+def title_i18n_from_markdown_title(title: str) -> dict[str, str]:
+    clean = normalize_text(title)
+    return {
+        "en": clean,
+        "ja": clean,
+        "th": clean,
+    }
+
+
+def summary_i18n_from_markdown_body(body: str) -> dict[str, str]:
+    clean = clip_text(body, 800)
+    return {
+        "en": clean,
+        "ja": clean,
+        "th": clean,
+    }
+
+
 def build_decision_log_items(root: Path, stats: BuildStats) -> list[MemoryItem]:
     path = root / "docs" / "core" / "decision_log.md"
     if not path.exists():
@@ -210,12 +270,18 @@ def build_decision_log_items(root: Path, stats: BuildStats) -> list[MemoryItem]:
 
     for title, body in sections:
         memory_id = stable_memory_id("decision_log", rel_path_str(path, root), title)
+        title_i18n = title_i18n_from_markdown_title(title)
+        summary_i18n = summary_i18n_from_markdown_body(body)
         payload = {
             "memory_id": memory_id,
             "memory_type": "decision_log",
+            "lang_default": LANG_DEFAULT,
+            "languages": list(SUPPORTED_LANGUAGES),
             "as_of": extract_as_of_from_text(title, body),
-            "title": title,
-            "summary": clip_text(body, 800),
+            "title": preferred_lang_text(title_i18n, title),
+            "title_i18n": title_i18n,
+            "summary": preferred_lang_text(summary_i18n, clip_text(body, 800)),
+            "summary_i18n": summary_i18n,
             "tags": derive_tags_from_text(title + "\n" + body, base=["decision_log", "docs"]),
             "source_path": rel_path_str(path, root),
             "source_kind": "docs",
@@ -279,15 +345,25 @@ def build_historical_library_items(root: Path, stats: BuildStats) -> list[Memory
         for index, pattern in enumerate(patterns):
             memory_type = "historical_pattern"
             pattern_id = str(pattern.get("pattern_id") or pattern.get("analog_id") or f"item-{index}")
-            title = str(pattern.get("name") or pattern.get("title") or pattern_id)
-            summary = build_summary_from_mapping(pattern)
+            title_map = choose_i18n_text_map(pattern, "name")
+            if not any(title_map.values()):
+                fallback_title = str(pattern.get("name") or pattern.get("title") or pattern_id)
+                title_map = finalize_text_i18n(fallback_title, {})
+            summary_map = choose_i18n_text_map(pattern, "summary")
+            if not any(summary_map.values()):
+                fallback_summary = build_summary_from_mapping(pattern, prefer_lang="en")
+                summary_map = finalize_text_i18n(fallback_summary, {})
             memory_id = stable_memory_id(memory_type, rel_path_str(path, root), pattern_id)
             payload = {
                 "memory_id": memory_id,
                 "memory_type": memory_type,
+                "lang_default": LANG_DEFAULT,
+                "languages": list(SUPPORTED_LANGUAGES),
                 "as_of": "static",
-                "title": title,
-                "summary": clip_text(summary, 800),
+                "title": preferred_lang_text(title_map, str(pattern.get("name") or pattern.get("title") or pattern_id)),
+                "title_i18n": title_map,
+                "summary": preferred_lang_text(summary_map, build_summary_from_mapping(pattern, prefer_lang=LANG_DEFAULT)),
+                "summary_i18n": summary_map,
                 "tags": derive_tags_from_mapping(pattern, base=["historical", path.stem]),
                 "source_path": rel_path_str(path, root),
                 "source_kind": "analysis",
@@ -296,7 +372,7 @@ def build_historical_library_items(root: Path, stats: BuildStats) -> list[Memory
                 "version": str(pattern.get("schema_version", "v1")),
                 "indexed_at": utc_now_iso(),
             }
-            document = build_historical_document(title, pattern)
+            document = build_historical_document(title_map, pattern)
             items.append(MemoryItem(stable_point_id(memory_id), clip_text(document), payload))
             stats.historical_pattern += 1
     return items
@@ -329,22 +405,32 @@ def build_json_artifact_item(
     except Exception:
         return None
 
-    title = infer_title_from_json(path, data, memory_type)
-    summary = build_summary_from_mapping(data)
+    title_i18n = infer_title_i18n_from_json(path, data, memory_type)
+    summary_i18n = infer_summary_i18n_from_json(data)
+    title = preferred_lang_text(title_i18n, infer_title_from_json(path, data, memory_type))
+    summary = preferred_lang_text(summary_i18n, build_summary_from_mapping(data, prefer_lang=LANG_DEFAULT))
+
     memory_id = stable_memory_id(memory_type, rel_path_str(path, root), str(as_of or "unknown"), title)
     payload = {
         "memory_id": memory_id,
         "memory_type": memory_type,
+        "lang_default": str(data.get("lang_default") or LANG_DEFAULT).strip() or LANG_DEFAULT,
+        "languages": data.get("languages") if isinstance(data.get("languages"), list) else list(SUPPORTED_LANGUAGES),
         "as_of": as_of or str(data.get("as_of", "unknown")),
         "title": title,
+        "title_i18n": title_i18n,
         "summary": clip_text(summary, 800),
+        "summary_i18n": {
+            lang: clip_text(text, 800)
+            for lang, text in summary_i18n.items()
+        },
         "tags": derive_tags_from_mapping(data, base=[memory_type]),
         "source_path": rel_path_str(path, root),
         "source_kind": "analysis",
         "version": str(data.get("engine_version", data.get("schema_version", "v1"))),
         "indexed_at": utc_now_iso(),
     }
-    document = build_json_document(title, data)
+    document = build_json_document(title_i18n, data)
     return MemoryItem(stable_point_id(memory_id), clip_text(document), payload)
 
 
@@ -354,6 +440,39 @@ def infer_title_from_json(path: Path, data: dict[str, Any], memory_type: str) ->
         if isinstance(value, str) and value.strip():
             return value.strip()
     return f"{memory_type}:{path.stem}"
+
+
+def infer_title_i18n_from_json(path: Path, data: dict[str, Any], memory_type: str) -> dict[str, str]:
+    for key in ("title", "headline", "dominant_pattern", "dominant_analog", "dominant_scenario"):
+        i18n = ensure_lang_map(data.get(f"{key}_i18n"))
+        value = data.get(key)
+        if i18n or (isinstance(value, str) and value.strip()):
+            return finalize_text_i18n(str(value or "").strip(), i18n)
+    fallback = f"{memory_type}:{path.stem}"
+    return finalize_text_i18n(fallback, {})
+
+
+def infer_summary_i18n_from_json(data: dict[str, Any]) -> dict[str, str]:
+    candidates = [
+        "summary",
+        "headline",
+        "why_it_matters",
+        "prediction_statement",
+        "primary_narrative",
+        "decision_line",
+        "interpretation",
+    ]
+    for key in candidates:
+        i18n = ensure_lang_map(data.get(f"{key}_i18n"))
+        value = data.get(key)
+        if i18n or (isinstance(value, str) and value.strip()):
+            return finalize_text_i18n(str(value or "").strip(), i18n)
+
+    return {
+        "en": build_summary_from_mapping(data, prefer_lang="en"),
+        "ja": build_summary_from_mapping(data, prefer_lang="ja"),
+        "th": build_summary_from_mapping(data, prefer_lang="th"),
+    }
 
 
 def extract_as_of_from_json(path: Path) -> str:
@@ -421,7 +540,7 @@ def dedupe_preserve_order(values: Iterable[str]) -> list[str]:
     return result
 
 
-def build_summary_from_mapping(data: dict[str, Any]) -> str:
+def build_summary_from_mapping(data: dict[str, Any], prefer_lang: str = LANG_DEFAULT) -> str:
     interesting_keys = [
         "summary",
         "headline",
@@ -436,49 +555,107 @@ def build_summary_from_mapping(data: dict[str, Any]) -> str:
     ]
     parts: list[str] = []
     for key in interesting_keys:
-        if key not in data:
+        if key not in data and f"{key}_i18n" not in data:
             continue
-        value = data.get(key)
-        if value in (None, "", [], {}):
+
+        i18n = ensure_lang_map(data.get(f"{key}_i18n"))
+        value = (
+            str(i18n.get(prefer_lang) or "").strip()
+            or str(i18n.get("en") or "").strip()
+        )
+        if not value:
+            raw = data.get(key)
+            if raw in (None, "", [], {}):
+                continue
+            value = normalize_text(raw)
+
+        if value in ("", "[]", "{}"):
             continue
-        parts.append(f"{key}={normalize_text(value)}")
+        parts.append(f"{key}={value}")
+
     if not parts:
         parts.append(normalize_text(data))
     return " | ".join(parts)
 
 
-def build_json_document(title: str, data: dict[str, Any]) -> str:
-    lines = [title]
+def build_json_document(title_i18n: dict[str, str], data: dict[str, Any]) -> str:
+    lines = [
+        preferred_lang_text(title_i18n, title_i18n.get("en", "")),
+        f"title_ja: {title_i18n.get('ja', '')}",
+        f"title_en: {title_i18n.get('en', '')}",
+        f"title_th: {title_i18n.get('th', '')}",
+    ]
     for key, value in data.items():
         if value in (None, "", [], {}):
             continue
+        if key.endswith("_i18n") and isinstance(value, dict):
+            ja = value.get("ja")
+            en = value.get("en")
+            th = value.get("th")
+            if isinstance(ja, str) or isinstance(en, str) or isinstance(th, str):
+                if ja:
+                    lines.append(f"{key}.ja: {normalize_text(ja)}")
+                if en:
+                    lines.append(f"{key}.en: {normalize_text(en)}")
+                if th:
+                    lines.append(f"{key}.th: {normalize_text(th)}")
+                continue
         lines.append(f"{key}: {normalize_text(value)}")
     return "\n".join(lines)
 
 
-def build_historical_document(title: str, pattern: dict[str, Any]) -> str:
+def build_historical_document(title_i18n: dict[str, str], pattern: dict[str, Any]) -> str:
     fields = [
         "summary",
+        "summary_i18n",
         "cause_tags",
         "trigger_tags",
         "event_chain",
         "impact_chain",
         "economic_outcomes",
+        "economic_outcomes_i18n",
         "political_outcomes",
         "civilization_outcomes",
         "watchpoints",
+        "watchpoints_i18n",
         "analog_examples",
+        "analog_examples_i18n",
         "scenario_bias",
         "stress_vector",
         "notes",
     ]
-    lines = [title]
+    lines = [
+        preferred_lang_text(title_i18n, title_i18n.get("en", "")),
+        f"title_ja: {title_i18n.get('ja', '')}",
+        f"title_en: {title_i18n.get('en', '')}",
+        f"title_th: {title_i18n.get('th', '')}",
+    ]
     for key in fields:
         if key not in pattern:
             continue
         value = pattern.get(key)
         if value in (None, "", [], {}):
             continue
+        if key.endswith("_i18n") and isinstance(value, dict):
+            ja = value.get("ja")
+            en = value.get("en")
+            th = value.get("th")
+            if isinstance(ja, str) or isinstance(en, str) or isinstance(th, str):
+                if ja:
+                    lines.append(f"{key}.ja: {normalize_text(ja)}")
+                if en:
+                    lines.append(f"{key}.en: {normalize_text(en)}")
+                if th:
+                    lines.append(f"{key}.th: {normalize_text(th)}")
+                continue
+            if isinstance(ja, list) or isinstance(en, list) or isinstance(th, list):
+                if ja:
+                    lines.append(f"{key}.ja: {normalize_text(ja)}")
+                if en:
+                    lines.append(f"{key}.en: {normalize_text(en)}")
+                if th:
+                    lines.append(f"{key}.th: {normalize_text(th)}")
+                continue
         lines.append(f"{key}: {normalize_text(value)}")
     return "\n".join(lines)
 

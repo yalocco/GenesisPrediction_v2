@@ -8,6 +8,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+LANG_DEFAULT = "ja"
+SUPPORTED_LANGUAGES = ["en", "ja", "th"]
+
+
 def now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
@@ -91,9 +95,9 @@ def normalize_list_items(value: Any) -> List[str]:
 def normalize_fx_status(value: Any) -> str:
     text = str(value or "").strip().upper()
 
-    if text in {"SAFE", "OK", "ON", "BUY", "RISK_ON"}:
+    if text in {"SAFE", "OK", "ON", "BUY", "RISK_ON", "SEND"}:
         return "SAFE"
-    if text in {"CAUTION", "WARN", "WARNING", "HOLD", "MIXED"}:
+    if text in {"CAUTION", "WARN", "WARNING", "HOLD", "MIXED", "SPLIT"}:
         return "CAUTION"
     if text in {"DANGER", "OFF", "SELL", "RISK_OFF"}:
         return "DANGER"
@@ -193,6 +197,124 @@ def extract_highlights(summary_json: Dict[str, Any], daily_summary_json: Dict[st
     return highlights[:8]
 
 
+def normalize_lang_map(value: Any) -> Dict[str, str]:
+    if not isinstance(value, dict):
+        return {}
+    out: Dict[str, str] = {}
+    for lang in SUPPORTED_LANGUAGES:
+        text = value.get(lang)
+        if text is None:
+            continue
+        text_str = str(text).strip()
+        if text_str:
+            out[lang] = text_str
+    return out
+
+
+def normalize_lang_list_map(value: Any) -> Dict[str, List[str]]:
+    if not isinstance(value, dict):
+        return {}
+    out: Dict[str, List[str]] = {}
+    for lang in SUPPORTED_LANGUAGES:
+        items = value.get(lang)
+        if not isinstance(items, list):
+            continue
+        out[lang] = [str(x).strip() for x in items if str(x).strip()]
+    return out
+
+
+def finalize_text_i18n(base_text: str, partial: Dict[str, str]) -> Dict[str, str]:
+    en_text = str(partial.get("en") or base_text or "").strip()
+    ja_text = str(partial.get("ja") or en_text).strip()
+    th_text = str(partial.get("th") or en_text).strip()
+    return {
+        "en": en_text,
+        "ja": ja_text,
+        "th": th_text,
+    }
+
+
+def finalize_list_i18n(base_list: List[str], partial: Dict[str, List[str]]) -> Dict[str, List[str]]:
+    en_list = partial.get("en") or list(base_list)
+    ja_list = partial.get("ja") or list(en_list)
+    th_list = partial.get("th") or list(en_list)
+    return {
+        "en": en_list,
+        "ja": ja_list,
+        "th": th_list,
+    }
+
+
+def pick_i18n_text(data: Dict[str, Any], base_key: str) -> str:
+    i18n = normalize_lang_map(data.get(f"{base_key}_i18n"))
+    if i18n:
+        preferred = str(i18n.get(LANG_DEFAULT) or "").strip()
+        if preferred:
+            return preferred
+        en_text = str(i18n.get("en") or "").strip()
+        if en_text:
+            return en_text
+        first_text = first_non_empty(*(i18n.get(lang) for lang in SUPPORTED_LANGUAGES))
+        if first_text:
+            return first_text
+    return str(data.get(base_key) or "").strip()
+
+
+def pick_i18n_text_map(data: Dict[str, Any], base_key: str) -> Dict[str, str]:
+    base_text = str(data.get(base_key) or "").strip()
+    partial = normalize_lang_map(data.get(f"{base_key}_i18n"))
+    return finalize_text_i18n(base_text, partial)
+
+
+def pick_i18n_list(data: Dict[str, Any], base_key: str) -> List[str]:
+    partial = normalize_lang_list_map(data.get(f"{base_key}_i18n"))
+    preferred = partial.get(LANG_DEFAULT)
+    if preferred:
+        return preferred
+    en_list = partial.get("en")
+    if en_list:
+        return en_list
+    base_list = normalize_list_items(data.get(base_key))
+    return base_list
+
+
+def pick_i18n_list_map(data: Dict[str, Any], base_key: str) -> Dict[str, List[str]]:
+    base_list = normalize_list_items(data.get(base_key))
+    partial = normalize_lang_list_map(data.get(f"{base_key}_i18n"))
+    return finalize_list_i18n(base_list, partial)
+
+
+def extract_historical_context_items(prediction_json: Dict[str, Any]) -> List[str]:
+    historical_context = prediction_json.get("historical_context")
+    if isinstance(historical_context, dict):
+        summary_i18n = normalize_lang_map(historical_context.get("summary_i18n"))
+        if summary_i18n:
+            preferred = summary_i18n.get(LANG_DEFAULT) or summary_i18n.get("en")
+            if preferred:
+                return [str(preferred).strip()]
+        summary = first_non_empty(historical_context.get("summary"))
+        if summary:
+            return [summary]
+    return normalize_list_items(historical_context)
+
+
+def extract_historical_context_i18n(prediction_json: Dict[str, Any]) -> Dict[str, List[str]]:
+    historical_context = prediction_json.get("historical_context")
+    if isinstance(historical_context, dict):
+        summary = first_non_empty(historical_context.get("summary")) or ""
+        summary_i18n = normalize_lang_map(historical_context.get("summary_i18n"))
+        if summary_i18n or summary:
+            return finalize_list_i18n([summary] if summary else [], {
+                "en": [summary_i18n.get("en", summary)] if summary_i18n.get("en") or summary else [],
+                "ja": [summary_i18n.get("ja", summary_i18n.get("en", summary))] if summary_i18n.get("ja") or summary_i18n.get("en") or summary else [],
+                "th": [summary_i18n.get("th", summary_i18n.get("en", summary))] if summary_i18n.get("th") or summary_i18n.get("en") or summary else [],
+            })
+    return finalize_list_i18n(
+        normalize_list_items(historical_context),
+        normalize_lang_list_map(prediction_json.get("historical_context_i18n")),
+    )
+
+
 def extract_prediction_block(prediction_json: Dict[str, Any]) -> Dict[str, Any]:
     if not prediction_json:
         return {
@@ -200,15 +322,28 @@ def extract_prediction_block(prediction_json: Dict[str, Any]) -> Dict[str, Any]:
             "as_of": "",
             "generated_at": "",
             "engine_version": "",
+            "lang_default": LANG_DEFAULT,
+            "languages": SUPPORTED_LANGUAGES,
             "risk": "",
             "dominant_scenario": "",
             "confidence": None,
             "confidence_pct": None,
             "summary": "",
+            "summary_i18n": {"en": "", "ja": "", "th": ""},
+            "prediction_statement": "",
+            "prediction_statement_i18n": {"en": "", "ja": "", "th": ""},
+            "primary_narrative": "",
+            "primary_narrative_i18n": {"en": "", "ja": "", "th": ""},
             "drivers": [],
+            "drivers_i18n": {"en": [], "ja": [], "th": []},
             "watchpoints": [],
+            "watchpoints_i18n": {"en": [], "ja": [], "th": []},
             "action_bias": "",
+            "action_bias_i18n": {"en": "", "ja": "", "th": ""},
+            "expected_outcomes": [],
+            "expected_outcomes_i18n": {"en": [], "ja": [], "th": []},
             "historical_context": [],
+            "historical_context_i18n": {"en": [], "ja": [], "th": []},
             "source": "analysis/prediction/prediction_latest.json",
         }
 
@@ -222,15 +357,29 @@ def extract_prediction_block(prediction_json: Dict[str, Any]) -> Dict[str, Any]:
     confidence_raw = pick_number(prediction_json.get("confidence"))
     confidence_pct = normalize_percent_number(confidence_raw)
 
+    summary_i18n = pick_i18n_text_map(prediction_json, "summary")
+    prediction_statement_i18n = pick_i18n_text_map(prediction_json, "prediction_statement")
+    primary_narrative_i18n = pick_i18n_text_map(prediction_json, "primary_narrative")
+    action_bias_i18n = pick_i18n_text_map(prediction_json, "action_bias")
+
+    drivers_i18n = pick_i18n_list_map(prediction_json, "key_drivers")
+    watchpoints_i18n = pick_i18n_list_map(prediction_json, "monitoring_priorities")
+    expected_outcomes_i18n = pick_i18n_list_map(prediction_json, "expected_outcomes")
+    historical_context_i18n = extract_historical_context_i18n(prediction_json)
+
     summary = first_non_empty(
-        prediction_json.get("summary"),
-        prediction_json.get("prediction_statement"),
-        prediction_json.get("primary_narrative"),
+        summary_i18n.get(LANG_DEFAULT),
+        summary_i18n.get("en"),
+        prediction_statement_i18n.get(LANG_DEFAULT),
+        prediction_statement_i18n.get("en"),
+        primary_narrative_i18n.get(LANG_DEFAULT),
+        primary_narrative_i18n.get("en"),
     )
 
-    drivers = normalize_list_items(prediction_json.get("key_drivers"))
-    watchpoints = normalize_list_items(prediction_json.get("monitoring_priorities"))
-    historical_context = normalize_list_items(prediction_json.get("historical_context"))
+    drivers = drivers_i18n.get(LANG_DEFAULT) or drivers_i18n.get("en") or []
+    watchpoints = watchpoints_i18n.get(LANG_DEFAULT) or watchpoints_i18n.get("en") or []
+    expected_outcomes = expected_outcomes_i18n.get(LANG_DEFAULT) or expected_outcomes_i18n.get("en") or []
+    historical_context = historical_context_i18n.get(LANG_DEFAULT) or historical_context_i18n.get("en") or []
 
     return {
         "available": True,
@@ -241,15 +390,44 @@ def extract_prediction_block(prediction_json: Dict[str, Any]) -> Dict[str, Any]:
         ) or "",
         "generated_at": first_non_empty(prediction_json.get("generated_at")) or "",
         "engine_version": first_non_empty(prediction_json.get("engine_version")) or "",
+        "lang_default": first_non_empty(prediction_json.get("lang_default")) or LANG_DEFAULT,
+        "languages": prediction_json.get("languages") if isinstance(prediction_json.get("languages"), list) else list(SUPPORTED_LANGUAGES),
         "risk": first_non_empty(prediction_json.get("risk")) or "",
         "dominant_scenario": dominant_scenario or "",
         "confidence": confidence_raw,
         "confidence_pct": confidence_pct,
         "summary": summary or "",
+        "summary_i18n": summary_i18n,
+        "prediction_statement": pick_i18n_text(prediction_json, "prediction_statement"),
+        "prediction_statement_i18n": prediction_statement_i18n,
+        "primary_narrative": pick_i18n_text(prediction_json, "primary_narrative"),
+        "primary_narrative_i18n": primary_narrative_i18n,
         "drivers": drivers[:5],
+        "drivers_i18n": {
+            "en": (drivers_i18n.get("en") or [])[:5],
+            "ja": (drivers_i18n.get("ja") or drivers_i18n.get("en") or [])[:5],
+            "th": (drivers_i18n.get("th") or drivers_i18n.get("en") or [])[:5],
+        },
         "watchpoints": watchpoints[:5],
-        "action_bias": first_non_empty(prediction_json.get("action_bias")) or "",
+        "watchpoints_i18n": {
+            "en": (watchpoints_i18n.get("en") or [])[:5],
+            "ja": (watchpoints_i18n.get("ja") or watchpoints_i18n.get("en") or [])[:5],
+            "th": (watchpoints_i18n.get("th") or watchpoints_i18n.get("en") or [])[:5],
+        },
+        "action_bias": pick_i18n_text(prediction_json, "action_bias"),
+        "action_bias_i18n": action_bias_i18n,
+        "expected_outcomes": expected_outcomes[:10],
+        "expected_outcomes_i18n": {
+            "en": (expected_outcomes_i18n.get("en") or [])[:10],
+            "ja": (expected_outcomes_i18n.get("ja") or expected_outcomes_i18n.get("en") or [])[:10],
+            "th": (expected_outcomes_i18n.get("th") or expected_outcomes_i18n.get("en") or [])[:10],
+        },
         "historical_context": historical_context[:3],
+        "historical_context_i18n": {
+            "en": (historical_context_i18n.get("en") or [])[:3],
+            "ja": (historical_context_i18n.get("ja") or historical_context_i18n.get("en") or [])[:3],
+            "th": (historical_context_i18n.get("th") or historical_context_i18n.get("en") or [])[:3],
+        },
         "source": "analysis/prediction/prediction_latest.json",
     }
 
@@ -260,12 +438,21 @@ def extract_fx_block(fx_json: Dict[str, Any]) -> Dict[str, Any]:
             "available": False,
             "as_of": "",
             "generated_at": "",
+            "lang_default": LANG_DEFAULT,
+            "languages": SUPPORTED_LANGUAGES,
             "status": "",
+            "status_i18n": {"en": "", "ja": "", "th": ""},
             "raw_status": "",
             "pair": "",
+            "pair_i18n": {"en": "", "ja": "", "th": ""},
             "summary": "",
+            "summary_i18n": {"en": "", "ja": "", "th": ""},
             "reason": "",
+            "reason_i18n": {"en": "", "ja": "", "th": ""},
             "action": "",
+            "action_i18n": {"en": "", "ja": "", "th": ""},
+            "watchpoints": [],
+            "watchpoints_i18n": {"en": [], "ja": [], "th": []},
             "source": "analysis/fx/fx_decision_latest.json",
         }
 
@@ -283,32 +470,46 @@ def extract_fx_block(fx_json: Dict[str, Any]) -> Dict[str, Any]:
         fx_json.get("symbol"),
     ) or ""
 
-    reason = first_non_empty(
-        fx_json.get("reason"),
-        fx_json.get("note"),
-        fx_json.get("message"),
-    ) or ""
+    pair_i18n = pick_i18n_text_map(fx_json, "pair")
+    decision_i18n = pick_i18n_text_map(fx_json, "decision")
+    status_i18n = pick_i18n_text_map(fx_json, "status")
+    action_i18n = pick_i18n_text_map(fx_json, "action")
+    recommendation_i18n = pick_i18n_text_map(fx_json, "recommendation")
+    reason_i18n = pick_i18n_text_map(fx_json, "reason")
+    watchpoints_i18n = pick_i18n_list_map(fx_json, "watchpoints")
 
+    reason = pick_i18n_text(fx_json, "reason")
     action = first_non_empty(
-        fx_json.get("action"),
-        fx_json.get("recommendation"),
+        pick_i18n_text(fx_json, "action"),
+        pick_i18n_text(fx_json, "recommendation"),
     ) or ""
 
+    summary_i18n = normalize_lang_map(fx_json.get("summary_i18n"))
     summary = first_non_empty(
-        fx_json.get("summary"),
-        fx_json.get("headline"),
+        summary_i18n.get(LANG_DEFAULT),
+        summary_i18n.get("en"),
+        reason_i18n.get(LANG_DEFAULT),
+        reason_i18n.get("en"),
     )
+
     if not summary:
         summary_parts: List[str] = []
-        if pair:
-            summary_parts.append(pair)
-        if status:
-            summary_parts.append(status)
-        elif raw_status:
-            summary_parts.append(raw_status.upper())
-        if reason:
-            summary_parts.append(reason)
+        pair_text = first_non_empty(pair_i18n.get(LANG_DEFAULT), pair_i18n.get("en"), pair)
+        status_text = first_non_empty(status_i18n.get(LANG_DEFAULT), status_i18n.get("en"), decision_i18n.get(LANG_DEFAULT), decision_i18n.get("en"), raw_status.upper() if raw_status else "")
+        if pair_text:
+            summary_parts.append(pair_text)
+        if status_text:
+            summary_parts.append(status_text)
         summary = ": ".join(summary_parts[:2]) if len(summary_parts) >= 2 else " ".join(summary_parts)
+
+    if not summary_i18n:
+        summary_i18n = finalize_text_i18n(summary or "", {
+            "en": first_non_empty(reason_i18n.get("en"), summary) or "",
+            "ja": first_non_empty(reason_i18n.get("ja"), reason_i18n.get("en"), summary) or "",
+            "th": first_non_empty(reason_i18n.get("th"), reason_i18n.get("en"), summary) or "",
+        })
+
+    watchpoints = watchpoints_i18n.get(LANG_DEFAULT) or watchpoints_i18n.get("en") or []
 
     return {
         "available": True,
@@ -322,12 +523,49 @@ def extract_fx_block(fx_json: Dict[str, Any]) -> Dict[str, Any]:
             fx_json.get("generated_at"),
             fx_json.get("updated"),
         ) or "",
-        "status": status,
+        "lang_default": first_non_empty(fx_json.get("lang_default")) or LANG_DEFAULT,
+        "languages": fx_json.get("languages") if isinstance(fx_json.get("languages"), list) else list(SUPPORTED_LANGUAGES),
+        "status": first_non_empty(
+            status_i18n.get(LANG_DEFAULT),
+            status_i18n.get("en"),
+            decision_i18n.get(LANG_DEFAULT),
+            decision_i18n.get("en"),
+            status,
+            raw_status.upper() if raw_status else "",
+        ) or "",
+        "status_i18n": finalize_text_i18n(
+            first_non_empty(status, raw_status.upper() if raw_status else "") or "",
+            {
+                "en": first_non_empty(status_i18n.get("en"), decision_i18n.get("en"), status, raw_status.upper() if raw_status else "") or "",
+                "ja": first_non_empty(status_i18n.get("ja"), decision_i18n.get("ja"), status_i18n.get("en"), decision_i18n.get("en"), status, raw_status.upper() if raw_status else "") or "",
+                "th": first_non_empty(status_i18n.get("th"), decision_i18n.get("th"), status_i18n.get("en"), decision_i18n.get("en"), status, raw_status.upper() if raw_status else "") or "",
+            },
+        ),
         "raw_status": raw_status.upper() if raw_status else "",
-        "pair": pair,
+        "pair": first_non_empty(pair_i18n.get(LANG_DEFAULT), pair_i18n.get("en"), pair) or "",
+        "pair_i18n": finalize_text_i18n(pair, pair_i18n),
         "summary": summary or "",
+        "summary_i18n": summary_i18n,
         "reason": reason,
-        "action": action,
+        "reason_i18n": reason_i18n,
+        "action": first_non_empty(
+            action_i18n.get(LANG_DEFAULT),
+            action_i18n.get("en"),
+            recommendation_i18n.get(LANG_DEFAULT),
+            recommendation_i18n.get("en"),
+            action,
+        ) or "",
+        "action_i18n": finalize_text_i18n(action, {
+            "en": first_non_empty(action_i18n.get("en"), recommendation_i18n.get("en"), action) or "",
+            "ja": first_non_empty(action_i18n.get("ja"), recommendation_i18n.get("ja"), action_i18n.get("en"), recommendation_i18n.get("en"), action) or "",
+            "th": first_non_empty(action_i18n.get("th"), recommendation_i18n.get("th"), action_i18n.get("en"), recommendation_i18n.get("en"), action) or "",
+        }),
+        "watchpoints": watchpoints[:5],
+        "watchpoints_i18n": {
+            "en": (watchpoints_i18n.get("en") or [])[:5],
+            "ja": (watchpoints_i18n.get("ja") or watchpoints_i18n.get("en") or [])[:5],
+            "th": (watchpoints_i18n.get("th") or watchpoints_i18n.get("en") or [])[:5],
+        },
         "source": "analysis/fx/fx_decision_latest.json",
     }
 
@@ -356,6 +594,8 @@ def build_payload(
         "status": "ok",
         "generated_at": now_iso(),
         "date": date_value,
+        "lang_default": LANG_DEFAULT,
+        "languages": SUPPORTED_LANGUAGES,
         "summary": summary_text or "",
         "summary_available": bool(summary_text),
         "highlights": highlights,

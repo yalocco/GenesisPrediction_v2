@@ -9,6 +9,9 @@ DEFAULT_COLLECTION = "genesis_reference_memory"
 DEFAULT_URL = "http://localhost:6333"
 DEFAULT_MODEL = "BAAI/bge-small-en"
 
+LANG_DEFAULT = "ja"
+SUPPORTED_LANGUAGES = ["en", "ja", "th"]
+
 
 def build_client(url: str) -> QdrantClient:
     return QdrantClient(url=url)
@@ -57,6 +60,39 @@ def _field(data: Dict[str, Any], *names: str) -> Any:
     return None
 
 
+def _ensure_lang_map(value: Any) -> Dict[str, str]:
+    if not isinstance(value, dict):
+        return {}
+    out: Dict[str, str] = {}
+    for lang in SUPPORTED_LANGUAGES:
+        text = value.get(lang)
+        if text is None:
+            continue
+        text_str = str(text).strip()
+        if text_str:
+            out[lang] = text_str
+    return out
+
+
+def _finalize_text_i18n(base_text: str, partial: Dict[str, str]) -> Dict[str, str]:
+    en_text = str(partial.get("en") or base_text or "").strip()
+    ja_text = str(partial.get("ja") or en_text).strip()
+    th_text = str(partial.get("th") or en_text).strip()
+    return {
+        "en": en_text,
+        "ja": ja_text,
+        "th": th_text,
+    }
+
+
+def _pick_preferred_text(i18n_map: Dict[str, str], fallback: str = "") -> str:
+    return (
+        str(i18n_map.get(LANG_DEFAULT) or "").strip()
+        or str(i18n_map.get("en") or "").strip()
+        or fallback
+    )
+
+
 def normalize_result_points(points: Iterable[Any]) -> List[Dict[str, Any]]:
     normalized: List[Dict[str, Any]] = []
 
@@ -73,13 +109,29 @@ def normalize_result_points(points: Iterable[Any]) -> List[Dict[str, Any]]:
         elif isinstance(metadata, dict) and metadata:
             data = metadata
 
+        title_raw = str(_field(data, "title") or "").strip()
+        summary_raw = str(_field(data, "summary", "document") or "").strip()
+
+        title_i18n = _finalize_text_i18n(
+            title_raw,
+            _ensure_lang_map(_field(data, "title_i18n")),
+        )
+        summary_i18n = _finalize_text_i18n(
+            summary_raw,
+            _ensure_lang_map(_field(data, "summary_i18n")),
+        )
+
         normalized.append(
             {
                 "score": score,
                 "memory_type": _field(data, "memory_type", "type"),
+                "lang_default": str(_field(data, "lang_default") or LANG_DEFAULT).strip() or LANG_DEFAULT,
+                "languages": _field(data, "languages") if isinstance(_field(data, "languages"), list) else list(SUPPORTED_LANGUAGES),
                 "as_of": _field(data, "as_of", "date"),
-                "title": _field(data, "title"),
-                "summary": _field(data, "summary", "document"),
+                "title": _pick_preferred_text(title_i18n, title_raw),
+                "title_i18n": title_i18n,
+                "summary": _pick_preferred_text(summary_i18n, summary_raw),
+                "summary_i18n": summary_i18n,
                 "source_path": _field(data, "source_path", "source"),
                 "tags": _field(data, "tags"),
                 "document": document,
