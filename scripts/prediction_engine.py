@@ -798,7 +798,6 @@ def build_action_bias(
     outcomes = set(normalize_text(x) for x in expected_outcomes)
     memory_summary = normalize_text(extract_memory_summary(scenario_data))
 
-    # Memory is support-only, but crisis-pattern recall should harden bias.
     if "financial_crisis" in memory_summary or "banking_crisis" in memory_summary:
         return "defensive"
 
@@ -998,7 +997,6 @@ def calculate_prediction_confidence(
         + 0.10 * analog_conf
     )
 
-    # Mild support-only boost when memory recall is healthy and non-empty.
     memory_status = normalize_text(extract_memory_status(scenario_data))
     memory_summary = extract_memory_summary(scenario_data)
     if memory_status == "ok" and memory_summary:
@@ -1282,9 +1280,9 @@ def build_prediction_output(
     output["monitoring_priorities_ids"] = list(output.get("monitoring_priorities", []))
     output["risk_flags_ids"] = list(output.get("risk_flags", []))
 
-    output["key_drivers"] = labelize_list(output.get("key_drivers", []), lang=LANG_DEFAULT)
-    output["monitoring_priorities"] = labelize_list(output.get("monitoring_priorities", []), lang=LANG_DEFAULT)
-    output["risk_flags"] = labelize_list(output.get("risk_flags", []), lang=LANG_DEFAULT)
+    output["key_drivers"] = labelize_list(output.get("key_drivers", []), lang="en")
+    output["monitoring_priorities"] = labelize_list(output.get("monitoring_priorities", []), lang="en")
+    output["risk_flags"] = labelize_list(output.get("risk_flags", []), lang="en")
 
     output["key_drivers_i18n"] = [labelize_i18n(item) for item in output.get("key_drivers_ids", [])]
     output["monitoring_priorities_i18n"] = [labelize_i18n(item) for item in output.get("monitoring_priorities_ids", [])]
