@@ -2,7 +2,7 @@
 
 Status: Active  
 Purpose: Architecture decision record  
-Last Updated: 2026-03-20
+Last Updated: 2026-03-21
 
 ---
 
@@ -147,6 +147,108 @@ Prediction / Scenario の代替ではない
 
 ---
 
+## Decision: Open WebUI Integration with Qdrant
+
+背景
+
+Open WebUI を Qdrant に接続し、
+
+Knowledge / File を vector search 可能にした。
+
+確認結果
+
+* Qdrant 接続成功
+* collection 作成確認
+* point 保存確認
+
+```text
+open-webui_files
+open-webui_knowledge
+```
+
+結論
+
+Open WebUI → Qdrant 接続は成立。
+
+---
+
+## Decision: Qdrant instance can be shared
+
+* Open WebUI と GenesisPrediction は同一 Qdrant を共有してよい
+
+ただし：
+
+```text
+collection は必ず分離する
+```
+
+---
+
+## Decision: Collection must be separated
+
+Open WebUI と GenesisPrediction の collection を分離する。
+
+```text
+Open WebUI:
+  open-webui_files
+  open-webui_knowledge
+
+GenesisPrediction:
+  genesis_reference_memory
+```
+
+理由
+
+* 管理責任の分離
+* 検索ノイズ防止
+* 将来の再構築容易性
+
+---
+
+## Decision: Conversation is NOT auto-vectorized
+
+* Open WebUI の会話ログは自動で Qdrant に保存されない
+* 会話はそのままでは記憶対象としない
+
+---
+
+## Decision: Memory is promoted, not raw
+
+* 会話全文を保存しない
+* 確定した判断のみ記憶に昇格する
+
+対象
+
+```text
+decision
+rule
+insight
+```
+
+非対象
+
+```text
+仮説
+試行錯誤
+雑談
+```
+
+---
+
+## Decision: Decision Log is primary memory source
+
+* Vector Memory の第一優先は decision_log
+* build_vector_memory.py は decision_log を最優先で取り込む
+
+---
+
+## Decision: build_vector_memory.py is single entrypoint
+
+* vector memory 構築は build_vector_memory.py に統一
+* スクリプトを増やさない
+
+---
+
 ## Decision: WorldDate = LOCAL DATE
 
 対象
@@ -283,4 +385,4 @@ Qdrant operational rule
 
 END OF DOCUMENT
 
-```
+````
