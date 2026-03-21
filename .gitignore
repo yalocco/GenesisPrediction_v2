@@ -34,3 +34,32 @@ dist/
 # --- backup files ---
 *.bak
 *.broken_*.bak
+
+# =========================================
+# Vector Memory (Qdrant)
+# =========================================
+
+# Qdrant storage (vector DB data - NEVER commit)
+infra/vector-memory/qdrant_storage/
+
+# Optional: future infra data (safety)
+infra/**/data/
+infra/**/storage/
+
+# =========================================
+# Docker / Compose extras (optional safety)
+# =========================================
+
+# Local override files (if used later)
+docker-compose.override.yml
+
+# =========================================
+# Future expansion (safe defaults)
+# =========================================
+
+# Temporary files
+*.tmp
+*.temp
+
+# Cache directories
+.cache/

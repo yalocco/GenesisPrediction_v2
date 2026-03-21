@@ -52,7 +52,7 @@ REFERENCE_MEMORY_PATH = REPO_ROOT / "analysis" / "prediction" / "reference_memor
 EXPLANATION_DIR = REPO_ROOT / "analysis" / "explanation"
 OUTPUT_PATH = EXPLANATION_DIR / "prediction_explanation_latest.json"
 
-LANG_DEFAULT = "ja"
+LANG_DEFAULT = "en"
 SUPPORTED_LANGUAGES = ["en", "ja", "th"]
 
 SCENARIO_LABELS = {
@@ -1767,17 +1767,17 @@ def build_unavailable_artifact(
         "status": "unavailable",
         "lang_default": LANG_DEFAULT,
         "languages": SUPPORTED_LANGUAGES,
-        "headline": headline_i18n["ja"],
+        "headline": headline_i18n["en"],
         "headline_i18n": headline_i18n,
-        "decision_line": decision_line_i18n["ja"],
+        "decision_line": decision_line_i18n["en"],
         "decision_line_i18n": decision_line_i18n,
-        "summary": summary_i18n["ja"],
+        "summary": summary_i18n["en"],
         "summary_i18n": summary_i18n,
-        "interpretation": interpretation_i18n["ja"],
+        "interpretation": interpretation_i18n["en"],
         "interpretation_i18n": interpretation_i18n,
-        "why_it_matters": why_i18n["ja"],
+        "why_it_matters": why_i18n["en"],
         "why_it_matters_i18n": why_i18n,
-        "narrative_flow": narrative_flow_i18n["ja"],
+        "narrative_flow": narrative_flow_i18n["en"],
         "narrative_flow_i18n": narrative_flow_i18n,
         "based_on": [str(prediction_path), str(scenario_path), str(signal_path)],
         "drivers": [],
@@ -1795,9 +1795,9 @@ def build_unavailable_artifact(
         "invalidation": [],
         "invalidation_i18n": {"ja": [], "en": [], "th": []},
         "must_not_mean": [
-            "unavailable は安全を意味しない",
-            "unavailable は prediction が存在しないことと同義ではない",
-            "UI は unavailable 時に explanation を作文してはならない",
+            "unavailable does not mean safe",
+            "unavailable is not the same as prediction not existing",
+            "UI must not compose explanations when unavailable",
         ],
         "must_not_mean_i18n": {
             "ja": [
@@ -1906,7 +1906,7 @@ def build_prediction_explanation(
         drivers_i18n["ja"].append(rendered["ja"])
         drivers_i18n["en"].append(rendered["en"])
         drivers_i18n["th"].append(rendered["th"])
-        drivers_base.append(rendered["ja"])
+        drivers_base.append(rendered["en"])
 
     monitor_i18n = {"ja": [], "en": [], "th": []}
     monitor_base: list[dict[str, str]] = []
@@ -1918,7 +1918,7 @@ def build_prediction_explanation(
         monitor_i18n["ja"].append(rendered["ja"])
         monitor_i18n["en"].append(rendered["en"])
         monitor_i18n["th"].append(rendered["th"])
-        monitor_base.append(rendered["ja"])
+        monitor_base.append(rendered["en"])
 
     historical_i18n = {"ja": [], "en": [], "th": []}
     historical_base: list[dict[str, Any]] = []
@@ -1927,7 +1927,7 @@ def build_prediction_explanation(
         historical_i18n["ja"].append(rendered["ja"])
         historical_i18n["en"].append(rendered["en"])
         historical_i18n["th"].append(rendered["th"])
-        historical_base.append(rendered["ja"])
+        historical_base.append(rendered["en"])
 
     implications_i18n = {"ja": [], "en": [], "th": []}
     implications_base: list[dict[str, Any]] = []
@@ -1936,7 +1936,7 @@ def build_prediction_explanation(
         implications_i18n["ja"].append(rendered["ja"])
         implications_i18n["en"].append(rendered["en"])
         implications_i18n["th"].append(rendered["th"])
-        implications_base.append(rendered["ja"])
+        implications_base.append(rendered["en"])
 
     risks_i18n = risks_i18n_from_context(
         risk_value=risk_value,
@@ -1971,17 +1971,17 @@ def build_prediction_explanation(
         "status": "ok",
         "lang_default": LANG_DEFAULT,
         "languages": SUPPORTED_LANGUAGES,
-        "headline": headline_i18n["ja"],
+        "headline": headline_i18n["en"],
         "headline_i18n": headline_i18n,
-        "decision_line": decision_line_i18n["ja"],
+        "decision_line": decision_line_i18n["en"],
         "decision_line_i18n": decision_line_i18n,
-        "summary": summary_i18n["ja"],
+        "summary": summary_i18n["en"],
         "summary_i18n": summary_i18n,
-        "interpretation": interpretation_i18n["ja"],
+        "interpretation": interpretation_i18n["en"],
         "interpretation_i18n": interpretation_i18n,
-        "why_it_matters": why_it_matters_i18n["ja"],
+        "why_it_matters": why_it_matters_i18n["en"],
         "why_it_matters_i18n": why_it_matters_i18n,
-        "narrative_flow": narrative_flow_i18n["ja"],
+        "narrative_flow": narrative_flow_i18n["en"],
         "narrative_flow_i18n": narrative_flow_i18n,
         "based_on": based_on,
         "context": {
@@ -1998,17 +1998,17 @@ def build_prediction_explanation(
         "drivers_i18n": drivers_i18n,
         "monitor": monitor_base,
         "monitor_i18n": monitor_i18n,
-        "watchpoints": watchpoints_i18n["ja"],
+        "watchpoints": watchpoints_i18n["en"],
         "watchpoints_i18n": watchpoints_i18n,
         "historical": historical_base,
         "historical_i18n": historical_i18n,
         "implications": implications_base,
         "implications_i18n": implications_i18n,
-        "risks": risks_i18n["ja"],
+        "risks": risks_i18n["en"],
         "risks_i18n": risks_i18n,
-        "invalidation": invalidation_i18n["ja"],
+        "invalidation": invalidation_i18n["en"],
         "invalidation_i18n": invalidation_i18n,
-        "must_not_mean": must_not_mean_all_i18n["ja"],
+        "must_not_mean": must_not_mean_all_i18n["en"],
         "must_not_mean_i18n": must_not_mean_all_i18n,
         "ui_terms": ui_terms_with_i18n(build_ui_terms()),
         "generated_at": utc_now_iso(),
@@ -2027,7 +2027,7 @@ def build_prediction_explanation(
         )
         if memory_refs:
             translated_refs = [translate_key_generic(x) for x in memory_refs[:6]]
-            artifact["reference_memory"] = [x["ja"] for x in translated_refs]
+            artifact["reference_memory"] = [x["en"] for x in translated_refs]
             artifact["reference_memory_i18n"] = {
                 "ja": [x["ja"] for x in translated_refs],
                 "en": [x["en"] for x in translated_refs],
