@@ -3,13 +3,84 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-LANG_DEFAULT = "ja"
+LANG_DEFAULT = "en"
 SUPPORTED_LANGUAGES = ["en", "ja", "th"]
+
+EXCLUDED_CATEGORY_KEYWORDS = {
+    "entertainment",
+    "celebrity",
+    "movies",
+    "movie",
+    "film",
+    "music",
+    "tv",
+    "television",
+    "showbiz",
+    "hollywood",
+    "arts",
+    "lifestyle",
+    "fashion",
+    "beauty",
+    "royal",
+    "sports",
+    "sport",
+}
+
+EXCLUDED_TITLE_KEYWORDS = [
+    "movie", "film", "actor", "actress", "celebrity", "tv show", "television",
+    "concert", "entertainment", "hollywood", "netflix", "disney", "buzz lightyear",
+    "stage comeback", "album", "singer", "box office", "red carpet", "fashion week",
+    "royal family", "bts", "maga? appeared first on", "peaky blinders", "salman rushdie",
+    "rebecca ferguson", "ballet", "drama", "review:", "award", "festival",
+]
+
+PRIORITY_CATEGORY_KEYWORDS = {
+    "politics": 3.0,
+    "policy": 3.0,
+    "economy": 3.0,
+    "economic": 3.0,
+    "finance": 3.0,
+    "financial": 3.0,
+    "markets": 2.5,
+    "market": 2.5,
+    "forex": 2.5,
+    "fx": 2.5,
+    "banking": 3.0,
+    "bank": 2.5,
+    "trade": 2.5,
+    "tariff": 3.0,
+    "geopolitics": 3.0,
+    "geopolitical": 3.0,
+    "security": 3.0,
+    "defense": 3.0,
+    "war": 3.0,
+    "military": 3.0,
+    "energy": 2.5,
+    "inflation": 3.0,
+    "rates": 3.0,
+    "fed": 3.0,
+    "central bank": 3.0,
+    "sanctions": 2.5,
+    "china": 1.5,
+    "iran": 2.0,
+    "russia": 2.0,
+    "ukraine": 2.0,
+    "trump": 1.5,
+    "election": 2.0,
+    "debt": 2.5,
+    "crisis": 3.0,
+}
+
+NOISE_SOURCE_KEYWORDS = [
+    "tmz", "people.com", "eonline", "billboard", "variety", "rollingstone",
+    "thewrap", "deadline", "entertainment weekly", "vogue", "elle", "harpers bazaar",
+]
 
 
 def now_iso() -> str:
@@ -103,6 +174,30 @@ def normalize_fx_status(value: Any) -> str:
         return "DANGER"
 
     return ""
+
+
+def normalize_text(value: Any) -> str:
+    return re.sub(r"\s+", " ", str(value or "").strip())
+
+
+def normalize_url(value: Any) -> str:
+    text = normalize_text(value).lower()
+    if not text:
+        return ""
+    text = re.sub(r"^https?://", "", text)
+    text = re.sub(r"#.*$", "", text)
+    text = re.sub(r"\?.*$", "", text)
+    text = text.rstrip("/")
+    return text
+
+
+def normalize_key_text(value: Any) -> str:
+    text = normalize_text(value).lower()
+    if not text:
+        return ""
+    text = re.sub(r"[^a-z0-9\s]+", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
 
 
 def extract_summary_text(summary_json: Dict[str, Any], daily_summary_json: Dict[str, Any]) -> Optional[str]:
@@ -570,6 +665,198 @@ def extract_fx_block(fx_json: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def extract_news_items(news_json: Dict[str, Any]) -> List[Dict[str, Any]]:
+    for key in ("items", "articles", "events", "news"):
+        items = news_json.get(key)
+        if isinstance(items, list):
+            return [item for item in items if isinstance(item, dict)]
+    return []
+
+
+def extract_sentiment_items(sentiment_json: Dict[str, Any]) -> List[Dict[str, Any]]:
+    for key in ("items", "articles", "events"):
+        items = sentiment_json.get(key)
+        if isinstance(items, list):
+            return [item for item in items if isinstance(item, dict)]
+
+    today = sentiment_json.get("today")
+    if isinstance(today, dict):
+        for key in ("items", "articles", "events"):
+            items = today.get(key)
+            if isinstance(items, list):
+                return [item for item in items if isinstance(item, dict)]
+
+    return []
+
+
+def build_sentiment_index(sentiment_json: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    by_url: Dict[str, Dict[str, Any]] = {}
+    by_title: Dict[str, Dict[str, Any]] = {}
+
+    for item in extract_sentiment_items(sentiment_json):
+        url = normalize_url(first_non_empty(item.get("url"), item.get("link")))
+        title = normalize_key_text(first_non_empty(item.get("title"), item.get("headline"), item.get("name")))
+
+        payload = {
+            "risk": pick_number(item.get("risk"), item.get("risk_score"), item.get("riskScore")) or 0.0,
+            "score": pick_number(item.get("score"), item.get("net")) or 0.0,
+            "positive": pick_number(item.get("positive"), item.get("positive_score")) or 0.0,
+            "uncertainty": pick_number(item.get("uncertainty"), item.get("uncertainty_score")) or 0.0,
+            "label": first_non_empty(item.get("sentiment_label"), item.get("label"), item.get("sentiment")) or "unknown",
+        }
+
+        if url and url not in by_url:
+            by_url[url] = payload
+        if title and title not in by_title:
+            by_title[title] = payload
+
+    return {"url": by_url, "title": by_title}
+
+
+def normalize_source_name(item: Dict[str, Any]) -> str:
+    source = item.get("source")
+    if isinstance(source, dict):
+        return first_non_empty(source.get("name"), source.get("id")) or "Unknown source"
+    return first_non_empty(item.get("source"), item.get("publisher"), item.get("domain")) or "Unknown source"
+
+
+def normalize_category_text(item: Dict[str, Any]) -> str:
+    raw = first_non_empty(
+        item.get("category"),
+        item.get("section"),
+        item.get("topic"),
+        item.get("vertical"),
+        item.get("desk"),
+    ) or ""
+    return normalize_key_text(raw)
+
+
+def category_bonus(article: Dict[str, Any]) -> float:
+    haystack = " ".join([
+        normalize_key_text(article.get("category")),
+        normalize_key_text(article.get("title")),
+        normalize_key_text(article.get("summary")),
+    ]).strip()
+
+    bonus = 0.0
+    for key, weight in PRIORITY_CATEGORY_KEYWORDS.items():
+        if key in haystack:
+            bonus += weight
+    return bonus
+
+
+def is_digest_noise(article: Dict[str, Any]) -> bool:
+    title = normalize_key_text(article.get("title"))
+    summary = normalize_key_text(article.get("summary"))
+    category = normalize_key_text(article.get("category"))
+    source = normalize_key_text(article.get("source"))
+    url = normalize_url(article.get("url"))
+
+    if any(keyword in category for keyword in EXCLUDED_CATEGORY_KEYWORDS):
+        return True
+
+    combined = " ".join([title, summary, source, url])
+    for keyword in EXCLUDED_TITLE_KEYWORDS:
+        if keyword in combined:
+            return True
+
+    for source_keyword in NOISE_SOURCE_KEYWORDS:
+        if source_keyword in source or source_keyword in url:
+            return True
+
+    return False
+
+
+def compute_relevance(article: Dict[str, Any]) -> float:
+    risk = pick_number(article.get("risk")) or 0.0
+    score = pick_number(article.get("score")) or 0.0
+    positive = pick_number(article.get("positive")) or 0.0
+    uncertainty = pick_number(article.get("uncertainty")) or 0.0
+
+    relevance = 0.0
+    relevance += risk * 4.0
+    relevance += abs(score) * 1.5
+    relevance += uncertainty * 1.0
+    relevance += category_bonus(article)
+
+    title = normalize_key_text(article.get("title"))
+    if "war" in title or "tariff" in title or "fed" in title or "trump" in title:
+        relevance += 1.0
+    if "iran" in title or "china" in title or "russia" in title or "ukraine" in title:
+        relevance += 1.0
+    if positive > 0.5 and risk == 0:
+        relevance -= 0.5
+
+    return round(relevance, 6)
+
+
+def normalize_news_article(item: Dict[str, Any], sentiment_index: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    title = first_non_empty(item.get("title"), item.get("headline"), item.get("name")) or "Untitled"
+    url = first_non_empty(item.get("url"), item.get("link")) or "#"
+
+    url_key = normalize_url(url)
+    title_key = normalize_key_text(title)
+    sentiment = sentiment_index.get("url", {}).get(url_key) or sentiment_index.get("title", {}).get(title_key) or {}
+
+    article = {
+        "title": title,
+        "summary": first_non_empty(item.get("description"), item.get("summary"), item.get("content")) or "Summary not available.",
+        "url": url,
+        "image": first_non_empty(item.get("urlToImage"), item.get("image"), item.get("thumbnail"), item.get("image_url")) or "",
+        "source": normalize_source_name(item),
+        "publishedAt": first_non_empty(item.get("publishedAt"), item.get("published_at"), item.get("date"), item.get("datetime")) or "",
+        "category": normalize_category_text(item),
+        "label": first_non_empty(sentiment.get("label")) or "unknown",
+        "risk": pick_number(sentiment.get("risk")) or 0.0,
+        "score": pick_number(sentiment.get("score")) or 0.0,
+        "positive": pick_number(sentiment.get("positive")) or 0.0,
+        "uncertainty": pick_number(sentiment.get("uncertainty")) or 0.0,
+    }
+    article["relevance"] = compute_relevance(article)
+    return article
+
+
+def build_digest_cards(news_json: Dict[str, Any], sentiment_json: Dict[str, Any], limit: int = 48) -> List[Dict[str, Any]]:
+    sentiment_index = build_sentiment_index(sentiment_json)
+    raw_items = extract_news_items(news_json)
+
+    cards: List[Dict[str, Any]] = []
+    seen_urls = set()
+    seen_titles = set()
+
+    for item in raw_items:
+        article = normalize_news_article(item, sentiment_index)
+        url_key = normalize_url(article.get("url"))
+        title_key = normalize_key_text(article.get("title"))
+
+        if not article.get("title"):
+            continue
+        if is_digest_noise(article):
+            continue
+        if url_key and url_key in seen_urls:
+            continue
+        if title_key and title_key in seen_titles:
+            continue
+
+        if url_key:
+            seen_urls.add(url_key)
+        if title_key:
+            seen_titles.add(title_key)
+
+        cards.append(article)
+
+    cards.sort(
+        key=lambda x: (
+            -(pick_number(x.get("relevance")) or 0.0),
+            -(pick_number(x.get("risk")) or 0.0),
+            -(pick_number(x.get("score")) or 0.0),
+            normalize_text(x.get("publishedAt")),
+        )
+    )
+
+    return cards[:limit]
+
+
 def build_payload(
     date_value: str,
     summary_text: Optional[str],
@@ -578,6 +865,7 @@ def build_payload(
     daily_summary_json: Dict[str, Any],
     prediction_json: Dict[str, Any],
     fx_json: Dict[str, Any],
+    digest_cards: List[Dict[str, Any]],
 ) -> Dict[str, Any]:
     new_urls = daily_summary_json.get("new_urls")
     if not isinstance(new_urls, list):
@@ -590,6 +878,8 @@ def build_payload(
     prediction_block = extract_prediction_block(prediction_json)
     fx_block = extract_fx_block(fx_json)
 
+    article_titles = [card["title"] for card in digest_cards[:12]] if digest_cards else titles[:12]
+
     return {
         "status": "ok",
         "generated_at": now_iso(),
@@ -599,10 +889,12 @@ def build_payload(
         "summary": summary_text or "",
         "summary_available": bool(summary_text),
         "highlights": highlights,
-        "articles": titles[:12],
+        "articles": article_titles,
+        "cards": digest_cards,
         "meta": {
             "n_events": n_events,
             "new_url_count": len(new_urls),
+            "digest_card_count": len(digest_cards),
         },
         "prediction": prediction_block,
         "fx": fx_block,
@@ -626,18 +918,21 @@ def main() -> None:
     daily_news_path = world_analysis_dir / f"daily_news_{args.date}.json"
     daily_summary_latest_path = world_analysis_dir / "daily_summary_latest.json"
     summary_json_path = world_analysis_dir / "summary.json"
+    sentiment_latest_path = world_analysis_dir / "sentiment_latest.json"
     prediction_latest_path = prediction_analysis_dir / "prediction_latest.json"
     fx_decision_latest_path = fx_analysis_dir / "fx_decision_latest.json"
 
     daily_news_json = load_json(daily_news_path)
     daily_summary_json = load_json(daily_summary_latest_path)
     summary_json = load_json(summary_json_path)
+    sentiment_json = load_json(sentiment_latest_path)
     prediction_json = load_json(prediction_latest_path)
     fx_json = load_json(fx_decision_latest_path)
 
     summary_text = extract_summary_text(summary_json, daily_summary_json)
     titles = extract_titles(daily_news_json, daily_summary_json)
     highlights = extract_highlights(summary_json, daily_summary_json, titles)
+    digest_cards = build_digest_cards(daily_news_json, sentiment_json, limit=48)
 
     payload = build_payload(
         date_value=args.date,
@@ -647,6 +942,7 @@ def main() -> None:
         daily_summary_json=daily_summary_json,
         prediction_json=prediction_json,
         fx_json=fx_json,
+        digest_cards=digest_cards,
     )
 
     dated_path = digest_view_dir / f"{args.date}.json"
@@ -665,6 +961,8 @@ def main() -> None:
         print("[OK] summary loaded")
     else:
         print("[WARN] summary missing (summary.json / daily_summary_latest.json text not found)")
+
+    print(f"[OK] digest cards         : {len(payload.get('cards', []))}")
 
     if payload["prediction"]["available"]:
         print("[OK] prediction integrated")

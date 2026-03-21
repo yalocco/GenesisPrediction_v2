@@ -149,6 +149,133 @@
     root.innerHTML = buildFooterHtml();
   }
 
+  function safeObject(value) {
+    return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+  }
+
+  function safeString(value) {
+    if (value === null || value === undefined) {
+      return "";
+    }
+    return String(value).trim();
+  }
+
+  function safeArray(value) {
+    return Array.isArray(value) ? value : [];
+  }
+
+  function pickText(obj, key, lang = null) {
+    const target = safeObject(obj);
+    if (!target) {
+      return "";
+    }
+
+    const activeLang = safeString(lang || window.GP_LANG || DEFAULT_LANG) || DEFAULT_LANG;
+    const i18nKey = `${key}_i18n`;
+    const i18n = safeObject(target[i18nKey]);
+
+    if (i18n) {
+      const preferred = safeString(i18n[activeLang]);
+      if (preferred) {
+        return preferred;
+      }
+
+      const english = safeString(i18n.en);
+      if (english) {
+        return english;
+      }
+
+      const japanese = safeString(i18n.ja);
+      if (japanese) {
+        return japanese;
+      }
+
+      const thai = safeString(i18n.th);
+      if (thai) {
+        return thai;
+      }
+    }
+
+    return safeString(target[key]);
+  }
+
+  function pickList(obj, key, lang = null) {
+    const target = safeObject(obj);
+    if (!target) {
+      return [];
+    }
+
+    const activeLang = safeString(lang || window.GP_LANG || DEFAULT_LANG) || DEFAULT_LANG;
+    const i18nKey = `${key}_i18n`;
+    const i18n = safeObject(target[i18nKey]);
+
+    if (i18n) {
+      const preferred = safeArray(i18n[activeLang]).map((item) => safeString(item)).filter(Boolean);
+      if (preferred.length > 0) {
+        return preferred;
+      }
+
+      const english = safeArray(i18n.en).map((item) => safeString(item)).filter(Boolean);
+      if (english.length > 0) {
+        return english;
+      }
+
+      const japanese = safeArray(i18n.ja).map((item) => safeString(item)).filter(Boolean);
+      if (japanese.length > 0) {
+        return japanese;
+      }
+
+      const thai = safeArray(i18n.th).map((item) => safeString(item)).filter(Boolean);
+      if (thai.length > 0) {
+        return thai;
+      }
+    }
+
+    return safeArray(target[key]).map((item) => safeString(item)).filter(Boolean);
+  }
+
+  function pickField(value, lang = null) {
+    const activeLang = safeString(lang || window.GP_LANG || DEFAULT_LANG) || DEFAULT_LANG;
+
+    if (Array.isArray(value)) {
+      return value.map((item) => pickField(item, activeLang));
+    }
+
+    if (value && typeof value === "object") {
+      const asLangMap =
+        ("en" in value || "ja" in value || "th" in value) &&
+        !Array.isArray(value.en) &&
+        !Array.isArray(value.ja) &&
+        !Array.isArray(value.th);
+
+      if (asLangMap) {
+        const preferred = safeString(value[activeLang]);
+        if (preferred) {
+          return preferred;
+        }
+        return (
+          safeString(value.en) ||
+          safeString(value.ja) ||
+          safeString(value.th) ||
+          ""
+        );
+      }
+    }
+
+    return value;
+  }
+
+  function exposeI18nHelpers() {
+    window.GenesisI18n = {
+      getLang,
+      setLang,
+      pickText,
+      pickList,
+      pickField,
+      defaultLang: DEFAULT_LANG
+    };
+  }
+
   async function refreshSharedStatus() {
     try {
       if (window.GenesisGlobalStatus) {
@@ -172,6 +299,7 @@
 
   async function boot() {
     initLang();
+    exposeI18nHelpers();
     document.documentElement.dataset.layoutReady = "0";
 
     injectHeader();

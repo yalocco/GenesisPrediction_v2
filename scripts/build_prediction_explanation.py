@@ -56,9 +56,9 @@ LANG_DEFAULT = "en"
 SUPPORTED_LANGUAGES = ["en", "ja", "th"]
 
 SCENARIO_LABELS = {
-    "best_case": {"ja": "最良シナリオ", "en": "best_case", "th": "กรณีดีที่สุด"},
-    "base_case": {"ja": "基本シナリオ", "en": "base_case", "th": "กรณีฐาน"},
-    "worst_case": {"ja": "最悪シナリオ", "en": "worst_case", "th": "กรณีเลวร้ายที่สุด"},
+    "best_case": {"ja": "最良シナリオ", "en": "Best case", "th": "กรณีดีที่สุด"},
+    "base_case": {"ja": "基本シナリオ", "en": "Base case", "th": "กรณีฐาน"},
+    "worst_case": {"ja": "最悪シナリオ", "en": "Worst case", "th": "กรณีเลวร้ายที่สุด"},
 }
 
 RISK_LABELS = {
@@ -479,13 +479,6 @@ def clamp_confidence(value: Any) -> float | None:
     return max(0.0, min(1.0, num))
 
 
-def safe_title(text: Any) -> str | None:
-    s = normalize_str(text)
-    if not s:
-        return None
-    return compact_spaces(s.replace("_", " ").replace("-", " "))
-
-
 def canonical_key(text: str) -> str:
     s = compact_spaces(str(text or ""))
     if not s:
@@ -660,10 +653,10 @@ def normalize_driver_struct(item: Any) -> dict[str, str] | None:
         return None
 
     if isinstance(item, str):
-        text = safe_title(item)
+        text = normalize_str(item)
         if not text:
             return None
-        return {"driver": text}
+        return {"driver": compact_spaces(text)}
 
     if isinstance(item, dict):
         driver = (
@@ -678,10 +671,10 @@ def normalize_driver_struct(item: Any) -> dict[str, str] | None:
             return None
         return {"driver": compact_spaces(driver)}
 
-    text = safe_title(str(item))
+    text = normalize_str(str(item))
     if not text:
         return None
-    return {"driver": text}
+    return {"driver": compact_spaces(text)}
 
 
 def extract_drivers(
@@ -731,10 +724,10 @@ def normalize_monitor_struct(item: Any) -> dict[str, str] | None:
         return None
 
     if isinstance(item, str):
-        text = safe_title(item)
+        text = normalize_str(item)
         if not text:
             return None
-        return {"item": text}
+        return {"item": compact_spaces(text)}
 
     if isinstance(item, dict):
         monitor_item = (
@@ -749,10 +742,10 @@ def normalize_monitor_struct(item: Any) -> dict[str, str] | None:
             return None
         return {"item": compact_spaces(monitor_item)}
 
-    text = safe_title(str(item))
+    text = normalize_str(str(item))
     if not text:
         return None
-    return {"item": text}
+    return {"item": compact_spaces(text)}
 
 
 def extract_monitor(
@@ -783,9 +776,9 @@ def extract_monitor(
 
     if not collected:
         collected = [
-            {"item": "主要 driver の崩れ"},
-            {"item": "悪化側 signal の増加"},
-            {"item": "scenario balance の変化"},
+            {"item": "key driver weakening"},
+            {"item": "deterioration-side signal increase"},
+            {"item": "scenario balance shift"},
         ]
 
     return dedupe_dict_list(collected, ["item"])[:6]
@@ -846,10 +839,10 @@ def normalize_implication_struct(item: Any, fallback_confidence: float | None) -
         return None
 
     if isinstance(item, str):
-        text = safe_title(item)
+        text = normalize_str(item)
         if not text:
             return None
-        payload: dict[str, Any] = {"outcome": text}
+        payload: dict[str, Any] = {"outcome": compact_spaces(text)}
         if fallback_confidence is not None:
             payload["confidence"] = fallback_confidence
         return payload
@@ -870,10 +863,10 @@ def normalize_implication_struct(item: Any, fallback_confidence: float | None) -
             payload["confidence"] = confidence
         return payload
 
-    text = safe_title(str(item))
+    text = normalize_str(str(item))
     if not text:
         return None
-    payload = {"outcome": text}
+    payload = {"outcome": compact_spaces(text)}
     if fallback_confidence is not None:
         payload["confidence"] = fallback_confidence
     return payload
@@ -958,14 +951,15 @@ def extract_invalidation(
     )
 
     if dominant_scenario:
-        collected.append("dominant_scenario_change")
+        scenario_label = label_for_scenario(dominant_scenario)["en"]
+        collected.append(f"dominant branch changes away from {scenario_label}")
 
     if raw_pred or raw_scn:
-        collected.append("custom_invalidation_present")
+        collected.append("existing invalidation condition is triggered")
     else:
         collected.extend([
-            "confidence_large_drop",
-            "multiple_watchpoints_deteriorate",
+            "confidence drops materially",
+            "multiple watchpoints deteriorate at the same time",
         ])
 
     return dedupe_keep_order(collected)[:6]
@@ -1420,14 +1414,14 @@ def i18n_for_headline(
     if (dominant_scenario or "").lower() == "worst_case":
         return {
             "ja": "現在は worst_case 側の圧力が強く、悪化分岐への警戒が必要",
-            "en": "Pressure is leaning toward worst_case, so deterioration branches require close attention",
+            "en": "Pressure is leaning toward the Worst case, so deterioration branches require close attention",
             "th": "แรงกดดันกำลังเอนเอียงไปทาง worst_case จึงต้องเฝ้าระวังแขนงการเสื่อมลงอย่างใกล้ชิด",
         }
 
     if (dominant_scenario or "").lower() == "best_case":
         return {
             "ja": "現在は best_case 側が主枝だが、過度な楽観は避けるべき状態",
-            "en": "The best_case branch is visible, but excessive optimism is still unwarranted",
+            "en": "The Best case branch is visible, but excessive optimism is still unwarranted",
             "th": "แม้จะเห็นแขนง best_case แต่ยังไม่ควรมองโลกในแง่ดีเกินไป",
         }
 
@@ -1463,7 +1457,7 @@ def i18n_for_decision_line(
     if dominant == "base_case" and confidence_band(confidence) == "high":
         return {
             "ja": "base_case が主枝として維持されている。規律は保つべきだが、安定を確実性と誤解してはならない。",
-            "en": "Base-case remains the main branch. Maintain discipline, but do not mistake stability for certainty.",
+            "en": "The Base case remains the main branch. Maintain discipline, but do not mistake stability for certainty.",
             "th": "base_case ยังเป็นแขนงหลัก ควรรักษาวินัย แต่ไม่ควรตีความเสถียรภาพว่าเป็นความแน่นอน",
         }
 
@@ -1477,13 +1471,13 @@ def i18n_for_decision_line(
     if dominant == "best_case":
         return {
             "ja": "前向きな分岐は見えるが、全面的な risk-on 行動よりも節度ある楽観に留めるべき局面である。",
-            "en": "Positive branch is visible, but the system still calls for measured optimism rather than full risk-on behavior.",
+            "en": "A positive branch is visible, but the system still calls for measured optimism rather than full risk-on behavior.",
             "th": "แม้จะเห็นแขนงเชิงบวก แต่ควรรักษาความมองบวกอย่างมีวินัยมากกว่าการเปิดรับความเสี่ยงเต็มรูปแบบ",
         }
 
     return {
         "ja": "現時点では慎重さを残しつつ柔軟に構えるべきであり、より大きな方向判断は branch 変化確認後に行うべきである。",
-        "en": "Current read supports caution with flexibility. Watch for branch change before making larger directional commitments.",
+        "en": "The current read supports caution with flexibility. Watch for branch change before making larger directional commitments.",
         "th": "ภาพอ่านปัจจุบันสนับสนุนความระมัดระวังแบบยืดหยุ่น และควรรอการเปลี่ยน branch ก่อนตัดสินใจเชิงทิศทางที่ใหญ่ขึ้น",
     }
 

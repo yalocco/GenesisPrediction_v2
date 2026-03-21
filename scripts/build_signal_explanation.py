@@ -46,6 +46,8 @@ PREDICTION_PATH = REPO_ROOT / "analysis" / "prediction" / "prediction_latest.jso
 EXPLANATION_DIR = REPO_ROOT / "analysis" / "explanation"
 OUTPUT_PATH = EXPLANATION_DIR / "signal_explanation_latest.json"
 
+LANG_DEFAULT = "en"
+SUPPORTED_LANGUAGES = ["en", "ja", "th"]
 
 KEY_LABELS = {
     "signal count の増減": {
@@ -190,6 +192,19 @@ def sentence(text: str) -> str:
     if s.endswith(("。", "．", ".", "!", "！", "?", "？")):
         return s
     return s + "。"
+
+
+def sentence_lang(text: str, lang: str) -> str:
+    s = compact_spaces(text)
+    if not s:
+        return ""
+    if lang == "ja":
+        if s.endswith(("。", "．", "!", "！", "?", "？")):
+            return s
+        return s + "。"
+    if s.endswith((".", "!", "?")):
+        return s
+    return s + "."
 
 
 def normalize_list(value: Any) -> list[Any]:
@@ -400,7 +415,7 @@ def normalize_signal_item(item: Any) -> dict[str, str] | None:
             return None
         return {
             "signal": text,
-            "meaning": sentence(f"{text} が現在の signal layer で有効とみなされている"),
+            "meaning": sentence_lang(f"{text} is currently treated as active in the signal layer", "en"),
         }
 
     if isinstance(item, dict):
@@ -423,11 +438,11 @@ def normalize_signal_item(item: Any) -> dict[str, str] | None:
         if not signal_name:
             return None
         if not meaning:
-            meaning = f"{signal_name} が現在の変化方向を示す signal として扱われている。"
+            meaning = f"{signal_name} is being treated as a live signal for the current direction."
 
         return {
             "signal": compact_spaces(signal_name),
-            "meaning": sentence(meaning),
+            "meaning": sentence_lang(meaning, "en"),
         }
 
     text = compact_spaces(str(item))
@@ -436,7 +451,7 @@ def normalize_signal_item(item: Any) -> dict[str, str] | None:
 
     return {
         "signal": text,
-        "meaning": sentence(f"{text} が現在の signal として記録されている"),
+        "meaning": sentence_lang(f"{text} is recorded as a current signal", "en"),
     }
 
 
@@ -460,9 +475,13 @@ def signal_items_i18n(items: list[dict[str, str]]) -> dict[str, list[dict[str, s
     out = {"ja": [], "en": [], "th": []}
     for item in items:
         signal_label = translate_key_generic(item.get("signal", ""))
-        ja_row = {"signal": signal_label["ja"], "meaning": item.get("meaning", "")}
-        en_row = {"signal": signal_label["en"], "meaning": item.get("meaning", "")}
-        th_row = {"signal": signal_label["th"], "meaning": item.get("meaning", "")}
+        en_meaning = item.get("meaning", "")
+        ja_row = {
+            "signal": signal_label["ja"],
+            "meaning": signal_label["ja"] if not en_meaning else signal_label["ja"],
+        }
+        en_row = {"signal": signal_label["en"], "meaning": en_meaning}
+        th_row = {"signal": signal_label["th"], "meaning": signal_label["th"] if not en_meaning else signal_label["th"]}
         out["ja"].append(ja_row)
         out["en"].append(en_row)
         out["th"].append(th_row)
@@ -561,13 +580,13 @@ def build_headline(
     dominant = dominant_scenario or "current branch"
 
     if signal_count is None or signal_count == 0:
-        return "signal layer は静かで、強い方向確定を示す材料はまだ少ない"
+        return "The signal layer is quiet, and there are still few materials indicating a strong directional lock-in."
 
     if mix == "risk-biased":
-        return f"複数 signal が悪化側に偏り、{dominant} を不安定化させる圧力が見える"
+        return f"Multiple signals are leaning toward deterioration, showing pressure that could destabilize {dominant}."
     if mix == "supportive":
-        return f"改善・支持系 signal が優勢だが、{dominant} を固定視するにはまだ早い"
-    return f"複数 signal が同時に点灯し、{dominant} を支えつつも方向感はまだ限定的"
+        return f"Supportive signals are currently stronger, but it is still too early to lock {dominant} in as fixed."
+    return f"Multiple signals are active at the same time, supporting {dominant} while directional clarity remains limited."
 
 
 def build_headline_i18n(
@@ -615,16 +634,14 @@ def build_summary(
     conf_text = "unknown" if confidence is None else f"{confidence:.2f}"
 
     if signal_count is None:
-        return sentence(
-            f"signal layer は有効な兆候を持っているが、件数は明確でない。"
-            f" 現時点では {dominant} を支える signal 群が存在する一方で、confidence は {conf_text} に留まり、"
-            "一方向への収束を断定できる段階ではない"
+        return sentence_lang(
+            f"The signal layer shows active signs, but the count is not explicit. For now there are signals supporting {dominant}, while confidence remains at {conf_text}, so it is still too early to read a one-way directional lock-in.",
+            "en",
         )
 
-    return sentence(
-        f"現在の signal layer では {signal_count} 件前後の有効 signal が観測されている。"
-        f" 構成は {mix} 寄りで、現時点では {dominant} を支える材料があるものの、confidence は {conf_text} であり、"
-        "まだ単線的な方向確定とは読まない方が安全である"
+    return sentence_lang(
+        f"The current signal layer shows around {signal_count} active signals. The mix leans {mix}, and while there is material supporting {dominant}, confidence is {conf_text}, so it is safer not to read this as a fixed one-way direction yet.",
+        "en",
     )
 
 
@@ -653,15 +670,18 @@ def build_summary_i18n(
 
 def build_why_it_matters(mix: str) -> str:
     if mix == "risk-biased":
-        return sentence(
-            "signal は最初に変化を知らせる層なので、ここで悪化バイアスが強いことは scenario や prediction が後追いで重くなる前兆になりうる"
+        return sentence_lang(
+            "Signals are the layer that first reveals change, so a strong deterioration bias here can be an early sign that scenario and prediction will later turn heavier.",
+            "en",
         )
     if mix == "supportive":
-        return sentence(
-            "改善側 signal が立っていても、それをそのまま安心材料と誤読しないために signal layer を構造として読む必要がある"
+        return sentence_lang(
+            "Even when supportive signals appear, the signal layer still needs to be read structurally so they are not misread as immediate safety.",
+            "en",
         )
-    return sentence(
-        "signal layer を見ることで、scenario や prediction に先行して何が動き始めているかを把握できるため"
+    return sentence_lang(
+        "Watching the signal layer helps identify what has started moving before scenario and prediction fully reflect it.",
+        "en",
     )
 
 
@@ -691,21 +711,21 @@ def build_interpretation(
     items: list[dict[str, str]],
 ) -> str:
     dominant = dominant_scenario or "current scenario"
-    first_signal = items[0]["signal"] if items else "主要 signal"
+    first_signal = items[0]["signal"] if items else "main signal"
 
     if mix == "risk-biased":
-        return sentence(
-            f"これは悪化圧力の初期段階を示す可能性がある。"
-            f" ただし signal はまだ予測そのものではなく、{first_signal} のような兆候が {dominant} をどちらへ押すかを読む段階である"
+        return sentence_lang(
+            f"This may indicate an early phase of deterioration pressure. Signals are not yet the prediction itself; rather, this is the stage of reading how signs like {first_signal} may push {dominant}.",
+            "en",
         )
     if mix == "supportive":
-        return sentence(
-            f"これは改善・支持の兆候が見えている局面だが、まだ土台固めの途中と読むべきである。"
-            f" {first_signal} のような signal が続くかどうかが、楽観へ進めるかの分かれ目になる"
+        return sentence_lang(
+            f"This is a phase where supportive signs are visible, but it should still be read as a foundation-building stage. Whether signals like {first_signal} continue will determine whether optimism can deepen.",
+            "en",
         )
-    return sentence(
-        f"これは signal が一方向に収束したというより、複数の兆候が同時に動いている局面を意味する。"
-        f" したがって {dominant} を前提にしつつも、{first_signal} のような先行兆候を優先監視するのが自然である"
+    return sentence_lang(
+        f"This means not that signals have converged in one direction, but that several signs are moving at once. It is therefore natural to keep {dominant} in view while prioritizing leading signs such as {first_signal}.",
+        "en",
     )
 
 
@@ -790,28 +810,78 @@ def build_implications(
     watchpoints: list[str],
 ) -> list[str]:
     dominant = dominant_scenario or "current scenario"
-    first_watch = watchpoints[0] if watchpoints else "主要 watchpoint"
+    first_watch = watchpoints[0] if watchpoints else "key watchpoint"
 
     if mix == "risk-biased":
         items = [
+            f"The current signal mix may work as pressure pushing {dominant} toward deterioration",
+            f"A deterioration in {first_watch} could move scenario balance one step lower",
+            "This should be read as an earlier stage before the prediction-side guarded read turns heavier",
+        ]
+    elif mix == "supportive":
+        items = [
+            f"The current signal mix may act as supporting material for {dominant}",
+            f"If {first_watch} holds, best/base-side alignment may strengthen",
+            "Even so, supportive signals alone do not justify a safety declaration",
+        ]
+    else:
+        items = [
+            f"The current signal mix still supports {dominant}, but directional clarity itself remains fluid",
+            f"Changes in {first_watch} may accelerate the next scenario shift",
+            "The signal layer should be read as a monitoring layer for early signs, not as a final decision",
+        ]
+
+    return dedupe_keep_order(items)[:5]
+
+
+def build_implications_i18n(
+    implications: list[str],
+    mix: str,
+    dominant_scenario: str | None,
+    watchpoints: list[str],
+) -> dict[str, list[str]]:
+    dominant = dominant_scenario or "current scenario"
+    first_watch = watchpoints[0] if watchpoints else "主要 watchpoint"
+
+    if mix == "risk-biased":
+        ja_items = [
             f"現在の signal 構成は {dominant} を悪化側へ寄せる圧力として働きうる",
             f"{first_watch} の悪化は scenario balance を一段下へ動かす可能性がある",
             "prediction 側の guarded read が重くなる前段階として読むべきである",
         ]
+        th_items = [
+            f"โครงสร้าง signal ปัจจุบันอาจทำหน้าที่เป็นแรงกดดันที่ผลัก {dominant} ไปทางเสื่อมลง",
+            f"การแย่ลงของ {first_watch} อาจทำให้ scenario balance ลดระดับลงอีกขั้น",
+            "ควรอ่านว่านี่เป็นช่วงก่อนที่ guarded read ฝั่ง prediction จะหนักขึ้น",
+        ]
     elif mix == "supportive":
-        items = [
+        ja_items = [
             f"現在の signal 構成は {dominant} を支える補助材料になりうる",
             f"{first_watch} が維持されれば best/base 側の整合が強まりうる",
             "ただし支持系 signal だけで安全宣言してはならない",
         ]
+        th_items = [
+            f"โครงสร้าง signal ปัจจุบันอาจเป็นวัสดุเสริมที่ช่วยพยุง {dominant}",
+            f"หาก {first_watch} คงอยู่ ความสอดคล้องฝั่ง best/base อาจแข็งแรงขึ้น",
+            "อย่างไรก็ดี ไม่ควรประกาศความปลอดภัยจาก signal ฝั่งสนับสนุนเพียงอย่างเดียว",
+        ]
     else:
-        items = [
+        ja_items = [
             f"現在の signal 構成は {dominant} を支えつつも、方向感そのものはまだ流動的である",
             f"{first_watch} の変化が次の scenario shift を早める可能性がある",
             "signal layer は判断確定ではなく、先行兆候の監視レイヤとして読むべきである",
         ]
+        th_items = [
+            f"โครงสร้าง signal ปัจจุบันยังหนุน {dominant} อยู่ แต่ความชัดเจนของทิศทางยังไม่คงที่",
+            f"การเปลี่ยนแปลงของ {first_watch} อาจเร่ง scenario shift ครั้งถัดไป",
+            "ชั้น signal ควรถูกอ่านเป็นชั้นเฝ้าดูสัญญาณนำ ไม่ใช่การตัดสินขั้นสุดท้าย",
+        ]
 
-    return dedupe_keep_order(items)[:5]
+    return {
+        "ja": dedupe_keep_order(ja_items)[:5],
+        "en": implications,
+        "th": dedupe_keep_order(th_items)[:5],
+    }
 
 
 def build_ui_terms() -> list[dict[str, str]]:
@@ -873,15 +943,15 @@ def build_unavailable_artifact(
         "as_of": None,
         "subject": "signal",
         "status": "unavailable",
-        "lang_default": "ja",
-        "languages": ["en", "ja", "th"],
-        "headline": headline_i18n["ja"],
+        "lang_default": LANG_DEFAULT,
+        "languages": SUPPORTED_LANGUAGES,
+        "headline": headline_i18n["en"],
         "headline_i18n": headline_i18n,
-        "summary": summary_i18n["ja"],
+        "summary": summary_i18n["en"],
         "summary_i18n": summary_i18n,
-        "interpretation": interpretation_i18n["ja"],
+        "interpretation": interpretation_i18n["en"],
         "interpretation_i18n": interpretation_i18n,
-        "why_it_matters": why_i18n["ja"],
+        "why_it_matters": why_i18n["en"],
         "why_it_matters_i18n": why_i18n,
         "based_on": [
             str(signal_path),
@@ -903,9 +973,9 @@ def build_unavailable_artifact(
         "invalidation": [],
         "invalidation_i18n": {"ja": [], "en": [], "th": []},
         "must_not_mean": [
-            "unavailable は安全を意味しない",
-            "signal は最終判断ではない",
-            "UI は signal explanation を作文してはならない",
+            "unavailable does not mean safe",
+            "signals are not the final judgment",
+            "UI must not compose signal explanation",
         ],
         "must_not_mean_i18n": {
             "ja": [
@@ -954,20 +1024,21 @@ def build_signal_explanation(
     summary_i18n = build_summary_i18n(signal_count, mix, dominant_scenario, confidence)
     interpretation_i18n = build_interpretation_i18n(mix, dominant_scenario, signal_items)
     why_i18n = build_why_it_matters_i18n(mix)
+    implications_i18n = build_implications_i18n(implications, mix, dominant_scenario, watchpoints)
 
     artifact: dict[str, Any] = {
         "as_of": as_of,
         "subject": "signal",
         "status": "ok",
-        "lang_default": "ja",
-        "languages": ["en", "ja", "th"],
-        "headline": headline_i18n["ja"],
+        "lang_default": LANG_DEFAULT,
+        "languages": SUPPORTED_LANGUAGES,
+        "headline": headline_i18n["en"],
         "headline_i18n": headline_i18n,
-        "summary": summary_i18n["ja"],
+        "summary": summary_i18n["en"],
         "summary_i18n": summary_i18n,
-        "interpretation": interpretation_i18n["ja"],
+        "interpretation": interpretation_i18n["en"],
         "interpretation_i18n": interpretation_i18n,
-        "why_it_matters": why_i18n["ja"],
+        "why_it_matters": why_i18n["en"],
         "why_it_matters_i18n": why_i18n,
         "based_on": [
             str(signal_path),
@@ -978,16 +1049,16 @@ def build_signal_explanation(
         "signal_state_i18n": build_signal_state_i18n(signal_count, mix, confidence),
         "signals": signal_items,
         "signals_i18n": signal_items_i18n(signal_items),
-        "watchpoints": watchpoints,
+        "watchpoints": list_i18n_from_strings(watchpoints)["en"],
         "watchpoints_i18n": list_i18n_from_strings(watchpoints),
-        "implications": implications,
-        "implications_i18n": list_i18n_from_strings(implications),
-        "invalidation": invalidation,
+        "implications": implications_i18n["en"],
+        "implications_i18n": implications_i18n,
+        "invalidation": list_i18n_from_strings(invalidation)["en"],
         "invalidation_i18n": list_i18n_from_strings(invalidation),
         "must_not_mean": [
-            "signal は prediction そのものではない",
-            "signal_count は危険度の合計ではない",
-            "dominant_type は単線的な未来確定を意味しない",
+            "signals are not the prediction itself",
+            "signal_count is not a total danger score",
+            "dominant_type does not mean a single fixed future",
         ],
         "must_not_mean_i18n": {
             "ja": [

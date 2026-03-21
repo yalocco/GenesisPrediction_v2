@@ -46,6 +46,8 @@ PREDICTION_PATH = REPO_ROOT / "analysis" / "prediction" / "prediction_latest.jso
 EXPLANATION_DIR = REPO_ROOT / "analysis" / "explanation"
 OUTPUT_PATH = EXPLANATION_DIR / "scenario_explanation_latest.json"
 
+LANG_DEFAULT = "en"
+SUPPORTED_LANGUAGES = ["en", "ja", "th"]
 
 SCENARIO_LABELS = {
     "best_case": {"ja": "best_case", "en": "best_case", "th": "best_case"},
@@ -242,6 +244,19 @@ def sentence(text: str) -> str:
     return s + "。"
 
 
+def sentence_lang(text: str, lang: str) -> str:
+    s = compact_spaces(text)
+    if not s:
+        return ""
+    if lang == "ja":
+        if s.endswith(("。", "．", "!", "！", "?", "？")):
+            return s
+        return s + "。"
+    if s.endswith((".", "!", "?")):
+        return s
+    return s + "."
+
+
 def dedupe_keep_order(items: list[str]) -> list[str]:
     seen: set[str] = set()
     result: list[str] = []
@@ -433,23 +448,23 @@ def build_balance_text(
         worst_exists = branches.get("worst_case") is not None
         best_exists = branches.get("best_case") is not None
         if worst_exists and best_exists:
-            return "base優勢だが上下分岐の余地が残る状態"
+            return "base remains dominant, but room for both upside and downside branches still remains"
         if worst_exists:
-            return "base優勢だがworstが無視できない状態"
+            return "base remains dominant, but the worst_case side cannot be ignored"
         if best_exists:
-            return "base優勢で改善余地も残る状態"
-        return "base優勢で分岐は比較的安定している状態"
+            return "base remains dominant, with room for improvement still open"
+        return "base remains dominant and the branching structure is relatively stable"
 
     if dominant == "worst_case":
-        return "worst優勢で悪化側への片寄りが強い状態"
+        return "worst_case is dominant and the structure is strongly tilted toward deterioration"
 
     if dominant == "best_case":
-        return "best優勢だが条件依存性が高い状態"
+        return "best_case is dominant, but the structure remains highly condition-dependent"
 
     signal_count = pick_first(signal, "signal_count", "count", default=None)
     if signal_count is not None:
-        return "分岐の均衡が定まらず、signal 変化で主枝が動きうる状態"
-    return "分岐構造は存在するが、均衡の読み取りには慎重さが必要な状態"
+        return "branch balance is not fixed, and the dominant branch can still move as signals change"
+    return "a branching structure exists, but its balance still requires cautious reading"
 
 
 def build_balance_text_i18n(
@@ -607,12 +622,12 @@ def extract_invalidation(
 
 def build_headline(dominant: str | None, balance: str) -> str:
     if dominant == "base_case":
-        return "複数シナリオが併存し、base_case を軸に上下分岐の余地が残る状態"
+        return "Multiple scenarios coexist, with base_case at the center and room still left for both upside and downside branching."
     if dominant == "worst_case":
-        return "悪化側シナリオが主枝となり、worst_case 寄りの分岐構造が強まる状態"
+        return "A deterioration-side scenario has become dominant, and the branching structure is strengthening toward worst_case."
     if dominant == "best_case":
-        return "改善側シナリオが主枝だが、条件依存性が高く再悪化余地も残る状態"
-    return f"複数シナリオが併存し、{balance}"
+        return "An improvement-side scenario is dominant, but it remains highly condition-dependent and downside reversion risk still remains."
+    return f"Multiple scenarios coexist, and {balance}."
 
 
 def build_headline_i18n(dominant: str | None, balance_i18n: dict[str, str]) -> dict[str, str]:
@@ -646,22 +661,22 @@ def build_summary(
     balance: str,
     branches: dict[str, str | None],
 ) -> str:
-    dominant_text = dominant or "中心シナリオ不明"
+    dominant_text = dominant or "unknown"
 
-    parts: list[str] = [f"現在の scenario 構造は {dominant_text} を中心に展開している。"]
+    parts: list[str] = [f"The current scenario structure is centered on {dominant_text}."]
 
     branch_bits: list[str] = []
     if branches.get("best_case"):
-        branch_bits.append(f"best_case={branches['best_case']}")
+        branch_bits.append(f"best_case {branches['best_case']}")
     if branches.get("base_case"):
-        branch_bits.append(f"base_case={branches['base_case']}")
+        branch_bits.append(f"base_case {branches['base_case']}")
     if branches.get("worst_case"):
-        branch_bits.append(f"worst_case={branches['worst_case']}")
+        branch_bits.append(f"worst_case {branches['worst_case']}")
 
     if branch_bits:
-        parts.append("分岐バランスは " + " / ".join(branch_bits) + " である。")
+        parts.append("Branch balance is " + " / ".join(branch_bits) + ".")
 
-    parts.append(f"全体としては {balance}。")
+    parts.append(f"Overall, {balance}.")
     return " ".join(parts)
 
 
@@ -691,17 +706,14 @@ def build_summary_i18n(
 def build_why_it_matters(dominant: str | None) -> str:
     if dominant == "worst_case":
         return (
-            "悪化側を単なる恐怖ではなく分岐構造として理解することで、"
-            "過剰反応ではなく監視と判断の優先順位を明確にできるため。"
+            "This matters because reading the deterioration side as branching structure rather than raw fear helps clarify monitoring and decision priorities without overreaction."
         )
     if dominant == "best_case":
         return (
-            "改善側の主枝を過度な楽観と混同せず、"
-            "どの条件で維持・崩壊するかを理解するため。"
+            "This matters because the improvement-side branch should not be confused with optimism, and the conditions for sustaining or breaking it must be understood."
         )
     return (
-        "単一の未来ではなく分岐構造として理解することで、"
-        "過剰な楽観や悲観を避け、現実的な監視と判断が可能になるため。"
+        "This matters because understanding the outlook as branching structure rather than a single future helps avoid excess optimism or pessimism and supports realistic monitoring and decisions."
     )
 
 
@@ -779,13 +791,13 @@ def build_unavailable_artifact(
         "as_of": None,
         "subject": "scenario",
         "status": "unavailable",
-        "lang_default": "ja",
-        "languages": ["en", "ja", "th"],
-        "headline": headline_i18n["ja"],
+        "lang_default": LANG_DEFAULT,
+        "languages": SUPPORTED_LANGUAGES,
+        "headline": headline_i18n["en"],
         "headline_i18n": headline_i18n,
-        "summary": summary_i18n["ja"],
+        "summary": summary_i18n["en"],
         "summary_i18n": summary_i18n,
-        "why_it_matters": why_i18n["ja"],
+        "why_it_matters": why_i18n["en"],
         "why_it_matters_i18n": why_i18n,
         "based_on": [str(scenario_path), str(signal_path), str(prediction_path)],
         "scenario_structure": {
@@ -805,9 +817,9 @@ def build_unavailable_artifact(
         "invalidation": [],
         "invalidation_i18n": {"ja": [], "en": [], "th": []},
         "must_not_mean": [
-            "unavailable は安全を意味しない",
-            "base_case は安全を意味しない",
-            "worst_case は確定未来ではない",
+            "unavailable does not mean safe.",
+            "base_case does not mean safety.",
+            "worst_case is not a predetermined future.",
         ],
         "must_not_mean_i18n": {
             "ja": [
@@ -862,13 +874,13 @@ def build_scenario_explanation(
         "as_of": as_of,
         "subject": "scenario",
         "status": "ok",
-        "lang_default": "ja",
-        "languages": ["en", "ja", "th"],
-        "headline": headline_i18n["ja"],
+        "lang_default": LANG_DEFAULT,
+        "languages": SUPPORTED_LANGUAGES,
+        "headline": headline_i18n["en"],
         "headline_i18n": headline_i18n,
-        "summary": summary_i18n["ja"],
+        "summary": summary_i18n["en"],
         "summary_i18n": summary_i18n,
-        "why_it_matters": why_i18n["ja"],
+        "why_it_matters": why_i18n["en"],
         "why_it_matters_i18n": why_i18n,
         "based_on": [str(scenario_path), str(signal_path), str(prediction_path)],
         "scenario_structure": {
@@ -881,16 +893,16 @@ def build_scenario_explanation(
             "alternatives": [label_for_scenario(name) for name in alternatives],
             "balance": balance_i18n,
         },
-        "drivers": drivers,
+        "drivers": list_i18n_from_strings(drivers)["en"],
         "drivers_i18n": list_i18n_from_strings(drivers),
-        "watchpoints": watchpoints,
+        "watchpoints": list_i18n_from_strings(watchpoints)["en"],
         "watchpoints_i18n": list_i18n_from_strings(watchpoints),
-        "invalidation": invalidation,
+        "invalidation": list_i18n_from_strings(invalidation)["en"],
         "invalidation_i18n": list_i18n_from_strings(invalidation),
         "must_not_mean": [
-            "base_case は安全を意味しない",
-            "worst_case は確定未来ではない",
-            "best_case は期待ではなく条件付き分岐である",
+            "base_case does not mean safety.",
+            "worst_case is not a predetermined future.",
+            "best_case is a conditional branch, not a wish.",
         ],
         "must_not_mean_i18n": {
             "ja": [

@@ -19,7 +19,7 @@
         <section class="panel digest-shell">
           <div class="digest-hero">
             <div class="h1">Digest</div>
-            <p id="heroText" class="sub">Digest ViewModel を優先し、Summary / Highlights / Prediction / FX を表示します。Articles は article card が無ければ world view または news に fallback します。</p>
+            <p id="heroText" class="sub">Prioritize the Digest ViewModel and present an integrated view of Summary, Highlights, Prediction, and FX.</p>
 
             <section class="card digest-card-top section-no-margin">
               <div class="sectionTitle">
@@ -127,7 +127,7 @@
               </div>
             </div>
 
-            <div id="emptyState" class="emptyState">表示できる記事がありません。Digest ViewModel を優先し、必要時のみ world_view_model_latest.json、その次に daily_news_latest.json に fallback してください。</div>
+            <div id="emptyState" class="emptyState">No articles are available to display. Prioritize the Digest ViewModel, and only fall back to world_view_model_latest.json and then daily_news_latest.json when necessary.</div>
             <div id="articleGrid" class="articleGrid"></div>
             <div class="pillrow pillrow-top">
               <span id="articlesSource" class="pill">source: --</span>
@@ -288,6 +288,32 @@
         return step();
       }
 
+      function getI18n() {
+        return (window.GenesisI18n && typeof window.GenesisI18n.pickText === "function")
+          ? window.GenesisI18n
+          : null;
+      }
+
+      function pickText(obj, key, fallback) {
+        var i18n = getI18n();
+        if (i18n) {
+          var picked = i18n.pickText(obj, key);
+          if (picked) return picked;
+        }
+        var direct = obj && obj[key];
+        return textOr(direct, fallback == null ? "" : fallback);
+      }
+
+      function pickList(obj, key) {
+        var i18n = getI18n();
+        if (i18n && typeof i18n.pickList === "function") {
+          var picked = i18n.pickList(obj, key);
+          if (Array.isArray(picked) && picked.length) return picked;
+        }
+        var direct = obj && obj[key];
+        return Array.isArray(direct) ? direct : [];
+      }
+
       function getWorldPoliticsSection(vm) {
         var sections = Array.isArray(vm && vm.sections) ? vm.sections : [];
         for (var i = 0; i < sections.length; i++) {
@@ -311,7 +337,7 @@
 
       function getSummaryText(digest, worldVm, summaryData) {
         return firstDefined(
-          digest && digest.summary,
+          pickText(digest, "summary", ""),
           worldVm && worldVm.summary,
           worldVm && worldVm.today && worldVm.today.summary,
           worldVm && worldVm.meta && worldVm.meta.summary,
@@ -432,30 +458,49 @@
           articleCount
         ), articleCount)));
 
-        setText("kpiPredictionRisk", textOr(prediction.risk, "--").toUpperCase());
-        setText("kpiDominantScenario", textOr(prediction.dominant_scenario, "--"));
+        setText("kpiPredictionRisk", textOr(pickText(prediction, "risk", "--"), "--").toUpperCase());
+        setText("kpiDominantScenario", textOr(pickText(prediction, "dominant_scenario", "--"), "--"));
         setText("kpiConfidence", prediction.confidence_pct != null ? fmtPercent(prediction.confidence_pct) : "--");
-        setText("kpiFxPair", textOr(fx.pair, "--"));
-        setText("kpiFxStatus", textOr(firstDefined(fx.status, fx.raw_status), "--").toUpperCase());
+        setText("kpiFxPair", textOr(pickText(fx, "pair", "--"), "--"));
+        setText("kpiFxStatus", textOr(firstDefined(pickText(fx, "status", ""), fx.raw_status), "--").toUpperCase());
       }
 
       function renderInsights(digest) {
         var prediction = (digest && digest.prediction) || {};
         var fx = (digest && digest.fx) || {};
 
-        setText("predictionValue", textOr(prediction.dominant_scenario, "--"));
-        setText("predictionBody", textOr(prediction.summary, "Prediction not available."));
-        applyInsightPill("predictionRiskPill", "risk: " + textOr(prediction.risk, "--").toUpperCase(), prediction.risk);
+        setText("predictionValue", textOr(pickText(prediction, "dominant_scenario", "--"), "--"));
+        setText(
+          "predictionBody",
+          textOr(
+            firstDefined(
+              pickText(prediction, "summary", ""),
+              pickText(prediction, "prediction_statement", ""),
+              pickText(prediction, "primary_narrative", "")
+            ),
+            "Prediction not available."
+          )
+        );
+        applyInsightPill("predictionRiskPill", "risk: " + textOr(pickText(prediction, "risk", "--"), "--").toUpperCase(), prediction.risk);
         applyInsightPill(
           "predictionConfPill",
           "conf: " + (prediction.confidence_pct != null ? fmtPercent(prediction.confidence_pct) : "--"),
           prediction.risk
         );
 
-        setText("fxValue", textOr(firstDefined(fx.status, fx.raw_status), "--").toUpperCase());
-        setText("fxBody", textOr(firstDefined(fx.reason, fx.summary), "FX decision not available."));
-        applyInsightPill("fxPairPill", "pair: " + textOr(fx.pair, "--"), fx.status || fx.raw_status);
-        applyInsightPill("fxActionPill", "action: " + textOr(fx.action, "--"), fx.status || fx.raw_status);
+        setText("fxValue", textOr(firstDefined(pickText(fx, "status", ""), fx.raw_status), "--").toUpperCase());
+        setText(
+          "fxBody",
+          textOr(
+            firstDefined(
+              pickText(fx, "summary", ""),
+              pickText(fx, "reason", "")
+            ),
+            "FX decision not available."
+          )
+        );
+        applyInsightPill("fxPairPill", "pair: " + textOr(pickText(fx, "pair", "--"), "--"), fx.status || fx.raw_status);
+        applyInsightPill("fxActionPill", "action: " + textOr(pickText(fx, "action", "--"), "--"), fx.status || fx.raw_status);
       }
 
       function articleCard(article) {
@@ -635,16 +680,16 @@
         );
 
         if (state.summaryMode === "digest") {
-          setText("heroText", "Digest ViewModel を優先し、Summary / Highlights / Prediction / FX を表示します。Articles は article card が無ければ world view または news に fallback します。");
+          setText("heroText", "Prioritize the Digest ViewModel and present Summary, Highlights, Prediction, and FX. If article cards are unavailable, fall back to the world view model or then to news.");
           setText("highlightsHint", "digest preferred");
         } else if (state.summaryMode === "world-fallback") {
-          setText("heroText", "Digest ViewModel を取得できなかったため world_view_model_latest.json を fallback 使用しています。Digest 生成後は digest view model を優先してください。");
+          setText("heroText", "The Digest ViewModel could not be loaded, so world_view_model_latest.json is being used as a fallback. Once Digest is generated, prefer the digest view model.");
           setText("highlightsHint", "world fallback");
         } else if (state.summaryMode === "summary-fallback") {
-          setText("heroText", "Digest / World View を取得できなかったため daily_summary_latest.json を fallback 使用しています。正式運用では digest view model を優先してください。");
+          setText("heroText", "Digest and World View could not be loaded, so daily_summary_latest.json is being used as a fallback. In normal operation, prefer the digest view model.");
           setText("highlightsHint", "summary fallback");
         } else {
-          setText("heroText", "Digest / Summary / News の取得に失敗しました。データ生成後に再読み込みしてください。");
+          setText("heroText", "Digest, Summary, and News could not be loaded. Reload the page after data generation completes.");
           setText("highlightsHint", "no data");
         }
 
