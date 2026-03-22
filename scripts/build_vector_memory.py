@@ -7,7 +7,7 @@ import os
 import re
 import sys
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -23,6 +23,13 @@ DEFAULT_QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 
 LANG_DEFAULT = "ja"
 SUPPORTED_LANGUAGES = ["en", "ja", "th"]
+
+VECTOR_MEMORY_BUILD_LATEST_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "analysis"
+    / "prediction"
+    / "vector_memory_build_latest.json"
+)
 
 
 @dataclass(slots=True)
@@ -100,7 +107,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def utc_now_iso() -> str:
-    return datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.*)$", re.MULTILINE)
@@ -701,6 +708,39 @@ def build_all_items(root: Path, include_history: bool) -> tuple[list[MemoryItem]
     return items, stats
 
 
+def write_build_stamp(
+    *,
+    root: Path,
+    qdrant_url: str,
+    collection: str,
+    embedding_model: str,
+    indexed: int,
+    stats: BuildStats,
+) -> None:
+    payload = {
+        "generated_at": utc_now_iso(),
+        "engine_version": "v1",
+        "qdrant_url": qdrant_url,
+        "collection": collection,
+        "model": embedding_model,
+        "indexed": indexed,
+        "stats": stats.as_dict(),
+        "source_scope": {
+            "decision_log": "docs/core/decision_log.md",
+            "prediction_history": "analysis/prediction/history",
+            "historical": "analysis/historical",
+            "explanation": "analysis/explanation",
+        },
+        "note": "Vector DB build stamp for freshness checking. reference_memory_latest.json is a recall artifact, not a build stamp.",
+    }
+    stamp_path = root / "analysis" / "prediction" / "vector_memory_build_latest.json"
+    stamp_path.parent.mkdir(parents=True, exist_ok=True)
+    stamp_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
 def main() -> int:
     args = parse_args()
     root = Path(args.root).resolve()
@@ -737,6 +777,15 @@ def main() -> int:
         print(f"[ERROR] indexing failed: {exc}", file=sys.stderr)
         return 3
 
+    write_build_stamp(
+        root=root,
+        qdrant_url=args.qdrant_url,
+        collection=args.collection,
+        embedding_model=args.embedding_model,
+        indexed=len(items),
+        stats=stats,
+    )
+
     print("[OK] vector memory build complete")
     print(f"  root       : {root}")
     print(f"  qdrant_url : {args.qdrant_url}")
@@ -744,6 +793,7 @@ def main() -> int:
     print(f"  model      : {args.embedding_model}")
     print(f"  indexed    : {len(items)}")
     print(f"  stats      : {json.dumps(stats.as_dict(), ensure_ascii=False)}")
+    print(f"  build_stamp: {VECTOR_MEMORY_BUILD_LATEST_PATH}")
     return 0
 
 

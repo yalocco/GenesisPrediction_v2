@@ -1,10 +1,24 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
 import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+try:
+    from vector_recall import (
+        DEFAULT_COLLECTION,
+        DEFAULT_URL,
+        build_client,
+        search_similar,
+    )
+except Exception:
+    DEFAULT_COLLECTION = "genesis_reference_memory"
+    DEFAULT_URL = "http://localhost:6333"
+    build_client = None
+    search_similar = None
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,6 +36,9 @@ SCENARIO_LATEST_PATH = PREDICTION_DIR / "scenario_latest.json"
 
 LANG_DEFAULT = "ja"
 SUPPORTED_LANGUAGES = ["en", "ja", "th"]
+ENGINE_VERSION = "v3_with_vector_memory_i18n_phase2"
+REFERENCE_MEMORY_ENGINE_VERSION = "v1"
+DEFAULT_RECALL_LIMIT = 3
 
 SCENARIO_LABELS = {
     "best_case": {
@@ -425,6 +442,21 @@ PHRASE_I18N = {
         "th": "แรงกดดันเฉียบพลันกระจุกตัว",
     },
 }
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Build scenario_latest.json with vector-memory-backed reference recall."
+    )
+    parser.add_argument("--qdrant-url", default=DEFAULT_URL, help="Qdrant URL")
+    parser.add_argument("--collection", default=DEFAULT_COLLECTION, help="Qdrant collection name")
+    parser.add_argument("--recall-limit", type=int, default=DEFAULT_RECALL_LIMIT, help="Vector recall result limit")
+    parser.add_argument(
+        "--skip-recall",
+        action="store_true",
+        help="Skip live vector recall and use existing reference_memory_latest.json if present",
+    )
+    return parser.parse_args()
 
 
 def load_json(path: Path, default: Any = None) -> Any:
@@ -932,6 +964,7 @@ def calculate_scenario_confidence(
     signal_data: Dict[str, Any],
     historical_pattern_data: Dict[str, Any],
     historical_analog_data: Dict[str, Any],
+    reference_memory_data: Optional[Dict[str, Any]] = None,
 ) -> float:
     base = 0.35
 
@@ -953,6 +986,18 @@ def calculate_scenario_confidence(
         + 0.15 * pattern_conf
         + 0.10 * analog_conf
     )
+
+    ref = reference_memory_data or {}
+    if ref.get("status") == "ok":
+        similar_case_count = len(ref.get("similar_cases", []) or [])
+        historical_pattern_count = len(ref.get("historical_patterns", []) or [])
+        historical_analog_count = len(ref.get("historical_analogs", []) or [])
+        decision_ref_count = len(ref.get("decision_refs", []) or [])
+
+        confidence += min(0.02, 0.01 * similar_case_count)
+        confidence += min(0.015, 0.005 * historical_pattern_count)
+        confidence += min(0.015, 0.005 * historical_analog_count)
+        confidence += min(0.01, 0.003 * decision_ref_count)
 
     return round(clamp01(confidence), 4)
 
@@ -1282,6 +1327,183 @@ def build_summary_i18n(
     )
 
 
+def compact_recall_items(items: List[Dict[str, Any]], limit: int) -> List[Dict[str, Any]]:
+    out: List[Dict[str, Any]] = []
+    for item in (items or [])[:limit]:
+        if not isinstance(item, dict):
+            continue
+        out.append(
+            {
+                "score": item.get("score"),
+                "memory_type": item.get("memory_type"),
+                "as_of": item.get("as_of"),
+                "title": item.get("title"),
+                "title_i18n": ensure_lang_map(item.get("title_i18n")),
+                "summary": item.get("summary"),
+                "summary_i18n": ensure_lang_map(item.get("summary_i18n")),
+                "source_path": item.get("source_path"),
+                "tags": item.get("tags") if isinstance(item.get("tags"), list) else [],
+            }
+        )
+    return out
+
+
+def build_reference_query(
+    signal_tags: List[str],
+    trend_tags: List[str],
+    dominant_pattern: Optional[str],
+    dominant_analog: Optional[str],
+    expected_outcomes: List[str],
+) -> str:
+    parts: List[str] = []
+    parts.extend(signal_tags[:6])
+    parts.extend(trend_tags[:4])
+
+    if dominant_pattern:
+        parts.append(str(dominant_pattern).strip())
+    if dominant_analog:
+        parts.append(str(dominant_analog).strip())
+
+    parts.extend(expected_outcomes[:4])
+
+    normalized = [normalize_text(x) for x in parts if normalize_text(x)]
+    return " ".join(unique_preserve_order(normalized)[:12]).strip() or "global risk scenario watchpoints"
+
+
+def build_reference_memory_artifact(
+    *,
+    as_of: str,
+    qdrant_url: str,
+    collection: str,
+    recall_limit: int,
+    signal_tags: List[str],
+    trend_tags: List[str],
+    dominant_pattern: Optional[str],
+    dominant_analog: Optional[str],
+    expected_outcomes: List[str],
+) -> Dict[str, Any]:
+    artifact: Dict[str, Any] = {
+        "as_of": as_of,
+        "generated_at": utc_now_iso(),
+        "engine_version": REFERENCE_MEMORY_ENGINE_VERSION,
+        "lang_default": LANG_DEFAULT,
+        "languages": SUPPORTED_LANGUAGES,
+        "query_context": {
+            "source": "scenario_engine",
+            "tags": unique_preserve_order((signal_tags or [])[:8] + (trend_tags or [])[:4]),
+            "notes": "",
+        },
+        "decision_refs": [],
+        "similar_cases": [],
+        "historical_patterns": [],
+        "historical_analogs": [],
+        "recall_summary": "",
+        "status": "unavailable",
+    }
+
+    query = build_reference_query(
+        signal_tags=signal_tags,
+        trend_tags=trend_tags,
+        dominant_pattern=dominant_pattern,
+        dominant_analog=dominant_analog,
+        expected_outcomes=expected_outcomes,
+    )
+    artifact["query_context"]["notes"] = query
+
+    if build_client is None or search_similar is None:
+        artifact["recall_summary"] = "vector_recall import unavailable"
+        return artifact
+
+    try:
+        client = build_client(qdrant_url)
+
+        decision_refs = compact_recall_items(
+            search_similar(
+                client=client,
+                collection=collection,
+                query="analysis SST UI read-only vector memory reference only",
+                limit=recall_limit,
+                memory_type="decision_log",
+            ),
+            recall_limit,
+        )
+
+        similar_cases = compact_recall_items(
+            search_similar(
+                client=client,
+                collection=collection,
+                query=query,
+                limit=recall_limit,
+                memory_type="scenario_snapshot",
+            ),
+            recall_limit,
+        )
+
+        if not similar_cases:
+            similar_cases = compact_recall_items(
+                search_similar(
+                    client=client,
+                    collection=collection,
+                    query=query,
+                    limit=recall_limit,
+                    memory_type="prediction_snapshot",
+                ),
+                recall_limit,
+            )
+
+        historical_patterns = compact_recall_items(
+            search_similar(
+                client=client,
+                collection=collection,
+                query=query,
+                limit=recall_limit,
+                memory_type="historical_pattern",
+            ),
+            recall_limit,
+        )
+
+        historical_analogs = compact_recall_items(
+            search_similar(
+                client=client,
+                collection=collection,
+                query=query,
+                limit=recall_limit,
+                memory_type="historical_analog",
+            ),
+            recall_limit,
+        )
+
+        artifact["decision_refs"] = decision_refs
+        artifact["similar_cases"] = similar_cases
+        artifact["historical_patterns"] = historical_patterns
+        artifact["historical_analogs"] = historical_analogs
+        artifact["status"] = "ok"
+
+        summary_parts: List[str] = []
+        if decision_refs:
+            summary_parts.append(f"decision_refs={len(decision_refs)}")
+        if similar_cases:
+            summary_parts.append(f"similar_cases={len(similar_cases)}")
+        if historical_patterns:
+            summary_parts.append(f"historical_patterns={len(historical_patterns)}")
+        if historical_analogs:
+            summary_parts.append(f"historical_analogs={len(historical_analogs)}")
+
+        artifact["recall_summary"] = ", ".join(summary_parts) if summary_parts else "no recall hits"
+        return artifact
+
+    except Exception as exc:
+        artifact["status"] = "unavailable"
+        artifact["recall_summary"] = f"vector recall unavailable: {exc}"
+        return artifact
+
+
+def save_reference_memory_history(reference_memory_output: Dict[str, Any]) -> None:
+    as_of = str(reference_memory_output.get("as_of") or today_str())
+    history_dir = PREDICTION_DIR / "history" / as_of
+    write_json(history_dir / "reference_memory.json", reference_memory_output)
+
+
 def build_scenario_output(
     trend_data: Dict[str, Any],
     signal_data: Dict[str, Any],
@@ -1318,6 +1540,7 @@ def build_scenario_output(
         signal_data=signal_data,
         historical_pattern_data=historical_pattern_data,
         historical_analog_data=historical_analog_data,
+        reference_memory_data=reference_memory_data,
     )
 
     scenarios = [
@@ -1388,7 +1611,7 @@ def build_scenario_output(
     return {
         "as_of": as_of,
         "generated_at": utc_now_iso(),
-        "engine_version": "v3_with_memory_i18n_phase1",
+        "engine_version": ENGINE_VERSION,
         "lang_default": LANG_DEFAULT,
         "languages": SUPPORTED_LANGUAGES,
         "dominant_scenario": dominant_scenario,
@@ -1421,6 +1644,7 @@ def build_scenario_output(
             "similar_case_count": len(reference_memory_data.get("similar_cases", []) or []),
             "historical_pattern_count": len(reference_memory_data.get("historical_patterns", []) or []),
             "historical_analog_count": len(reference_memory_data.get("historical_analogs", []) or []),
+            "query_context": reference_memory_data.get("query_context", {}),
         },
         "scenarios": scenarios,
         "summary": summary,
@@ -1435,11 +1659,60 @@ def save_history(scenario_output: Dict[str, Any]) -> None:
 
 
 def main() -> None:
+    args = parse_args()
+
     trend_data = load_json(TREND_LATEST_PATH, default={}) or {}
     signal_data = load_json(SIGNAL_LATEST_PATH, default={}) or {}
     historical_pattern_data = load_json(HISTORICAL_PATTERN_LATEST_PATH, default={}) or {}
     historical_analog_data = load_json(HISTORICAL_ANALOG_LATEST_PATH, default={}) or {}
-    reference_memory_data = load_reference_memory()
+
+    as_of = (
+        signal_data.get("as_of")
+        or trend_data.get("as_of")
+        or historical_pattern_data.get("as_of")
+        or historical_analog_data.get("as_of")
+        or today_str()
+    )
+
+    signal_tags = extract_signal_tags(signal_data)
+    trend_tags = extract_trend_tags(trend_data)
+    dominant_pattern = historical_pattern_data.get("dominant_pattern")
+    dominant_analog = historical_analog_data.get("dominant_analog")
+    expected_outcomes = extract_expected_outcomes(historical_pattern_data, historical_analog_data)
+
+    if args.skip_recall:
+        reference_memory_data = load_reference_memory()
+        if not reference_memory_data:
+            reference_memory_data = {
+                "as_of": as_of,
+                "generated_at": utc_now_iso(),
+                "engine_version": REFERENCE_MEMORY_ENGINE_VERSION,
+                "lang_default": LANG_DEFAULT,
+                "languages": SUPPORTED_LANGUAGES,
+                "query_context": {
+                    "source": "scenario_engine",
+                    "tags": [],
+                    "notes": "skip_recall=true",
+                },
+                "decision_refs": [],
+                "similar_cases": [],
+                "historical_patterns": [],
+                "historical_analogs": [],
+                "recall_summary": "skip_recall=true and no existing reference memory artifact",
+                "status": "unavailable",
+            }
+    else:
+        reference_memory_data = build_reference_memory_artifact(
+            as_of=as_of,
+            qdrant_url=args.qdrant_url,
+            collection=args.collection,
+            recall_limit=max(1, int(args.recall_limit)),
+            signal_tags=signal_tags,
+            trend_tags=trend_tags,
+            dominant_pattern=dominant_pattern,
+            dominant_analog=dominant_analog,
+            expected_outcomes=expected_outcomes,
+        )
 
     scenario_output = build_scenario_output(
         trend_data=trend_data,
@@ -1449,10 +1722,14 @@ def main() -> None:
         reference_memory_data=reference_memory_data,
     )
 
+    write_json(REFERENCE_MEMORY_PATH, reference_memory_data)
+    save_reference_memory_history(reference_memory_data)
+
     write_json(SCENARIO_LATEST_PATH, scenario_output)
     save_history(scenario_output)
 
     print(f"[scenario_engine] wrote {SCENARIO_LATEST_PATH}")
+    print(f"[scenario_engine] wrote {REFERENCE_MEMORY_PATH}")
     print(
         "[scenario_engine] dominant="
         f"{scenario_output.get('dominant_scenario')} "
@@ -1460,6 +1737,11 @@ def main() -> None:
         f"{scenario_output.get('risk')} "
         "confidence="
         f"{scenario_output.get('confidence')}"
+    )
+    print(
+        "[scenario_engine] reference_memory="
+        f"{reference_memory_data.get('status')} "
+        f"summary={reference_memory_data.get('recall_summary')}"
     )
 
 

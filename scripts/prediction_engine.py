@@ -17,6 +17,7 @@ SIGNAL_LATEST_PATH = PREDICTION_DIR / "signal_latest.json"
 HISTORICAL_PATTERN_LATEST_PATH = PREDICTION_DIR / "historical_pattern_latest.json"
 HISTORICAL_ANALOG_LATEST_PATH = PREDICTION_DIR / "historical_analog_latest.json"
 SCENARIO_LATEST_PATH = PREDICTION_DIR / "scenario_latest.json"
+REFERENCE_MEMORY_LATEST_PATH = PREDICTION_DIR / "reference_memory_latest.json"
 
 PREDICTION_LATEST_PATH = PREDICTION_DIR / "prediction_latest.json"
 
@@ -529,15 +530,52 @@ def translate_generic_text(text: str) -> Dict[str, str]:
     }
 
 
-def extract_memory_summary(scenario_data: Dict[str, Any]) -> str:
+def extract_reference_memory_from_scenario(scenario_data: Dict[str, Any]) -> Dict[str, Any]:
     reference_memory = scenario_data.get("reference_memory", {})
+    return reference_memory if isinstance(reference_memory, dict) else {}
+
+
+def merge_reference_memory(
+    scenario_reference_memory: Dict[str, Any],
+    direct_reference_memory: Dict[str, Any],
+) -> Dict[str, Any]:
+    if not isinstance(scenario_reference_memory, dict):
+        scenario_reference_memory = {}
+    if not isinstance(direct_reference_memory, dict):
+        direct_reference_memory = {}
+
+    if scenario_reference_memory.get("status") == "ok":
+        return scenario_reference_memory
+
+    if direct_reference_memory.get("status") == "ok":
+        return direct_reference_memory
+
+    merged = dict(direct_reference_memory)
+    merged.update(scenario_reference_memory)
+
+    if not merged:
+        return {
+            "status": "unavailable",
+            "summary": "",
+            "decision_refs": [],
+            "similar_cases": [],
+            "historical_patterns": [],
+            "historical_analogs": [],
+        }
+
+    if "summary" not in merged and "recall_summary" in merged:
+        merged["summary"] = merged.get("recall_summary")
+
+    return merged
+
+
+def extract_memory_summary(reference_memory: Dict[str, Any]) -> str:
     if not isinstance(reference_memory, dict):
         return ""
-    return str(reference_memory.get("summary") or "").strip()
+    return str(reference_memory.get("summary") or reference_memory.get("recall_summary") or "").strip()
 
 
-def extract_memory_status(scenario_data: Dict[str, Any]) -> str:
-    reference_memory = scenario_data.get("reference_memory", {})
+def extract_memory_status(reference_memory: Dict[str, Any]) -> str:
     if not isinstance(reference_memory, dict):
         return "unavailable"
     return str(reference_memory.get("status") or "unavailable").strip()
@@ -789,21 +827,21 @@ def build_prediction_statement_i18n(
 
 
 def build_action_bias(
-    scenario_data: Dict[str, Any],
+    dominant_scenario: str,
+    risk: str,
     expected_outcomes: List[str],
     historical_support_level: float,
+    reference_memory: Dict[str, Any],
 ) -> str:
-    dominant = normalize_text(scenario_data.get("dominant_scenario"))
-    risk = normalize_text(scenario_data.get("risk"))
     outcomes = set(normalize_text(x) for x in expected_outcomes)
-    memory_summary = normalize_text(extract_memory_summary(scenario_data))
+    memory_summary = normalize_text(extract_memory_summary(reference_memory))
 
     if "financial_crisis" in memory_summary or "banking_crisis" in memory_summary:
         return "defensive"
 
-    if dominant == "worst_case":
+    if dominant_scenario == "worst_case":
         return "defensive"
-    if dominant == "best_case" and risk in {"stable", "low"}:
+    if dominant_scenario == "best_case" and risk in {"stable", "low"}:
         return "constructive"
     if {"currency_down", "currency_sharp_down", "trade_disruption", "energy_up", "commodity_up", "credit_spreads_up"} & outcomes:
         return "guarded"
@@ -816,6 +854,7 @@ def build_monitoring_priorities(
     scenario_data: Dict[str, Any],
     pattern_data: Dict[str, Any],
     analog_data: Dict[str, Any],
+    reference_memory: Dict[str, Any],
 ) -> List[str]:
     priorities: List[str] = []
 
@@ -848,6 +887,14 @@ def build_monitoring_priorities(
                     if sim is not None:
                         priorities.append(normalize_text(sim))
 
+    for bucket_name in ("historical_patterns", "historical_analogs", "similar_cases"):
+        for item in reference_memory.get(bucket_name, [])[:2]:
+            if not isinstance(item, dict):
+                continue
+            for tag in item.get("tags", [])[:3]:
+                if tag is not None:
+                    priorities.append(normalize_text(tag))
+
     return unique_preserve_order([x for x in priorities if x])[:12]
 
 
@@ -857,6 +904,7 @@ def build_prediction_drivers(
     scenario_data: Dict[str, Any],
     pattern_data: Dict[str, Any],
     analog_data: Dict[str, Any],
+    reference_memory: Dict[str, Any],
 ) -> List[str]:
     drivers: List[str] = []
 
@@ -874,7 +922,19 @@ def build_prediction_drivers(
     if dominant_analog:
         drivers.append(f"historical_analog:{normalize_text(dominant_analog)}")
 
-    memory_summary = extract_memory_summary(scenario_data)
+    for item in reference_memory.get("historical_patterns", [])[:2]:
+        if isinstance(item, dict) and item.get("title"):
+            drivers.append(f"memory_pattern:{normalize_text(item.get('title'))}")
+
+    for item in reference_memory.get("historical_analogs", [])[:2]:
+        if isinstance(item, dict) and item.get("title"):
+            drivers.append(f"memory_analog:{normalize_text(item.get('title'))}")
+
+    for item in reference_memory.get("similar_cases", [])[:2]:
+        if isinstance(item, dict) and item.get("title"):
+            drivers.append(f"memory_case:{normalize_text(item.get('title'))}")
+
+    memory_summary = extract_memory_summary(reference_memory)
     if memory_summary:
         drivers.append(f"memory:{normalize_text(memory_summary)}")
 
@@ -923,7 +983,6 @@ def build_historical_context(
         if isinstance(csv, dict):
             current_stress_vector = {str(k): round(clamp01(safe_float(v)), 4) for k, v in csv.items()}
 
-    summary_i18n: Dict[str, str]
     if summary == "No historical context available.":
         summary_i18n = translate_generic_text(summary)
     else:
@@ -973,6 +1032,7 @@ def calculate_prediction_confidence(
     scenario_data: Dict[str, Any],
     pattern_data: Dict[str, Any],
     analog_data: Dict[str, Any],
+    reference_memory: Dict[str, Any],
 ) -> float:
     trend_conf = safe_float(trend_data.get("overall_confidence", trend_data.get("confidence", 0.0)))
 
@@ -997,8 +1057,8 @@ def calculate_prediction_confidence(
         + 0.10 * analog_conf
     )
 
-    memory_status = normalize_text(extract_memory_status(scenario_data))
-    memory_summary = extract_memory_summary(scenario_data)
+    memory_status = normalize_text(extract_memory_status(reference_memory))
+    memory_summary = extract_memory_summary(reference_memory)
     if memory_status == "ok" and memory_summary:
         confidence += 0.05
 
@@ -1127,12 +1187,28 @@ def build_expected_outcomes_i18n(
     }
 
 
+def build_reference_memory_output(reference_memory: Dict[str, Any]) -> Dict[str, Any]:
+    if not isinstance(reference_memory, dict):
+        return {
+            "status": "unavailable",
+            "summary": "",
+            "query_context": {},
+        }
+
+    return {
+        "status": reference_memory.get("status", "unavailable"),
+        "summary": extract_memory_summary(reference_memory),
+        "query_context": reference_memory.get("query_context", {}),
+    }
+
+
 def build_prediction_output(
     trend_data: Dict[str, Any],
     signal_data: Dict[str, Any],
     scenario_data: Dict[str, Any],
     pattern_data: Dict[str, Any],
     analog_data: Dict[str, Any],
+    reference_memory_data: Dict[str, Any],
 ) -> Dict[str, Any]:
     as_of = (
         scenario_data.get("as_of")
@@ -1145,7 +1221,7 @@ def build_prediction_output(
 
     dominant_scenario = normalize_text(scenario_data.get("dominant_scenario")) or "base_case"
     risk = normalize_text(scenario_data.get("risk")) or "guarded"
-    memory_summary = extract_memory_summary(scenario_data)
+    memory_summary = extract_memory_summary(reference_memory_data)
 
     historical_context = build_historical_context(
         pattern_data=pattern_data,
@@ -1165,6 +1241,7 @@ def build_prediction_output(
         scenario_data=scenario_data,
         pattern_data=pattern_data,
         analog_data=analog_data,
+        reference_memory=reference_memory_data,
     )
 
     expected_outcomes = scenario_data.get("expected_outcomes", [])
@@ -1176,12 +1253,15 @@ def build_prediction_output(
         scenario_data=scenario_data,
         pattern_data=pattern_data,
         analog_data=analog_data,
+        reference_memory=reference_memory_data,
     )
 
     action_bias = build_action_bias(
-        scenario_data=scenario_data,
+        dominant_scenario=dominant_scenario,
+        risk=risk,
         expected_outcomes=expected_outcomes,
         historical_support_level=safe_float(historical_context.get("support_level")),
+        reference_memory=reference_memory_data,
     )
 
     primary_narrative = choose_primary_narrative(scenario_data)
@@ -1223,6 +1303,7 @@ def build_prediction_output(
         scenario_data=scenario_data,
         pattern_data=pattern_data,
         analog_data=analog_data,
+        reference_memory=reference_memory_data,
     )
 
     summary = build_summary(
@@ -1251,7 +1332,7 @@ def build_prediction_output(
     output = {
         "as_of": as_of,
         "generated_at": utc_now_iso(),
-        "engine_version": "v3_memory_integrated_i18n_phase2",
+        "engine_version": "v3_vector_memory_integrated_i18n_phase3",
         "lang_default": LANG_DEFAULT,
         "languages": SUPPORTED_LANGUAGES,
         "direction": direction,
@@ -1271,7 +1352,7 @@ def build_prediction_output(
         "risk_flags": risk_flags_raw,
         "historical_context": historical_context,
         "scenario_bias": scenario_data.get("scenario_bias", {}),
-        "reference_memory": scenario_data.get("reference_memory", {}),
+        "reference_memory": build_reference_memory_output(reference_memory_data),
         "summary": summary,
         "summary_i18n": summary_i18n,
     }
@@ -1303,6 +1384,13 @@ def main() -> None:
     scenario_data = load_json(SCENARIO_LATEST_PATH)
     pattern_data = load_json(HISTORICAL_PATTERN_LATEST_PATH)
     analog_data = load_json(HISTORICAL_ANALOG_LATEST_PATH)
+    direct_reference_memory = load_json(REFERENCE_MEMORY_LATEST_PATH)
+
+    scenario_reference_memory = extract_reference_memory_from_scenario(scenario_data)
+    reference_memory_data = merge_reference_memory(
+        scenario_reference_memory=scenario_reference_memory,
+        direct_reference_memory=direct_reference_memory,
+    )
 
     prediction_output = build_prediction_output(
         trend_data=trend_data,
@@ -1310,6 +1398,7 @@ def main() -> None:
         scenario_data=scenario_data,
         pattern_data=pattern_data,
         analog_data=analog_data,
+        reference_memory_data=reference_memory_data,
     )
 
     write_json(PREDICTION_LATEST_PATH, prediction_output)
@@ -1323,6 +1412,11 @@ def main() -> None:
         f"{prediction_output.get('risk')} "
         "confidence="
         f"{prediction_output.get('confidence')}"
+    )
+    print(
+        "[prediction_engine] reference_memory="
+        f"{prediction_output.get('reference_memory', {}).get('status')} "
+        f"summary={prediction_output.get('reference_memory', {}).get('summary')}"
     )
 
 
