@@ -2,7 +2,7 @@
 
 Status: Active  
 Purpose: Architecture decision record  
-Last Updated: 2026-03-21
+Last Updated: 2026-03-22
 
 ---
 
@@ -144,6 +144,132 @@ prediction_engine.py
 Vector Memory は判断補助
 Prediction / Scenario の代替ではない
 ```
+
+---
+
+## Decision: Reference Memory is compacted for UI (short-form only)
+
+対象
+
+```text
+scripts/scenario_engine.py
+scripts/build_prediction_explanation.py
+analysis/prediction/reference_memory_latest.json
+analysis/explanation/prediction_explanation_latest.json
+```
+
+背景
+
+Vector Memory により以下が取得可能になった。
+
+* decision_log
+* similar_cases
+* historical_patterns
+* historical_analogs
+
+これにより Scenario / Prediction は recall を判断補助として利用できるようになった。
+
+しかし、recall 結果をそのまま explanation artifact に渡すと、
+
+* 長文になりすぎる
+* document 全文や JSON 断片が混入する
+* UI の可読性が崩れる
+* memory 表示が explanation 本体より重くなる
+
+問題が発生した。
+
+問題
+
+reference_memory は本来
+
+```text
+検索用データ
+```
+
+であり、
+
+```text
+そのまま表示用データではない
+```
+
+特に vector recall の戻り値には、
+
+* decision_log の長い本文
+* scenario / prediction snapshot の長文 summary
+* explanation artifact の本文
+* JSON に近い raw text
+
+が含まれうる。
+
+これをそのまま UI に出すと、
+
+```text
+UI = read-only
+```
+
+という原則は守れても、
+
+```text
+UI = readable
+```
+
+が崩れる。
+
+結論
+
+GenesisPrediction では
+
+```text
+Reference Memory = UI用に短文化して渡す
+```
+
+とする。
+
+ルール
+
+* decision_log → title のみ
+* historical_pattern / historical_analog → title のみ
+* scenario_snapshot / prediction_snapshot / signal_snapshot / explanation
+  → title が汎用的すぎる場合は summary を短文化して使う
+* JSON / 生テキスト / document 全文 → 除外
+* 最大 6 件まで
+* 短文化は analysis 側で行い、UI 側では行わない
+
+責務分離
+
+```text
+vector DB        = 生データ（完全）
+scenario_engine  = recall 実行
+reference_memory_latest.json = recall materialize
+build_prediction_explanation.py = 表示用 short-form 整形
+UI               = 表示のみ
+```
+
+意図
+
+* UI の可読性を守る
+* explanation 本体の重心を守る
+* memory の暴走を防ぐ
+* 再現性を守る
+* architecture の純度を保つ
+
+補足
+
+Vector Memory は
+
+```text
+reference-only memory
+```
+
+であり、意思決定の主体ではない。
+
+また、
+
+```text
+UI は compacted reference_memory を読むだけ
+```
+
+であり、UI 側で要約・翻訳・整形をしてはならない。
 
 ---
 
@@ -385,4 +511,4 @@ Qdrant operational rule
 
 END OF DOCUMENT
 
-````
+```

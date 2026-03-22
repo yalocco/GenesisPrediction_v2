@@ -55,6 +55,7 @@ OUTPUT_PATH = EXPLANATION_DIR / "prediction_explanation_latest.json"
 LANG_DEFAULT = "en"
 SUPPORTED_LANGUAGES = ["en", "ja", "th"]
 
+
 SCENARIO_LABELS = {
     "best_case": {"ja": "最良シナリオ", "en": "Best case", "th": "กรณีดีที่สุด"},
     "base_case": {"ja": "基本シナリオ", "en": "Base case", "th": "กรณีฐาน"},
@@ -965,6 +966,179 @@ def extract_invalidation(
     return dedupe_keep_order(collected)[:6]
 
 
+
+def truncate_text(text: str, max_len: int = 96) -> str:
+    s = compact_spaces(text)
+    if len(s) <= max_len:
+        return s
+    return s[: max_len - 1].rstrip() + "…"
+
+
+def reference_memory_title_i18n(item: dict[str, Any]) -> dict[str, str]:
+    title_i18n = item.get("title_i18n")
+    if isinstance(title_i18n, dict):
+        ja = normalize_str(title_i18n.get("ja"))
+        en = normalize_str(title_i18n.get("en"))
+        th = normalize_str(title_i18n.get("th"))
+        fallback = (
+            normalize_str(item.get("title"))
+            or normalize_str(item.get("name"))
+            or normalize_str(item.get("label"))
+            or normalize_str(item.get("memory_id"))
+            or "reference memory"
+        )
+        return {
+            "ja": compact_spaces(ja or fallback),
+            "en": compact_spaces(en or fallback),
+            "th": compact_spaces(th or fallback),
+        }
+
+    fallback = (
+        normalize_str(item.get("title"))
+        or normalize_str(item.get("name"))
+        or normalize_str(item.get("label"))
+        or normalize_str(item.get("memory_id"))
+        or "reference memory"
+    )
+    fallback = compact_spaces(fallback)
+    return {"ja": fallback, "en": fallback, "th": fallback}
+
+
+def reference_memory_summary_i18n(item: dict[str, Any]) -> dict[str, str]:
+    summary_i18n = item.get("summary_i18n")
+    if isinstance(summary_i18n, dict):
+        ja = normalize_str(summary_i18n.get("ja"))
+        en = normalize_str(summary_i18n.get("en"))
+        th = normalize_str(summary_i18n.get("th"))
+        fallback = (
+            normalize_str(item.get("summary"))
+            or normalize_str(item.get("description"))
+            or normalize_str(item.get("reason"))
+            or normalize_str(item.get("text"))
+            or ""
+        )
+        return {
+            "ja": truncate_text(ja or fallback, 88),
+            "en": truncate_text(en or fallback, 88),
+            "th": truncate_text(th or fallback, 88),
+        }
+
+    fallback = (
+        normalize_str(item.get("summary"))
+        or normalize_str(item.get("description"))
+        or normalize_str(item.get("reason"))
+        or normalize_str(item.get("text"))
+        or ""
+    )
+    fallback = truncate_text(fallback, 88)
+    return {"ja": fallback, "en": fallback, "th": fallback}
+
+
+def compact_reference_memory_entry(item: Any) -> dict[str, str] | None:
+    if item is None:
+        return None
+
+    if isinstance(item, str):
+        raw = compact_spaces(item)
+        if not raw:
+            return None
+        if raw.startswith("{") or raw.startswith("["):
+            return None
+        text = truncate_text(raw, 88)
+        return {"ja": text, "en": text, "th": text}
+
+    if not isinstance(item, dict):
+        raw = compact_spaces(str(item))
+        if not raw:
+            return None
+        if raw.startswith("{") or raw.startswith("["):
+            return None
+        text = truncate_text(raw, 88)
+        return {"ja": text, "en": text, "th": text}
+
+    memory_type = normalize_str(item.get("memory_type")) or ""
+    title_map = reference_memory_title_i18n(item)
+    summary_map = reference_memory_summary_i18n(item)
+
+    generic_titles = {"base_case", "best_case", "worst_case", "scenario", "prediction", "signal"}
+
+    if memory_type in {"decision_log", "historical_pattern", "historical_analog"}:
+        return title_map
+
+    if memory_type in {"scenario_snapshot", "prediction_snapshot", "signal_snapshot", "explanation"}:
+        raw_en_title = (title_map.get("en") or "").strip()
+        en_title_key = raw_en_title.lower().replace(" ", "_")
+        generic_prefixes = (
+            "scenario_snapshot:",
+            "prediction_snapshot:",
+            "signal_snapshot:",
+            "explanation:",
+        )
+
+        if (
+            en_title_key in generic_titles
+            or raw_en_title.lower() in generic_titles
+            or any(raw_en_title.lower().startswith(prefix) for prefix in generic_prefixes)
+        ):
+            summary_en = (summary_map.get("en") or "").strip()
+            if summary_en and not summary_en.startswith("{") and not summary_en.startswith("["):
+                return summary_map
+            return None
+        return title_map
+
+    title_en = (title_map.get("en") or "").strip()
+    if title_en and title_en != "reference memory" and not title_en.startswith("{") and not title_en.startswith("["):
+        return title_map
+
+    summary_en = (summary_map.get("en") or "").strip()
+    if summary_en and not summary_en.startswith("{") and not summary_en.startswith("["):
+        return summary_map
+
+    return None
+
+
+def extract_reference_memory_entries(reference_memory: dict[str, Any] | None) -> list[dict[str, str]]:
+    if not isinstance(reference_memory, dict):
+        return []
+
+    buckets: list[Any] = []
+
+    direct_keys = [
+        "reference_memory",
+        "memories",
+        "items",
+        "references",
+        "decision_refs",
+        "similar_cases",
+        "historical_patterns",
+        "historical_analogs",
+    ]
+    nested_keys = ["results", "recall", "payload", "data"]
+
+    for key in direct_keys:
+        buckets.extend(normalize_list(reference_memory.get(key)))
+
+    for parent in nested_keys:
+        nested = reference_memory.get(parent)
+        if isinstance(nested, dict):
+            for key in direct_keys:
+                buckets.extend(normalize_list(nested.get(key)))
+
+    normalized: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for item in buckets:
+        entry = compact_reference_memory_entry(item)
+        if not entry:
+            continue
+        dedupe_key = " | ".join([entry.get("ja", ""), entry.get("en", ""), entry.get("th", "")]).strip()
+        if not dedupe_key or dedupe_key in seen:
+            continue
+        seen.add(dedupe_key)
+        normalized.append(entry)
+
+    return normalized[:6]
+
+
 def driver_text_triplet_i18n(
     driver_key: str,
     dominant_scenario: str | None,
@@ -1755,6 +1929,8 @@ def build_unavailable_artifact(
         decision_line_i18n,
     )
 
+    empty_ref = {"ja": [], "en": [], "th": []}
+
     artifact: dict[str, Any] = {
         "as_of": None,
         "subject": "prediction",
@@ -1775,19 +1951,21 @@ def build_unavailable_artifact(
         "narrative_flow_i18n": narrative_flow_i18n,
         "based_on": [str(prediction_path), str(scenario_path), str(signal_path)],
         "drivers": [],
-        "drivers_i18n": {"ja": [], "en": [], "th": []},
+        "drivers_i18n": empty_ref,
         "monitor": [],
-        "monitor_i18n": {"ja": [], "en": [], "th": []},
+        "monitor_i18n": empty_ref,
         "watchpoints": [],
-        "watchpoints_i18n": {"ja": [], "en": [], "th": []},
+        "watchpoints_i18n": empty_ref,
         "historical": [],
-        "historical_i18n": {"ja": [], "en": [], "th": []},
+        "historical_i18n": empty_ref,
         "implications": [],
-        "implications_i18n": {"ja": [], "en": [], "th": []},
+        "implications_i18n": empty_ref,
+        "reference_memory": [],
+        "reference_memory_i18n": empty_ref,
         "risks": [],
-        "risks_i18n": {"ja": [], "en": [], "th": []},
+        "risks_i18n": empty_ref,
         "invalidation": [],
-        "invalidation_i18n": {"ja": [], "en": [], "th": []},
+        "invalidation_i18n": empty_ref,
         "must_not_mean": [
             "unavailable does not mean safe",
             "unavailable is not the same as prediction not existing",
@@ -1859,6 +2037,7 @@ def build_prediction_explanation(
     )
     risks = extract_risks(prediction, dominant_scenario, confidence, historical)
     invalidation = extract_invalidation(prediction, scenario, dominant_scenario)
+    reference_memory_entries = extract_reference_memory_entries(reference_memory)
 
     headline_i18n = i18n_for_headline(dominant_scenario, watchpoints, confidence)
     decision_line_i18n = i18n_for_decision_line(dominant_scenario, risk_value, confidence)
@@ -1951,6 +2130,12 @@ def build_prediction_explanation(
         "th": [translate_key_generic(x)["th"] for x in watchpoints],
     }
 
+    reference_memory_i18n = {
+        "ja": [x["ja"] for x in reference_memory_entries],
+        "en": [x["en"] for x in reference_memory_entries],
+        "th": [x["th"] for x in reference_memory_entries],
+    }
+
     based_on: list[str] = [str(prediction_path), str(scenario_path), str(signal_path)]
     if historical_pattern_path.exists():
         based_on.append(str(historical_pattern_path))
@@ -1998,6 +2183,8 @@ def build_prediction_explanation(
         "historical_i18n": historical_i18n,
         "implications": implications_base,
         "implications_i18n": implications_i18n,
+        "reference_memory": reference_memory_i18n["en"],
+        "reference_memory_i18n": reference_memory_i18n,
         "risks": risks_i18n["en"],
         "risks_i18n": risks_i18n,
         "invalidation": invalidation_i18n["en"],
@@ -2009,24 +2196,10 @@ def build_prediction_explanation(
     }
 
     if reference_memory is not None:
-        memory_refs = to_text_list(
-            pick_first(
-                reference_memory,
-                "reference_memory",
-                "memories",
-                "historical_patterns",
-                "similar_cases",
-                default=[],
-            )
+        artifact["reference_memory_status"] = reference_memory.get("status")
+        artifact["reference_memory_summary"] = normalize_str(
+            pick_first(reference_memory, "recall_summary", "summary", default=None)
         )
-        if memory_refs:
-            translated_refs = [translate_key_generic(x) for x in memory_refs[:6]]
-            artifact["reference_memory"] = [x["en"] for x in translated_refs]
-            artifact["reference_memory_i18n"] = {
-                "ja": [x["ja"] for x in translated_refs],
-                "en": [x["en"] for x in translated_refs],
-                "th": [x["th"] for x in translated_refs],
-            }
 
     return artifact
 
@@ -2086,7 +2259,8 @@ def main() -> int:
         "[prediction_explanation] "
         f"subject={artifact.get('subject')} "
         f"status={artifact.get('status')} "
-        f"as_of={artifact.get('as_of')}"
+        f"as_of={artifact.get('as_of')} "
+        f"reference_memory_count={len(artifact.get('reference_memory', []))}"
     )
     return 0
 

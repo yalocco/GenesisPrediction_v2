@@ -36,8 +36,8 @@ SCENARIO_LATEST_PATH = PREDICTION_DIR / "scenario_latest.json"
 
 LANG_DEFAULT = "ja"
 SUPPORTED_LANGUAGES = ["en", "ja", "th"]
-ENGINE_VERSION = "v3_with_vector_memory_i18n_phase2"
-REFERENCE_MEMORY_ENGINE_VERSION = "v1"
+ENGINE_VERSION = "v3_with_vector_memory_i18n_phase3"
+REFERENCE_MEMORY_ENGINE_VERSION = "v2"
 DEFAULT_RECALL_LIMIT = 3
 
 SCENARIO_LABELS = {
@@ -1348,26 +1348,92 @@ def compact_recall_items(items: List[Dict[str, Any]], limit: int) -> List[Dict[s
     return out
 
 
+def readable_token(value: Any) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    return text.replace("_", " ").replace(":", " ").replace(">", " ").strip()
+
+
 def build_reference_query(
     signal_tags: List[str],
     trend_tags: List[str],
     dominant_pattern: Optional[str],
     dominant_analog: Optional[str],
     expected_outcomes: List[str],
+    watchpoints: Optional[List[str]] = None,
 ) -> str:
     parts: List[str] = []
-    parts.extend(signal_tags[:6])
-    parts.extend(trend_tags[:4])
+
+    parts.extend([
+        "base_case",
+        "guarded",
+        "watchpoints",
+        "financial stress",
+        "bank funding stress",
+        "credit contraction",
+    ])
+
+    if watchpoints:
+        for item in watchpoints[:8]:
+            norm = normalize_text(item)
+            if norm:
+                parts.append(norm)
+                parts.append(readable_token(norm))
+
+    for item in signal_tags[:8]:
+        norm = normalize_text(item)
+        if norm:
+            parts.append(norm)
+            parts.append(readable_token(norm))
+
+    for item in trend_tags[:6]:
+        norm = normalize_text(item)
+        if norm:
+            parts.append(norm)
+            parts.append(readable_token(norm))
+
+    for item in expected_outcomes[:6]:
+        norm = normalize_text(item)
+        if norm:
+            parts.append(norm)
+            parts.append(readable_token(norm))
 
     if dominant_pattern:
         parts.append(str(dominant_pattern).strip())
+        parts.append(readable_token(dominant_pattern))
     if dominant_analog:
         parts.append(str(dominant_analog).strip())
+        parts.append(readable_token(dominant_analog))
 
-    parts.extend(expected_outcomes[:4])
+    normalized = [str(x).strip() for x in parts if str(x).strip()]
+    return " ".join(unique_preserve_order(normalized)[:32]).strip() or "global risk scenario watchpoints bank funding stress"
 
-    normalized = [normalize_text(x) for x in parts if normalize_text(x)]
-    return " ".join(unique_preserve_order(normalized)[:12]).strip() or "global risk scenario watchpoints"
+
+def search_recall_bucket(
+    *,
+    client: Any,
+    collection: str,
+    query: str,
+    limit: int,
+    memory_type: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    if search_similar is None:
+        return []
+
+    try:
+        return compact_recall_items(
+            search_similar(
+                client=client,
+                collection=collection,
+                query=query,
+                limit=limit,
+                memory_type=memory_type,
+            ),
+            limit,
+        )
+    except Exception:
+        return []
 
 
 def build_reference_memory_artifact(
@@ -1381,6 +1447,7 @@ def build_reference_memory_artifact(
     dominant_pattern: Optional[str],
     dominant_analog: Optional[str],
     expected_outcomes: List[str],
+    watchpoints: List[str],
 ) -> Dict[str, Any]:
     artifact: Dict[str, Any] = {
         "as_of": as_of,
@@ -1392,6 +1459,8 @@ def build_reference_memory_artifact(
             "source": "scenario_engine",
             "tags": unique_preserve_order((signal_tags or [])[:8] + (trend_tags or [])[:4]),
             "notes": "",
+            "decision_query": "",
+            "general_query": "",
         },
         "decision_refs": [],
         "similar_cases": [],
@@ -1401,14 +1470,19 @@ def build_reference_memory_artifact(
         "status": "unavailable",
     }
 
-    query = build_reference_query(
+    general_query = build_reference_query(
         signal_tags=signal_tags,
         trend_tags=trend_tags,
         dominant_pattern=dominant_pattern,
         dominant_analog=dominant_analog,
         expected_outcomes=expected_outcomes,
+        watchpoints=watchpoints,
     )
-    artifact["query_context"]["notes"] = query
+    decision_query = "decision log analysis SST UI read-only complete file vector memory reference only"
+
+    artifact["query_context"]["notes"] = general_query
+    artifact["query_context"]["decision_query"] = decision_query
+    artifact["query_context"]["general_query"] = general_query
 
     if build_client is None or search_similar is None:
         artifact["recall_summary"] = "vector_recall import unavailable"
@@ -1417,61 +1491,66 @@ def build_reference_memory_artifact(
     try:
         client = build_client(qdrant_url)
 
-        decision_refs = compact_recall_items(
-            search_similar(
-                client=client,
-                collection=collection,
-                query="analysis SST UI read-only vector memory reference only",
-                limit=recall_limit,
-                memory_type="decision_log",
-            ),
-            recall_limit,
+        decision_refs = search_recall_bucket(
+            client=client,
+            collection=collection,
+            query=decision_query,
+            limit=recall_limit,
+            memory_type="decision_log",
         )
 
-        similar_cases = compact_recall_items(
-            search_similar(
-                client=client,
-                collection=collection,
-                query=query,
-                limit=recall_limit,
-                memory_type="scenario_snapshot",
-            ),
-            recall_limit,
+        similar_cases = search_recall_bucket(
+            client=client,
+            collection=collection,
+            query=general_query,
+            limit=recall_limit,
+            memory_type="scenario_snapshot",
         )
 
         if not similar_cases:
-            similar_cases = compact_recall_items(
-                search_similar(
-                    client=client,
-                    collection=collection,
-                    query=query,
-                    limit=recall_limit,
-                    memory_type="prediction_snapshot",
-                ),
-                recall_limit,
+            similar_cases = search_recall_bucket(
+                client=client,
+                collection=collection,
+                query=general_query,
+                limit=recall_limit,
+                memory_type="prediction_snapshot",
             )
 
-        historical_patterns = compact_recall_items(
-            search_similar(
-                client=client,
-                collection=collection,
-                query=query,
-                limit=recall_limit,
-                memory_type="historical_pattern",
-            ),
-            recall_limit,
+        historical_patterns = search_recall_bucket(
+            client=client,
+            collection=collection,
+            query=general_query,
+            limit=recall_limit,
+            memory_type="historical_pattern",
         )
 
-        historical_analogs = compact_recall_items(
-            search_similar(
-                client=client,
-                collection=collection,
-                query=query,
-                limit=recall_limit,
-                memory_type="historical_analog",
-            ),
-            recall_limit,
+        historical_analogs = search_recall_bucket(
+            client=client,
+            collection=collection,
+            query=general_query,
+            limit=recall_limit,
+            memory_type="historical_analog",
         )
+
+        generic_fallback = search_recall_bucket(
+            client=client,
+            collection=collection,
+            query=general_query,
+            limit=max(recall_limit * 3, 6),
+            memory_type=None,
+        )
+
+        if not similar_cases:
+            similar_cases = [x for x in generic_fallback if x.get("memory_type") in {"scenario_snapshot", "prediction_snapshot"}][:recall_limit]
+
+        if not historical_patterns:
+            historical_patterns = [x for x in generic_fallback if x.get("memory_type") == "historical_pattern"][:recall_limit]
+
+        if not historical_analogs:
+            historical_analogs = [x for x in generic_fallback if x.get("memory_type") == "historical_analog"][:recall_limit]
+
+        if not decision_refs:
+            decision_refs = [x for x in generic_fallback if x.get("memory_type") == "decision_log"][:recall_limit]
 
         artifact["decision_refs"] = decision_refs
         artifact["similar_cases"] = similar_cases
@@ -1679,6 +1758,7 @@ def main() -> None:
     dominant_pattern = historical_pattern_data.get("dominant_pattern")
     dominant_analog = historical_analog_data.get("dominant_analog")
     expected_outcomes = extract_expected_outcomes(historical_pattern_data, historical_analog_data)
+    watchpoints = extract_historical_watchpoints(historical_pattern_data, historical_analog_data)
 
     if args.skip_recall:
         reference_memory_data = load_reference_memory()
@@ -1693,6 +1773,8 @@ def main() -> None:
                     "source": "scenario_engine",
                     "tags": [],
                     "notes": "skip_recall=true",
+                    "decision_query": "",
+                    "general_query": "",
                 },
                 "decision_refs": [],
                 "similar_cases": [],
@@ -1712,6 +1794,7 @@ def main() -> None:
             dominant_pattern=dominant_pattern,
             dominant_analog=dominant_analog,
             expected_outcomes=expected_outcomes,
+            watchpoints=watchpoints,
         )
 
     scenario_output = build_scenario_output(
