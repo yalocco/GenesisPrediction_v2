@@ -187,6 +187,32 @@
             <div id="explanationSummaryBlock" class="list-stack compact-list"></div>
           </section>
 
+          <section class="card compact-card recall-card">
+            <div class="section-header compact-section-header">
+              <div>
+                <h2 class="section-title">🧠 AI Recall</h2>
+                <p class="section-subtitle">
+                  Past decisions, similar cases, and historical context retrieved from vector memory.
+                  This represents the reasoning memory supporting the current prediction.
+                </p>
+              </div>
+            </div>
+            <div id="referenceMemoryList" class="list-stack compact-list"></div>
+          </section>
+
+          <section class="card compact-card recall-card">
+            <div class="section-header compact-section-header">
+              <div>
+                <h2 class="section-title">🧠 AI Recall</h2>
+                <p class="section-subtitle">
+                  Past decisions, similar cases, and historical context retrieved from vector memory.
+                  This represents the reasoning memory supporting the current prediction.
+                </p>
+              </div>
+            </div>
+            <div id="referenceMemoryList" class="list-stack compact-list"></div>
+          </section>
+
           <section class="content-grid compact-content-grid">
             <article class="card compact-card">
               <div class="section-header compact-section-header">
@@ -228,15 +254,6 @@
               <div id="historicalContextList" class="list-stack compact-list"></div>
             </article>
 
-            <article class="card compact-card">
-              <div class="section-header compact-section-header">
-                <div>
-                  <h2 class="section-title">Reference Memory</h2>
-                  <p class="section-subtitle">Reference-only memory context supplied by analysis.</p>
-                </div>
-              </div>
-              <div id="referenceMemoryList" class="list-stack compact-list"></div>
-            </article>
           </section>
 
           <section class="content-grid compact-content-grid">
@@ -378,7 +395,7 @@
       monitoring: 3,
       expectedOutcomes: 6,
       historical: 4,
-      memory: 4,
+      memory: 6,
       history: 4,
       runtimeNotes: 8,
       risks: 4,
@@ -422,7 +439,6 @@
       }
       return null;
     }
-
 
     function getCurrentLang(){
       const lang = String(window.GP_LANG || "ja").toLowerCase();
@@ -537,7 +553,10 @@
               item.note,
               item.meaning,
               item.signal,
-              item.item
+              item.item,
+              item.outcome,
+              item.pattern,
+              item.driver
             );
           }
           return "";
@@ -1000,12 +1019,36 @@
         return;
       }
 
-      root.innerHTML = list.map((item) => `
-        <article class="list-row compact-list-row">
-          <span class="pill">${escapeHtml(badge)}</span>
-          <div><p class="inline-text">${escapeHtml(String(item))}</p></div>
-        </article>
-      `).join("");
+      const isRecallList = rootId === "referenceMemoryList";
+
+      root.innerHTML = list.map((item) => {
+        const text = String(item);
+        if (isRecallList) {
+          return `
+            <article class="list-row compact-list-row recall-expandable-shell">
+              <button type="button" class="recall-expandable" data-recall-toggle aria-expanded="false" title="Click to expand">
+                <span class="pill">${escapeHtml(badge)}</span>
+                <span class="recall-copy">
+                  <span class="inline-text recall-preview">${escapeHtml(text)}</span>
+                  <span class="inline-text recall-full" hidden>${escapeHtml(text)}</span>
+                </span>
+              </button>
+            </article>
+          `;
+        }
+
+        return `
+          <article class="list-row compact-list-row">
+            <span class="pill">${escapeHtml(badge)}</span>
+            <div><p class="inline-text">${escapeHtml(text)}</p></div>
+          </article>
+        `;
+      }).join("");
+
+      if (isRecallList) {
+        root.querySelectorAll("[data-recall-toggle]").forEach((button) => setRecallExpanded(button, false));
+        enableRecallExpand();
+      }
     }
 
     function renderDrivers(rootId, items){
@@ -1391,7 +1434,7 @@
       if (safeArray(viewModel.referenceMemory).length && typeof viewModel.referenceMemory[0] !== "string"){
         renderHistorical("referenceMemoryList", viewModel.referenceMemory);
       } else {
-        renderSimpleList("referenceMemoryList", viewModel.referenceMemory, "Reference memory unavailable", "R", UI_LIMITS.memory);
+        renderSimpleList("referenceMemoryList", viewModel.referenceMemory, "AI recall unavailable", "R", UI_LIMITS.memory);
       }
 
       renderSimpleList("risksList", viewModel.risks, "Risks unavailable", "R", UI_LIMITS.risks);
@@ -1405,6 +1448,41 @@
       renderPredictionHistory(history);
       renderCharts(viewModel, history);
     }
+
+    function setRecallExpanded(button, expanded){
+      if (!button) return;
+      const preview = button.querySelector(".recall-preview");
+      const full = button.querySelector(".recall-full");
+      if (!preview || !full) return;
+
+      button.classList.toggle("expanded", expanded);
+      button.setAttribute("aria-expanded", expanded ? "true" : "false");
+      preview.hidden = expanded;
+      full.hidden = !expanded;
+    }
+
+    function enableRecallExpand() {
+      const container = document.getElementById("referenceMemoryList");
+      if (!container || container.dataset.expandBound === "1") return;
+      container.dataset.expandBound = "1";
+
+      container.addEventListener("click", function (e) {
+        const button = e.target.closest("[data-recall-toggle]");
+        if (!button || !container.contains(button)) return;
+        const expanded = button.getAttribute("aria-expanded") === "true";
+        setRecallExpanded(button, !expanded);
+      });
+
+      container.addEventListener("keydown", function (e) {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        const button = e.target.closest("[data-recall-toggle]");
+        if (!button || !container.contains(button)) return;
+        e.preventDefault();
+        const expanded = button.getAttribute("aria-expanded") === "true";
+        setRecallExpanded(button, !expanded);
+      });
+    }
+
 
     window.addEventListener("DOMContentLoaded", init);
   </script>

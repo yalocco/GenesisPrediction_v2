@@ -771,3 +771,70 @@
        height: 76px;
      }
    }
+
+.recall-card .recall-expandable-shell {
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.recall-card .recall-expandable {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(120, 160, 220, 0.08);
+  background: rgba(255, 255, 255, 0.028);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.recall-card .recall-expandable:hover {
+  background: rgba(120, 180, 255, 0.08);
+  border-color: rgba(120, 180, 255, 0.18);
+}
+
+.recall-card .recall-expandable:focus-visible {
+  outline: 2px solid rgba(158, 203, 255, 0.9);
+  outline-offset: 2px;
+}
+
+.recall-card .recall-expandable.expanded {
+  background: rgba(120, 180, 255, 0.12);
+  border-color: rgba(120, 180, 255, 0.24);
+}
+
+.recall-card .recall-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.recall-card [hidden] {
+  display: none !important;
+}
+
+.recall-card .recall-preview {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recall-card .recall-full {
+  display: none;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+}
+
+.recall-card .recall-expandable.expanded .recall-full {
+  display: block;
+}
+
+.recall-card .recall-expandable.expanded .recall-preview {
+  display: none;
+}
