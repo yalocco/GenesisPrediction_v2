@@ -2,9 +2,20 @@
 from __future__ import annotations
 
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+LIB_DIR = SCRIPT_DIR / "lib"
+if str(LIB_DIR) not in sys.path:
+    sys.path.insert(0, str(LIB_DIR))
+
+from i18n_translate import (
+    translate_reference_memory_summary as shared_translate_reference_memory_summary,
+    translate_status as shared_translate_status,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -1332,7 +1343,7 @@ def build_prediction_output(
     output = {
         "as_of": as_of,
         "generated_at": utc_now_iso(),
-        "engine_version": "v3_vector_memory_integrated_i18n_phase3",
+        "engine_version": "v3_vector_memory_integrated_i18n_phase4_data_i18n",
         "lang_default": LANG_DEFAULT,
         "languages": SUPPORTED_LANGUAGES,
         "direction": direction,

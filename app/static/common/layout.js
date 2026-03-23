@@ -1,8 +1,11 @@
 (() => {
   "use strict";
 
-  const DEFAULT_LANG = "en";
-  const LANG_CHANGED_EVENT = "gp:lang-changed";
+  const manager = window.GP_LANG_MANAGER || null;
+  const i18n = window.GP_I18N || window.GenesisI18n || null;
+  const DEFAULT_LANG = manager && manager.DEFAULT_LANG ? manager.DEFAULT_LANG : "en";
+  const LANG_CHANGED_EVENT =
+    manager && manager.LANG_CHANGED_EVENT ? manager.LANG_CHANGED_EVENT : "gp:lang-changed";
 
   const LAYOUT_TEXT = {
     en: {
@@ -73,48 +76,46 @@
     { href: "/static/prediction_history.html", key: "nav_prediction_history" }
   ];
 
+
   function normalizeLang(lang) {
+    if (manager && typeof manager.normalizeLang === "function") {
+      return manager.normalizeLang(lang);
+    }
     const value = String(lang || "").trim().toLowerCase();
     return ["en", "ja", "th"].includes(value) ? value : DEFAULT_LANG;
   }
 
   function getLang() {
-    try {
-      return normalizeLang(localStorage.getItem("gp_lang") || window.GP_LANG || DEFAULT_LANG);
-    } catch (_error) {
-      return normalizeLang(window.GP_LANG || DEFAULT_LANG);
+    if (manager && typeof manager.getLang === "function") {
+      return manager.getLang();
     }
-  }
-
-  function initLang() {
-    window.GP_LANG = getLang();
+    return normalizeLang(window.GP_LANG || DEFAULT_LANG);
   }
 
   function layoutTr(key, lang = null) {
-    const activeLang = normalizeLang(lang || window.GP_LANG || DEFAULT_LANG);
+    if (i18n && typeof i18n.translate === "function") {
+      return i18n.translate(LAYOUT_TEXT, key, lang || getLang());
+    }
+
+    const activeLang = normalizeLang(lang || getLang());
     const table = LAYOUT_TEXT[activeLang] || LAYOUT_TEXT[DEFAULT_LANG];
     return table[key] || LAYOUT_TEXT[DEFAULT_LANG][key] || key;
   }
 
   async function setLang(lang) {
-    const nextLang = normalizeLang(lang);
-    const prevLang = normalizeLang(window.GP_LANG || DEFAULT_LANG);
-
-    try {
-      localStorage.setItem("gp_lang", nextLang);
-    } catch (_error) {
-      // ignore storage failure
+    if (manager && typeof manager.setLang === "function") {
+      return manager.setLang(lang);
     }
 
+    const nextLang = normalizeLang(lang);
+    const previousLang = getLang();
     window.GP_LANG = nextLang;
     document.documentElement.lang = nextLang;
 
-    rerenderLayout();
-    await refreshSharedStatus();
-
-    const detail = { lang: nextLang, previousLang: prevLang };
+    const detail = { lang: nextLang, previousLang: previousLang };
     document.dispatchEvent(new CustomEvent(LANG_CHANGED_EVENT, { detail }));
     window.dispatchEvent(new CustomEvent(LANG_CHANGED_EVENT, { detail }));
+    return nextLang;
   }
 
   function normalizePath(path) {
@@ -157,7 +158,7 @@
   }
 
   function buildLanguageHtml() {
-    const lang = window.GP_LANG || DEFAULT_LANG;
+    const lang = getLang();
     return `
       <label class="lang-switch" for="langSwitch" aria-label="${layoutTr("language_switch")}">
         <span class="lang-switch-label">${layoutTr("lang_label")}</span>
@@ -353,20 +354,23 @@
     return value;
   }
 
+
   function exposeI18nHelpers() {
-    window.GenesisI18n = {
-      getLang,
-      setLang,
-      pickText,
-      pickList,
-      pickField,
-      tr: layoutTr,
-      normalizeLang,
-      defaultLang: DEFAULT_LANG,
-      events: {
-        langChanged: LANG_CHANGED_EVENT
-      }
-    };
+    if (!window.GenesisI18n) {
+      window.GenesisI18n = window.GP_I18N || {
+        getLang,
+        setLang,
+        pickText,
+        pickList,
+        pickField,
+        tr: layoutTr,
+        normalizeLang,
+        defaultLang: DEFAULT_LANG,
+        events: {
+          langChanged: LANG_CHANGED_EVENT
+        }
+      };
+    }
   }
 
   async function refreshSharedStatus() {
@@ -389,16 +393,16 @@
       // header skeleton remains visible even when status fetch fails
     }
   }
-
-  initLang();
-  document.documentElement.lang = window.GP_LANG || DEFAULT_LANG;
+  document.addEventListener(LANG_CHANGED_EVENT, async () => {
+    rerenderLayout();
+    await refreshSharedStatus();
+  });
 
   async function boot() {
     exposeI18nHelpers();
     document.documentElement.dataset.layoutReady = "0";
 
     rerenderLayout();
-
     document.dispatchEvent(new CustomEvent("layout:mounted"));
 
     await refreshSharedStatus();

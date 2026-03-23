@@ -38,6 +38,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+LIB_DIR = Path(__file__).resolve().parent / "lib"
+if str(LIB_DIR) not in sys.path:
+    sys.path.insert(0, str(LIB_DIR))
+
+from i18n_translate import (
+    translate_reference_memory_summary as shared_translate_reference_memory_summary,
+    translate_status as shared_translate_status,
+)
+
 
 SCRIPT_PATH = Path(__file__).resolve()
 REPO_ROOT = SCRIPT_PATH.parent.parent
@@ -2196,9 +2205,16 @@ def build_prediction_explanation(
     }
 
     if reference_memory is not None:
-        artifact["reference_memory_status"] = reference_memory.get("status")
-        artifact["reference_memory_summary"] = normalize_str(
+        reference_memory_status = reference_memory.get("status")
+        reference_memory_summary = normalize_str(
             pick_first(reference_memory, "recall_summary", "summary", default=None)
+        )
+        artifact["reference_memory_status"] = reference_memory_status
+        artifact["reference_memory_status_i18n"] = shared_translate_status(reference_memory_status)
+        artifact["reference_memory_summary"] = reference_memory_summary
+        artifact["reference_memory_summary_i18n"] = shared_translate_reference_memory_summary(
+            reference_memory_summary,
+            reference_memory.get("summary_i18n"),
         )
 
     return artifact

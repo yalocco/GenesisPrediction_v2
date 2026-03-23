@@ -3,9 +3,20 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+LIB_DIR = SCRIPT_DIR / "lib"
+if str(LIB_DIR) not in sys.path:
+    sys.path.insert(0, str(LIB_DIR))
+
+from i18n_translate import (
+    translate_reference_memory_summary as shared_translate_reference_memory_summary,
+    translate_status as shared_translate_status,
+)
 
 try:
     from vector_recall import (
@@ -36,7 +47,7 @@ SCENARIO_LATEST_PATH = PREDICTION_DIR / "scenario_latest.json"
 
 LANG_DEFAULT = "ja"
 SUPPORTED_LANGUAGES = ["en", "ja", "th"]
-ENGINE_VERSION = "v3_with_vector_memory_i18n_phase3"
+ENGINE_VERSION = "v3_with_vector_memory_i18n_phase4_data_i18n"
 REFERENCE_MEMORY_ENGINE_VERSION = "v2"
 DEFAULT_RECALL_LIMIT = 3
 
@@ -1718,7 +1729,9 @@ def build_scenario_output(
         },
         "reference_memory": {
             "status": reference_memory_data.get("status", "unavailable"),
+            "status_i18n": shared_translate_status(reference_memory_data.get("status", "unavailable")),
             "summary": reference_memory_data.get("recall_summary"),
+            "summary_i18n": shared_translate_reference_memory_summary(reference_memory_data.get("recall_summary")),
             "decision_ref_count": len(reference_memory_data.get("decision_refs", []) or []),
             "similar_case_count": len(reference_memory_data.get("similar_cases", []) or []),
             "historical_pattern_count": len(reference_memory_data.get("historical_patterns", []) or []),

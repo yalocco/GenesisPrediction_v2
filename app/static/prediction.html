@@ -851,31 +851,61 @@
       }
 };
 
+    function getI18n(){
+      return window.GP_I18N || window.GenesisI18n || null;
+    }
+
+    function getLangManager(){
+      return window.GP_LANG_MANAGER || null;
+    }
+
+    const LANG_CHANGED_EVENT = "gp:lang-changed";
+
+    const pageState = {
+      results: null,
+      prediction: null,
+      predictionExplanation: null,
+      scenarioExplanation: null,
+      signalExplanation: null,
+      fxData: {},
+      history: [],
+      viewModel: null
+    };
+
     function getStoredLang(){
-      try{
-        const raw = (window.GenesisI18n && typeof window.GenesisI18n.getLang === "function")
-          ? window.GenesisI18n.getLang()
-          : localStorage.getItem("gp_lang");
-        const lang = String(raw || "en").toLowerCase();
-        return ["en", "ja", "th"].includes(lang) ? lang : "en";
-      }catch(_error){
-        return "en";
+      const i18n = getI18n();
+      if (i18n && typeof i18n.getLang === "function"){
+        return i18n.getLang();
       }
+      const langManager = getLangManager();
+      if (langManager && typeof langManager.getLang === "function"){
+        return langManager.getLang();
+      }
+      return "en";
     }
 
     function tr(key){
+      const i18n = getI18n();
+      if (i18n && typeof i18n.translate === "function"){
+        return i18n.translate(UI_TEXT, key, getStoredLang());
+      }
       const lang = getStoredLang();
       const table = UI_TEXT[lang] || UI_TEXT.en || {};
       return table[key] ?? (UI_TEXT.en && UI_TEXT.en[key]) ?? key;
     }
 
     function applyStaticUiText(){
-      document.documentElement.lang = getStoredLang();
-      document.querySelectorAll("[data-ui-text]").forEach((node) => {
-        const key = node.getAttribute("data-ui-text");
-        if (!key) return;
-        node.textContent = tr(key);
-      });
+      const i18n = getI18n();
+      if (i18n && typeof i18n.applyStaticUiText === "function"){
+        i18n.applyStaticUiText(document, UI_TEXT, { lang: getStoredLang() });
+      } else {
+        document.documentElement.lang = getStoredLang();
+        document.querySelectorAll("[data-ui-text]").forEach((node) => {
+          const key = node.getAttribute("data-ui-text");
+          if (!key) return;
+          node.textContent = tr(key);
+        });
+      }
 
       const confidenceChart = el("confidenceChart");
       if (confidenceChart) confidenceChart.setAttribute("aria-label", tr("chart_confidence_label"));
@@ -971,27 +1001,36 @@
     function getCurrentLang(){ return getStoredLang(); }
 
     function pickI18n(i18nValue, fallback){
-      const fb = typeof fallback === "string" ? fallback : firstString(fallback);
-      if (!i18nValue) return fb || "";
-      if (typeof i18nValue === "string") return i18nValue.trim() || fb || "";
-      if (Array.isArray(i18nValue)) {
+      const i18n = getI18n();
+      if (i18n && typeof i18n.pickI18n === "function"){
+        return i18n.pickI18n(i18nValue, fallback, getCurrentLang());
+      }
+
+      if (!i18nValue) return firstString(fallback);
+      if (typeof i18nValue === "string") return i18nValue;
+      if (Array.isArray(i18nValue)){
         const arr = i18nValue.map((item) => pickI18n(item, "")).filter(Boolean);
-        return arr.length ? arr[0] : (fb || "");
+        return arr.join(" / ");
       }
       if (typeof i18nValue === "object"){
         const lang = getCurrentLang();
-        return firstString(i18nValue[lang], i18nValue.en, i18nValue.ja, i18nValue.th, fb);
+        return firstString(i18nValue[lang], i18nValue.en, i18nValue.ja, i18nValue.th, fallback);
       }
-      return fb || "";
+      return firstString(fallback);
     }
 
     function pickI18nList(i18nValue){
+      const i18n = getI18n();
+      if (i18n && typeof i18n.pickI18nList === "function"){
+        return i18n.pickI18nList(i18nValue, getCurrentLang());
+      }
+
       if (!i18nValue) return [];
       if (Array.isArray(i18nValue)) return i18nValue;
       if (typeof i18nValue === "object"){
         const lang = getCurrentLang();
-        const picked = i18nValue[lang] ?? i18nValue.en ?? i18nValue.ja ?? i18nValue.th;
-        return Array.isArray(picked) ? picked : [];
+        const selected = i18nValue[lang] || i18nValue.en || i18nValue.ja || i18nValue.th;
+        return Array.isArray(selected) ? selected : [];
       }
       return [];
     }
@@ -1882,6 +1921,55 @@
       }
     }
 
+    function renderFromState(){
+      applyStaticUiText();
+
+      if (!pageState.results){
+        return;
+      }
+
+      renderSourceStatus(pageState.results);
+
+      if (!pageState.prediction || !pageState.viewModel){
+        el("heroSummary").textContent = tr("prediction_missing");
+        el("runtimeMini").textContent = tr("unavailable");
+        el("runtimeMiniSub").textContent = tr("prediction_artifact_missing");
+        el("heroDecisionLine").textContent = tr("decision_unavailable");
+        el("heroInterpretation").textContent = tr("interpretation_unavailable");
+        return;
+      }
+
+      renderHero(pageState.viewModel, pageState.predictionExplanation);
+      renderFxSummary(pageState.fxData);
+      renderSignalLayer(pageState.signalExplanation);
+      renderScenarioLayer(pageState.scenarioExplanation);
+      renderPredictionExplanationSummary(pageState.predictionExplanation, pageState.viewModel);
+
+      renderDrivers("keyDriversList", pageState.viewModel.keyDrivers);
+      renderMonitor("monitoringPrioritiesList", pageState.viewModel.monitoringPriorities);
+      renderImplications("expectedOutcomesList", pageState.viewModel.expectedOutcomes);
+      renderHistorical("historicalContextList", pageState.viewModel.historicalContext);
+      renderRecallList("referenceMemoryList", pageState.viewModel.referenceMemory);
+
+      renderSimpleList("risksList", pageState.viewModel.risks, tr("risks_unavailable"), "R", UI_LIMITS.risks);
+      renderSimpleList("invalidationList", pageState.viewModel.invalidation, tr("invalidation_unavailable"), "I", UI_LIMITS.invalidation);
+      renderSimpleList("mustNotMeanList", pageState.viewModel.mustNotMean, tr("must_not_mean_unavailable"), "N", UI_LIMITS.mustNotMean);
+      renderUiTerms("uiTermsList", pageState.viewModel.uiTerms);
+
+      renderExpectedOutcomePreview(pageState.viewModel.expectedOutcomes);
+      renderMetricCards(pageState.viewModel);
+      renderRuntimeNotes(
+        pageState.viewModel,
+        pageState.predictionExplanation,
+        pageState.scenarioExplanation,
+        pageState.signalExplanation,
+        pageState.history,
+        pageState.fxData
+      );
+      renderPredictionHistory(pageState.history);
+      renderCharts(pageState.viewModel, pageState.history);
+    }
+
     async function init(){
       applyStaticUiText();
 
@@ -1906,41 +1994,20 @@
       const scenarioExplanationRaw = results.scenarioExplanation?.ok ? (results.scenarioExplanation.data || {}) : null;
       const signalExplanationRaw = results.signalExplanation?.ok ? (results.signalExplanation.data || {}) : null;
 
-      const prediction = normalizePredictionV3(predictionRaw);
-      const predictionExplanation = predictionExplanationRaw ? normalizePredictionExplanation(predictionExplanationRaw) : null;
-      const scenarioExplanation = scenarioExplanationRaw ? normalizeScenarioExplanation(scenarioExplanationRaw) : null;
-      const signalExplanation = signalExplanationRaw ? normalizeSignalExplanation(signalExplanationRaw) : null;
-      const viewModel = buildViewModel(prediction, predictionExplanation);
-
-      const fxData = results.fx?.data || {};
-      const history = (results.historyIndex?.ok && results.historyIndex?.data)
+      pageState.results = results;
+      pageState.prediction = normalizePredictionV3(predictionRaw);
+      pageState.predictionExplanation = predictionExplanationRaw ? normalizePredictionExplanation(predictionExplanationRaw) : null;
+      pageState.scenarioExplanation = scenarioExplanationRaw ? normalizeScenarioExplanation(scenarioExplanationRaw) : null;
+      pageState.signalExplanation = signalExplanationRaw ? normalizeSignalExplanation(signalExplanationRaw) : null;
+      pageState.viewModel = buildViewModel(pageState.prediction, pageState.predictionExplanation);
+      pageState.fxData = results.fx?.data || {};
+      pageState.history = (results.historyIndex?.ok && results.historyIndex?.data)
         ? safeArray(results.historyIndex.data.items)
             .map(normalizeHistoryIndexItem)
             .sort((a, b) => String(b.date).localeCompare(String(a.date)))
         : [];
 
-      renderHero(viewModel, predictionExplanation);
-      renderFxSummary(fxData);
-      renderSignalLayer(signalExplanation);
-      renderScenarioLayer(scenarioExplanation);
-      renderPredictionExplanationSummary(predictionExplanation, viewModel);
-
-      renderDrivers("keyDriversList", viewModel.keyDrivers);
-      renderMonitor("monitoringPrioritiesList", viewModel.monitoringPriorities);
-      renderImplications("expectedOutcomesList", viewModel.expectedOutcomes);
-      renderHistorical("historicalContextList", viewModel.historicalContext);
-      renderRecallList("referenceMemoryList", viewModel.referenceMemory);
-
-      renderSimpleList("risksList", viewModel.risks, tr("risks_unavailable"), "R", UI_LIMITS.risks);
-      renderSimpleList("invalidationList", viewModel.invalidation, tr("invalidation_unavailable"), "I", UI_LIMITS.invalidation);
-      renderSimpleList("mustNotMeanList", viewModel.mustNotMean, tr("must_not_mean_unavailable"), "N", UI_LIMITS.mustNotMean);
-      renderUiTerms("uiTermsList", viewModel.uiTerms);
-
-      renderExpectedOutcomePreview(viewModel.expectedOutcomes);
-      renderMetricCards(viewModel);
-      renderRuntimeNotes(viewModel, predictionExplanation, scenarioExplanation, signalExplanation, history, fxData);
-      renderPredictionHistory(history);
-      renderCharts(viewModel, history);
+      renderFromState();
     }
 
     function setRecallExpanded(button, expanded){
@@ -1982,9 +2049,14 @@
 
 
     window.addEventListener("DOMContentLoaded", init);
+    document.addEventListener(LANG_CHANGED_EVENT, () => {
+      renderFromState();
+    });
   
   </script>
+<script src="/static/common/lang_manager.js?v=20260323-lang-manager-1"></script>
+<script src="/static/common/i18n.js?v=20260323-lang-manager-1"></script>
 <script src="/static/common/global_status.js?v=20260321-three-layer-1"></script>
-<script src="/static/common/layout.js?v=20260321-three-layer-1"></script>
+<script src="/static/common/layout.js?v=20260323-lang-manager-1"></script>
 </body>
 </html>
