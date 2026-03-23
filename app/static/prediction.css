@@ -838,3 +838,25 @@
 .recall-card .recall-expandable.expanded .recall-preview {
   display: none;
 }
+
+
+.recall-card .recall-expandable {
+  min-height: 44px;
+}
+
+.recall-card .recall-expandable .pill {
+  flex: 0 0 auto;
+}
+
+.recall-card .recall-copy {
+  display: block;
+}
+
+.recall-card .recall-preview,
+.recall-card .recall-full {
+  word-break: break-word;
+}
+
+.recall-card .recall-expandable[aria-expanded="true"] {
+  box-shadow: inset 0 0 0 1px rgba(120, 180, 255, 0.12);
+}
