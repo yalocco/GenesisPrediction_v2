@@ -631,18 +631,18 @@
             "why_matters_unavailable": "重要性説明は未取得です。",
             "decision_label": "判断",
             "flow_label": "フロー",
-            "status_label": "status",
+            "status_label": "状態",
             "state_label": "状態",
-            "signals_label": "Signals",
-            "implications_label": "Implications",
-            "watch_label": "Watch",
+            "signals_label": "シグナル",
+            "implications_label": "含意",
+            "watch_label": "監視点",
             "signal_explanation_unavailable": "Signal 説明は未取得です",
             "signal_explanation_missing": "signal_explanation_latest.json を取得できませんでした。",
             "scenario_explanation_unavailable": "Scenario 説明は未取得です",
             "scenario_explanation_missing": "scenario_explanation_latest.json を取得できませんでした。",
             "structure_label": "構造",
             "balance_label": "バランス",
-            "drivers_label": "Drivers",
+            "drivers_label": "ドライバー",
             "expected_outcomes_unavailable": "想定結果は未取得です",
             "outcome_label": "結果",
             "key_drivers_unavailable": "主要ドライバーは未取得です",
@@ -659,27 +659,27 @@
             "risks_unavailable": "リスクは未取得です",
             "invalidation_unavailable": "無効化条件は未取得です",
             "must_not_mean_unavailable": "否定事項は未取得です",
-            "confidence_lower": "confidence",
+            "confidence_lower": "確信度",
             "runtime_note_as_of": "時点",
-            "runtime_note_signal_status": "Signal status",
-            "runtime_note_scenario_status": "Scenario status",
-            "runtime_note_prediction_status": "Prediction status",
+            "runtime_note_signal_status": "สถานะ Signal",
+            "runtime_note_scenario_status": "สถานะ Scenario",
+            "runtime_note_prediction_status": "สถานะ Prediction",
             "runtime_note_dominant": "優勢",
             "runtime_note_confidence": "確信度",
             "runtime_note_decision": "判断",
-            "runtime_note_fx_status": "FX status",
+            "runtime_note_fx_status": "สถานะ FX",
             "runtime_note_latest_history": "最新履歴",
             "source_prediction": "Prediction",
-            "source_pred_exp": "Pred Exp",
-            "source_scen_exp": "Scen Exp",
-            "source_sig_exp": "Sig Exp",
-            "source_history": "History",
+            "source_pred_exp": "予測説明",
+            "source_scen_exp": "Scenario 説明",
+            "source_sig_exp": "Signal 説明",
+            "source_history": "履歴",
             "history_unavailable": "履歴は未取得です",
             "history_missing": "prediction_history_index.json を取得できませんでした。",
             "prediction_snapshot": "予測スナップショット",
-            "context_chart_drivers": "Drivers",
-            "context_chart_monitor": "Monitor",
-            "context_chart_outcomes": "Outcomes",
+            "context_chart_drivers": "ドライバー",
+            "context_chart_monitor": "監視",
+            "context_chart_outcomes": "結果",
             "risk_level_suffix": "段階",
             "recall_unavailable": "AI Recall は未取得です",
             "recall_expand_title": "クリックまたは Enter / Space で展開"
@@ -816,11 +816,11 @@
             "monitor_label": "Monitor",
             "trigger_label": "Trigger",
             "historical_context_unavailable": "ไม่มีบริบททางประวัติศาสตร์",
-            "historical_pattern_label": "Historical pattern",
-            "similarity_label": "Similarity",
-            "difference_label": "Difference",
+            "historical_pattern_label": "รูปแบบประวัติศาสตร์",
+            "similarity_label": "ความคล้ายคลึง",
+            "difference_label": "ความแตกต่าง",
             "ui_terms_unavailable": "ไม่มีคำศัพท์ UI",
-            "term_label": "Term",
+            "term_label": "คำศัพท์",
             "risks_unavailable": "ไม่มีความเสี่ยง",
             "invalidation_unavailable": "ไม่มีเงื่อนไขที่ทำให้เป็นโมฆะ",
             "must_not_mean_unavailable": "ไม่มีรายการห้ามตีความ",
@@ -863,25 +863,51 @@
 
     const pageState = {
       results: null,
+      predictionRaw: null,
+      predictionExplanationRaw: null,
+      scenarioExplanationRaw: null,
+      signalExplanationRaw: null,
+      historyRawItems: [],
+      fxData: {},
       prediction: null,
       predictionExplanation: null,
       scenarioExplanation: null,
       signalExplanation: null,
-      fxData: {},
       history: [],
       viewModel: null
     };
 
-    function getStoredLang(){
+    let pageCurrentLang = "en";
+
+    function detectStoredLang(){
       const i18n = getI18n();
       if (i18n && typeof i18n.getLang === "function"){
-        return i18n.getLang();
+        const v = i18n.getLang();
+        if (typeof v === "string" && v) return v;
       }
       const langManager = getLangManager();
       if (langManager && typeof langManager.getLang === "function"){
-        return langManager.getLang();
+        const v = langManager.getLang();
+        if (typeof v === "string" && v) return v;
       }
+      if (typeof window.GP_LANG === "string" && window.GP_LANG) return window.GP_LANG;
       return "en";
+    }
+
+    function normalizeLangCode(value){
+      const v = String(value || "").trim().toLowerCase();
+      if (v === "ja" || v === "th" || v === "en") return v;
+      return "en";
+    }
+
+    function setPageLang(value){
+      pageCurrentLang = normalizeLangCode(value || detectStoredLang());
+      document.documentElement.lang = pageCurrentLang;
+      return pageCurrentLang;
+    }
+
+    function getStoredLang(){
+      return pageCurrentLang || setPageLang();
     }
 
     function tr(key){
@@ -894,12 +920,12 @@
       return table[key] ?? (UI_TEXT.en && UI_TEXT.en[key]) ?? key;
     }
 
-    function applyStaticUiText(){
+    function applyStaticUiText(lang){
       const i18n = getI18n();
       if (i18n && typeof i18n.applyStaticUiText === "function"){
-        i18n.applyStaticUiText(document, UI_TEXT, { lang: getStoredLang() });
+        i18n.applyStaticUiText(document, UI_TEXT, { lang: normalizeLangCode(lang || getStoredLang()) });
       } else {
-        document.documentElement.lang = getStoredLang();
+        document.documentElement.lang = normalizeLangCode(lang || getStoredLang());
         document.querySelectorAll("[data-ui-text]").forEach((node) => {
           const key = node.getAttribute("data-ui-text");
           if (!key) return;
@@ -1052,6 +1078,43 @@
         .replace(/\b\w/g, (m) => m.toUpperCase());
     }
 
+    function localizeScenarioName(value){
+      const raw = firstString(value);
+      if (!raw) return "—";
+      const key = raw.toLowerCase();
+      if (key === "base_case" || key === "base case") return pickI18n({ en: "Base Case", ja: "基本シナリオ", th: "กรณีฐาน" }, raw);
+      if (key === "best_case" || key === "best case") return pickI18n({ en: "Best Case", ja: "最良シナリオ", th: "กรณีดีที่สุด" }, raw);
+      if (key === "worst_case" || key === "worst case") return pickI18n({ en: "Worst Case", ja: "最悪シナリオ", th: "กรณีเลวร้ายที่สุด" }, raw);
+      if (key === "dominant_scenario" || key === "dominant scenario") return pickI18n({ en: "Dominant Scenario", ja: "優勢シナリオ", th: "Scenario หลัก" }, raw);
+      return titleize(raw);
+    }
+
+    function localizeUiTerm(value){
+      const raw = firstString(value);
+      if (!raw) return "—";
+      const key = raw.toLowerCase();
+      const termMap = {
+        "confidence": { en: "Confidence", ja: "確信度", th: "ความเชื่อมั่น" },
+        "dominant_scenario": { en: "Dominant Scenario", ja: "優勢シナリオ", th: "Scenario หลัก" },
+        "watchpoints": { en: "Watchpoints", ja: "監視点", th: "จุดเฝ้าระวัง" },
+        "monitor": { en: "Monitor", ja: "監視", th: "ติดตาม" },
+        "historical": { en: "Historical", ja: "歴史参照", th: "ประวัติศาสตร์" },
+        "interpretation": { en: "Interpretation", ja: "解釈", th: "การตีความ" },
+        "decision_line": { en: "Decision Line", ja: "判断ライン", th: "บรรทัดการตัดสินใจ" },
+        "scenario": { en: "Scenario", ja: "シナリオ", th: "Scenario" },
+        "base_case": { en: "Base Case", ja: "基本シナリオ", th: "กรณีฐาน" },
+        "best_case": { en: "Best Case", ja: "最良シナリオ", th: "กรณีดีที่สุด" },
+        "worst_case": { en: "Worst Case", ja: "最悪シナリオ", th: "กรณีเลวร้ายที่สุด" },
+        "driver": { en: "Driver", ja: "ドライバー", th: "ตัวขับ" },
+        "drivers": { en: "Drivers", ja: "ドライバー", th: "ตัวขับ" },
+        "signal": { en: "Signal", ja: "シグナル", th: "สัญญาณ" },
+        "signals": { en: "Signals", ja: "シグナル", th: "สัญญาณ" },
+        "outcome": { en: "Outcome", ja: "結果", th: "ผลลัพธ์" },
+        "outcomes": { en: "Outcomes", ja: "結果", th: "ผลลัพธ์" }
+      };
+      return pickI18n(termMap[key], raw);
+    }
+
     function formatDate(value){
       if (!value) return "—";
       const d = new Date(value);
@@ -1178,75 +1241,157 @@
       return 0;
     }
 
+    function rebuildNormalizedState(lang){
+      setPageLang(lang);
+      pageState.prediction = pageState.predictionRaw ? normalizePredictionV3(pageState.predictionRaw) : null;
+      pageState.predictionExplanation = pageState.predictionExplanationRaw ? normalizePredictionExplanation(pageState.predictionExplanationRaw) : null;
+      pageState.scenarioExplanation = pageState.scenarioExplanationRaw ? normalizeScenarioExplanation(pageState.scenarioExplanationRaw) : null;
+      pageState.signalExplanation = pageState.signalExplanationRaw ? normalizeSignalExplanation(pageState.signalExplanationRaw) : null;
+      pageState.history = safeArray(pageState.historyRawItems)
+        .map(normalizeHistoryIndexItem)
+        .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+      pageState.viewModel = pageState.prediction
+        ? buildViewModel(pageState.prediction, pageState.predictionExplanation)
+        : null;
+    }
+
     function normalizeHistoryIndexItem(item){
       return {
         date: firstString(item?.date, item?.as_of),
         as_of: firstString(item?.as_of, item?.date),
         generated_at: firstString(item?.generated_at),
         horizon: firstString(item?.horizon),
-        overall_risk: firstString(item?.overall_risk, item?.overall_risk_level, item?.risk_level),
+        overall_risk: pickI18n(
+          item?.overall_risk_i18n,
+          firstString(item?.overall_risk, item?.overall_risk_level, item?.risk_level)
+        ),
         confidence: pickNumber(item?.confidence, item?.confidence_score, item?.confidence_pct),
-        dominant_scenario: firstString(item?.dominant_scenario, item?.dominant_branch),
-        prediction_statement: firstString(item?.prediction_statement, item?.summary),
-        key_driver_count: pickNumber(item?.key_driver_count, safeArray(item?.key_drivers).length, safeArray(item?.drivers).length),
-        monitoring_count: pickNumber(item?.monitoring_count, safeArray(item?.monitoring_priorities).length, safeArray(item?.watchpoints).length),
-        expected_outcome_count: pickNumber(item?.expected_outcome_count, safeArray(item?.expected_outcomes).length)
+        dominant_scenario: pickI18n(
+          item?.dominant_scenario_i18n,
+          firstString(item?.dominant_scenario, item?.dominant_branch)
+        ),
+        prediction_statement: pickI18n(
+          item?.prediction_statement_i18n,
+          firstString(item?.prediction_statement, item?.summary)
+        ),
+        key_driver_count: pickNumber(
+          item?.key_driver_count,
+          safeArray(pickI18nList(item?.key_drivers_i18n)).length,
+          safeArray(item?.key_drivers).length,
+          safeArray(item?.drivers).length
+        ),
+        monitoring_count: pickNumber(
+          item?.monitoring_count,
+          safeArray(pickI18nList(item?.monitoring_priorities_i18n)).length,
+          safeArray(item?.monitoring_priorities).length,
+          safeArray(item?.watchpoints).length
+        ),
+        expected_outcome_count: pickNumber(
+          item?.expected_outcome_count,
+          safeArray(pickI18nList(item?.expected_outcomes_i18n)).length,
+          safeArray(item?.expected_outcomes).length
+        )
       };
     }
 
     function normalizePredictionV3(data){
-      const statement = firstString(
-        data?.prediction_statement,
-        data?.summary,
-        data?.prediction_summary,
-        data?.outlook
+      const statement = pickI18n(
+        data?.prediction_statement_i18n,
+        firstString(
+          data?.prediction_statement,
+          data?.summary,
+          data?.prediction_summary,
+          data?.outlook
+        )
       );
 
-      const narrative = firstString(
-        data?.primary_narrative,
-        data?.narrative,
-        data?.primary_summary
+      const narrative = pickI18n(
+        data?.primary_narrative_i18n,
+        firstString(
+          data?.primary_narrative,
+          data?.narrative,
+          data?.primary_summary
+        )
       );
 
       const keyDrivers = uniqueLimitedItems(
-        firstNonEmpty(data?.key_drivers, data?.drivers),
+        firstNonEmpty(
+          pickI18nList(data?.key_drivers_i18n),
+          data?.key_drivers,
+          data?.drivers
+        ),
         UI_LIMITS.drivers
       );
 
       const monitoringPriorities = uniqueLimitedItems(
-        firstNonEmpty(data?.monitoring_priorities, data?.watchpoints, data?.watch_points),
+        firstNonEmpty(
+          pickI18nList(data?.monitoring_priorities_i18n),
+          pickI18nList(data?.watchpoints_i18n),
+          data?.monitoring_priorities,
+          data?.watchpoints,
+          data?.watch_points
+        ),
         UI_LIMITS.monitoring
       );
 
       const expectedOutcomes = uniqueLimitedItems(
-        firstNonEmpty(data?.expected_outcomes, data?.implications, data?.actions, data?.notes),
+        firstNonEmpty(
+          pickI18nList(data?.expected_outcomes_i18n),
+          pickI18nList(data?.implications_i18n),
+          data?.expected_outcomes,
+          data?.implications,
+          data?.actions,
+          data?.notes
+        ),
         UI_LIMITS.expectedOutcomes
       );
 
       const historicalContext = uniqueLimitedItems(
-        firstNonEmpty(data?.historical_context, data?.historical_analog_context, data?.historical_analogs),
+        firstNonEmpty(
+          pickI18nList(data?.historical_context_i18n),
+          pickI18nList(data?.historical_analog_context_i18n),
+          data?.historical_context,
+          data?.historical_analog_context,
+          data?.historical_analogs
+        ),
         UI_LIMITS.historical
       );
 
       const referenceMemory = uniqueLimitedItems(
-        firstNonEmpty(data?.reference_memory, data?.memory_context, data?.memory_references),
+        firstNonEmpty(
+          pickI18nList(data?.reference_memory_i18n),
+          pickI18nList(data?.memory_context_i18n),
+          pickI18nList(data?.memory_references_i18n),
+          data?.reference_memory,
+          data?.memory_context,
+          data?.memory_references
+        ),
         UI_LIMITS.memory
       );
 
       return {
         asOf: firstString(data?.as_of, data?.date, data?.generated_at),
-        dominant: firstString(
-          data?.dominant_scenario?.label,
-          data?.dominant_branch,
-          data?.dominant_scenario,
-          data?.scenario,
-          data?.regime
+        dominant: pickI18n(
+          data?.dominant_scenario?.label_i18n,
+          pickI18n(
+            data?.dominant_scenario_i18n,
+            firstString(
+              data?.dominant_scenario?.label,
+              data?.dominant_branch,
+              data?.dominant_scenario,
+              data?.scenario,
+              data?.regime
+            )
+          )
         ),
-        risk: firstString(
-          data?.overall_risk_level,
-          data?.overall_risk,
-          data?.risk_level,
-          data?.warning_level
+        risk: pickI18n(
+          data?.overall_risk_i18n,
+          firstString(
+            data?.overall_risk_level,
+            data?.overall_risk,
+            data?.risk_level,
+            data?.warning_level
+          )
         ),
         confidence: firstNonEmpty(
           data?.confidence,
@@ -1413,7 +1558,7 @@
       el("primaryNarrativeText").textContent = viewModel.narrative || tr("primary_narrative_unavailable");
 
       el("metaAsof").textContent = formatDate(viewModel.asOf);
-      el("metaDominant").textContent = titleize(viewModel.dominant);
+      el("metaDominant").textContent = localizeScenarioName(viewModel.dominant);
       el("metaConfidence").textContent = formatConfidence(viewModel.confidence);
       el("metaRisk").textContent = titleize(viewModel.risk);
 
@@ -1542,7 +1687,7 @@
             <p class="inline-text"><strong>${escapeHtml(scenarioExplanation.headline || tr("scenario_layer_title"))}</strong></p>
             <p class="inline-text">${escapeHtml(scenarioExplanation.summary || tr("summary_unavailable"))}</p>
             <p class="inline-text">${escapeHtml(scenarioExplanation.whyItMatters || tr("why_matters_unavailable"))}</p>
-            <p class="inline-text"><strong>${escapeHtml(tr("structure_label"))}:</strong> dominant=${escapeHtml(titleize(scenarioExplanation.dominant || "unknown"))} / alternatives=${escapeHtml(alternatives.length ? alternatives.map((item) => titleize(item)).join(", ") : "—")}</p>
+            <p class="inline-text"><strong>${escapeHtml(tr("structure_label"))}:</strong> dominant=${escapeHtml(localizeScenarioName(scenarioExplanation.dominant || "unknown"))} / alternatives=${escapeHtml(alternatives.length ? alternatives.map((item) => localizeScenarioName(item)).join(", ") : "—")}</p>
             <p class="inline-text"><strong>${escapeHtml(tr("balance_label"))}:</strong> ${escapeHtml(scenarioExplanation.balance || "—")}</p>
             ${drivers.length ? `<p class="inline-text"><strong>${escapeHtml(tr("drivers_label"))}:</strong> ${escapeHtml(drivers.map((item) => pickI18n(item, firstString(item))).filter(Boolean).join(" / "))}</p>` : ""}
             ${watchpoints.length ? `<p class="inline-text"><strong>${escapeHtml(tr("watch_label"))}:</strong> ${escapeHtml(watchpoints.map((item) => pickI18n(item, firstString(item))).filter(Boolean).join(" / "))}</p>` : ""}
@@ -1733,7 +1878,7 @@
         <article class="list-row compact-list-row">
           <span class="pill">T</span>
           <div>
-            <p class="inline-text"><strong>${escapeHtml(item.term || tr("term_label"))}</strong></p>
+            <p class="inline-text"><strong>${escapeHtml(localizeUiTerm(item.term || tr("term_label")))}</strong></p>
             <p class="inline-text">${escapeHtml(item.meaning || "")}</p>
           </div>
         </article>
@@ -1764,7 +1909,7 @@
         `${tr("runtime_note_signal_status")}: ${signalExplanation?.status || "—"}`,
         `${tr("runtime_note_scenario_status")}: ${scenarioExplanation?.status || "—"}`,
         `${tr("runtime_note_prediction_status")}: ${predictionExplanation?.status || "—"}`,
-        `${tr("runtime_note_dominant")}: ${titleize(viewModel.dominant)}`,
+        `${tr("runtime_note_dominant")}: ${localizeScenarioName(viewModel.dominant)}`,
         `${tr("runtime_note_confidence")}: ${formatConfidence(viewModel.confidence)}`,
         `${tr("runtime_note_decision")}: ${viewModel.decisionLine || "—"}`,
         `${tr("runtime_note_fx_status")}: ${fxStatus || "—"}`,
@@ -1807,7 +1952,7 @@
           <span class="pill">${escapeHtml(String(index + 1))}</span>
           <div>
             <div class="history-row-head compact-history-head">
-              <h2 class="history-row-title">${escapeHtml(titleize(item.dominant_scenario || "snapshot"))}</h2>
+              <h2 class="history-row-title">${escapeHtml(localizeScenarioName(item.dominant_scenario || "snapshot"))}</h2>
               <span class="hint mono">${escapeHtml(formatShortDate(item.date || item.as_of))}</span>
             </div>
             <p class="inline-text">${escapeHtml(item.prediction_statement || tr("prediction_snapshot"))} / ${escapeHtml(formatConfidence(item.confidence))} / ${escapeHtml(titleize(item.overall_risk))}</p>
@@ -1921,13 +2066,15 @@
       }
     }
 
-    function renderFromState(){
-      applyStaticUiText();
+    function renderFromState(lang){
+      const activeLang = setPageLang(lang);
+      applyStaticUiText(activeLang);
 
       if (!pageState.results){
         return;
       }
 
+      rebuildNormalizedState(activeLang);
       renderSourceStatus(pageState.results);
 
       if (!pageState.prediction || !pageState.viewModel){
@@ -1971,7 +2118,8 @@
     }
 
     async function init(){
-      applyStaticUiText();
+      setPageLang();
+      applyStaticUiText(getStoredLang());
 
       const entries = await Promise.all(
         Object.entries(PREDICTION_SOURCES).map(async ([key, url]) => [key, await fetchJson(url)])
@@ -1995,19 +2143,16 @@
       const signalExplanationRaw = results.signalExplanation?.ok ? (results.signalExplanation.data || {}) : null;
 
       pageState.results = results;
-      pageState.prediction = normalizePredictionV3(predictionRaw);
-      pageState.predictionExplanation = predictionExplanationRaw ? normalizePredictionExplanation(predictionExplanationRaw) : null;
-      pageState.scenarioExplanation = scenarioExplanationRaw ? normalizeScenarioExplanation(scenarioExplanationRaw) : null;
-      pageState.signalExplanation = signalExplanationRaw ? normalizeSignalExplanation(signalExplanationRaw) : null;
-      pageState.viewModel = buildViewModel(pageState.prediction, pageState.predictionExplanation);
-      pageState.fxData = results.fx?.data || {};
-      pageState.history = (results.historyIndex?.ok && results.historyIndex?.data)
+      pageState.predictionRaw = predictionRaw;
+      pageState.predictionExplanationRaw = predictionExplanationRaw;
+      pageState.scenarioExplanationRaw = scenarioExplanationRaw;
+      pageState.signalExplanationRaw = signalExplanationRaw;
+      pageState.historyRawItems = (results.historyIndex?.ok && results.historyIndex?.data)
         ? safeArray(results.historyIndex.data.items)
-            .map(normalizeHistoryIndexItem)
-            .sort((a, b) => String(b.date).localeCompare(String(a.date)))
         : [];
+      pageState.fxData = results.fx?.data || {};
 
-      renderFromState();
+      renderFromState(getStoredLang());
     }
 
     function setRecallExpanded(button, expanded){
@@ -2049,8 +2194,17 @@
 
 
     window.addEventListener("DOMContentLoaded", init);
-    document.addEventListener(LANG_CHANGED_EVENT, () => {
-      renderFromState();
+    document.addEventListener(LANG_CHANGED_EVENT, (event) => {
+      const eventLang = normalizeLangCode(
+        event?.detail?.lang ||
+        event?.detail?.nextLang ||
+        event?.detail?.value ||
+        detectStoredLang()
+      );
+      setPageLang(eventLang);
+      window.requestAnimationFrame(() => {
+        renderFromState(eventLang);
+      });
     });
   
   </script>

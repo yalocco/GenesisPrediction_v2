@@ -610,7 +610,90 @@ Reference memory artifact schema freeze
 Qdrant operational rule
 ```
 
----
+## Decision: Prevent incomplete file generation (Full File Integrity Rule)
+
+背景
+
+長文ファイル（特に HTML / CSS / JS / JSON / Python）生成時に、
+
+* 行数が減少する
+* セクションが欠落する
+* 一部省略される
+* 推測生成が行われる
+
+といった不完全生成が多発した。
+
+特に UI フェーズにおいて、
+
+```text
+不完全ファイル = UI破壊
+```
+
+という重大な問題が発生した。
+
+問題
+
+AIは負荷やコンテキスト制限により、
+
+```text
+短縮生成
+省略生成
+推測生成
+```
+
+を行う傾向がある。
+
+これは
+
+```text
+Partial obedience
+```
+
+に該当し、GenesisPrediction の原則に違反する。
+
+結論
+
+GenesisPrediction では
+
+```text
+完全ファイル整合性ルール
+```
+
+を導入する。
+
+ルール
+
+```text
+・行数減少を禁止する
+・不完全生成（省略・簡略化）を禁止する
+・既存ファイル未確認の生成を禁止する
+・推測生成を禁止する
+・長文ファイルはダウンロード形式で提供する
+```
+
+追加ルール（UI強化）
+
+```text
+HTML生成では特に厳格適用する
+セクション欠落を禁止する
+script / style 欠落を禁止する
+```
+
+責務分離
+
+```text
+AI = 完全ファイル生成
+User = 既存ファイル提示
+System = 構造維持
+```
+
+意図
+
+* UI破壊事故の根絶
+* 行数欠落問題の解消
+* 推測生成の排除
+* 開発の再現性確保
+* 長期運用安定性の向上
 
 END OF DOCUMENT
 

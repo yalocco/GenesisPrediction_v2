@@ -50,13 +50,78 @@ LANG_DEFAULT = "en"
 SUPPORTED_LANGUAGES = ["en", "ja", "th"]
 
 SCENARIO_LABELS = {
-    "best_case": {"ja": "best_case", "en": "best_case", "th": "best_case"},
-    "base_case": {"ja": "base_case", "en": "base_case", "th": "base_case"},
-    "worst_case": {"ja": "worst_case", "en": "worst_case", "th": "worst_case"},
-    "unknown": {"ja": "unknown", "en": "unknown", "th": "unknown"},
+    "best_case": {"ja": "最良シナリオ", "en": "Best case", "th": "กรณีดีที่สุด"},
+    "base_case": {"ja": "基本シナリオ", "en": "Base case", "th": "กรณีฐาน"},
+    "worst_case": {"ja": "最悪シナリオ", "en": "Worst case", "th": "กรณีเลวร้ายที่สุด"},
+    "unknown": {"ja": "不明", "en": "unknown", "th": "ไม่ทราบ"},
 }
 
 KEY_LABELS = {
+    "bank funding stress": {
+        "ja": "銀行資金調達ストレス",
+        "en": "bank funding stress",
+        "th": "ความตึงตัวของเงินทุนธนาคาร",
+    },
+    "bank_funding_stress": {
+        "ja": "銀行資金調達ストレス",
+        "en": "bank funding stress",
+        "th": "ความตึงตัวของเงินทุนธนาคาร",
+    },
+    "credit spread widening": {
+        "ja": "信用スプレッド拡大",
+        "en": "credit spread widening",
+        "th": "ส่วนต่างเครดิตขยายกว้างขึ้น",
+    },
+    "credit_spread_widening": {
+        "ja": "信用スプレッド拡大",
+        "en": "credit spread widening",
+        "th": "ส่วนต่างเครดิตขยายกว้างขึ้น",
+    },
+    "loan loss increase": {
+        "ja": "貸倒増加",
+        "en": "loan loss increase",
+        "th": "หนี้เสียเพิ่มขึ้น",
+    },
+    "loan_loss_increase": {
+        "ja": "貸倒増加",
+        "en": "loan loss increase",
+        "th": "หนี้เสียเพิ่มขึ้น",
+    },
+    "housing or equity drawdown": {
+        "ja": "住宅・株式の下落",
+        "en": "housing or equity drawdown",
+        "th": "การปรับลดลงของที่อยู่อาศัยหรือหุ้น",
+    },
+    "housing_or_equity_drawdown": {
+        "ja": "住宅・株式の下落",
+        "en": "housing or equity drawdown",
+        "th": "การปรับลดลงของที่อยู่อาศัยหรือหุ้น",
+    },
+    "policy emergency liquidity": {
+        "ja": "緊急流動性政策",
+        "en": "policy emergency liquidity",
+        "th": "มาตรการสภาพคล่องฉุกเฉินของนโยบาย",
+    },
+    "policy_emergency_liquidity": {
+        "ja": "緊急流動性政策",
+        "en": "policy emergency liquidity",
+        "th": "มาตรการสภาพคล่องฉุกเฉินของนโยบาย",
+    },
+    "fx reserve drop": {
+        "ja": "外貨準備低下",
+        "en": "fx reserve drop",
+        "th": "เงินสำรองระหว่างประเทศลดลง",
+    },
+    "fx_reserve_drop": {
+        "ja": "外貨準備低下",
+        "en": "fx reserve drop",
+        "th": "เงินสำรองระหว่างประเทศลดลง",
+    },
+    "branch balance unavailable": {
+        "ja": "分岐バランスは未取得",
+        "en": "branch balance unavailable",
+        "th": "ยังไม่มีข้อมูลสมดุลของแขนง",
+    },
     "base_case を支える主要 driver が現在も有効": {
         "ja": "base_case を支える主要 driver が現在も有効",
         "en": "The main drivers supporting base_case remain active.",
@@ -299,14 +364,34 @@ def to_text_list(value: Any) -> list[str]:
     return dedupe_keep_order([x for x in result if x])
 
 
+def canonical_key(text: str) -> str:
+    s = compact_spaces(str(text or ""))
+    if not s:
+        return ""
+    s = s.lower()
+    s = s.replace("→", ">")
+    s = re.sub(r"\s*>\s*", " > ", s)
+    s = s.replace("_", " ")
+    s = s.replace("-", " ")
+    return compact_spaces(s)
+
+
 def translate_key_generic(text: str) -> dict[str, str]:
-    key = compact_spaces(text)
+    raw = compact_spaces(text)
+    if not raw:
+        return {"ja": "", "en": "", "th": ""}
+
+    key = canonical_key(raw)
+    if raw in KEY_LABELS:
+        return KEY_LABELS[raw]
     if key in KEY_LABELS:
         return KEY_LABELS[key]
+
+    readable = compact_spaces(raw.replace("_", " ").replace("-", " "))
     return {
-        "ja": key,
-        "en": key,
-        "th": key,
+        "ja": readable,
+        "en": readable,
+        "th": readable,
     }
 
 
@@ -687,19 +772,32 @@ def build_summary_i18n(
 ) -> dict[str, str]:
     dominant_label = label_for_scenario(dominant)
 
-    branch_bits: list[str] = []
+    branch_bits_ja: list[str] = []
+    branch_bits_en: list[str] = []
+    branch_bits_th: list[str] = []
     if branches.get("best_case"):
-        branch_bits.append(f"best_case {branches['best_case']}")
+        label = label_for_scenario("best_case")
+        branch_bits_ja.append(f"{label['ja']} {branches['best_case']}")
+        branch_bits_en.append(f"{label['en']} {branches['best_case']}")
+        branch_bits_th.append(f"{label['th']} {branches['best_case']}")
     if branches.get("base_case"):
-        branch_bits.append(f"base_case {branches['base_case']}")
+        label = label_for_scenario("base_case")
+        branch_bits_ja.append(f"{label['ja']} {branches['base_case']}")
+        branch_bits_en.append(f"{label['en']} {branches['base_case']}")
+        branch_bits_th.append(f"{label['th']} {branches['base_case']}")
     if branches.get("worst_case"):
-        branch_bits.append(f"worst_case {branches['worst_case']}")
-    branch_text = " / ".join(branch_bits) if branch_bits else "branch balance unavailable"
+        label = label_for_scenario("worst_case")
+        branch_bits_ja.append(f"{label['ja']} {branches['worst_case']}")
+        branch_bits_en.append(f"{label['en']} {branches['worst_case']}")
+        branch_bits_th.append(f"{label['th']} {branches['worst_case']}")
+    branch_text_ja = " / ".join(branch_bits_ja) if branch_bits_ja else "分岐バランスは未取得"
+    branch_text_en = " / ".join(branch_bits_en) if branch_bits_en else "branch balance unavailable"
+    branch_text_th = " / ".join(branch_bits_th) if branch_bits_th else "ยังไม่มีข้อมูลสมดุลของแขนง"
 
     return wrap_i18n(
-        f"現在の scenario 構造は {dominant_label['ja']} を中心に展開している。分岐バランスは {branch_text}。全体としては {balance_i18n['ja']}。",
-        f"The current scenario structure is centered on {dominant_label['en']}. Branch balance is {branch_text}. Overall, {balance_i18n['en']}.",
-        f"โครงสร้าง scenario ปัจจุบันมีศูนย์กลางอยู่ที่ {dominant_label['th']} สมดุลของแขนงคือ {branch_text} โดยรวมแล้ว {balance_i18n['th']}",
+        f"現在の scenario 構造は {dominant_label['ja']} を中心に展開している。分岐バランスは {branch_text_ja}。全体としては {balance_i18n['ja']}。",
+        f"The current scenario structure is centered on {dominant_label['en']}. Branch balance is {branch_text_en}. Overall, {balance_i18n['en']}.",
+        f"โครงสร้าง scenario ปัจจุบันมีศูนย์กลางอยู่ที่ {dominant_label['th']} สมดุลของแขนงคือ {branch_text_th} โดยรวมแล้ว {balance_i18n['th']}",
     )
 
 

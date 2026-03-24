@@ -235,6 +235,21 @@ KEY_LABELS = {
         "en": "volatility up",
         "th": "ความผันผวนเพิ่มขึ้น",
     },
+    "risk level low": {
+        "ja": "リスク水準は低い",
+        "en": "risk level low",
+        "th": "ระดับความเสี่ยงอยู่ในระดับต่ำ",
+    },
+    "sentiment": {
+        "ja": "センチメント",
+        "en": "sentiment",
+        "th": "sentiment",
+    },
+    "sentiment balance": {
+        "ja": "センチメントバランス",
+        "en": "sentiment balance",
+        "th": "สมดุลของ sentiment",
+    },
     "overall direction falling": {
         "ja": "全体方向の下向き",
         "en": "overall direction falling",
