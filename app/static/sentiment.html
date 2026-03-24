@@ -16,14 +16,14 @@
         <section class="panel">
           <div class="hero-top">
             <div>
-              <div class="h1">Sentiment</div>
-              <p class="sub">Articles + thumbnails + sentiment join + 3-axis trend.</p>
+              <div class="h1" data-i18n="sentiment.title">Sentiment</div>
+              <p class="sub" data-i18n="sentiment.subtitle">Articles + thumbnails + sentiment join + 3-axis trend.</p>
               <div class="hero-subpath">
-                sentiment: <code id="kSrcInline">-</code>
+                <span data-i18n="sentiment.sentiment_prefix">sentiment</span>: <code id="kSrcInline">-</code>
                 <span class="muted"> / </span>
-                world: <code id="kWorldInline">-</code>
+                <span data-i18n="sentiment.world_prefix">world</span>: <code id="kWorldInline">-</code>
                 <span class="muted"> / </span>
-                trend: <code id="kTrendInline">-</code>
+                <span data-i18n="sentiment.trend_prefix">trend</span>: <code id="kTrendInline">-</code>
               </div>
             </div>
 
@@ -32,15 +32,15 @@
               <span id="localPillItems" class="pill">items: --</span>
               <span id="localPillRendered" class="pill">rendered: --</span>
               <span id="localPillTrend" class="pill">trend_points: --</span>
-              <a id="btnOpenSentTop" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open JSON</a>
-              <a id="btnOpenTSTop" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open CSV</a>
+              <a id="btnOpenSentTop" class="btn" href="#" target="_blank" rel="noopener noreferrer" data-i18n="sentiment.open_json">Open JSON</a>
+              <a id="btnOpenTSTop" class="btn" href="#" target="_blank" rel="noopener noreferrer" data-i18n="sentiment.open_csv">Open CSV</a>
             </div>
           </div>
 
           <div class="gridTop">
             <div class="card controlsCard">
               <div class="sectionTitle">
-                <h2>Controls</h2>
+                <h2 data-i18n="sentiment.controls">Controls</h2>
                 <div class="pillrow">
                   <span class="tag" id="kItems">items=--</span>
                   <span class="tag" id="kRendered">rendered=--</span>
@@ -49,62 +49,62 @@
               </div>
 
               <div class="top-pills">
-                <a class="btn" id="btnReload" href="#">Reload</a>
-                <a class="btn" id="btnReset" href="#">Reset filters</a>
-                <a class="btn" id="btnOpenSent" href="#" target="_blank" rel="noopener noreferrer">Open sentiment_latest.json</a>
-                <a class="btn" id="btnOpenTS" href="#" target="_blank" rel="noopener noreferrer">Open sentiment_timeseries.csv</a>
+                <a class="btn" id="btnReload" href="#" data-i18n="sentiment.reload">Reload</a>
+                <a class="btn" id="btnReset" href="#" data-i18n="sentiment.reset_filters">Reset filters</a>
+                <a class="btn" id="btnOpenSent" href="#" target="_blank" rel="noopener noreferrer" data-i18n="sentiment.open_sentiment_json">Open sentiment_latest.json</a>
+                <a class="btn" id="btnOpenTS" href="#" target="_blank" rel="noopener noreferrer" data-i18n="sentiment.open_timeseries_csv">Open sentiment_timeseries.csv</a>
               </div>
 
               <div class="kpiGrid">
                 <div class="kpi">
-                  <div class="k">as_of</div>
+                  <div class="k" data-i18n="sentiment.as_of">as_of</div>
                   <div class="v" id="kAsOf">--</div>
-                  <div class="s">date</div>
+                  <div class="s" data-i18n="sentiment.date">date</div>
                 </div>
                 <div class="kpi">
-                  <div class="k">risk</div>
+                  <div class="k" data-i18n="sentiment.risk">risk</div>
                   <div class="v" id="kRisk">--</div>
-                  <div class="s">avg</div>
+                  <div class="s" data-i18n="sentiment.avg">avg</div>
                 </div>
                 <div class="kpi">
-                  <div class="k">positive</div>
+                  <div class="k" data-i18n="sentiment.positive">positive</div>
                   <div class="v" id="kPos">--</div>
-                  <div class="s">avg</div>
+                  <div class="s" data-i18n="sentiment.avg">avg</div>
                 </div>
                 <div class="kpi">
-                  <div class="k">uncertainty</div>
+                  <div class="k" data-i18n="sentiment.uncertainty">uncertainty</div>
                   <div class="v" id="kUnc">--</div>
-                  <div class="s">avg</div>
+                  <div class="s" data-i18n="sentiment.avg">avg</div>
                 </div>
               </div>
 
               <div class="sourceBox">
-                <div class="hint">sources</div>
+                <div class="hint" data-i18n="sentiment.sources">sources</div>
                 <div class="path" id="kSrc">sentiment: -</div>
                 <div class="hint" id="kWorld">world: -</div>
                 <div class="hint" id="kTrend">trend: -</div>
               </div>
 
               <div class="searchRow">
-                <input id="q" class="select" type="search" placeholder="search (title/source/summary)" />
+                <input id="q" class="select" type="search" placeholder="search (title/source/summary)" data-i18n-placeholder="sentiment.search_placeholder" />
                 <select id="fSent" class="select">
-                  <option value="all">All</option>
-                  <option value="positive">Positive</option>
-                  <option value="negative">Negative</option>
-                  <option value="neutral">Neutral</option>
-                  <option value="mixed">Mixed</option>
-                  <option value="unknown">Unknown</option>
+                  <option value="all" data-i18n="sentiment.all">All</option>
+                  <option value="positive" data-i18n="sentiment.positive_label">Positive</option>
+                  <option value="negative" data-i18n="sentiment.negative_label">Negative</option>
+                  <option value="neutral" data-i18n="sentiment.neutral_label">Neutral</option>
+                  <option value="mixed" data-i18n="sentiment.mixed_label">Mixed</option>
+                  <option value="unknown" data-i18n="sentiment.unknown_label">Unknown</option>
                 </select>
                 <select id="sort" class="select">
-                  <option value="risk">risk ↓</option>
-                  <option value="pos">positive ↓</option>
-                  <option value="unc">uncertainty ↓</option>
-                  <option value="net">net ↓</option>
-                  <option value="date">date ↓</option>
+                  <option value="risk" data-i18n="sentiment.sort_risk">risk ↓</option>
+                  <option value="pos" data-i18n="sentiment.sort_positive">positive ↓</option>
+                  <option value="unc" data-i18n="sentiment.sort_uncertainty">uncertainty ↓</option>
+                  <option value="net" data-i18n="sentiment.sort_net">net ↓</option>
+                  <option value="date" data-i18n="sentiment.sort_date">date ↓</option>
                 </select>
                 <label class="check">
                   <input id="showMissing" type="checkbox" checked />
-                  <span>show missing</span>
+                  <span data-i18n="sentiment.show_missing">show missing</span>
                 </label>
               </div>
 
@@ -114,20 +114,20 @@
             <div class="card trendCardMain">
               <div class="trendTop">
                 <div>
-                  <div class="trendTitle">3-Axis Trend</div>
-                  <div class="trendLead">Risk / Positive / Uncertainty are displayed as independent lanes</div>
+                  <div class="trendTitle" data-i18n="sentiment.trend_title">3-Axis Trend</div>
+                  <div class="trendLead" data-i18n="sentiment.trend_lead">Risk / Positive / Uncertainty are displayed as independent lanes</div>
                 </div>
                 <div class="legendRow">
-                  <span class="legendTag"><span class="legendDot dotRisk"></span>Risk</span>
-                  <span class="legendTag"><span class="legendDot dotPos"></span>Positive</span>
-                  <span class="legendTag"><span class="legendDot dotUnc"></span>Uncertainty</span>
+                  <span class="legendTag"><span class="legendDot dotRisk"></span><span data-i18n="sentiment.risk">Risk</span></span>
+                  <span class="legendTag"><span class="legendDot dotPos"></span><span data-i18n="sentiment.positive">Positive</span></span>
+                  <span class="legendTag"><span class="legendDot dotUnc"></span><span data-i18n="sentiment.uncertainty">Uncertainty</span></span>
                 </div>
               </div>
 
               <div class="trendAxisGrid">
                 <div class="axisCard axisRisk">
                   <div class="axisMeta">
-                    <div class="axisName">Risk</div>
+                    <div class="axisName" data-i18n="sentiment.risk">Risk</div>
                     <div class="axisValue" id="riskNow">--</div>
                     <div class="axisDelta" id="riskDelta">Δ --</div>
                   </div>
@@ -138,7 +138,7 @@
 
                 <div class="axisCard axisPos">
                   <div class="axisMeta">
-                    <div class="axisName">Positive</div>
+                    <div class="axisName" data-i18n="sentiment.positive">Positive</div>
                     <div class="axisValue" id="posNow">--</div>
                     <div class="axisDelta" id="posDelta">Δ --</div>
                   </div>
@@ -149,7 +149,7 @@
 
                 <div class="axisCard axisUnc">
                   <div class="axisMeta">
-                    <div class="axisName">Uncertainty</div>
+                    <div class="axisName" data-i18n="sentiment.uncertainty">Uncertainty</div>
                     <div class="axisValue" id="uncNow">--</div>
                     <div class="axisDelta" id="uncDelta">Δ --</div>
                   </div>
@@ -163,27 +163,27 @@
 
           <div class="howBand">
             <div class="howGrid">
-              <div class="howItem"><strong>1</strong> Load sentiment_latest.json and compute score / label</div>
-              <div class="howItem"><strong>2</strong> Join by URL for title completion; fallback uses favicon</div>
-              <div class="howItem"><strong>3</strong> Join by URL for title completion; fallback uses favicon</div>
-              <div class="howItem"><strong>4</strong> Render sentiment_timeseries.csv as a 3-axis trend</div>
+              <div class="howItem"><strong>1</strong> <span data-i18n="sentiment.how_1">Load sentiment_latest.json and compute score / label</span></div>
+              <div class="howItem"><strong>2</strong> <span data-i18n="sentiment.how_2">Join by URL for title completion; fallback uses favicon</span></div>
+              <div class="howItem"><strong>3</strong> <span data-i18n="sentiment.how_3">Join by URL for title completion; fallback uses favicon</span></div>
+              <div class="howItem"><strong>4</strong> <span data-i18n="sentiment.how_4">Render sentiment_timeseries.csv as a 3-axis trend</span></div>
             </div>
           </div>
         </section>
 
         <section class="panel tableWrap">
           <div class="sectionTitle">
-            <h2>Articles</h2>
-            <div class="hint">showing <span id="renderedN">--</span> / <span id="totalN">--</span></div>
+            <h2 data-i18n="sentiment.articles">Articles</h2>
+            <div class="hint"><span data-i18n="sentiment.showing">showing</span> <span id="renderedN">--</span> / <span id="totalN">--</span></div>
           </div>
 
           <table class="tbl">
             <thead>
               <tr>
                 <th></th>
-                <th>title / summary / url</th>
-                <th>source / date / sentiment</th>
-                <th>metrics</th>
+                <th data-i18n="sentiment.th_title_summary_url">title / summary / url</th>
+                <th data-i18n="sentiment.th_source_date_sentiment">source / date / sentiment</th>
+                <th data-i18n="sentiment.metrics">metrics</th>
               </tr>
             </thead>
             <tbody id="rows"></tbody>
@@ -563,9 +563,9 @@
 
         $("totalN").textContent = String(items.length);
         $("renderedN").textContent = String(arr.length);
-        $("kItems").textContent = "items=" + items.length;
-        $("kRendered").textContent = "rendered=" + arr.length + "/" + items.length;
-        $("kTrendPts").textContent = "trend_points=" + (state.series ? state.series.length : 0);
+        $("kItems").textContent = (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.items_prefix") : "items") + "=" + items.length;
+        $("kRendered").textContent = (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.rendered_prefix") : "rendered") + "=" + arr.length + "/" + items.length;
+        $("kTrendPts").textContent = (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.trend_points_prefix") : "trend_points") + "=" + (state.series ? state.series.length : 0);
         updateLocalPills();
 
         var tbody = $("rows");
@@ -706,18 +706,18 @@
       }
 
       function updateLocalPills(){
-        setLocalPill("localPillAsOf", state.asOf && state.asOf !== "-" ? "good" : "", "as_of: " + (state.asOf || "--"));
-        setLocalPill("localPillItems", state.items.length ? "good" : "warn", "items: " + state.items.length);
-        setLocalPill("localPillRendered", state.items.length ? "good" : "warn", "rendered: " + $("renderedN").textContent);
-        setLocalPill("localPillTrend", state.series.length ? "good" : "warn", "trend_points: " + state.series.length);
+        setLocalPill("localPillAsOf", state.asOf && state.asOf !== "-" ? "good" : "", (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.as_of") : "as_of") + ": " + (state.asOf || "--"));
+        setLocalPill("localPillItems", state.items.length ? "good" : "warn", (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.items_prefix") : "items") + ": " + state.items.length);
+        setLocalPill("localPillRendered", state.items.length ? "good" : "warn", (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.rendered_prefix") : "rendered") + ": " + $("renderedN").textContent);
+        setLocalPill("localPillTrend", state.series.length ? "good" : "warn", (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.trend_points_prefix") : "trend_points") + ": " + state.series.length);
 
         safeSetText("kSrcInline", state.sentPath);
         safeSetText("kWorldInline", state.worldPath);
         safeSetText("kTrendInline", state.tsPath);
 
-        safeSetText("kSrc", "sentiment: " + state.sentPath);
-        safeSetText("kWorld", "world: " + state.worldPath);
-        safeSetText("kTrend", "trend: " + state.tsPath);
+        safeSetText("kSrc", (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.sentiment_prefix") : "sentiment") + ": " + state.sentPath);
+        safeSetText("kWorld", (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.world_prefix") : "world") + ": " + state.worldPath);
+        safeSetText("kTrend", (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.trend_prefix") : "trend") + ": " + state.tsPath);
 
         safeSetHref("btnOpenSentTop", state.sentPath !== "-" ? state.sentPath : "#");
         safeSetHref("btnOpenTSTop", state.tsPath !== "-" ? state.tsPath : "#");
@@ -773,9 +773,9 @@
               if(!state.series.length && state.overview) state.series = makeFlatSeriesFromOverview(state.asOf, state.overview.risk, state.overview.pos, state.overview.unc);
               updateDebug(
                 "debug: ok\n" +
-                "sentiment: " + state.sentPath + "\n" +
-                "world: " + state.worldPath + "\n" +
-                "trend: " + state.tsPath + "\n" +
+                (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.sentiment_prefix") : "sentiment") + ": " + state.sentPath + "\n" +
+                (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.world_prefix") : "world") + ": " + state.worldPath + "\n" +
+                (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.trend_prefix") : "trend") + ": " + state.tsPath + "\n" +
                 "items=" + state.items.length + " trend_points=" + state.series.length + "\n" +
                 "today.articles=" + (state.overview.articles || 0)
               );
@@ -788,9 +788,9 @@
               if(!state.series.length && state.overview) state.series = makeFlatSeriesFromOverview(state.asOf, state.overview.risk, state.overview.pos, state.overview.unc);
               updateDebug(
                 "debug: ok (trend fallback)\n" +
-                "sentiment: " + state.sentPath + "\n" +
-                "world: " + state.worldPath + "\n" +
-                "trend: " + state.tsPath + "\n" +
+                (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.sentiment_prefix") : "sentiment") + ": " + state.sentPath + "\n" +
+                (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.world_prefix") : "world") + ": " + state.worldPath + "\n" +
+                (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.trend_prefix") : "trend") + ": " + state.tsPath + "\n" +
                 "items=" + state.items.length + " trend_points=" + state.series.length + "\n" +
                 "today.articles=" + (state.overview.articles || 0)
               );
@@ -810,9 +810,9 @@
               if(!state.series.length && state.overview) state.series = makeFlatSeriesFromOverview(state.asOf, state.overview.risk, state.overview.pos, state.overview.unc);
               updateDebug(
                 "debug: ok (world fallback)\n" +
-                "sentiment: " + state.sentPath + "\n" +
+                (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.sentiment_prefix") : "sentiment") + ": " + state.sentPath + "\n" +
                 "world: (missing: " + safeText(worldErr && worldErr.message) + ")\n" +
-                "trend: " + state.tsPath + "\n" +
+                (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.trend_prefix") : "trend") + ": " + state.tsPath + "\n" +
                 "items=" + state.items.length + " trend_points=" + state.series.length + "\n" +
                 "today.articles=" + (state.overview.articles || 0)
               );
@@ -825,9 +825,9 @@
               if(!state.series.length && state.overview) state.series = makeFlatSeriesFromOverview(state.asOf, state.overview.risk, state.overview.pos, state.overview.unc);
               updateDebug(
                 "debug: ok (world fallback / trend fallback)\n" +
-                "sentiment: " + state.sentPath + "\n" +
+                (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.sentiment_prefix") : "sentiment") + ": " + state.sentPath + "\n" +
                 "world: (missing: " + safeText(worldErr && worldErr.message) + ")\n" +
-                "trend: " + state.tsPath + "\n" +
+                (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.trend_prefix") : "trend") + ": " + state.tsPath + "\n" +
                 "items=" + state.items.length + " trend_points=" + state.series.length + "\n" +
                 "today.articles=" + (state.overview.articles || 0)
               );
@@ -873,5 +873,194 @@
   <script src="/static/common/i18n.js?v=20260323-lang-manager-1"></script>
   <script src="/static/common/global_status.js?v=20260318-sentiment-compact-1"></script>
   <script src="/static/common/layout.js?v=20260323-lang-manager-1"></script>
+
+  <script>
+    (function () {
+      "use strict";
+
+      const UI_TEXT = {
+        en: {
+          "sentiment.title": "Sentiment",
+          "sentiment.subtitle": "Articles + thumbnails + sentiment join + 3-axis trend.",
+          "sentiment.controls": "Controls",
+          "sentiment.as_of": "as_of",
+          "sentiment.date": "date",
+          "sentiment.risk": "risk",
+          "sentiment.avg": "avg",
+          "sentiment.positive": "positive",
+          "sentiment.uncertainty": "uncertainty",
+          "sentiment.sources": "sources",
+          "sentiment.search_placeholder": "search (title/source/summary)",
+          "sentiment.all": "All",
+          "sentiment.positive_label": "Positive",
+          "sentiment.negative_label": "Negative",
+          "sentiment.neutral_label": "Neutral",
+          "sentiment.mixed_label": "Mixed",
+          "sentiment.unknown_label": "Unknown",
+          "sentiment.sort_risk": "risk ↓",
+          "sentiment.sort_positive": "positive ↓",
+          "sentiment.sort_uncertainty": "uncertainty ↓",
+          "sentiment.sort_net": "net ↓",
+          "sentiment.sort_date": "date ↓",
+          "sentiment.show_missing": "show missing",
+          "sentiment.trend_title": "3-Axis Trend",
+          "sentiment.trend_lead": "Risk / Positive / Uncertainty are displayed as independent lanes",
+          "sentiment.how_1": "Load sentiment_latest.json and compute score / label",
+          "sentiment.how_2": "Join by URL for title completion; fallback uses favicon",
+          "sentiment.how_3": "Join by URL for title completion; fallback uses favicon",
+          "sentiment.how_4": "Render sentiment_timeseries.csv as a 3-axis trend",
+          "sentiment.articles": "Articles",
+          "sentiment.th_title_summary_url": "title / summary / url",
+          "sentiment.th_source_date_sentiment": "source / date / sentiment",
+          "sentiment.metrics": "metrics",
+          "sentiment.open_json": "Open JSON",
+          "sentiment.open_csv": "Open CSV",
+          "sentiment.reload": "Reload",
+          "sentiment.reset_filters": "Reset filters",
+          "sentiment.open_sentiment_json": "Open sentiment_latest.json",
+          "sentiment.open_timeseries_csv": "Open sentiment_timeseries.csv",
+          "sentiment.showing": "showing",
+          "sentiment.items_prefix": "items",
+          "sentiment.rendered_prefix": "rendered",
+          "sentiment.trend_points_prefix": "trend_points",
+          "sentiment.sentiment_prefix": "sentiment",
+          "sentiment.world_prefix": "world",
+          "sentiment.trend_prefix": "trend"
+        },
+        ja: {
+          "sentiment.title": "センチメント",
+          "sentiment.subtitle": "記事 + サムネイル + sentiment 結合 + 3軸トレンド。",
+          "sentiment.controls": "操作",
+          "sentiment.as_of": "as_of",
+          "sentiment.date": "日付",
+          "sentiment.risk": "リスク",
+          "sentiment.avg": "平均",
+          "sentiment.positive": "ポジティブ",
+          "sentiment.uncertainty": "不確実性",
+          "sentiment.sources": "ソース",
+          "sentiment.search_placeholder": "検索（title/source/summary）",
+          "sentiment.all": "すべて",
+          "sentiment.positive_label": "ポジティブ",
+          "sentiment.negative_label": "ネガティブ",
+          "sentiment.neutral_label": "ニュートラル",
+          "sentiment.mixed_label": "混合",
+          "sentiment.unknown_label": "不明",
+          "sentiment.sort_risk": "risk ↓",
+          "sentiment.sort_positive": "positive ↓",
+          "sentiment.sort_uncertainty": "uncertainty ↓",
+          "sentiment.sort_net": "net ↓",
+          "sentiment.sort_date": "date ↓",
+          "sentiment.show_missing": "欠落を表示",
+          "sentiment.trend_title": "3軸トレンド",
+          "sentiment.trend_lead": "Risk / Positive / Uncertainty を独立レーンで表示",
+          "sentiment.how_1": "sentiment_latest.json を読み込み、score / label を計算",
+          "sentiment.how_2": "URL 結合で title を補完し、fallback では favicon を使用",
+          "sentiment.how_3": "URL 結合で title を補完し、fallback では favicon を使用",
+          "sentiment.how_4": "sentiment_timeseries.csv を 3軸トレンドとして描画",
+          "sentiment.articles": "記事",
+          "sentiment.th_title_summary_url": "title / summary / url",
+          "sentiment.th_source_date_sentiment": "source / date / sentiment",
+          "sentiment.metrics": "指標",
+          "sentiment.open_json": "JSONを開く",
+          "sentiment.open_csv": "CSVを開く",
+          "sentiment.reload": "再読み込み",
+          "sentiment.reset_filters": "フィルタをリセット",
+          "sentiment.open_sentiment_json": "sentiment_latest.json を開く",
+          "sentiment.open_timeseries_csv": "sentiment_timeseries.csv を開く",
+          "sentiment.showing": "表示中",
+          "sentiment.items_prefix": "items",
+          "sentiment.rendered_prefix": "rendered",
+          "sentiment.trend_points_prefix": "trend_points",
+          "sentiment.sentiment_prefix": "sentiment",
+          "sentiment.world_prefix": "world",
+          "sentiment.trend_prefix": "trend"
+        },
+        th: {
+          "sentiment.title": "เซนติเมนต์",
+          "sentiment.subtitle": "บทความ + ภาพย่อ + การรวม sentiment + แนวโน้ม 3 แกน",
+          "sentiment.controls": "ตัวควบคุม",
+          "sentiment.as_of": "as_of",
+          "sentiment.date": "วันที่",
+          "sentiment.risk": "ความเสี่ยง",
+          "sentiment.avg": "เฉลี่ย",
+          "sentiment.positive": "เชิงบวก",
+          "sentiment.uncertainty": "ความไม่แน่นอน",
+          "sentiment.sources": "แหล่งข้อมูล",
+          "sentiment.search_placeholder": "ค้นหา (title/source/summary)",
+          "sentiment.all": "ทั้งหมด",
+          "sentiment.positive_label": "เชิงบวก",
+          "sentiment.negative_label": "เชิงลบ",
+          "sentiment.neutral_label": "เป็นกลาง",
+          "sentiment.mixed_label": "ผสม",
+          "sentiment.unknown_label": "ไม่ทราบ",
+          "sentiment.sort_risk": "risk ↓",
+          "sentiment.sort_positive": "positive ↓",
+          "sentiment.sort_uncertainty": "uncertainty ↓",
+          "sentiment.sort_net": "net ↓",
+          "sentiment.sort_date": "date ↓",
+          "sentiment.show_missing": "แสดงรายการที่ขาด",
+          "sentiment.trend_title": "แนวโน้ม 3 แกน",
+          "sentiment.trend_lead": "แสดง Risk / Positive / Uncertainty เป็นเลนแยก",
+          "sentiment.how_1": "โหลด sentiment_latest.json และคำนวณ score / label",
+          "sentiment.how_2": "เชื่อมด้วย URL เพื่อเติม title ให้สมบูรณ์ และ fallback ใช้ favicon",
+          "sentiment.how_3": "เชื่อมด้วย URL เพื่อเติม title ให้สมบูรณ์ และ fallback ใช้ favicon",
+          "sentiment.how_4": "แสดง sentiment_timeseries.csv เป็นแนวโน้ม 3 แกน",
+          "sentiment.articles": "บทความ",
+          "sentiment.th_title_summary_url": "title / summary / url",
+          "sentiment.th_source_date_sentiment": "source / date / sentiment",
+          "sentiment.metrics": "ตัวชี้วัด",
+          "sentiment.open_json": "เปิด JSON",
+          "sentiment.open_csv": "เปิด CSV",
+          "sentiment.reload": "โหลดใหม่",
+          "sentiment.reset_filters": "รีเซ็ตตัวกรอง",
+          "sentiment.open_sentiment_json": "เปิด sentiment_latest.json",
+          "sentiment.open_timeseries_csv": "เปิด sentiment_timeseries.csv",
+          "sentiment.showing": "กำลังแสดง",
+          "sentiment.items_prefix": "items",
+          "sentiment.rendered_prefix": "rendered",
+          "sentiment.trend_points_prefix": "trend_points",
+          "sentiment.sentiment_prefix": "sentiment",
+          "sentiment.world_prefix": "world",
+          "sentiment.trend_prefix": "trend"
+        }
+      };
+
+      function getLang() {
+        const m = window.GP_LANG_MANAGER;
+        if (m && typeof m.getLang === "function") return m.getLang();
+        return window.GP_LANG || document.documentElement.lang || "en";
+      }
+
+      function t(key) {
+        const lang = String(getLang() || "en").toLowerCase();
+        return (UI_TEXT[lang] && UI_TEXT[lang][key]) || (UI_TEXT.en && UI_TEXT.en[key]) || key;
+      }
+
+      window.GP_SENTIMENT_T = t;
+
+      function applyStaticI18n() {
+        document.querySelectorAll("[data-i18n]").forEach((el) => {
+          const key = el.getAttribute("data-i18n");
+          const text = t(key);
+          if (text) el.textContent = text;
+        });
+        document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+          const key = el.getAttribute("data-i18n-placeholder");
+          const text = t(key);
+          if (text) el.setAttribute("placeholder", text);
+        });
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", applyStaticI18n);
+      } else {
+        applyStaticI18n();
+      }
+
+      const evt = (window.GP_LANG_MANAGER && window.GP_LANG_MANAGER.LANG_CHANGED_EVENT) || "gp:lang-changed";
+      window.addEventListener(evt, applyStaticI18n);
+    })();
+  </script>
+
 </body>
 </html>

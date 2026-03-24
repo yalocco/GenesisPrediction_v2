@@ -1,6 +1,156 @@
 (() => {
   "use strict";
 
+
+  const LANG_MANAGER = window.GP_LANG_MANAGER || null;
+  const LANG_CHANGED_EVENT =
+    LANG_MANAGER && LANG_MANAGER.LANG_CHANGED_EVENT ? LANG_MANAGER.LANG_CHANGED_EVENT : "gp:lang-changed";
+  const I18N = window.GP_I18N || null;
+
+  const HOME_TEXT = {
+    en: {
+      "home.title": "Home",
+      "home.subtitle": "GenesisPrediction is an analysis system that observes global events and connects trends, signals, and scenarios to forward-looking predictions. This Home screen presents the current state of the world, which serves as the starting point of the system.",
+      "home.global_status_title": "Global Status",
+      "home.global_risk_label": "Global Risk",
+      "home.sentiment_balance_label": "Sentiment Balance",
+      "home.fx_regime_label": "FX Regime",
+      "home.articles_label": "Articles",
+      "home.updated_label": "Updated",
+      "home.kpi_events": "Events",
+      "home.kpi_health_ok": "Health OK",
+      "home.kpi_sentiment_items": "Sentiment Items",
+      "home.kpi_summary": "Summary",
+      "home.events_today_title": "Events (today)",
+      "home.data_health_title": "Data Health",
+      "home.sentiment_title": "Sentiment",
+      "home.daily_summary_title": "Daily Summary",
+      "home.open_json": "Open JSON",
+      "ready": "Ready",
+      "error": "Error",
+      "ok": "OK",
+      "missing": "missing",
+      "source": "source",
+      "date": "date",
+      "total": "total",
+      "items": "items",
+      "articles": "articles",
+      "count": "count",
+      "positive": "positive",
+      "negative": "negative",
+      "neutral": "neutral",
+      "mixed": "mixed",
+      "as_of": "as_of",
+      "world_view_missing": "world_view_model_latest.json not available.",
+      "health_missing": "health_latest.json not available.",
+      "sentiment_missing": "sentiment_latest.json not available.",
+      "summary_missing": "daily_summary_latest.json not available.",
+      "miss": "MISS",
+      "untitled": "untitled"
+    },
+    ja: {
+      "home.title": "ホーム",
+      "home.subtitle": "GenesisPrediction は世界の出来事を観測し、トレンド・シグナル・シナリオを将来予測へ接続する分析システムです。この Home 画面は現在の世界状態を示すシステムの出発点です。",
+      "home.global_status_title": "グローバルステータス",
+      "home.global_risk_label": "グローバルリスク",
+      "home.sentiment_balance_label": "センチメントバランス",
+      "home.fx_regime_label": "FXレジーム",
+      "home.articles_label": "記事数",
+      "home.updated_label": "更新日",
+      "home.kpi_events": "イベント数",
+      "home.kpi_health_ok": "正常数",
+      "home.kpi_sentiment_items": "センチメント件数",
+      "home.kpi_summary": "サマリー",
+      "home.events_today_title": "本日のイベント",
+      "home.data_health_title": "データ健全性",
+      "home.sentiment_title": "センチメント",
+      "home.daily_summary_title": "デイリーサマリー",
+      "home.open_json": "JSONを開く",
+      "ready": "準備完了",
+      "error": "エラー",
+      "ok": "OK",
+      "missing": "未取得",
+      "source": "ソース",
+      "date": "日付",
+      "total": "合計",
+      "items": "件数",
+      "articles": "記事数",
+      "count": "件数",
+      "positive": "ポジティブ",
+      "negative": "ネガティブ",
+      "neutral": "ニュートラル",
+      "mixed": "混合",
+      "as_of": "時点",
+      "world_view_missing": "world_view_model_latest.json を取得できません。",
+      "health_missing": "health_latest.json を取得できません。",
+      "sentiment_missing": "sentiment_latest.json を取得できません。",
+      "summary_missing": "daily_summary_latest.json を取得できません。",
+      "miss": "未取得",
+      "untitled": "無題"
+    },
+    th: {
+      "home.title": "หน้าแรก",
+      "home.subtitle": "GenesisPrediction คือระบบวิเคราะห์ที่สังเกตเหตุการณ์ทั่วโลกและเชื่อมโยงแนวโน้ม สัญญาณ และฉากทัศน์ไปสู่การคาดการณ์ล่วงหน้า หน้าหลักนี้แสดงสถานะปัจจุบันของโลกซึ่งเป็นจุดเริ่มต้นของระบบ",
+      "home.global_status_title": "สถานะรวม",
+      "home.global_risk_label": "ความเสี่ยงโลก",
+      "home.sentiment_balance_label": "สมดุลเซนติเมนต์",
+      "home.fx_regime_label": "ระบอบ FX",
+      "home.articles_label": "บทความ",
+      "home.updated_label": "อัปเดต",
+      "home.kpi_events": "เหตุการณ์",
+      "home.kpi_health_ok": "สถานะปกติ",
+      "home.kpi_sentiment_items": "รายการเซนติเมนต์",
+      "home.kpi_summary": "สรุป",
+      "home.events_today_title": "เหตุการณ์วันนี้",
+      "home.data_health_title": "สุขภาพข้อมูล",
+      "home.sentiment_title": "เซนติเมนต์",
+      "home.daily_summary_title": "สรุปรายวัน",
+      "home.open_json": "เปิด JSON",
+      "ready": "พร้อม",
+      "error": "ผิดพลาด",
+      "ok": "OK",
+      "missing": "ไม่มีข้อมูล",
+      "source": "แหล่งที่มา",
+      "date": "วันที่",
+      "total": "รวม",
+      "items": "จำนวนรายการ",
+      "articles": "บทความ",
+      "count": "จำนวน",
+      "positive": "บวก",
+      "negative": "ลบ",
+      "neutral": "เป็นกลาง",
+      "mixed": "ผสม",
+      "as_of": "ณ วันที่",
+      "world_view_missing": "ไม่พบ world_view_model_latest.json",
+      "health_missing": "ไม่พบ health_latest.json",
+      "sentiment_missing": "ไม่พบ sentiment_latest.json",
+      "summary_missing": "ไม่พบ daily_summary_latest.json",
+      "miss": "ไม่มีข้อมูล",
+      "untitled": "ไม่มีชื่อ"
+    }
+  };
+
+  function getLang() {
+    if (LANG_MANAGER && typeof LANG_MANAGER.getLang === "function") {
+      return LANG_MANAGER.getLang();
+    }
+    return "en";
+  }
+
+  function t(key, fallback = "") {
+    const lang = getLang();
+    const table = HOME_TEXT[lang] || HOME_TEXT.en;
+    return table[key] || HOME_TEXT.en[key] || fallback || key;
+  }
+
+  function applyHomeStaticI18n() {
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+      const key = el.getAttribute("data-i18n");
+      if (!key || !String(key).startsWith("home.")) return;
+      el.textContent = t(key, el.textContent || key);
+    });
+  }
+
   function safeText(x) {
     return x == null ? "" : String(x);
   }
@@ -34,6 +184,36 @@
     if (!value) return "--";
     return String(value).slice(0, 10);
   }
+
+  function pickLocalizedText(value, fallback = "") {
+    if (I18N && typeof I18N.pickI18n === "function") {
+      const picked = I18N.pickI18n(value, fallback, getLang());
+      if (picked) return picked;
+    }
+    return firstString(value, fallback);
+  }
+
+  function pickLocalizedList(value) {
+    if (I18N && typeof I18N.pickI18nList === "function") {
+      const picked = I18N.pickI18nList(value, getLang());
+      if (Array.isArray(picked) && picked.length) {
+        return picked.map((item) => safeText(item)).filter(Boolean);
+      }
+    }
+    if (Array.isArray(value)) {
+      return value.map((item) => safeText(item)).filter(Boolean);
+    }
+    return [];
+  }
+
+  function pickLocalizedField(obj, key, fallback = "") {
+    if (I18N && typeof I18N.pickText === "function" && obj && typeof obj === "object") {
+      const picked = I18N.pickText(obj, key, getLang());
+      if (picked) return picked;
+    }
+    return firstString(obj && obj[key], fallback);
+  }
+
 
   function renderKV(obj) {
     const lines = [];
@@ -74,8 +254,8 @@
     const warn = firstNumber(sum.warn, h.warn_count, h.WARN);
     const ng = firstNumber(sum.ng, h.ng_count, h.NG);
     const parts = [];
-    if (date && date !== "--") parts.push(`date: ${date}`);
-    if (total != null) parts.push(`total: ${total}`);
+    if (date && date !== "--") parts.push(`${t("date", "date")}: ${date}`);
+    if (total != null) parts.push(`${t("total", "total")}: ${total}`);
     if (ok != null) parts.push(`OK: ${ok}`);
     if (warn != null) parts.push(`WARN: ${warn}`);
     if (ng != null) parts.push(`NG: ${ng}`);
@@ -88,24 +268,24 @@
     const labels = s.labels || s.counts || {};
     const today = s.today || {};
     const parts = [];
-    if (date) parts.push(`date: ${date}`);
-    if (today.articles != null) parts.push(`items: ${today.articles}`);
-    if (labels.positive != null) parts.push(`positive: ${labels.positive}`);
-    if (labels.negative != null) parts.push(`negative: ${labels.negative}`);
-    if (labels.neutral != null) parts.push(`neutral: ${labels.neutral}`);
-    if (labels.mixed != null) parts.push(`mixed: ${labels.mixed}`);
+    if (date) parts.push(`${t("date", "date")}: ${date}`);
+    if (today.articles != null) parts.push(`${t("items", "items")}: ${today.articles}`);
+    if (labels.positive != null) parts.push(`${t("positive", "positive")}: ${labels.positive}`);
+    if (labels.negative != null) parts.push(`${t("negative", "negative")}: ${labels.negative}`);
+    if (labels.neutral != null) parts.push(`${t("neutral", "neutral")}: ${labels.neutral}`);
+    if (labels.mixed != null) parts.push(`${t("mixed", "mixed")}: ${labels.mixed}`);
     return parts.join("\n");
   }
 
   function renderSummary(sum) {
     if (!sum) return "—";
     const text = firstString(
-      sum.summary,
-      sum.text_summary,
-      sum.daily_summary,
-      sum.yesterday_summary_text,
-      sum.text,
-      sum.events_today && sum.events_today.summary
+      pickLocalizedField(sum, "summary"),
+      pickLocalizedField(sum, "text_summary"),
+      pickLocalizedField(sum, "daily_summary"),
+      pickLocalizedField(sum, "yesterday_summary_text"),
+      pickLocalizedField(sum, "text"),
+      sum.events_today ? pickLocalizedField(sum.events_today, "summary") : ""
     );
 
     if (text) {
@@ -126,14 +306,18 @@
     const today = vm.today || {};
     const lines = [];
 
-    if (vm.date) lines.push(`date: ${vm.date}`);
-    if (today.articles != null) lines.push(`articles: ${today.articles}`);
-    if (today.count != null) lines.push(`count: ${today.count}`);
+    if (vm.date) lines.push(`${t("date", "date")}: ${vm.date}`);
+    if (today.articles != null) lines.push(`${t("articles", "articles")}: ${today.articles}`);
+    if (today.count != null) lines.push(`${t("count", "count")}: ${today.count}`);
 
     if (cards.length) {
       lines.push("");
       cards.slice(0, 6).forEach((card, idx) => {
-        const title = firstString(card.title, card.headline, "untitled");
+        const title = firstString(
+          pickLocalizedField(card, "title"),
+          pickLocalizedField(card, "headline"),
+          t("untitled", "untitled")
+        );
         lines.push(`${idx + 1}. ${title}`);
       });
     }
@@ -178,63 +362,64 @@
         sentiment && (sentiment.date || sentiment.as_of)
       );
 
-      setText("pillAsOfLocal", `as_of: ${shortDate(localAsOf || "--")}`);
-      setText("pillReadyLocal", "Ready");
+      applyHomeStaticI18n();
+      setText("pillAsOfLocal", `${t("as_of", "as_of")}: ${shortDate(localAsOf || "--")}`);
+      setText("pillReadyLocal", t("ready", "Ready"));
 
       if (gs) {
-        setText("gsRisk", gs.global_risk || "—");
-        setText("gsRiskSub", gs.global_risk_sub || "—");
-        setText("gsSentiment", gs.sentiment_balance || "—");
-        setText("gsSentimentSub", gs.sentiment_balance_sub || "—");
-        setText("gsFx", gs.fx_regime || "—");
-        setText("gsFxSub", gs.fx_regime_sub || "—");
-        setText("gsArticles", gs.articles || "—");
-        setText("gsArticlesSub", gs.articles_sub || "—");
+        setText("gsRisk", pickLocalizedField(gs, "global_risk", "—") || "—");
+        setText("gsRiskSub", pickLocalizedField(gs, "global_risk_sub", "—") || "—");
+        setText("gsSentiment", pickLocalizedField(gs, "sentiment_balance", "—") || "—");
+        setText("gsSentimentSub", pickLocalizedField(gs, "sentiment_balance_sub", "—") || "—");
+        setText("gsFx", pickLocalizedField(gs, "fx_regime", "—") || "—");
+        setText("gsFxSub", pickLocalizedField(gs, "fx_regime_sub", "—") || "—");
+        setText("gsArticles", pickLocalizedField(gs, "articles", "—") || "—");
+        setText("gsArticlesSub", pickLocalizedField(gs, "articles_sub", "—") || "—");
         setText("gsUpdated", shortDate(gs.updated || gs.as_of || "--"));
         setText("gsUpdatedSub", gs.sources && gs.sources.summary ? gs.sources.summary : "—");
       }
 
       if (vm) {
-        setText("evHint", "OK");
+        setText("evHint", t("ok", "OK"));
         setText("evBody", renderWorldView(vm));
-        setText("evSource", `source: ${worldVmRes.url}`);
+        setText("evSource", `${t("source", "source")}: ${worldVmRes.url}`);
       } else {
-        setText("evHint", "missing");
-        setText("evBody", "world_view_model_latest.json not available.");
-        setText("evSource", "source: --");
+        setText("evHint", t("missing", "missing"));
+        setText("evBody", t("world_view_missing", "world_view_model_latest.json not available."));
+        setText("evSource", `${t("source", "source")}: --`);
       }
 
       if (health) {
-        setText("healthHint", "OK");
+        setText("healthHint", t("ok", "OK"));
         setText("healthBody", renderHealth(health));
-        setText("healthSource", `source: ${healthRes.url}`);
+        setText("healthSource", `${t("source", "source")}: ${healthRes.url}`);
         setHref("btnOpenHealth", healthRes.url);
       } else {
-        setText("healthHint", "missing");
-        setText("healthBody", "health_latest.json not available.");
-        setText("healthSource", "source: --");
+        setText("healthHint", t("missing", "missing"));
+        setText("healthBody", t("health_missing", "health_latest.json not available."));
+        setText("healthSource", `${t("source", "source")}: --`);
         setHref("btnOpenHealth", "#");
       }
 
       if (sentiment) {
-        setText("senHint", "OK");
+        setText("senHint", t("ok", "OK"));
         setText("senBody", renderSentiment(sentiment));
-        setText("senSource", `source: ${senRes.url}`);
+        setText("senSource", `${t("source", "source")}: ${senRes.url}`);
       } else {
-        setText("senHint", "missing");
-        setText("senBody", "sentiment_latest.json not available.");
-        setText("senSource", "source: --");
+        setText("senHint", t("missing", "missing"));
+        setText("senBody", t("sentiment_missing", "sentiment_latest.json not available."));
+        setText("senSource", `${t("source", "source")}: --`);
       }
 
       if (summary) {
-        setText("sumHint", "OK");
+        setText("sumHint", t("ok", "OK"));
         setText("sumBody", renderSummary(summary));
-        setText("sumSource", `source: ${sumRes.url}`);
+        setText("sumSource", `${t("source", "source")}: ${sumRes.url}`);
         setHref("btnOpenSummary", sumRes.url);
       } else {
-        setText("sumHint", "missing");
-        setText("sumBody", "daily_summary_latest.json not available.");
-        setText("sumSource", "source: --");
+        setText("sumHint", t("missing", "missing"));
+        setText("sumBody", t("summary_missing", "daily_summary_latest.json not available."));
+        setText("sumSource", `${t("source", "source")}: --`);
         setHref("btnOpenSummary", "#");
       }
 
@@ -272,12 +457,17 @@
               : null;
 
       setText("kpiSentimentItems", sentimentItems != null ? String(sentimentItems) : "—");
-      setText("kpiSummaryState", gsCards.summary_state != null ? String(gsCards.summary_state) : summary ? "OK" : "MISS");
+      setText("kpiSummaryState", gsCards.summary_state != null ? String(gsCards.summary_state) : summary ? t("ok", "OK") : t("miss", "MISS"));
     } catch (e) {
-      setText("pillReadyLocal", "Error");
+      setText("pillReadyLocal", t("error", "Error"));
       console.warn(e);
     }
   }
+
+
+  window.addEventListener(LANG_CHANGED_EVENT, () => {
+    main();
+  });
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", main, { once: true });

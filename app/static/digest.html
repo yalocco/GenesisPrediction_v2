@@ -18,12 +18,12 @@
       <div class="gp-page digest-page">
         <section class="panel digest-shell">
           <div class="digest-hero">
-            <div class="h1">Digest</div>
+            <div class="h1" id="digestTitle">Digest</div>
             <p id="heroText" class="sub">Prioritize the Digest ViewModel and present an integrated view of Summary, Highlights, Prediction, and FX.</p>
 
             <section class="card digest-card-top section-no-margin">
               <div class="sectionTitle">
-                <h2>Global Status</h2>
+                <h2 id="digestGlobalStatusTitle">Global Status</h2>
                 <span class="hint">analysis/global_status_latest.json</span>
               </div>
               <div data-global-status data-page="digest"></div>
@@ -33,7 +33,7 @@
           <div class="digest-top">
             <section class="card summaryCard">
               <div class="sectionTitle">
-                <h2>Summary</h2>
+                <h2 id="digestSummaryTitle">Summary</h2>
                 <span id="summaryHint" class="hint">loading…</span>
               </div>
               <div id="summaryBody" class="summaryBody">loading…</div>
@@ -45,38 +45,38 @@
 
             <section class="card highlightsCard">
               <div class="sectionTitle">
-                <h2>Highlights</h2>
+                <h2 id="digestHighlightsTitle">Highlights</h2>
                 <span id="highlightsHint" class="hint">digest preferred</span>
               </div>
 
               <div class="digest-kpis">
                 <div class="digest-kpi tone-articles">
-                  <div class="k">Articles</div>
+                  <div class="k" id="digestKpiArticlesLabel">Articles</div>
                   <div id="kpiArticles" class="v">—</div>
                   <div class="s">full article count</div>
                 </div>
                 <div class="digest-kpi tone-positive">
-                  <div class="k">Prediction Risk</div>
+                  <div class="k" id="digestKpiPredictionRiskLabel">Prediction Risk</div>
                   <div id="kpiPredictionRisk" class="v">—</div>
                   <div class="s">prediction.latest.risk</div>
                 </div>
                 <div class="digest-kpi tone-negative">
-                  <div class="k">Dominant Scenario</div>
+                  <div class="k" id="digestKpiDominantScenarioLabel">Dominant Scenario</div>
                   <div id="kpiDominantScenario" class="v">—</div>
                   <div class="s">prediction.latest.dominant_scenario</div>
                 </div>
                 <div class="digest-kpi tone-neutral">
-                  <div class="k">Confidence</div>
+                  <div class="k" id="digestKpiConfidenceLabel">Confidence</div>
                   <div id="kpiConfidence" class="v">—</div>
                   <div class="s">prediction.latest.confidence_pct</div>
                 </div>
                 <div class="digest-kpi tone-mixed">
-                  <div class="k">FX Pair</div>
+                  <div class="k" id="digestKpiFxPairLabel">FX Pair</div>
                   <div id="kpiFxPair" class="v">—</div>
                   <div class="s">fx.latest.pair</div>
                 </div>
                 <div class="digest-kpi tone-fx">
-                  <div class="k">FX Status</div>
+                  <div class="k" id="digestKpiFxStatusLabel">FX Status</div>
                   <div id="kpiFxStatus" class="v">—</div>
                   <div class="s">fx.latest.status</div>
                 </div>
@@ -84,7 +84,7 @@
 
               <div class="insightGrid">
                 <div class="insightCard">
-                  <div class="insightLabel">Prediction</div>
+                  <div class="insightLabel" id="digestPredictionLabel">Prediction</div>
                   <div id="predictionValue" class="insightValue">—</div>
                   <div class="insightMeta">
                     <span id="predictionRiskPill" class="insightPill neutral">risk: --</span>
@@ -94,7 +94,7 @@
                 </div>
 
                 <div class="insightCard">
-                  <div class="insightLabel">FX Decision</div>
+                  <div class="insightLabel" id="digestFxDecisionLabel">FX Decision</div>
                   <div id="fxValue" class="insightValue">—</div>
                   <div class="insightMeta">
                     <span id="fxPairPill" class="insightPill neutral">pair: --</span>
@@ -112,7 +112,7 @@
 
           <section class="card articles-card-top">
             <div class="sectionTitle">
-              <h2>Articles</h2>
+              <h2 id="digestArticlesTitle">Articles</h2>
               <div class="hint"><span id="renderedCount">--</span> / <span id="totalCount">--</span></div>
             </div>
 
@@ -704,5 +704,130 @@
       init();
     })();
   </script>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var UI_TEXT = {
+        en: {
+          title: "Digest",
+          hero: "Prioritize the Digest ViewModel and present an integrated view of Summary, Highlights, Prediction, and FX.",
+          globalStatus: "Global Status",
+          summary: "Summary",
+          highlights: "Highlights",
+          articles: "Articles",
+          predictionRisk: "Prediction Risk",
+          dominantScenario: "Dominant Scenario",
+          confidence: "Confidence",
+          fxPair: "FX Pair",
+          fxStatus: "FX Status",
+          prediction: "Prediction",
+          fxDecision: "FX Decision"
+        },
+        ja: {
+          title: "ダイジェスト",
+          hero: "Digest ViewModel を優先し、Summary、Highlights、Prediction、FX を統合表示します。",
+          globalStatus: "グローバルステータス",
+          summary: "サマリー",
+          highlights: "ハイライト",
+          articles: "記事",
+          predictionRisk: "予測リスク",
+          dominantScenario: "支配的シナリオ",
+          confidence: "信頼度",
+          fxPair: "FXペア",
+          fxStatus: "FX状態",
+          prediction: "予測",
+          fxDecision: "FX判断"
+        },
+        th: {
+          title: "ไดเจสต์",
+          hero: "ให้ความสำคัญกับ Digest ViewModel และแสดงภาพรวมแบบบูรณาการของ Summary, Highlights, Prediction และ FX",
+          globalStatus: "สถานะรวม",
+          summary: "สรุป",
+          highlights: "ไฮไลต์",
+          articles: "บทความ",
+          predictionRisk: "ความเสี่ยงการคาดการณ์",
+          dominantScenario: "ฉากทัศน์เด่น",
+          confidence: "ความเชื่อมั่น",
+          fxPair: "คู่ FX",
+          fxStatus: "สถานะ FX",
+          prediction: "การคาดการณ์",
+          fxDecision: "การตัดสินใจ FX"
+        }
+      };
+
+      function getLang() {
+        var m = window.GP_LANG_MANAGER;
+        if (m && typeof m.getLang === "function") return String(m.getLang() || "en").toLowerCase();
+        return String(window.GP_LANG || document.documentElement.lang || "en").toLowerCase();
+      }
+
+      function text(key) {
+        var lang = getLang();
+        if (lang !== "ja" && lang !== "th") lang = "en";
+        return (UI_TEXT[lang] && UI_TEXT[lang][key]) || UI_TEXT.en[key] || key;
+      }
+
+      function set(id, value) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = value;
+      }
+
+      function applyDigestStaticHeadings() {
+        set("digestTitle", text("title"));
+        set("heroText", text("hero"));
+        set("digestGlobalStatusTitle", text("globalStatus"));
+        set("digestSummaryTitle", text("summary"));
+        set("digestHighlightsTitle", text("highlights"));
+        set("digestKpiArticlesLabel", text("articles"));
+        set("digestKpiPredictionRiskLabel", text("predictionRisk"));
+        set("digestKpiDominantScenarioLabel", text("dominantScenario"));
+        set("digestKpiConfidenceLabel", text("confidence"));
+        set("digestKpiFxPairLabel", text("fxPair"));
+        set("digestKpiFxStatusLabel", text("fxStatus"));
+        set("digestPredictionLabel", text("prediction"));
+        set("digestFxDecisionLabel", text("fxDecision"));
+        set("digestArticlesTitle", text("articles"));
+      }
+
+      function scheduleApply() {
+        applyDigestStaticHeadings();
+        window.requestAnimationFrame(applyDigestStaticHeadings);
+        window.setTimeout(applyDigestStaticHeadings, 0);
+        window.setTimeout(applyDigestStaticHeadings, 80);
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", scheduleApply);
+      } else {
+        scheduleApply();
+      }
+
+      var evt = (window.GP_LANG_MANAGER && window.GP_LANG_MANAGER.LANG_CHANGED_EVENT) || "gp:lang-changed";
+      window.addEventListener(evt, scheduleApply);
+      document.addEventListener(evt, scheduleApply);
+
+      if (document.documentElement) {
+        var observer = new MutationObserver(function (mutations) {
+          for (var i = 0; i < mutations.length; i++) {
+            if (mutations[i].attributeName === "lang") {
+              scheduleApply();
+              break;
+            }
+          }
+        });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
+      }
+
+      document.addEventListener("change", function (event) {
+        var target = event && event.target;
+        if (target && target.id === "langSwitch") {
+          scheduleApply();
+        }
+      }, true);
+    })();
+  </script>
+
 </body>
 </html>
