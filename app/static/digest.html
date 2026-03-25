@@ -191,7 +191,12 @@
         newsPath: "-",
         sentimentPath: "-",
         summaryMode: "no-data",
-        articleMode: "no-data"
+        articleMode: "no-data",
+        digestData: null,
+        worldVmData: null,
+        summaryData: null,
+        newsData: null,
+        sentimentRoot: null
       };
 
       function $(id) { return document.getElementById(id); }
@@ -340,12 +345,12 @@
       function getSummaryText(digest, worldVm, summaryData) {
         return firstDefined(
           pickText(digest, "summary", ""),
-          worldVm && worldVm.summary,
-          worldVm && worldVm.today && worldVm.today.summary,
-          worldVm && worldVm.meta && worldVm.meta.summary,
-          summaryData && summaryData.summary,
-          summaryData && summaryData.text_summary,
-          summaryData && summaryData.daily_summary,
+          pickText(worldVm, "summary", ""),
+          worldVm && worldVm.today && pickText(worldVm.today, "summary", ""),
+          worldVm && worldVm.meta && pickText(worldVm.meta, "summary", ""),
+          summaryData && pickText(summaryData, "summary", ""),
+          summaryData && pickText(summaryData, "text_summary", ""),
+          summaryData && pickText(summaryData, "daily_summary", ""),
           "No summary available."
         );
       }
@@ -363,7 +368,11 @@
           if (text) out.push(text);
         }
 
-        push(digest && digest.highlights);
+        push(pickList(digest, "highlights"));
+        push(worldVm && pickList(worldVm, "topics"));
+        push(worldVm && worldVm.today && pickList(worldVm.today, "topics"));
+        push(summaryData && pickList(summaryData, "topics"));
+        push(digest && pickList(digest, "highlights"));
         push(worldVm && worldVm.topics);
         push(worldVm && worldVm.today && worldVm.today.topics);
         push(summaryData && summaryData.topics);
@@ -377,25 +386,40 @@
         return "unknown";
       }
 
+      function pickValue(value, fallback) {
+        var i18n = getI18n();
+        if (i18n && typeof i18n.pickI18n === "function") {
+          var picked = i18n.pickI18n(value, "");
+          if (picked) return picked;
+        }
+        if (value && typeof value === "object") {
+          return textOr(firstDefined(value.name, value.id, value.label, value.text), fallback);
+        }
+        return textOr(value, fallback);
+      }
+
       function normalizeArticle(card, index) {
         card = card || {};
         var sentiment = card.sentiment || {};
-        var label = normalizeLabel(firstDefined(
+        var labelKey = firstDefined(
           sentiment.sentiment_label,
           sentiment.sentiment,
           sentiment.label,
           card.sentiment_label,
           card.sentiment,
           card.label
-        ));
+        );
+        var label = normalizeLabel(labelKey);
         return {
-          title: textOr(firstDefined(card.title, card.headline), "Untitled article " + (index + 1)),
-          summary: textOr(firstDefined(card.summary, card.description, card.content), "Summary not available."),
+          title: textOr(firstDefined(pickText(card, "title", ""), pickText(card, "headline", ""), pickValue(card.title_i18n, ""), pickValue(card.headline_i18n, ""), card.title, card.headline), "Untitled article " + (index + 1)),
+          summary: textOr(firstDefined(pickText(card, "summary", ""), pickText(card, "description", ""), pickText(card, "content", ""), pickValue(card.summary_i18n, ""), pickValue(card.description_i18n, ""), pickValue(card.content_i18n, ""), card.summary, card.description, card.content), "Summary not available."),
           url: firstDefined(card.url, card.link, "#") || "#",
           image: firstDefined(card.image, card.urlToImage, card.thumbnail, card.image_url),
-          source: textOr(firstDefined(card.source, card.publisher, card.domain), "Unknown source"),
+          source: textOr(firstDefined(pickText(card, "source", ""), pickText(card, "publisher", ""), pickText(card, "domain", ""), pickValue(card.source_i18n, ""), pickValue(card.publisher_i18n, ""), card.source && pickValue(card.source, ""), card.publisher && pickValue(card.publisher, ""), card.domain), "Unknown source"),
+          category: textOr(firstDefined(pickText(card, "category", ""), pickValue(card.category_i18n, ""), card.category && pickValue(card.category, "")), ""),
           publishedAt: firstDefined(card.publishedAt, card.published_at, card.date, card.datetime),
           label: label,
+          labelText: textOr(firstDefined(pickText(card, "label", ""), pickValue(card.label_i18n, ""), pickValue(labelKey, ""), label), label),
           risk: toNumber(firstDefined(sentiment.risk, sentiment.riskScore, card.risk, card.risk_score), 0),
           score: toNumber(firstDefined(sentiment.score, sentiment.net, card.score, card.net), 0),
           positive: toNumber(firstDefined(sentiment.positive, card.positive), 0),
@@ -408,13 +432,15 @@
         var source = item.source;
         if (source && typeof source === "object") source = source.name || source.id || "";
         return {
-          title: textOr(firstDefined(item.title, item.headline), "News " + (index + 1)),
-          summary: textOr(firstDefined(item.description, item.summary, item.content), "Summary not available."),
+          title: textOr(firstDefined(pickText(item, "title", ""), pickText(item, "headline", ""), pickValue(item.title_i18n, ""), item.title, item.headline), "News " + (index + 1)),
+          summary: textOr(firstDefined(pickText(item, "description", ""), pickText(item, "summary", ""), pickText(item, "content", ""), pickValue(item.description_i18n, ""), pickValue(item.summary_i18n, ""), item.description, item.summary, item.content), "Summary not available."),
           url: firstDefined(item.url, item.link, "#") || "#",
           image: firstDefined(item.urlToImage, item.image, item.thumbnail),
-          source: textOr(firstDefined(source, item.publisher), "Unknown source"),
+          source: textOr(firstDefined(pickText(item, "source", ""), pickText(item, "publisher", ""), pickValue(item.source_i18n, ""), pickValue(source, ""), item.publisher), "Unknown source"),
+          category: textOr(firstDefined(pickText(item, "category", ""), pickValue(item.category_i18n, ""), item.category), ""),
           publishedAt: firstDefined(item.publishedAt, item.published_at, item.date),
           label: "unknown",
+          labelText: textOr(firstDefined(pickText(item, "label", ""), pickValue(item.label_i18n, ""), item.label), "unknown"),
           risk: 0,
           score: 0,
           positive: 0,
@@ -517,7 +543,8 @@
             '<div class="thumbWrap">' + imageHtml + '</div>' +
             '<div class="articleBody">' +
               '<div class="articleMeta">' +
-                '<span class="badge ' + escapeHtml(article.label) + '">' + escapeHtml(article.label) + '</span>' +
+                '<span class="badge ' + escapeHtml(article.label) + '">' + escapeHtml(article.labelText || article.label) + '</span>' +
+                (article.category ? '<span class="badge">' + escapeHtml(article.category) + '</span>' : '') +
                 '<span class="badge">' + escapeHtml(article.source) + '</span>' +
                 '<span class="badge">' + escapeHtml(fmtDate(article.publishedAt)) + '</span>' +
               '</div>' +
@@ -563,26 +590,12 @@
         });
       }
 
-      async function init() {
-        wireToolbar();
-
-        var digestResult = await fetchFirstJson(DIGEST_CANDIDATES);
-        var worldVmResult = await fetchFirstJson(WORLD_VM_CANDIDATES);
-        var summaryResult = await fetchFirstJson(SUMMARY_CANDIDATES);
-        var newsResult = await fetchFirstJson(NEWS_CANDIDATES);
-        var sentimentResult = await fetchFirstJson(SENTIMENT_CANDIDATES);
-
-        var digest = digestResult && digestResult.data ? digestResult.data : null;
-        var worldVm = worldVmResult && worldVmResult.data ? worldVmResult.data : null;
-        var summaryData = summaryResult && summaryResult.data ? summaryResult.data : null;
-        var newsData = newsResult && newsResult.data ? newsResult.data : null;
-        var sentimentRoot = sentimentResult && sentimentResult.data ? sentimentResult.data : null;
-
-        state.digestPath = digestResult && digestResult.url ? digestResult.url : "-";
-        state.worldVmPath = worldVmResult && worldVmResult.url ? worldVmResult.url : "-";
-        state.summaryPath = summaryResult && summaryResult.url ? summaryResult.url : "-";
-        state.newsPath = newsResult && newsResult.url ? newsResult.url : "-";
-        state.sentimentPath = sentimentResult && sentimentResult.url ? sentimentResult.url : "-";
+      function renderView() {
+        var digest = state.digestData;
+        var worldVm = state.worldVmData;
+        var summaryData = state.summaryData;
+        var newsData = state.newsData;
+        var sentimentRoot = state.sentimentRoot;
 
         var digestCards = digest ? getCards(digest).map(normalizeArticle) : [];
         var worldCards = worldVm ? getCards(worldVm).map(normalizeArticle) : [];
@@ -701,7 +714,35 @@
         renderArticles();
       }
 
+      async function init() {
+        wireToolbar();
+
+        var digestResult = await fetchFirstJson(DIGEST_CANDIDATES);
+        var worldVmResult = await fetchFirstJson(WORLD_VM_CANDIDATES);
+        var summaryResult = await fetchFirstJson(SUMMARY_CANDIDATES);
+        var newsResult = await fetchFirstJson(NEWS_CANDIDATES);
+        var sentimentResult = await fetchFirstJson(SENTIMENT_CANDIDATES);
+
+        state.digestData = digestResult && digestResult.data ? digestResult.data : null;
+        state.worldVmData = worldVmResult && worldVmResult.data ? worldVmResult.data : null;
+        state.summaryData = summaryResult && summaryResult.data ? summaryResult.data : null;
+        state.newsData = newsResult && newsResult.data ? newsResult.data : null;
+        state.sentimentRoot = sentimentResult && sentimentResult.data ? sentimentResult.data : null;
+
+        state.digestPath = digestResult && digestResult.url ? digestResult.url : "-";
+        state.worldVmPath = worldVmResult && worldVmResult.url ? worldVmResult.url : "-";
+        state.summaryPath = summaryResult && summaryResult.url ? summaryResult.url : "-";
+        state.newsPath = newsResult && newsResult.url ? newsResult.url : "-";
+        state.sentimentPath = sentimentResult && sentimentResult.url ? sentimentResult.url : "-";
+
+        renderView();
+      }
+
       init();
+
+      var digestLangEvent = (window.GP_LANG_MANAGER && window.GP_LANG_MANAGER.LANG_CHANGED_EVENT) || "gp:lang-changed";
+      window.addEventListener(digestLangEvent, renderView);
+      document.addEventListener(digestLangEvent, renderView);
     })();
   </script>
 

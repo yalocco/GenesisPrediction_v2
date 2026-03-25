@@ -4,9 +4,15 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+CURRENT_DIR = Path(__file__).resolve().parent
+LIB_DIR = CURRENT_DIR / "lib"
+if LIB_DIR.exists():
+    sys.path.insert(0, str(LIB_DIR))
 
 try:
     from i18n_dictionary import translate as dict_translate
@@ -849,9 +855,9 @@ def normalize_news_article(item: Dict[str, Any], sentiment_index: Dict[str, Dict
 
     article = {
         "title": title,
-        "title_i18n": english_shadow_text_i18n(title),
+        "title_i18n": dictionary_text_i18n(title),
         "summary": summary_text,
-        "summary_i18n": english_shadow_text_i18n(summary_text),
+        "summary_i18n": dictionary_text_i18n(summary_text),
         "url": url,
         "image": first_non_empty(item.get("urlToImage"), item.get("image"), item.get("thumbnail"), item.get("image_url")) or "",
         "source": source_text,
@@ -948,7 +954,7 @@ def build_payload(
         "highlights": highlights,
         "highlights_i18n": dictionary_list_i18n(highlights, category="ui_terms"),
         "articles": article_titles,
-        "articles_i18n": english_shadow_list_i18n(article_titles),
+        "articles_i18n": dictionary_list_i18n(article_titles),
         "cards": digest_cards,
         "meta": {
             "n_events": n_events,
