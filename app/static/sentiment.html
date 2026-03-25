@@ -163,7 +163,7 @@
 
           <div class="howBand">
             <div class="howGrid">
-              <div class="howItem"><strong>1</strong> <span data-i18n="sentiment.how_1">Load sentiment_latest.json and compute score / label</span></div>
+              <div class="howItem"><strong>1</strong> <span data-i18n="sentiment.how_1">Load sentiment_latest.json and use provided metrics / labels</span></div>
               <div class="howItem"><strong>2</strong> <span data-i18n="sentiment.how_2">Join by URL for title completion; fallback uses favicon</span></div>
               <div class="howItem"><strong>3</strong> <span data-i18n="sentiment.how_3">Join by URL for title completion; fallback uses favicon</span></div>
               <div class="howItem"><strong>4</strong> <span data-i18n="sentiment.how_4">Render sentiment_timeseries.csv as a 3-axis trend</span></div>
@@ -248,7 +248,6 @@
             else source = safeText(a.source.name || a.source.id || "");
           }
           var net = Number(pickFirst(a, ["net","net_score","sentiment_net","score"]));
-          if(!isFinite(net)) net = Number(pickFirst(a, ["positive","pos"])) - Number(pickFirst(a, ["risk","risk_score"]));
           var sentiment = safeText(pickFirst(a, ["sentiment_label","sentiment","label"]) || "unknown").toLowerCase();
           if(!sentiment) sentiment = "unknown";
           return {
@@ -261,7 +260,7 @@
             risk: clamp01(pickFirst(a, ["risk","risk_score","riskAvg","risk_mean"])),
             pos: clamp01(pickFirst(a, ["positive","pos","positive_score","pos_score"])),
             unc: clamp01(pickFirst(a, ["uncertainty","unc","uncertainty_score","unc_score"])),
-            net: isFinite(net) ? net : 0,
+            net: isFinite(net) ? net : NaN,
             sentiment: sentiment
           };
         });
@@ -325,9 +324,8 @@
         });
       }
 
-      function deriveOverview(root, items){
+      function deriveOverview(root){
         root = root || {};
-        items = items || [];
         var today = root.today || {};
         var sentSummary = root.sentiment_summary || {};
         var summary = root.summary || {};
@@ -338,20 +336,6 @@
           unc: NaN,
           articles: 0
         };
-
-        if(items.length){
-          var r = 0, p = 0, u = 0;
-          items.forEach(function(it){
-            r += Number(it.risk) || 0;
-            p += Number(it.pos) || 0;
-            u += Number(it.unc) || 0;
-          });
-          out.risk = r / items.length;
-          out.pos = p / items.length;
-          out.unc = u / items.length;
-          out.articles = items.length;
-          return out;
-        }
 
         out.risk = Number(pickFirst(today, ["risk","risk_score","riskAvg","risk_mean"]));
         out.pos = Number(pickFirst(today, ["positive","pos","positive_score","pos_score"]));
@@ -437,28 +421,6 @@
         return out;
       }
 
-      function aggregateFromItems(items){
-        var m = Object.create(null);
-        items.forEach(function(it){
-          var d = safeText(it.publishedAt).slice(0,10);
-          if(!d) return;
-          if(!m[d]) m[d] = { date:d, n:0, risk:0, pos:0, unc:0 };
-          m[d].n++;
-          m[d].risk += Number(it.risk) || 0;
-          m[d].pos += Number(it.pos) || 0;
-          m[d].unc += Number(it.unc) || 0;
-        });
-        return Object.keys(m).sort().map(function(k){
-          var x = m[k];
-          if(x.n){ x.risk /= x.n; x.pos /= x.n; x.unc /= x.n; }
-          return { date:x.date, risk:x.risk, pos:x.pos, unc:x.unc };
-        });
-      }
-
-      function makeFlatSeriesFromOverview(asOf, risk, pos, unc){
-        if(!asOf || asOf === "-") return [];
-        return [{ date:asOf, risk:clamp01(risk), pos:clamp01(pos), unc:clamp01(unc) }];
-      }
 
       function formatDelta(series, key){
         if(!series || !series.length) return "Δ --";
@@ -764,13 +726,11 @@
             state.worldPath = worldRes.path;
             var worldCards = normalizeWorldCards(worldRes.json);
             state.items = mergeWithWorld(rawItems, worldCards);
-            state.overview = deriveOverview(sentRes.json, state.items);
+            state.overview = deriveOverview(sentRes.json);
 
             fetchTextFirst(TS_CAND).then(function(tsRes){
               state.tsPath = tsRes.path;
               state.series = parseTimeseriesCsv(tsRes.text);
-              if(!state.series.length) state.series = aggregateFromItems(state.items);
-              if(!state.series.length && state.overview) state.series = makeFlatSeriesFromOverview(state.asOf, state.overview.risk, state.overview.pos, state.overview.unc);
               updateDebug(
                 "debug: ok\n" +
                 (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.sentiment_prefix") : "sentiment") + ": " + state.sentPath + "\n" +
@@ -783,11 +743,10 @@
               drawAll();
               render(state.items);
             }).catch(function(){
-              state.tsPath = "(fallback: aggregate/items)";
-              state.series = aggregateFromItems(state.items);
-              if(!state.series.length && state.overview) state.series = makeFlatSeriesFromOverview(state.asOf, state.overview.risk, state.overview.pos, state.overview.unc);
+              state.tsPath = "(unavailable)";
+              state.series = [];
               updateDebug(
-                "debug: ok (trend fallback)\n" +
+                "debug: ok (trend unavailable)\n" +
                 (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.sentiment_prefix") : "sentiment") + ": " + state.sentPath + "\n" +
                 (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.world_prefix") : "world") + ": " + state.worldPath + "\n" +
                 (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.trend_prefix") : "trend") + ": " + state.tsPath + "\n" +
@@ -801,13 +760,11 @@
           }).catch(function(worldErr){
             state.worldPath = "-";
             state.items = rawItems.slice();
-            state.overview = deriveOverview(sentRes.json, state.items);
+            state.overview = deriveOverview(sentRes.json);
 
             fetchTextFirst(TS_CAND).then(function(tsRes){
               state.tsPath = tsRes.path;
               state.series = parseTimeseriesCsv(tsRes.text);
-              if(!state.series.length) state.series = aggregateFromItems(state.items);
-              if(!state.series.length && state.overview) state.series = makeFlatSeriesFromOverview(state.asOf, state.overview.risk, state.overview.pos, state.overview.unc);
               updateDebug(
                 "debug: ok (world fallback)\n" +
                 (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.sentiment_prefix") : "sentiment") + ": " + state.sentPath + "\n" +
@@ -820,11 +777,10 @@
               drawAll();
               render(state.items);
             }).catch(function(){
-              state.tsPath = "(fallback: aggregate/items)";
-              state.series = aggregateFromItems(state.items);
-              if(!state.series.length && state.overview) state.series = makeFlatSeriesFromOverview(state.asOf, state.overview.risk, state.overview.pos, state.overview.unc);
+              state.tsPath = "(unavailable)";
+              state.series = [];
               updateDebug(
-                "debug: ok (world fallback / trend fallback)\n" +
+                "debug: ok (world fallback / trend unavailable)\n" +
                 (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.sentiment_prefix") : "sentiment") + ": " + state.sentPath + "\n" +
                 "world: (missing: " + safeText(worldErr && worldErr.message) + ")\n" +
                 (window.GP_SENTIMENT_T ? window.GP_SENTIMENT_T("sentiment.trend_prefix") : "trend") + ": " + state.tsPath + "\n" +
@@ -905,7 +861,7 @@
           "sentiment.show_missing": "show missing",
           "sentiment.trend_title": "3-Axis Trend",
           "sentiment.trend_lead": "Risk / Positive / Uncertainty are displayed as independent lanes",
-          "sentiment.how_1": "Load sentiment_latest.json and compute score / label",
+          "sentiment.how_1": "Load sentiment_latest.json and use provided metrics / labels",
           "sentiment.how_2": "Join by URL for title completion; fallback uses favicon",
           "sentiment.how_3": "Join by URL for title completion; fallback uses favicon",
           "sentiment.how_4": "Render sentiment_timeseries.csv as a 3-axis trend",
@@ -953,7 +909,7 @@
           "sentiment.show_missing": "欠落を表示",
           "sentiment.trend_title": "3軸トレンド",
           "sentiment.trend_lead": "Risk / Positive / Uncertainty を独立レーンで表示",
-          "sentiment.how_1": "sentiment_latest.json を読み込み、score / label を計算",
+          "sentiment.how_1": "sentiment_latest.json を読み込み、提供済みの metrics / labels を使用",
           "sentiment.how_2": "URL 結合で title を補完し、fallback では favicon を使用",
           "sentiment.how_3": "URL 結合で title を補完し、fallback では favicon を使用",
           "sentiment.how_4": "sentiment_timeseries.csv を 3軸トレンドとして描画",
@@ -1001,7 +957,7 @@
           "sentiment.show_missing": "แสดงรายการที่ขาด",
           "sentiment.trend_title": "แนวโน้ม 3 แกน",
           "sentiment.trend_lead": "แสดง Risk / Positive / Uncertainty เป็นเลนแยก",
-          "sentiment.how_1": "โหลด sentiment_latest.json และคำนวณ score / label",
+          "sentiment.how_1": "โหลด sentiment_latest.json และใช้ metrics / labels ที่มีมาให้",
           "sentiment.how_2": "เชื่อมด้วย URL เพื่อเติม title ให้สมบูรณ์ และ fallback ใช้ favicon",
           "sentiment.how_3": "เชื่อมด้วย URL เพื่อเติม title ให้สมบูรณ์ และ fallback ใช้ favicon",
           "sentiment.how_4": "แสดง sentiment_timeseries.csv เป็นแนวโน้ม 3 แกน",

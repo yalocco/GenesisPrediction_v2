@@ -1,28 +1,22 @@
+
 # scripts/build_world_view_model_latest.py
 # Build /data/world_politics/analysis/view_model_latest.json for GUI pages.
 #
 # Purpose:
 # - Provide a stable read-only ViewModel for index / overlay / digest / sentiment.
 # - Join daily article cards with summary / sentiment / health.
-# - Expose top-level fields expected by UI:
-#     global_risk
-#     economic_signals
-#     geopolitical_signals
+# - Expose top-level fields expected by UI.
+# - Emit *_i18n shadow fields for migration-safe multilingual rendering.
 #
-# Inputs:
-# - data/world_politics/analysis/latest.json
-# - data/world_politics/analysis/sentiment_latest.json
-# - data/world_politics/analysis/daily_summary_latest.json
-# - data/world_politics/analysis/health_latest.json
-# - data/world_politics/YYYY-MM-DD.json
-#
-# Output:
-# - data/world_politics/analysis/view_model_latest.json
+# Important:
+# - This builder MUST NOT invent analysis.
+# - It may localize fixed/generated labels it owns.
+# - It may wrap article text in *_i18n with English fallback only.
+# - True article translation still belongs to the upstream analysis / translation pipeline.
 
 from __future__ import annotations
 
 import json
-import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -37,6 +31,30 @@ SENT_LATEST_JSON = ANALYSIS / "sentiment_latest.json"
 SUMMARY_LATEST_JSON = ANALYSIS / "daily_summary_latest.json"
 HEALTH_LATEST_JSON = ANALYSIS / "health_latest.json"
 OUT_JSON = ANALYSIS / "view_model_latest.json"
+
+LANG_DEFAULT = "en"
+SUPPORTED_LANGUAGES = ["en", "ja", "th"]
+
+TEXT_I18N = {
+    "global_risk": {
+        "LOW": {"en": "LOW", "ja": "低", "th": "ต่ำ"},
+        "MEDIUM": {"en": "MEDIUM", "ja": "中", "th": "กลาง"},
+        "HIGH": {"en": "HIGH", "ja": "高", "th": "สูง"},
+    },
+    "section_title": {
+        "world_politics": {"en": "World Politics", "ja": "世界政治", "th": "การเมืองโลก"},
+    },
+    "signal_label": {
+        "Energy price volatility": {"en": "Energy price volatility", "ja": "エネルギー価格の変動", "th": "ความผันผวนของราคา ऊर्जा"},
+        "Inflation / rates pressure": {"en": "Inflation / rates pressure", "ja": "インフレ・金利圧力", "th": "แรงกดดันด้านเงินเฟ้อและดอกเบี้ย"},
+        "Trade / supply chain stress": {"en": "Trade / supply chain stress", "ja": "貿易・サプライチェーンの緊張", "th": "ความตึงเครียดด้านการค้าและซัพพลายเชน"},
+        "Market instability": {"en": "Market instability", "ja": "市場の不安定化", "th": "ความไม่เสถียรของตลาด"},
+        "Middle East tension": {"en": "Middle East tension", "ja": "中東情勢の緊張", "th": "ความตึงเครียดในตะวันออกกลาง"},
+        "Ukraine / Russia conflict pressure": {"en": "Ukraine / Russia conflict pressure", "ja": "ウクライナ・ロシア紛争圧力", "th": "แรงกดดันจากความขัดแย้งยูเครน/รัสเซีย"},
+        "US political uncertainty": {"en": "US political uncertainty", "ja": "米国政治の不確実性", "th": "ความไม่แน่นอนทางการเมืองของสหรัฐฯ"},
+        "China / Taiwan strategic pressure": {"en": "China / Taiwan strategic pressure", "ja": "中国・台湾の戦略的圧力", "th": "แรงกดดันเชิงยุทธศาสตร์จีน/ไต้หวัน"},
+    },
+}
 
 
 def _load_json(path: Path) -> Any:
@@ -66,12 +84,6 @@ def _pick_date(*docs: dict) -> str:
 
 
 def _resolve_source_file(latest_doc: dict, fallback_date: str) -> Path:
-    """
-    latest.json usually has:
-      "source_file": "/data/world_politics/2026-02-14.json"
-    We map that to repo-local:
-      <repo>/data/world_politics/2026-02-14.json
-    """
     sf = latest_doc.get("source_file")
     if isinstance(sf, str) and sf.strip():
         sf = sf.strip()
@@ -91,17 +103,42 @@ def _as_str(x: Any) -> str:
     return "" if x is None else str(x)
 
 
+def _finalize_text_i18n(base_text: str, partial: dict[str, str] | None = None) -> dict[str, str]:
+    partial = partial or {}
+    en_text = str(partial.get("en") or base_text or "").strip()
+    ja_text = str(partial.get("ja") or en_text).strip()
+    th_text = str(partial.get("th") or en_text).strip()
+    return {"en": en_text, "ja": ja_text, "th": th_text}
+
+
+def _finalize_list_i18n(base_list: list[str], resolver: dict[str, dict[str, str]] | None = None) -> dict[str, list[str]]:
+    if not resolver:
+        return {
+            "en": list(base_list),
+            "ja": list(base_list),
+            "th": list(base_list),
+        }
+    out = {"en": [], "ja": [], "th": []}
+    for item in base_list:
+        mapping = resolver.get(item) or {}
+        out["en"].append(str(mapping.get("en") or item))
+        out["ja"].append(str(mapping.get("ja") or mapping.get("en") or item))
+        out["th"].append(str(mapping.get("th") or mapping.get("en") or item))
+    return out
+
+
 def _parse_source_name(value: Any) -> str:
     if isinstance(value, dict):
         return _as_str(value.get("name") or value.get("id") or "")
     return _as_str(value)
 
 
+def _wrap_article_text_i18n(text: Any) -> dict[str, str]:
+    base = _as_str(text).strip()
+    return _finalize_text_i18n(base)
+
+
 def _extract_articles_from_daily(daily_doc: Any) -> list[dict]:
-    """
-    Support common daily shapes:
-      - {"items":[...]} or {"articles":[...]} or list itself
-    """
     if isinstance(daily_doc, list):
         items = daily_doc
     elif isinstance(daily_doc, dict):
@@ -149,11 +186,18 @@ def _extract_articles_from_daily(daily_doc: Any) -> list[dict]:
         if not isinstance(tags, list):
             tags = []
 
+        title_text = _as_str(title).strip()
+        summary_text = _as_str(summary).strip()
+        source_text = _as_str(source).strip()
+
         out.append(
             {
-                "title": _as_str(title),
-                "summary": _as_str(summary),
-                "source": _as_str(source),
+                "title": title_text,
+                "title_i18n": _wrap_article_text_i18n(title_text),
+                "summary": summary_text,
+                "summary_i18n": _wrap_article_text_i18n(summary_text),
+                "source": source_text,
+                "source_i18n": _finalize_text_i18n(source_text),
                 "url": _as_str(url),
                 "image": image,
                 "published_at": _as_str(published_at),
@@ -336,21 +380,31 @@ def main() -> int:
     economic_signals, geopolitical_signals = _build_signal_lists(cards, summary_doc)
     daily_summary_text = _collect_summary_text(summary_doc)
 
+    section_title_i18n = TEXT_I18N["section_title"]["world_politics"]
+    global_risk_i18n = TEXT_I18N["global_risk"].get(global_risk, _finalize_text_i18n(global_risk))
+
     vm = {
         "version": "v2",
         "date": date,
         "as_of": date,
+        "lang_default": LANG_DEFAULT,
+        "languages": SUPPORTED_LANGUAGES,
         "global_risk": global_risk,
+        "global_risk_i18n": global_risk_i18n,
         "daily_summary": daily_summary_text,
+        "daily_summary_i18n": _finalize_text_i18n(daily_summary_text),
         "events_count": len(cards),
         "sentiment": sentiment_block,
         "health": health_block,
         "economic_signals": economic_signals,
+        "economic_signals_i18n": _finalize_list_i18n(economic_signals, TEXT_I18N["signal_label"]),
         "geopolitical_signals": geopolitical_signals,
+        "geopolitical_signals_i18n": _finalize_list_i18n(geopolitical_signals, TEXT_I18N["signal_label"]),
         "sections": [
             {
                 "id": "world_politics",
-                "title": "World Politics",
+                "title": section_title_i18n["en"],
+                "title_i18n": section_title_i18n,
                 "status": "ok",
                 "cards": cards,
                 "notes": f"generated_from={daily_path.as_posix()}",
@@ -362,7 +416,7 @@ def main() -> int:
             "schema": "view_model_latest.v2",
             "generator": "world_view_model_builder",
             "source": str(daily_path),
-            "notes": "rebuilt from *_latest.json (daily_summary/sentiment/health)",
+            "notes": "rebuilt from *_latest.json (daily_summary/sentiment/health); *_i18n added with English fallback for untranslated article text",
         },
         "today": today,
         "sources": {

@@ -1,0 +1,215 @@
+{
+  "_meta": {
+    "name": "GenesisPrediction i18n Dictionary Template",
+    "version": "v1",
+    "default_lang": "en",
+    "supported_langs": [
+      "en",
+      "ja",
+      "th"
+    ],
+    "policy": {
+      "ui_translates": false,
+      "analysis_translates": true,
+      "free_text_policy": "fallback_to_en_allowed",
+      "dictionary_policy": "must_use_i18n_when_available"
+    }
+  },
+  "risk_levels": {
+    "LOW": {
+      "en": "LOW",
+      "ja": "低",
+      "th": "ต่ำ"
+    },
+    "MIX": {
+      "en": "MIX",
+      "ja": "混合",
+      "th": "ผสม"
+    },
+    "HIGH": {
+      "en": "HIGH",
+      "ja": "高",
+      "th": "สูง"
+    }
+  },
+  "health_status": {
+    "OK": {
+      "en": "OK",
+      "ja": "正常",
+      "th": "ปกติ"
+    },
+    "WARN": {
+      "en": "WARN",
+      "ja": "警告",
+      "th": "เตือน"
+    },
+    "NG": {
+      "en": "NG",
+      "ja": "異常",
+      "th": "ผิดปกติ"
+    }
+  },
+  "fx_status": {
+    "CAUTION": {
+      "en": "CAUTION",
+      "ja": "注意",
+      "th": "ระวัง"
+    },
+    "GUARDED": {
+      "en": "GUARDED",
+      "ja": "警戒",
+      "th": "ระมัดระวัง"
+    },
+    "STABLE": {
+      "en": "STABLE",
+      "ja": "安定",
+      "th": "มีเสถียรภาพ"
+    }
+  },
+  "scenario_labels": {
+    "base_case": {
+      "en": "Base Case",
+      "ja": "基本シナリオ",
+      "th": "กรณีฐาน"
+    },
+    "upside": {
+      "en": "Upside",
+      "ja": "上振れ",
+      "th": "ด้านบวก"
+    },
+    "downside": {
+      "en": "Downside",
+      "ja": "下振れ",
+      "th": "ด้านลบ"
+    }
+  },
+  "market_bias": {
+    "bullish": {
+      "en": "Bullish",
+      "ja": "強気",
+      "th": "ขาขึ้น"
+    },
+    "bearish": {
+      "en": "Bearish",
+      "ja": "弱気",
+      "th": "ขาลง"
+    },
+    "neutral": {
+      "en": "Neutral",
+      "ja": "中立",
+      "th": "เป็นกลาง"
+    }
+  },
+  "sentiment_labels": {
+    "positive": {
+      "en": "Positive",
+      "ja": "ポジティブ",
+      "th": "เชิงบวก"
+    },
+    "negative": {
+      "en": "Negative",
+      "ja": "ネガティブ",
+      "th": "เชิงลบ"
+    },
+    "mixed": {
+      "en": "Mixed",
+      "ja": "混合",
+      "th": "ผสม"
+    },
+    "unknown": {
+      "en": "Unknown",
+      "ja": "不明",
+      "th": "ไม่ทราบ"
+    }
+  },
+  "economic_signals": {
+    "Energy price volatility": {
+      "en": "Energy price volatility",
+      "ja": "エネルギー価格の変動",
+      "th": "ความผันผวนของราคาพลังงาน"
+    },
+    "Trade / supply chain stress": {
+      "en": "Trade / supply chain stress",
+      "ja": "貿易・サプライチェーンの圧力",
+      "th": "แรงกดดันด้านการค้า / ห่วงโซ่อุปทาน"
+    },
+    "Market instability": {
+      "en": "Market instability",
+      "ja": "市場の不安定化",
+      "th": "ความไม่มั่นคงของตลาด"
+    }
+  },
+  "geopolitical_signals": {
+    "Middle East tension": {
+      "en": "Middle East tension",
+      "ja": "中東の緊張",
+      "th": "ความตึงเครียดในตะวันออกกลาง"
+    },
+    "US political uncertainty": {
+      "en": "US political uncertainty",
+      "ja": "米国政治の不確実性",
+      "th": "ความไม่แน่นอนทางการเมืองของสหรัฐฯ"
+    },
+    "China / Taiwan strategic pressure": {
+      "en": "China / Taiwan strategic pressure",
+      "ja": "中国・台湾の戦略的圧力",
+      "th": "แรงกดดันเชิงยุทธศาสตร์จีน / ไต้หวัน"
+    }
+  },
+  "ui_terms": {
+    "No data": {
+      "en": "No data",
+      "ja": "データなし",
+      "th": "ไม่มีข้อมูล"
+    },
+    "Unavailable": {
+      "en": "Unavailable",
+      "ja": "利用不可",
+      "th": "ไม่พร้อมใช้งาน"
+    },
+    "Loading": {
+      "en": "Loading",
+      "ja": "読み込み中",
+      "th": "กำลังโหลด"
+    },
+    "articles": {
+      "en": "articles",
+      "ja": "記事",
+      "th": "บทความ"
+    },
+    "summary": {
+      "en": "summary",
+      "ja": "要約",
+      "th": "สรุป"
+    },
+    "highlights": {
+      "en": "highlights",
+      "ja": "ハイライト",
+      "th": "ไฮไลต์"
+    },
+    "confidence": {
+      "en": "confidence",
+      "ja": "確信度",
+      "th": "ความเชื่อมั่น"
+    },
+    "historical context": {
+      "en": "historical context",
+      "ja": "歴史的文脈",
+      "th": "บริบททางประวัติศาสตร์"
+    }
+  },
+  "_notes": {
+    "dictionary_targets": [
+      "Use this file only for fixed vocabulary and controlled labels.",
+      "Do not put long free-text article titles or summaries here.",
+      "If a term is missing, fallback to English at analysis layer."
+    ],
+    "free_text_examples_not_for_dictionary": [
+      "daily_summary",
+      "prediction_statement",
+      "primary_narrative",
+      "cards[].title",
+      "cards[].summary"
+    ]
+  }
+}

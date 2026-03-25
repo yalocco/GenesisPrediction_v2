@@ -340,6 +340,15 @@ def finalize_list_i18n(base_list: List[str], partial: Dict[str, List[str]]) -> D
     }
 
 
+def english_shadow_text_i18n(value: Any) -> Dict[str, str]:
+    base_text = str(value or "").strip()
+    return finalize_text_i18n(base_text, {"en": base_text})
+
+
+def english_shadow_list_i18n(items: List[str]) -> Dict[str, List[str]]:
+    return finalize_list_i18n(list(items), {"en": list(items)})
+
+
 def pick_i18n_text(data: Dict[str, Any], base_key: str) -> str:
     i18n = normalize_lang_map(data.get(f"{base_key}_i18n"))
     if i18n:
@@ -798,15 +807,25 @@ def normalize_news_article(item: Dict[str, Any], sentiment_index: Dict[str, Dict
     title_key = normalize_key_text(title)
     sentiment = sentiment_index.get("url", {}).get(url_key) or sentiment_index.get("title", {}).get(title_key) or {}
 
+    summary_text = first_non_empty(item.get("description"), item.get("summary"), item.get("content")) or "Summary not available."
+    source_text = normalize_source_name(item)
+    category_text = normalize_category_text(item)
+    label_text = first_non_empty(sentiment.get("label")) or "unknown"
+
     article = {
         "title": title,
-        "summary": first_non_empty(item.get("description"), item.get("summary"), item.get("content")) or "Summary not available.",
+        "title_i18n": english_shadow_text_i18n(title),
+        "summary": summary_text,
+        "summary_i18n": english_shadow_text_i18n(summary_text),
         "url": url,
         "image": first_non_empty(item.get("urlToImage"), item.get("image"), item.get("thumbnail"), item.get("image_url")) or "",
-        "source": normalize_source_name(item),
+        "source": source_text,
+        "source_i18n": english_shadow_text_i18n(source_text),
         "publishedAt": first_non_empty(item.get("publishedAt"), item.get("published_at"), item.get("date"), item.get("datetime")) or "",
-        "category": normalize_category_text(item),
-        "label": first_non_empty(sentiment.get("label")) or "unknown",
+        "category": category_text,
+        "category_i18n": english_shadow_text_i18n(category_text),
+        "label": label_text,
+        "label_i18n": english_shadow_text_i18n(label_text),
         "risk": pick_number(sentiment.get("risk")) or 0.0,
         "score": pick_number(sentiment.get("score")) or 0.0,
         "positive": pick_number(sentiment.get("positive")) or 0.0,
@@ -880,16 +899,21 @@ def build_payload(
 
     article_titles = [card["title"] for card in digest_cards[:12]] if digest_cards else titles[:12]
 
+    summary_value = summary_text or ""
+
     return {
         "status": "ok",
         "generated_at": now_iso(),
         "date": date_value,
         "lang_default": LANG_DEFAULT,
         "languages": SUPPORTED_LANGUAGES,
-        "summary": summary_text or "",
+        "summary": summary_value,
+        "summary_i18n": english_shadow_text_i18n(summary_value),
         "summary_available": bool(summary_text),
         "highlights": highlights,
+        "highlights_i18n": english_shadow_list_i18n(highlights),
         "articles": article_titles,
+        "articles_i18n": english_shadow_list_i18n(article_titles),
         "cards": digest_cards,
         "meta": {
             "n_events": n_events,

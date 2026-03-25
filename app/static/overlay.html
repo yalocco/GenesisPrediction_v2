@@ -412,9 +412,6 @@
         "/data/digest/view_model_latest.json"
       ];
 
-      const ECONOMY_KEYWORDS = [
-        "inflation","interest","rate","rates","central bank","fed","ecb","boj","fomc","economy","economic","gdp","recession","debt","yield","bond","treasury","trade","tariff","sanction","sanctions","oil","gas","energy","price","prices","market","markets","currency","currencies","forex","fx","export","import","shipping","supply","shortage","reserve","reserves","stimulus","banking","manufacturing"
-      ];
 
       function safeText(value, fallback = "") {
         if (value === null || value === undefined) return fallback;
@@ -554,24 +551,6 @@
         };
       }
 
-      function scoreEconomicSignal(card) {
-        const text = [
-          safeText(card.title),
-          safeText(card.summary),
-          safeText(card.source)
-        ].join(" ").toLowerCase();
-
-        let score = 0;
-        for (let i = 0; i < ECONOMY_KEYWORDS.length; i += 1) {
-          if (text.indexOf(ECONOMY_KEYWORDS[i]) >= 0) score += 1;
-        }
-        if (text.indexOf("oil") >= 0 || text.indexOf("energy") >= 0 || text.indexOf("gas") >= 0) score += 2;
-        if (text.indexOf("inflation") >= 0 || text.indexOf("interest") >= 0 || text.indexOf("fed") >= 0 || text.indexOf("boj") >= 0) score += 2;
-        if (text.indexOf("trade") >= 0 || text.indexOf("sanction") >= 0 || text.indexOf("tariff") >= 0) score += 1;
-
-        return score;
-      }
-
       function normalizeSignalCard(card) {
         const normalized = card || {};
         return {
@@ -579,17 +558,8 @@
           summary: safeText(normalized.summary || normalized.description, tr("summary_not_available")),
           source: safeText(normalized.source || normalized.publisher, tr("unknown_source")),
           url: safeText(normalized.url || normalized.link, "#") || "#",
-          image: safeText(normalized.image || normalized.urlToImage || normalized.thumbnail, ""),
-          score: scoreEconomicSignal(normalized)
+          image: safeText(normalized.image || normalized.urlToImage || normalized.thumbnail, "")
         };
-      }
-
-      function classifySignal(card) {
-        const text = (card.title + " " + card.summary).toLowerCase();
-        if (text.indexOf("oil") >= 0 || text.indexOf("gas") >= 0 || text.indexOf("energy") >= 0) return "energy";
-        if (text.indexOf("trade") >= 0 || text.indexOf("tariff") >= 0 || text.indexOf("sanction") >= 0) return "trade";
-        if (text.indexOf("risk") >= 0 || text.indexOf("war") >= 0 || text.indexOf("conflict") >= 0 || text.indexOf("crisis") >= 0) return "risk";
-        return "macro";
       }
 
       function signalFallback(title) {
@@ -598,14 +568,13 @@
       }
 
       function signalCardHtml(card) {
-        const cls = classifySignal(card);
         const safeUrl = card.url && card.url !== "#" ? card.url : "#";
         const target = safeUrl === "#" ? "" : ' target="_blank" rel="noopener noreferrer"';
         const imageHtml = card.image
           ? '<img src="' + escapeHtml(card.image) + '" alt="" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';" /><div class="signal-fallback" style="display:none">' + escapeHtml(signalFallback(card.title)) + '</div>'
           : '<div class="signal-fallback">' + escapeHtml(signalFallback(card.title)) + '</div>';
 
-        return '<article class="signal-card"><div class="signal-thumb">' + imageHtml + '</div><div class="signal-body"><div class="signal-meta"><span class="signal-pill ' + escapeHtml(cls) + '">' + escapeHtml(cls) + '</span><span class="signal-pill source">' + escapeHtml(card.source) + '</span><span class="signal-pill score">score ' + escapeHtml(String(card.score)) + '</span></div><h3 class="signal-title"><a href="' + escapeHtml(safeUrl) + '"' + target + '>' + escapeHtml(card.title) + '</a></h3><p class="signal-summary">' + escapeHtml(card.summary) + '</p></div></article>';
+        return '<article class="signal-card"><div class="signal-thumb">' + imageHtml + '</div><div class="signal-body"><div class="signal-meta"><span class="signal-pill source">' + escapeHtml(card.source) + '</span></div><h3 class="signal-title"><a href="' + escapeHtml(safeUrl) + '"' + target + '>' + escapeHtml(card.title) + '</a></h3><p class="signal-summary">' + escapeHtml(card.summary) + '</p></div></article>';
       }
 
       function extractSignalCards(doc) {
@@ -624,8 +593,6 @@
 
         return cards
           .map(normalizeSignalCard)
-          .filter(function (card) { return card.score > 0; })
-          .sort(function (a, b) { return b.score - a.score; })
           .slice(0, 6);
       }
 
