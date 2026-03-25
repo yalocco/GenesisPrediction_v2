@@ -9,9 +9,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-CURRENT_DIR = Path(__file__).resolve().parent
-LIB_DIR = CURRENT_DIR / "lib"
-if LIB_DIR.exists():
+SCRIPT_DIR = Path(__file__).resolve().parent
+LIB_DIR = SCRIPT_DIR / "lib"
+if str(LIB_DIR) not in sys.path:
     sys.path.insert(0, str(LIB_DIR))
 
 try:
@@ -388,6 +388,37 @@ def dictionary_list_i18n(items: List[str], category: str | None = None) -> Dict[
             pass
 
     return english_shadow_list_i18n(cleaned)
+
+
+def translate_digest_summary_text(value: Any) -> Dict[str, str]:
+    base_text = str(value or "").strip()
+    if not base_text:
+        return {"en": "", "ja": "", "th": ""}
+
+    exact = dictionary_text_i18n(base_text)
+    if exact.get("ja") != base_text or exact.get("th") != base_text:
+        return exact
+
+    ja_text = base_text
+    th_text = base_text
+
+    replacements = [
+        (r"\bObserved\s+(\d+)\s+events\.", r"\1件のイベントを観測。", r"ตรวจพบเหตุการณ์ \1 รายการ."),
+        (r"\bDominant anchors:\s*", "主要アンカー: ", "ประเด็นหลัก: "),
+        (r"\bRepresentative headlines:\s*", "代表的ヘッドライン: ", "พาดหัวตัวแทน: "),
+        (r"\bNew URLs detected:\s+(\d+)\.", r"新規URL検出: \1。", r"ตรวจพบ URL ใหม่: \1."),
+        (r"\bNo new URLs detected\.", "新規URLは検出されず。", "ไม่พบ URL ใหม่."),
+    ]
+
+    for pattern, ja_repl, th_repl in replacements:
+        ja_text = re.sub(pattern, ja_repl, ja_text, flags=re.IGNORECASE)
+        th_text = re.sub(pattern, th_repl, th_text, flags=re.IGNORECASE)
+
+    return {
+        "en": base_text,
+        "ja": ja_text,
+        "th": th_text,
+    }
 
 
 def pick_i18n_text(data: Dict[str, Any], base_key: str) -> str:
@@ -855,9 +886,9 @@ def normalize_news_article(item: Dict[str, Any], sentiment_index: Dict[str, Dict
 
     article = {
         "title": title,
-        "title_i18n": dictionary_text_i18n(title),
+        "title_i18n": english_shadow_text_i18n(title),
         "summary": summary_text,
-        "summary_i18n": dictionary_text_i18n(summary_text),
+        "summary_i18n": english_shadow_text_i18n(summary_text),
         "url": url,
         "image": first_non_empty(item.get("urlToImage"), item.get("image"), item.get("thumbnail"), item.get("image_url")) or "",
         "source": source_text,
@@ -949,12 +980,12 @@ def build_payload(
         "lang_default": LANG_DEFAULT,
         "languages": SUPPORTED_LANGUAGES,
         "summary": summary_value,
-        "summary_i18n": dictionary_text_i18n(summary_value),
+        "summary_i18n": translate_digest_summary_text(summary_value),
         "summary_available": bool(summary_text),
         "highlights": highlights,
         "highlights_i18n": dictionary_list_i18n(highlights, category="ui_terms"),
         "articles": article_titles,
-        "articles_i18n": dictionary_list_i18n(article_titles),
+        "articles_i18n": english_shadow_list_i18n(article_titles),
         "cards": digest_cards,
         "meta": {
             "n_events": n_events,
