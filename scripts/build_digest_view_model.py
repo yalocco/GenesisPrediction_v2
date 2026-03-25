@@ -8,6 +8,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+try:
+    from i18n_dictionary import translate as dict_translate
+    from i18n_dictionary import translate_lang_list as dict_translate_lang_list
+except Exception:
+    dict_translate = None
+    dict_translate_lang_list = None
+
 
 LANG_DEFAULT = "en"
 SUPPORTED_LANGUAGES = ["en", "ja", "th"]
@@ -347,6 +354,34 @@ def english_shadow_text_i18n(value: Any) -> Dict[str, str]:
 
 def english_shadow_list_i18n(items: List[str]) -> Dict[str, List[str]]:
     return finalize_list_i18n(list(items), {"en": list(items)})
+
+
+def dictionary_text_i18n(value: Any, category: str | None = None) -> Dict[str, str]:
+    base_text = str(value or "").strip()
+    if not base_text:
+        return {"en": "", "ja": "", "th": ""}
+
+    if dict_translate is not None:
+        try:
+            return finalize_text_i18n(base_text, dict_translate(base_text, category=category))
+        except Exception:
+            pass
+
+    return english_shadow_text_i18n(base_text)
+
+
+def dictionary_list_i18n(items: List[str], category: str | None = None) -> Dict[str, List[str]]:
+    cleaned = [str(x).strip() for x in items if str(x).strip()]
+    if not cleaned:
+        return {"en": [], "ja": [], "th": []}
+
+    if dict_translate_lang_list is not None:
+        try:
+            return dict_translate_lang_list(cleaned, category=category)
+        except Exception:
+            pass
+
+    return english_shadow_list_i18n(cleaned)
 
 
 def pick_i18n_text(data: Dict[str, Any], base_key: str) -> str:
@@ -820,12 +855,12 @@ def normalize_news_article(item: Dict[str, Any], sentiment_index: Dict[str, Dict
         "url": url,
         "image": first_non_empty(item.get("urlToImage"), item.get("image"), item.get("thumbnail"), item.get("image_url")) or "",
         "source": source_text,
-        "source_i18n": english_shadow_text_i18n(source_text),
+        "source_i18n": dictionary_text_i18n(source_text),
         "publishedAt": first_non_empty(item.get("publishedAt"), item.get("published_at"), item.get("date"), item.get("datetime")) or "",
         "category": category_text,
-        "category_i18n": english_shadow_text_i18n(category_text),
+        "category_i18n": dictionary_text_i18n(category_text),
         "label": label_text,
-        "label_i18n": english_shadow_text_i18n(label_text),
+        "label_i18n": dictionary_text_i18n(label_text, category="sentiment_labels"),
         "risk": pick_number(sentiment.get("risk")) or 0.0,
         "score": pick_number(sentiment.get("score")) or 0.0,
         "positive": pick_number(sentiment.get("positive")) or 0.0,
@@ -908,10 +943,10 @@ def build_payload(
         "lang_default": LANG_DEFAULT,
         "languages": SUPPORTED_LANGUAGES,
         "summary": summary_value,
-        "summary_i18n": english_shadow_text_i18n(summary_value),
+        "summary_i18n": dictionary_text_i18n(summary_value),
         "summary_available": bool(summary_text),
         "highlights": highlights,
-        "highlights_i18n": english_shadow_list_i18n(highlights),
+        "highlights_i18n": dictionary_list_i18n(highlights, category="ui_terms"),
         "articles": article_titles,
         "articles_i18n": english_shadow_list_i18n(article_titles),
         "cards": digest_cards,

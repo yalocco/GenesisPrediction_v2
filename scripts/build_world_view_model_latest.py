@@ -21,6 +21,13 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+try:
+    from i18n_dictionary import translate as dict_translate
+    from i18n_dictionary import translate_lang_list as dict_translate_lang_list
+except Exception:
+    dict_translate = None
+    dict_translate_lang_list = None
+
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_WORLD = ROOT / "data" / "world_politics"
@@ -103,6 +110,34 @@ def _as_str(x: Any) -> str:
     return "" if x is None else str(x)
 
 
+def _dict_text_i18n(base_text: str, category: str | None = None) -> dict[str, str]:
+    text = _as_str(base_text).strip()
+    if not text:
+        return {"en": "", "ja": "", "th": ""}
+
+    if dict_translate is not None:
+        try:
+            return _finalize_text_i18n(text, dict_translate(text, category=category))
+        except Exception:
+            pass
+
+    return _finalize_text_i18n(text)
+
+
+def _dict_list_i18n(base_list: list[str], category: str | None = None) -> dict[str, list[str]]:
+    items = [_as_str(x).strip() for x in base_list if _as_str(x).strip()]
+    if not items:
+        return {"en": [], "ja": [], "th": []}
+
+    if dict_translate_lang_list is not None:
+        try:
+            return dict_translate_lang_list(items, category=category)
+        except Exception:
+            pass
+
+    return _finalize_list_i18n(items)
+
+
 def _finalize_text_i18n(base_text: str, partial: dict[str, str] | None = None) -> dict[str, str]:
     partial = partial or {}
     en_text = str(partial.get("en") or base_text or "").strip()
@@ -133,9 +168,9 @@ def _parse_source_name(value: Any) -> str:
     return _as_str(value)
 
 
-def _wrap_article_text_i18n(text: Any) -> dict[str, str]:
+def _wrap_article_text_i18n(text: Any, category: str | None = None) -> dict[str, str]:
     base = _as_str(text).strip()
-    return _finalize_text_i18n(base)
+    return _dict_text_i18n(base, category=category)
 
 
 def _extract_articles_from_daily(daily_doc: Any) -> list[dict]:
@@ -197,7 +232,7 @@ def _extract_articles_from_daily(daily_doc: Any) -> list[dict]:
                 "summary": summary_text,
                 "summary_i18n": _wrap_article_text_i18n(summary_text),
                 "source": source_text,
-                "source_i18n": _finalize_text_i18n(source_text),
+                "source_i18n": _dict_text_i18n(source_text),
                 "url": _as_str(url),
                 "image": image,
                 "published_at": _as_str(published_at),
@@ -380,8 +415,8 @@ def main() -> int:
     economic_signals, geopolitical_signals = _build_signal_lists(cards, summary_doc)
     daily_summary_text = _collect_summary_text(summary_doc)
 
-    section_title_i18n = TEXT_I18N["section_title"]["world_politics"]
-    global_risk_i18n = TEXT_I18N["global_risk"].get(global_risk, _finalize_text_i18n(global_risk))
+    section_title_i18n = _finalize_text_i18n("World Politics", TEXT_I18N["section_title"]["world_politics"])
+    global_risk_i18n = _dict_text_i18n(global_risk, category="risk_levels")
 
     vm = {
         "version": "v2",
@@ -392,14 +427,14 @@ def main() -> int:
         "global_risk": global_risk,
         "global_risk_i18n": global_risk_i18n,
         "daily_summary": daily_summary_text,
-        "daily_summary_i18n": _finalize_text_i18n(daily_summary_text),
+        "daily_summary_i18n": _dict_text_i18n(daily_summary_text),
         "events_count": len(cards),
         "sentiment": sentiment_block,
         "health": health_block,
         "economic_signals": economic_signals,
-        "economic_signals_i18n": _finalize_list_i18n(economic_signals, TEXT_I18N["signal_label"]),
+        "economic_signals_i18n": _dict_list_i18n(economic_signals, category="economic_signals"),
         "geopolitical_signals": geopolitical_signals,
-        "geopolitical_signals_i18n": _finalize_list_i18n(geopolitical_signals, TEXT_I18N["signal_label"]),
+        "geopolitical_signals_i18n": _dict_list_i18n(geopolitical_signals, category="geopolitical_signals"),
         "sections": [
             {
                 "id": "world_politics",
