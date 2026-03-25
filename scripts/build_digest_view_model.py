@@ -402,7 +402,7 @@ def translate_digest_summary_text(value: Any) -> Dict[str, str]:
     ja_text = base_text
     th_text = base_text
 
-    replacements = [
+    structured_replacements = [
         (r"\bObserved\s+(\d+)\s+events\.", r"\1件のイベントを観測。", r"ตรวจพบเหตุการณ์ \1 รายการ."),
         (r"\bDominant anchors:\s*", "主要アンカー: ", "ประเด็นหลัก: "),
         (r"\bRepresentative headlines:\s*", "代表的ヘッドライン: ", "พาดหัวตัวแทน: "),
@@ -410,9 +410,36 @@ def translate_digest_summary_text(value: Any) -> Dict[str, str]:
         (r"\bNo new URLs detected\.", "新規URLは検出されず。", "ไม่พบ URL ใหม่."),
     ]
 
-    for pattern, ja_repl, th_repl in replacements:
+    phrase_replacements = [
+        (r"\bmarkets reacted to\b", "市場は〜に反応し", "ตลาดตอบสนองต่อ"),
+        (r"\battention focused on\b", "注目は〜に集中し", "ความสนใจมุ่งไปที่"),
+        (r"\bpressure increased around\b", "〜を巡る圧力が強まり", "แรงกดดันเพิ่มขึ้นรอบ"),
+        (r"\brisk remains elevated\b", "リスクは高止まりで", "ความเสี่ยงยังอยู่ในระดับสูง"),
+        (r"\brisk remained elevated\b", "リスクは高止まりで", "ความเสี่ยงยังอยู่ในระดับสูง"),
+        (r"\bsentiment stayed mixed\b", "センチメントは混合のままで", "ภาวะอารมณ์ตลาดยังคงผสม"),
+        (r"\bsentiment remained mixed\b", "センチメントは混合のままで", "ภาวะอารมณ์ตลาดยังคงผสม"),
+        (r"\buncertainty remains high\b", "不確実性は高いままで", "ความไม่แน่นอนยังอยู่ในระดับสูง"),
+        (r"\buncertainty remained high\b", "不確実性は高いままで", "ความไม่แน่นอนยังอยู่ในระดับสูง"),
+        (r"\bvolatility stayed elevated\b", "ボラティリティは高止まりし", "ความผันผวนยังอยู่ในระดับสูง"),
+        (r"\bvolatility remained elevated\b", "ボラティリティは高止まりし", "ความผันผวนยังอยู่ในระดับสูง"),
+        (r"\bamid\b", "〜の中で", "ท่ามกลาง"),
+        (r"\bwhile\b", "一方で", "ขณะที่"),
+    ]
+
+    for pattern, ja_repl, th_repl in structured_replacements:
         ja_text = re.sub(pattern, ja_repl, ja_text, flags=re.IGNORECASE)
         th_text = re.sub(pattern, th_repl, th_text, flags=re.IGNORECASE)
+
+    for pattern, ja_repl, th_repl in phrase_replacements:
+        ja_text = re.sub(pattern, ja_repl, ja_text, flags=re.IGNORECASE)
+        th_text = re.sub(pattern, th_repl, th_text, flags=re.IGNORECASE)
+
+    ja_text = re.sub(r";\s*", "。", ja_text)
+    th_text = re.sub(r";\s*", " ", th_text)
+
+    ja_text = re.sub(r"\s+,", "、", ja_text)
+    ja_text = re.sub(r"\s{2,}", " ", ja_text).strip()
+    th_text = re.sub(r"\s{2,}", " ", th_text).strip()
 
     return {
         "en": base_text,
