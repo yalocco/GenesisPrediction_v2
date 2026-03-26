@@ -63,3 +63,6 @@ docker-compose.override.yml
 
 # Cache directories
 .cache/
+
+archive/
+temp_audit/
