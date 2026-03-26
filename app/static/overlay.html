@@ -14,14 +14,14 @@
       <div class="gp-page overlay-page">
         <section class="panel overlay-shell">
           <div class="overlay-hero">
-            <div class="h1" id="overlayTitle">Overlay</div>
-            <p class="sub" id="overlaySubtitle">
+            <div class="h1" id="overlayTitle" data-i18n="overlay.overlay_title">Overlay</div>
+            <p class="sub" id="overlaySubtitle" data-i18n="overlay.overlay_subtitle">
              Overlay is a layer that connects global events with market movements. It visualizes how observed developments manifest as FX, economic conditions, and risk. The focus here is not on causes, but on the resulting shape of the market.
             </p>
 
             <div class="card overlay-card-top">
               <div class="sectionTitle">
-                <h2 id="globalStatusTitle">Global Status</h2>
+                <h2 id="globalStatusTitle" data-i18n="overlay.global_status">Global Status</h2>
                 <span class="hint">analysis/global_status_latest.json</span>
               </div>
               <div data-global-status data-page="overlay"></div>
@@ -30,7 +30,7 @@
             <div class="fx-decision-banner">
               <div class="fx-decision-top">
                 <div>
-                  <div class="fx-decision-title" id="fxDecisionTitle">FX Decision</div>
+                  <div class="fx-decision-title" id="fxDecisionTitle" data-i18n="overlay.fx_decision">FX Decision</div>
                   <div class="hint" id="fxDecisionAsOf">as_of: --</div>
                 </div>
                 <div id="fxDecisionBadge" class="fx-decision-badge neutral">--</div>
@@ -40,15 +40,15 @@
 
             <div class="overlay-kpis">
               <div class="overlay-kpi">
-                <div class="hint" id="decisionKpiLabel">Decision</div>
+                <div class="hint" id="decisionKpiLabel" data-i18n="overlay.decision">Decision</div>
                 <div id="decisionKpi" class="value">—</div>
               </div>
               <div class="overlay-kpi">
-                <div class="hint" id="imageKpiLabel">Image</div>
+                <div class="hint" id="imageKpiLabel" data-i18n="overlay.image">Image</div>
                 <div id="imageStateKpi" class="value">—</div>
               </div>
               <div class="overlay-kpi">
-                <div class="hint" id="jsonKpiLabel">Decision JSON</div>
+                <div class="hint" id="jsonKpiLabel" data-i18n="overlay.decision_json">Decision JSON</div>
                 <div id="jsonStateKpi" class="value">—</div>
               </div>
             </div>
@@ -62,10 +62,10 @@
 
           <div class="grid2 overlay-card-top">
             <div class="card overlay-card">
-              <div class="sectionTitle"><h2 id="controlsTitle">Controls</h2></div>
+              <div class="sectionTitle"><h2 id="controlsTitle" data-i18n="overlay.controls">Controls</h2></div>
               <div class="controls-row">
                 <div class="controls-field">
-                  <div class="hint controls-label" id="pairLabelText">Pair</div>
+                  <div class="hint controls-label" id="pairLabelText" data-i18n="overlay.pair">Pair</div>
                   <select id="pair" class="select select-wide">
                     <option value="JPYTHB">JPYTHB</option>
                     <option value="USDJPY">USDJPY</option>
@@ -74,17 +74,17 @@
                   </select>
                 </div>
                 <div class="pillrow">
-                  <a id="btnOpenDecision" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open decision JSON</a>
+                  <a id="btnOpenDecision" class="btn" href="#" target="_blank" rel="noopener noreferrer" data-i18n="overlay.open_decision_json">Open decision JSON</a>
                 </div>
               </div>
 
               <div class="overlay-meta">
                 <div>
-                  <div class="hint" id="decisionKpiLabel">Decision</div>
+                  <div class="hint" id="decisionLabel" data-i18n="overlay.decision">Decision</div>
                   <div id="decision" class="mono">—</div>
                 </div>
                 <div>
-                  <div class="hint" id="reasonLabel">Reason</div>
+                  <div class="hint" id="reasonLabel" data-i18n="overlay.reason">Reason</div>
                   <div id="reason" class="mono small">—</div>
                 </div>
               </div>
@@ -97,9 +97,9 @@
             </div>
 
             <div class="card overlay-card">
-              <div class="sectionTitle"><h2 id="fxOverlayTitle">FX Overlay</h2><span class="hint" id="imagePreviewHint">image preview</span></div>
+              <div class="sectionTitle"><h2 id="fxOverlayTitle" data-i18n="overlay.fx_overlay">FX Overlay</h2><span class="hint" id="imagePreviewHint" data-i18n="overlay.image_preview">image preview</span></div>
               <div class="pillrow overlay-pills">
-                <a id="btnOpenImage" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open image</a>
+                <a id="btnOpenImage" class="btn" href="#" target="_blank" rel="noopener noreferrer" data-i18n="overlay.open_image">Open image</a>
                 <span id="srcImage" class="pill">source: --</span>
               </div>
               <div class="overlay-img-frame">
@@ -109,17 +109,17 @@
           </div>
 
           <div class="card signals-wrap">
-            <div class="sectionTitle"><h2 id="economicSignalsTitle">Economic Signals</h2><span id="signalsHint" class="hint">world/economy article cards</span></div>
+            <div class="sectionTitle"><h2 id="economicSignalsTitle" data-i18n="overlay.economic_signals">Economic Signals</h2><span id="signalsHint" class="hint" data-i18n="overlay.signals_hint">world/economy article cards</span></div>
             <div class="signals-toolbar">
               <div class="pillrow">
                 <span id="signalsCount" class="pill">signals: --</span>
                 <span id="signalsSource" class="pill">source: --</span>
               </div>
               <div class="pillrow">
-                <a id="btnOpenSignalsJson" class="btn" href="#" target="_blank" rel="noopener noreferrer">Open source JSON</a>
+                <a id="btnOpenSignalsJson" class="btn" href="#" target="_blank" rel="noopener noreferrer" data-i18n="overlay.open_source_json">Open source JSON</a>
               </div>
             </div>
-            <div id="signalsEmpty" class="signals-empty">Economic signal articles are not available. world_view_model_latest.json を確認してください。</div>
+            <div id="signalsEmpty" class="signals-empty" data-i18n="overlay.signals_empty">Economic signal articles are not available. world_view_model_latest.json を確認してください。</div>
             <div id="signalsGrid" class="signals-grid"></div>
           </div>
         </section>
@@ -142,140 +142,13 @@
       const LANG_CHANGED_EVENT =
         manager && manager.LANG_CHANGED_EVENT ? manager.LANG_CHANGED_EVENT : "gp:lang-changed";
 
-      const UI_TEXT = {
-        en: {
-          overlay_title: "Overlay",
-          overlay_subtitle: "Overlay is a layer that connects global events with market movements. It visualizes how observed developments manifest as FX, economic conditions, and risk. The focus here is not on causes, but on the resulting shape of the market.",
-          global_status: "Global Status",
-          fx_decision: "FX Decision",
-          decision: "Decision",
-          image: "Image",
-          decision_json: "Decision JSON",
-          controls: "Controls",
-          pair: "Pair",
-          reason: "Reason",
-          fx_overlay: "FX Overlay",
-          image_preview: "image preview",
-          economic_signals: "Economic Signals",
-          signals_hint: "world/economy article cards",
-          signals_empty: "Economic signal articles are not available. Please check world_view_model_latest.json.",
-          open_decision_json: "Open decision JSON",
-          open_image: "Open image",
-          open_source_json: "Open source JSON",
-          as_of: "as_of",
-          pair_prefix: "pair",
-          source_prefix: "source",
-          signals_prefix: "signals",
-          loading: "loading...",
-          missing: "missing",
-          partial: "partial",
-          ok: "OK",
-          miss: "MISS",
-          decision_json_not_loaded: "Decision JSON not loaded yet.",
-          decision_json_not_available: "Decision JSON not available.",
-          decision_json_loaded_no_reason: "Decision JSON loaded, but no reason field was found.",
-          decision_json_not_found: "Decision JSON not found.",
-          loading_pair_status: "Loading pair status...",
-          analysis_first: "analysis-first",
-          files_missing: "files missing",
-          score: "score",
-          untitled: "Untitled",
-          summary_not_available: "Summary not available.",
-          unknown_source: "Unknown source",
-          note_jpythb: "JPYTHB prefers the formal published overlay and pair decision under analysis/. Legacy files are fallback only.",
-          note_usdjpy: "USDJPY prefers the formal published overlay and pair decision under analysis/. Global decision is fallback only.",
-          note_usdthb: "USDTHB now prefers the served pair-specific latest overlay under analysis/fx. Multi overlay and common decision JSON are fallback only.",
-          note_multi: "Multi overlay uses the shared aggregate image from the FX lane. Pair-specific decision may not exist."
-        },
-        ja: {
-          overlay_title: "オーバーレイ",
-          overlay_subtitle: "Overlay は世界の出来事と市場の動きを結びつけるレイヤです。観測された変化が FX、経済状況、リスクとしてどのように現れているかを可視化します。ここで重視するのは原因そのものではなく、市場に現れた結果の形です。",
-          global_status: "グローバルステータス",
-          fx_decision: "FX判断",
-          decision: "判断",
-          image: "画像",
-          decision_json: "判断JSON",
-          controls: "操作",
-          pair: "通貨ペア",
-          reason: "理由",
-          fx_overlay: "FXオーバーレイ",
-          image_preview: "画像プレビュー",
-          economic_signals: "経済シグナル",
-          signals_hint: "world/economy 記事カード",
-          signals_empty: "経済シグナル記事は利用できません。world_view_model_latest.json を確認してください。",
-          open_decision_json: "判断JSONを開く",
-          open_image: "画像を開く",
-          open_source_json: "ソースJSONを開く",
-          as_of: "時点",
-          pair_prefix: "ペア",
-          source_prefix: "ソース",
-          signals_prefix: "シグナル",
-          loading: "読み込み中...",
-          missing: "欠落",
-          partial: "部分",
-          ok: "OK",
-          miss: "欠落",
-          decision_json_not_loaded: "判断JSONはまだ読み込まれていません。",
-          decision_json_not_available: "判断JSONを利用できません。",
-          decision_json_loaded_no_reason: "判断JSONは読み込まれましたが、理由フィールドが見つかりませんでした。",
-          decision_json_not_found: "判断JSONが見つかりません。",
-          loading_pair_status: "ペア状態を読み込み中...",
-          analysis_first: "analysis優先",
-          files_missing: "ファイル欠落",
-          score: "score",
-          untitled: "無題",
-          summary_not_available: "要約はありません。",
-          unknown_source: "不明ソース",
-          note_jpythb: "JPYTHB は analysis/ 配下の正式公開オーバーレイとペア別判断を優先します。旧ファイルはフォールバックのみです。",
-          note_usdjpy: "USDJPY は analysis/ 配下の正式公開オーバーレイとペア別判断を優先します。全体判断はフォールバックのみです。",
-          note_usdthb: "USDTHB は analysis/fx のペア別 latest オーバーレイを優先します。multi オーバーレイと共通判断JSONはフォールバックのみです。",
-          note_multi: "Multi overlay は FX レーンの共有集約画像を使います。ペア別判断が存在しないことがあります。"
-        },
-        th: {
-          overlay_title: "โอเวอร์เลย์",
-          overlay_subtitle: "Overlay คือชั้นที่เชื่อมเหตุการณ์โลกเข้ากับการเคลื่อนไหวของตลาด โดยแสดงให้เห็นว่าพัฒนาการที่สังเกตได้ปรากฏออกมาเป็น FX ภาวะเศรษฐกิจ และความเสี่ยงอย่างไร จุดสำคัญของหน้านี้ไม่ใช่สาเหตุ แต่คือรูปทรงของตลาดที่เกิดขึ้นเป็นผลลัพธ์",
-          global_status: "สถานะรวม",
-          fx_decision: "การตัดสินใจ FX",
-          decision: "การตัดสินใจ",
-          image: "ภาพ",
-          decision_json: "JSON การตัดสินใจ",
-          controls: "ตัวควบคุม",
-          pair: "คู่เงิน",
-          reason: "เหตุผล",
-          fx_overlay: "FX Overlay",
-          image_preview: "ตัวอย่างภาพ",
-          economic_signals: "สัญญาณเศรษฐกิจ",
-          signals_hint: "การ์ดบทความ world/economy",
-          signals_empty: "ไม่มีบทความสัญญาณเศรษฐกิจ โปรดตรวจสอบ world_view_model_latest.json",
-          open_decision_json: "เปิด JSON การตัดสินใจ",
-          open_image: "เปิดภาพ",
-          open_source_json: "เปิด JSON ต้นทาง",
-          as_of: "ณ วันที่",
-          pair_prefix: "คู่",
-          source_prefix: "แหล่งที่มา",
-          signals_prefix: "สัญญาณ",
-          loading: "กำลังโหลด...",
-          missing: "ขาดหาย",
-          partial: "บางส่วน",
-          ok: "OK",
-          miss: "ขาดหาย",
-          decision_json_not_loaded: "ยังไม่ได้โหลด JSON การตัดสินใจ",
-          decision_json_not_available: "ไม่สามารถใช้ JSON การตัดสินใจได้",
-          decision_json_loaded_no_reason: "โหลด JSON การตัดสินใจแล้ว แต่ไม่พบฟิลด์เหตุผล",
-          decision_json_not_found: "ไม่พบ JSON การตัดสินใจ",
-          loading_pair_status: "กำลังโหลดสถานะคู่...",
-          analysis_first: "ใช้ analysis ก่อน",
-          files_missing: "ไฟล์ขาดหาย",
-          score: "score",
-          untitled: "ไม่มีชื่อ",
-          summary_not_available: "ไม่มีสรุป",
-          unknown_source: "ไม่ทราบแหล่งที่มา",
-          note_jpythb: "JPYTHB ใช้ overlay ที่เผยแพร่อย่างเป็นทางการและการตัดสินใจรายคู่ภายใต้ analysis/ เป็นหลัก ไฟล์เก่าใช้เป็น fallback เท่านั้น",
-          note_usdjpy: "USDJPY ใช้ overlay ที่เผยแพร่อย่างเป็นทางการและการตัดสินใจรายคู่ภายใต้ analysis/ เป็นหลัก การตัดสินใจรวมใช้เป็น fallback เท่านั้น",
-          note_usdthb: "USDTHB ใช้ overlay latest รายคู่ภายใต้ analysis/fx เป็นหลัก ส่วน multi overlay และ JSON การตัดสินใจรวมใช้เป็น fallback เท่านั้น",
-          note_multi: "Multi overlay ใช้ภาพรวมที่แชร์จาก FX lane และอาจไม่มีการตัดสินใจรายคู่"
+      function i18nText(key, fallback) {
+        if (window.GP_I18N && typeof window.GP_I18N.t === "function") {
+          const v = window.GP_I18N.t(key);
+          if (v && v !== key) return v;
         }
-      };
+        return fallback || key;
+      }
 
       function currentLang() {
         const raw = manager && typeof manager.getLang === "function"
@@ -284,53 +157,30 @@
         return ["en", "ja", "th"].includes(String(raw).toLowerCase()) ? String(raw).toLowerCase() : "en";
       }
 
-      function tr(key) {
+      function pickI18n(map, fallback) {
+        if (!map || typeof map !== "object") return safeText(fallback, "");
         const lang = currentLang();
-        return (UI_TEXT[lang] && UI_TEXT[lang][key]) || (UI_TEXT.en && UI_TEXT.en[key]) || key;
+        return safeText(map[lang] || map.en || map.ja || map.th || fallback, "");
+      }
+
+      function applyStaticI18n() {
+        document.querySelectorAll("[data-i18n]").forEach((el) => {
+          const key = el.getAttribute("data-i18n");
+          const text = i18nText(key, el.textContent || "");
+          if (text) el.textContent = text;
+        });
       }
 
       function formatLabelValue(labelKey, value) {
-        return tr(labelKey) + ": " + (value || "--");
+        return i18nText("overlay." + labelKey, labelKey) + ": " + (value || "--");
       }
 
       function pairNoteText(pair) {
-        if (pair === "USDJPY") return tr("note_usdjpy");
-        if (pair === "USDTHB") return tr("note_usdthb");
-        if (pair === "MULTI") return tr("note_multi");
-        return tr("note_jpythb");
+        if (pair === "USDJPY") return i18nText("overlay.note_usdjpy", "");
+        if (pair === "USDTHB") return i18nText("overlay.note_usdthb", "");
+        if (pair === "MULTI") return i18nText("overlay.note_multi", "");
+        return i18nText("overlay.note_jpythb", "");
       }
-
-      function applyOverlayStaticI18n() {
-        const map = {
-          overlayTitle: tr("overlay_title"),
-          overlaySubtitle: tr("overlay_subtitle"),
-          globalStatusTitle: tr("global_status"),
-          fxDecisionTitle: tr("fx_decision"),
-          decisionKpiLabel: tr("decision"),
-          imageKpiLabel: tr("image"),
-          jsonKpiLabel: tr("decision_json"),
-          controlsTitle: tr("controls"),
-          pairLabelText: tr("pair"),
-          decisionLabel: tr("decision"),
-          reasonLabel: tr("reason"),
-          fxOverlayTitle: tr("fx_overlay"),
-          imagePreviewHint: tr("image_preview"),
-          economicSignalsTitle: tr("economic_signals"),
-          signalsHint: tr("signals_hint"),
-          signalsEmpty: tr("signals_empty")
-        };
-        Object.keys(map).forEach((id) => {
-          const el = document.getElementById(id);
-          if (el) el.textContent = map[id];
-        });
-        const btnDecision = document.getElementById("btnOpenDecision");
-        if (btnDecision) btnDecision.textContent = tr("open_decision_json");
-        const btnImage = document.getElementById("btnOpenImage");
-        if (btnImage) btnImage.textContent = tr("open_image");
-        const btnSignals = document.getElementById("btnOpenSignalsJson");
-        if (btnSignals) btnSignals.textContent = tr("open_source_json");
-      }
-
 
       const MAP = {
         JPYTHB: {
@@ -348,8 +198,7 @@
             "/data/fx/fx_decision_latest_jpythb.json",
             "/analysis/fx/fx_decision_latest.json",
             "/data/fx/fx_decision_latest.json"
-          ],
-          note: "JPYTHB prefers the formal published overlay and pair decision under analysis/. Legacy files are fallback only."
+          ]
         },
 
         USDJPY: {
@@ -364,8 +213,7 @@
             "/data/fx/fx_decision_latest_usdjpy.json",
             "/analysis/fx/fx_decision_latest.json",
             "/data/fx/fx_decision_latest.json"
-          ],
-          note: "USDJPY prefers the formal published overlay and pair decision under analysis/. Global decision is fallback only."
+          ]
         },
 
         USDTHB: {
@@ -384,8 +232,7 @@
             "/data/fx/fx_decision_latest_usdthb.json",
             "/analysis/fx/fx_decision_latest.json",
             "/data/fx/fx_decision_latest.json"
-          ],
-          note: "USDTHB now prefers the served pair-specific latest overlay under analysis/fx. Multi overlay and common decision JSON are fallback only."
+          ]
         },
 
         MULTI: {
@@ -399,8 +246,7 @@
             "/data/fx/fx_decision_latest_multi.json",
             "/analysis/fx/fx_decision_latest.json",
             "/data/fx/fx_decision_latest.json"
-          ],
-          note: "Multi overlay uses the shared aggregate image from the FX lane. Pair-specific decision may not exist."
+          ]
         }
       };
 
@@ -411,7 +257,6 @@
         "/data/digest/view/view_model_latest.json",
         "/data/digest/view_model_latest.json"
       ];
-
 
       function safeText(value, fallback = "") {
         if (value === null || value === undefined) return fallback;
@@ -508,7 +353,7 @@
         if (!obj || typeof obj !== "object") {
           return {
             decision: "—",
-            reason: tr("decision_json_not_available"),
+            reason: i18nText("overlay.decision_json_not_available", "Decision JSON not available."),
             asOf: "--"
           };
         }
@@ -525,6 +370,10 @@
         ).toUpperCase();
 
         let reason = safeText(
+          pickI18n(obj.reason_i18n, "") ||
+          pickI18n(obj.rationale_i18n, "") ||
+          pickI18n(obj.message_i18n, "") ||
+          pickI18n(obj.note_i18n, "") ||
           obj.reason ||
           obj.rationale ||
           obj.message ||
@@ -532,6 +381,9 @@
           ""
         );
 
+        if (!reason && Array.isArray(obj.fx_reasons_i18n) && obj.fx_reasons_i18n.length) {
+          reason = pickI18n(obj.fx_reasons_i18n[0], "");
+        }
         if (!reason && Array.isArray(obj.fx_reasons) && obj.fx_reasons.length) {
           reason = safeText(obj.fx_reasons[0], "");
         }
@@ -546,7 +398,7 @@
 
         return {
           decision: decision || "—",
-          reason: reason || tr("decision_json_loaded_no_reason"),
+          reason: reason || i18nText("overlay.decision_json_loaded_no_reason", "Decision JSON loaded, but no reason field was found."),
           asOf
         };
       }
@@ -554,9 +406,9 @@
       function normalizeSignalCard(card) {
         const normalized = card || {};
         return {
-          title: safeText(normalized.title || normalized.headline, tr("untitled")),
-          summary: safeText(normalized.summary || normalized.description, tr("summary_not_available")),
-          source: safeText(normalized.source || normalized.publisher, tr("unknown_source")),
+          title: pickI18n(normalized.title_i18n, safeText(normalized.title || normalized.headline, i18nText("overlay.untitled", "Untitled"))),
+          summary: pickI18n(normalized.summary_i18n, safeText(normalized.summary || normalized.description, i18nText("overlay.summary_not_available", "Summary not available."))),
+          source: pickI18n(normalized.source_i18n, safeText(normalized.source || normalized.publisher, i18nText("overlay.unknown_source", "Unknown source"))),
           url: safeText(normalized.url || normalized.link, "#") || "#",
           image: safeText(normalized.image || normalized.urlToImage || normalized.thumbnail, "")
         };
@@ -642,7 +494,7 @@
 
         setText("pairPill", formatLabelValue("pair_prefix", config.pairLabel));
         setText("pairNote", pairNoteText(pair));
-        setText("statePill", tr("loading"));
+        setText("statePill", i18nText("overlay.loading", "loading..."));
         setText("sourcePill", formatLabelValue("source_prefix", "--"));
 
         const imagePicked = await pickFirstImage(config.imgCandidates);
@@ -651,12 +503,12 @@
           setImg("img", imgUrl);
           setHref("btnOpenImage", imgUrl);
           setText("srcImage", formatLabelValue("source_prefix", imagePicked.url));
-          setText("imageStateKpi", tr("ok"));
+          setText("imageStateKpi", i18nText("overlay.ok", "OK"));
         } else {
           setImg("img", "");
           setHref("btnOpenImage", "#");
-          setText("srcImage", formatLabelValue("source_prefix", tr("missing")));
-          setText("imageStateKpi", tr("miss"));
+          setText("srcImage", formatLabelValue("source_prefix", i18nText("overlay.missing", "missing")));
+          setText("imageStateKpi", i18nText("overlay.miss", "MISS"));
         }
 
         const jsonPicked = await pickFirstJson(config.decisionCandidates);
@@ -668,9 +520,9 @@
           setText("decisionKpi", extracted.decision);
           setHref("btnOpenDecision", jsonPicked.url);
           setText("srcDecision", formatLabelValue("source_prefix", jsonPicked.url));
-          setText("jsonStateKpi", tr("ok"));
-          setText("statePill", tr("ok"));
-          setText("sourcePill", config.pairLabel + " " + tr("analysis_first"));
+          setText("jsonStateKpi", i18nText("overlay.ok", "OK"));
+          setText("statePill", i18nText("overlay.ok", "OK"));
+          setText("sourcePill", config.pairLabel + " " + i18nText("overlay.analysis_first", "analysis-first"));
 
           renderFxDecisionBadge(extracted.decision);
           document.getElementById("fxDecisionReason").textContent = extracted.reason;
@@ -679,16 +531,16 @@
           }
         } else {
           setText("decision", "—");
-          setText("reason", tr("decision_json_not_found"));
+          setText("reason", i18nText("overlay.decision_json_not_found", "Decision JSON not found."));
           setText("decisionKpi", "—");
           setHref("btnOpenDecision", "#");
-          setText("srcDecision", formatLabelValue("source_prefix", tr("missing")));
-          setText("jsonStateKpi", tr("miss"));
-          setText("statePill", imagePicked ? tr("partial") : tr("missing"));
-          setText("sourcePill", config.pairLabel + " " + tr("files_missing"));
+          setText("srcDecision", formatLabelValue("source_prefix", i18nText("overlay.missing", "missing")));
+          setText("jsonStateKpi", i18nText("overlay.miss", "MISS"));
+          setText("statePill", imagePicked ? i18nText("overlay.partial", "partial") : i18nText("overlay.missing", "missing"));
+          setText("sourcePill", config.pairLabel + " " + i18nText("overlay.files_missing", "files missing"));
 
           renderFxDecisionBadge("--");
-          document.getElementById("fxDecisionReason").textContent = tr("decision_json_not_found");
+          document.getElementById("fxDecisionReason").textContent = i18nText("overlay.decision_json_not_found", "Decision JSON not found.");
         }
       }
 
@@ -700,14 +552,14 @@
       }
 
       window.addEventListener(LANG_CHANGED_EVENT, function () {
-        applyOverlayStaticI18n();
+        applyStaticI18n();
         loadGlobalStatusSummary();
         const currentPair = select ? select.value : "JPYTHB";
         loadPair(currentPair);
         loadSignals();
       });
 
-      applyOverlayStaticI18n();
+      applyStaticI18n();
       loadGlobalStatusSummary();
       loadPair("JPYTHB");
       loadSignals();
