@@ -695,6 +695,116 @@ System = 構造維持
 * 開発の再現性確保
 * 長期運用安定性の向上
 
+
+## Decision: Global i18n Architecture Unification (Prediction-based)
+
+対象
+
+```text
+app/static/*.html
+scripts/build_*_view_model.py
+analysis/*_latest.json
+````
+
+背景
+
+各ページで多言語対応の状態が不統一であった。
+
+```text
+- Prediction は *_i18n を完全使用
+- Digest は部分対応
+- その他ページは英語直読みが残存
+```
+
+この状態では
+
+* UIごとに挙動が異なる
+* 言語切替の一貫性が崩れる
+* 将来の保守が困難になる
+
+問題
+
+多言語処理の責務が曖昧であり、
+
+```text
+UI側で翻訳・fallback・補完が発生するリスク
+```
+
+があった。
+
+結論
+
+GenesisPrediction では
+
+```text
+i18nはanalysis層で完全生成する
+UIは*_i18nを参照するのみ
+```
+
+とする。
+
+基準実装
+
+```text
+prediction.html
+```
+
+を唯一の正解とし、全ページをこれに統一する。
+
+固定ルール
+
+```text
+UIはpickI18n / pickI18nListのみ使用
+英語フィールド直接参照禁止
+UIで翻訳禁止
+UIでfallbackロジック禁止
+```
+
+Digest 特例
+
+```text
+summaryは自由文のため
+analysis側で圧縮構造化したsummary_i18nを生成する
+UIはそのまま表示する
+```
+
+適用対象
+
+```text
+index.html
+sentiment.html
+overlay.html
+digest.html
+prediction_history.html
+```
+
+適用順
+
+```text
+1. index
+2. sentiment
+3. overlay
+4. digest（完了）
+5. prediction_history
+```
+
+意図
+
+* 言語処理の完全一元化
+* UI純化（display only）
+* 再現性確保
+* 保守性向上
+
+最終状態
+
+```text
+analysis = 言語生成
+UI = 表示のみ
+language = 共通管理
+```
+
+UIはあらゆる状況で言語を生成・加工してはならない
+
 END OF DOCUMENT
 
 ```

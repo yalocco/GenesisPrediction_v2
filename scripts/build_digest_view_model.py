@@ -993,9 +993,9 @@ def normalize_news_article(item: Dict[str, Any], sentiment_index: Dict[str, Dict
 
     article = {
         "title": title,
-        "title_i18n": english_shadow_text_i18n(title),
+        "title_i18n": dictionary_text_i18n(title),
         "summary": summary_text,
-        "summary_i18n": english_shadow_text_i18n(summary_text),
+        "summary_i18n": dictionary_text_i18n(summary_text),
         "url": url,
         "image": first_non_empty(item.get("urlToImage"), item.get("image"), item.get("thumbnail"), item.get("image_url")) or "",
         "source": source_text,
@@ -1093,7 +1093,7 @@ def build_payload(
         "highlights": highlights,
         "highlights_i18n": dictionary_list_i18n(highlights, category="ui_terms"),
         "articles": article_titles,
-        "articles_i18n": english_shadow_list_i18n(article_titles),
+        "articles_i18n": dictionary_list_i18n(article_titles),
         "cards": digest_cards,
         "meta": {
             "n_events": n_events,

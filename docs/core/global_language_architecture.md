@@ -488,3 +488,79 @@ END OF DOCUMENT
 ✔ ルール完全準拠  
 
 ---
+
+
+---
+
+# 15. Cross-Page i18n Rollout Standard
+
+## 15.1 Reference Page
+
+Prediction を基準実装とする。
+
+理由:
+
+- *_i18n を analysis 側で生成している
+- UI は pickI18n / pickI18nList により参照のみ行う
+- UI で翻訳・補完・再計算を行っていない
+
+この構造を他ページへ横展開する。
+
+---
+
+## 15.2 Rollout Target Pages
+
+Prediction は原則固定とし、以下ページへ順次適用する。
+
+```text
+index.html
+sentiment.html
+overlay.html
+digest.html
+prediction_history.html
+```
+
+digest.html は今回の Digest Summary 圧縮対応を含め、完了済みページとして扱う。
+
+---
+
+## 15.3 Rollout Rule
+
+全ページで次を満たすこと。
+
+```text
+UI は *_i18n を優先参照する
+UI は pickI18n / pickI18nList 経由のみで表示する
+翻訳生成は analysis 側で行う
+英語 field 直読みを禁止する
+```
+
+---
+
+## 15.4 Digest Special Rule
+
+Digest は Prediction と異なり summary が自由文であるため、
+全文翻訳ではなく analysis 側で構造化圧縮した summary_i18n を生成してよい。
+
+例:
+
+```text
+件数
+主要アンカー
+代表ヘッドライン数
+新規 URL 数
+```
+
+Digest の Summary は UI で翻訳しない。
+
+---
+
+## 15.5 Final Goal
+
+最終的に全ページを Prediction と同じ言語責務に統一する。
+
+```text
+analysis = i18n 生成
+UI = i18n 表示
+language state = 共通管理
+```

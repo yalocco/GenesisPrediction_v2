@@ -324,3 +324,68 @@ UIは表示専用とする。
 計算・判定・日付決定はすべて scripts / analysis 側で行う。
 
 ```
+
+
+---
+
+## i18n Cross-Page Enforcement
+
+Prediction を基準実装とし、他ページへ以下ルールを適用する。
+
+```text
+UI は pickI18n / pickI18nList 経由のみ
+*_i18n 優先
+英語直読み禁止
+ページ別翻訳ロジック禁止
+```
+
+---
+
+## Digest Special Handling Rule
+
+Digest Summary は自由文であるため、
+UI 側で自然文翻訳を試みてはならない。
+
+許可されるのは analysis 側で生成された以下のみ。
+
+```text
+summary_i18n
+highlights_i18n
+cards[].title_i18n
+cards[].summary_i18n
+cards[].source_i18n
+cards[].label_i18n
+cards[].category_i18n
+```
+
+必要に応じて Summary は analysis 側で圧縮構造化してよい。
+
+---
+
+## Rollout Order Rule
+
+横展開順は以下とする。
+
+```text
+1. index.html
+2. sentiment.html
+3. overlay.html
+4. digest.html（完了）
+5. prediction_history.html
+```
+
+Prediction は基準実装のため原則触らない。
+
+---
+
+## Delivery Rule for Long Files
+
+長文ファイルは必ずダウンロード形式で渡す。
+
+```text
+インライン完全ファイル禁止
+途中欠落禁止
+元ファイル未確認生成禁止
+```
+
+本ルールは md ファイル更新時にも適用する。

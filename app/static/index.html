@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Home - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260318-home-compact-1" />
-  <link rel="stylesheet" href="/static/index.css?v=20260318-home-compact-1" />
+  <link rel="stylesheet" href="/static/app.css?v=20260326-home-i18n-rollout-1" />
+  <link rel="stylesheet" href="/static/index.css?v=20260326-home-i18n-rollout-1" />
 </head>
 <body>
   <div id="site-header"></div>
@@ -15,14 +15,14 @@
       <div class="gp-page">
         <section class="panel">
           <div class="home-hero">
-            <div class="h1" data-i18n="home.title">Home</div>
-            <p class="sub" data-i18n="home.subtitle">
-             GenesisPrediction is an analysis system that observes global events and connects trends, signals, and scenarios to forward-looking predictions. This Home screen presents the current state of the world, which serves as the starting point of the system.
+            <div class="h1" data-ui-text="home.title">Home</div>
+            <p class="sub" data-ui-text="home.subtitle">
+              GenesisPrediction is an analysis system that observes global events and connects trends, signals, and scenarios to forward-looking predictions. This Home screen presents the current state of the world, which serves as the starting point of the system.
             </p>
 
             <div class="status-shell">
               <div class="status-top">
-                <div class="status-title" data-i18n="home.global_status_title">Global Status</div>
+                <div class="status-title" data-ui-text="home.global_status_title">Global Status</div>
                 <div class="pillrow">
                   <span id="pillAsOfLocal" class="pill">as_of: --</span>
                   <span id="pillReadyLocal" class="pill">loading…</span>
@@ -31,31 +31,31 @@
 
               <div class="status-grid">
                 <div class="status-item">
-                  <div class="status-label" data-i18n="home.global_risk_label">Global Risk</div>
+                  <div class="status-label" data-ui-text="home.global_risk_label">Global Risk</div>
                   <div id="gsRisk" class="status-value">—</div>
                   <div id="gsRiskSub" class="status-sub">daily summary / sentiment</div>
                 </div>
 
                 <div class="status-item">
-                  <div class="status-label" data-i18n="home.sentiment_balance_label">Sentiment Balance</div>
+                  <div class="status-label" data-ui-text="home.sentiment_balance_label">Sentiment Balance</div>
                   <div id="gsSentiment" class="status-value">—</div>
                   <div id="gsSentimentSub" class="status-sub">article distribution</div>
                 </div>
 
                 <div class="status-item">
-                  <div class="status-label" data-i18n="home.fx_regime_label">FX Regime</div>
+                  <div class="status-label" data-ui-text="home.fx_regime_label">FX Regime</div>
                   <div id="gsFx" class="status-value">—</div>
                   <div id="gsFxSub" class="status-sub">decision / fallback</div>
                 </div>
 
                 <div class="status-item">
-                  <div class="status-label" data-i18n="home.articles_label">Articles</div>
+                  <div class="status-label" data-ui-text="home.articles_label">Articles</div>
                   <div id="gsArticles" class="status-value">—</div>
                   <div id="gsArticlesSub" class="status-sub">digest latest</div>
                 </div>
 
                 <div class="status-item">
-                  <div class="status-label" data-i18n="home.updated_label">Updated</div>
+                  <div class="status-label" data-ui-text="home.updated_label">Updated</div>
                   <div id="gsUpdated" class="status-value">—</div>
                   <div id="gsUpdatedSub" class="status-sub">latest runtime stamp</div>
                 </div>
@@ -64,19 +64,19 @@
 
             <div class="home-kpis">
               <div class="home-kpi">
-                <div class="hint" data-i18n="home.kpi_events">Events</div>
+                <div class="hint" data-ui-text="home.kpi_events">Events</div>
                 <div id="kpiEvents" class="value">—</div>
               </div>
               <div class="home-kpi">
-                <div class="hint" data-i18n="home.kpi_health_ok">Health OK</div>
+                <div class="hint" data-ui-text="home.kpi_health_ok">Health OK</div>
                 <div id="kpiHealthOk" class="value">—</div>
               </div>
               <div class="home-kpi">
-                <div class="hint" data-i18n="home.kpi_sentiment_items">Sentiment Items</div>
+                <div class="hint" data-ui-text="home.kpi_sentiment_items">Sentiment Items</div>
                 <div id="kpiSentimentItems" class="value">—</div>
               </div>
               <div class="home-kpi">
-                <div class="hint" data-i18n="home.kpi_summary">Summary</div>
+                <div class="hint" data-ui-text="home.kpi_summary">Summary</div>
                 <div id="kpiSummaryState" class="value">—</div>
               </div>
             </div>
@@ -85,7 +85,7 @@
           <div class="grid2 home-grid-section">
             <div class="card">
               <div class="sectionTitle">
-                <h2 data-i18n="home.events_today_title">Events (today)</h2>
+                <h2 data-ui-text="home.events_today_title">Events (today)</h2>
                 <span id="evHint" class="hint">loading…</span>
               </div>
               <div id="evBody" class="mono small home-pre">loading…</div>
@@ -96,12 +96,12 @@
 
             <div class="card">
               <div class="sectionTitle">
-                <h2 data-i18n="home.data_health_title">Data Health</h2>
+                <h2 data-ui-text="home.data_health_title">Data Health</h2>
                 <span id="healthHint" class="hint">loading…</span>
               </div>
               <div id="healthBody" class="mono small home-pre">loading…</div>
               <div class="pillrow home-pillrow-top">
-                <a id="btnOpenHealth" class="btn" href="#" target="_blank" rel="noopener noreferrer" data-i18n="home.open_json">Open JSON</a>
+                <a id="btnOpenHealth" class="btn" href="#" target="_blank" rel="noopener noreferrer" data-ui-text="home.open_json">Open JSON</a>
                 <span id="healthSource" class="pill">source: --</span>
               </div>
             </div>
@@ -110,7 +110,7 @@
           <div class="grid2 home-grid-section">
             <div class="card">
               <div class="sectionTitle">
-                <h2 data-i18n="home.sentiment_title">Sentiment</h2>
+                <h2 data-ui-text="home.sentiment_title">Sentiment</h2>
                 <span id="senHint" class="hint">loading…</span>
               </div>
               <div id="senBody" class="mono small home-pre">loading…</div>
@@ -121,12 +121,12 @@
 
             <div class="card">
               <div class="sectionTitle">
-                <h2 data-i18n="home.daily_summary_title">Daily Summary</h2>
+                <h2 data-ui-text="home.daily_summary_title">Daily Summary</h2>
                 <span id="sumHint" class="hint">loading…</span>
               </div>
               <div id="sumBody" class="mono small home-pre">loading…</div>
               <div class="pillrow home-pillrow-top">
-                <a id="btnOpenSummary" class="btn" href="#" target="_blank" rel="noopener noreferrer" data-i18n="home.open_json">Open JSON</a>
+                <a id="btnOpenSummary" class="btn" href="#" target="_blank" rel="noopener noreferrer" data-ui-text="home.open_json">Open JSON</a>
                 <span id="sumSource" class="pill">source: --</span>
               </div>
             </div>
@@ -138,10 +138,10 @@
 
   <div id="site-footer"></div>
 
-  <script src="/static/common/lang_manager.js?v=20260324-index-i18n-1"></script>
-  <script src="/static/common/i18n.js?v=20260324-index-i18n-1"></script>
-  <script src="/static/common/layout.js?v=20260324-index-i18n-1"></script>
-  <script src="/static/common/global_status.js?v=20260318-home-compact-1"></script>
-  <script src="/static/common/home_page.js?v=20260324-index-i18n-1"></script>
+  <script src="/static/common/lang_manager.js?v=20260326-home-i18n-rollout-1"></script>
+  <script src="/static/common/i18n.js?v=20260326-home-i18n-rollout-1"></script>
+  <script src="/static/common/layout.js?v=20260326-home-i18n-rollout-1"></script>
+  <script src="/static/common/global_status.js?v=20260326-home-i18n-rollout-1"></script>
+  <script src="/static/common/home_page.js?v=20260326-home-i18n-rollout-1"></script>
 </body>
 </html>
