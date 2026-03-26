@@ -390,6 +390,86 @@ def dictionary_list_i18n(items: List[str], category: str | None = None) -> Dict[
     return english_shadow_list_i18n(cleaned)
 
 
+def summarize_digest_headlines(titles: List[str], max_items: int = 3) -> List[str]:
+    out: List[str] = []
+    for title in titles:
+        t = normalize_text(title)
+        if not t:
+            continue
+        out.append(t)
+        if len(out) >= max_items:
+            break
+    return out
+
+
+def build_digest_summary_compact_i18n(
+    summary_text: str,
+    titles: List[str],
+    daily_summary_json: Dict[str, Any],
+) -> Dict[str, str]:
+    base_text = normalize_text(summary_text)
+    if not base_text:
+        return {"en": "", "ja": "", "th": ""}
+
+    n_events = daily_summary_json.get("n_events")
+    if not isinstance(n_events, int):
+        n_events = None
+
+    anchors = [str(x).strip() for x in safe_list(daily_summary_json.get("anchors")) if str(x).strip()]
+    headline_items = summarize_digest_headlines(titles, max_items=3)
+    new_urls = daily_summary_json.get("new_urls")
+    if not isinstance(new_urls, list):
+        new_urls = []
+
+    event_count = n_events if isinstance(n_events, int) and n_events >= 0 else None
+    if event_count is None:
+        m = re.search(r"\bObserved\s+(\d+)\s+events\.", base_text, flags=re.IGNORECASE)
+        if m:
+            try:
+                event_count = int(m.group(1))
+            except Exception:
+                event_count = None
+
+    en_parts: List[str] = []
+    ja_parts: List[str] = []
+    th_parts: List[str] = []
+
+    if event_count is not None:
+        en_parts.append(f"Observed {event_count} events.")
+        ja_parts.append(f"{event_count}件のイベントを観測。")
+        th_parts.append(f"ตรวจพบเหตุการณ์ {event_count} รายการ.")
+
+    if anchors:
+        anchor_text = ", ".join(anchors[:8])
+        en_parts.append(f"Dominant anchors: {anchor_text}.")
+        ja_parts.append(f"主要アンカー: {anchor_text}。")
+        th_parts.append(f"ประเด็นหลัก: {anchor_text}.")
+
+    if headline_items:
+        headline_text = " | ".join(headline_items)
+        en_parts.append(f"Representative headlines ({len(headline_items)}): {headline_text}.")
+        ja_parts.append(f"代表ヘッドライン: {len(headline_items)}件。")
+        th_parts.append(f"พาดหัวตัวแทน: {len(headline_items)} รายการ.")
+
+    if new_urls:
+        en_parts.append(f"New URLs detected: {len(new_urls)}.")
+        ja_parts.append(f"新規URL検出: {len(new_urls)}。")
+        th_parts.append(f"ตรวจพบ URL ใหม่: {len(new_urls)}.")
+    else:
+        en_parts.append("No new URLs detected.")
+        ja_parts.append("新規URLは検出されず。")
+        th_parts.append("ไม่พบ URL ใหม่.")
+
+    if not en_parts:
+        return translate_digest_summary_text(base_text)
+
+    return {
+        "en": " ".join(en_parts).strip(),
+        "ja": " ".join(ja_parts).strip(),
+        "th": " ".join(th_parts).strip(),
+    }
+
+
 def translate_digest_summary_text(value: Any) -> Dict[str, str]:
     base_text = str(value or "").strip()
     if not base_text:
@@ -999,6 +1079,7 @@ def build_payload(
     article_titles = [card["title"] for card in digest_cards[:12]] if digest_cards else titles[:12]
 
     summary_value = summary_text or ""
+    summary_i18n = build_digest_summary_compact_i18n(summary_value, titles, daily_summary_json)
 
     return {
         "status": "ok",
@@ -1007,7 +1088,7 @@ def build_payload(
         "lang_default": LANG_DEFAULT,
         "languages": SUPPORTED_LANGUAGES,
         "summary": summary_value,
-        "summary_i18n": translate_digest_summary_text(summary_value),
+        "summary_i18n": summary_i18n,
         "summary_available": bool(summary_text),
         "highlights": highlights,
         "highlights_i18n": dictionary_list_i18n(highlights, category="ui_terms"),
