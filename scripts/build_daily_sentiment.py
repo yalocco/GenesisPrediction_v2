@@ -14,17 +14,19 @@ from __future__ import annotations
 #   positive / negative / neutral / mixed
 #   publishedAt
 #   image
+#   *_i18n fields
 #
 # Usage:
 #   .\.venv\Scripts\python.exe scripts/build_daily_sentiment.py --date 2026-03-13
 
 import argparse
+import importlib.util
 import json
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List
+from typing import Any, Callable, Dict, Iterable, List, Optional
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -132,6 +134,54 @@ def _published_at(it: Dict[str, Any]) -> str:
             "",
         ) or ""
     )
+
+
+def _load_i18n_builder() -> Optional[Callable[[str], Dict[str, str]]]:
+    script_path = ROOT / "scripts" / "build_explanation_multilang.py"
+    if not script_path.exists():
+        return None
+
+    spec = importlib.util.spec_from_file_location("build_explanation_multilang", script_path)
+    if spec is None or spec.loader is None:
+        return None
+
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    candidates = [
+        "build_i18n_block",
+        "make_i18n_block",
+        "to_i18n_block",
+        "build_multilang_block",
+    ]
+    for name in candidates:
+        fn = getattr(module, name, None)
+        if callable(fn):
+            return fn
+    return None
+
+
+_I18N_BUILDER = _load_i18n_builder()
+
+
+def _build_i18n_block(text: str) -> Dict[str, str]:
+    value = _as_str(text).strip()
+    if not value:
+        return {"en": "", "ja": "", "th": ""}
+
+    if _I18N_BUILDER is not None:
+        try:
+            block = _I18N_BUILDER(value)
+            if isinstance(block, dict):
+                return {
+                    "en": _as_str(block.get("en")),
+                    "ja": _as_str(block.get("ja")),
+                    "th": _as_str(block.get("th")),
+                }
+        except Exception:
+            pass
+
+    return {"en": value, "ja": value, "th": value}
 
 
 def score_text(title: str, desc: str) -> Score:
@@ -246,8 +296,11 @@ def main() -> int:
             {
                 "url": url,
                 "title": title,
+                "title_i18n": _build_i18n_block(title),
                 "source": source,
+                "source_i18n": _build_i18n_block(source),
                 "description": desc,
+                "description_i18n": _build_i18n_block(desc),
                 "publishedAt": published_at,
                 "image": image,
                 "risk": round(s.risk, 6),

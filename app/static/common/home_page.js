@@ -65,7 +65,7 @@
       "home.kpi_health_ok": "Health OK",
       "home.kpi_sentiment_items": "センチメント件数",
       "home.kpi_summary": "サマリー",
-      "home.events_today_title": "Events (today)",
+      "home.events_today_title": "今日のイベント",
       "home.data_health_title": "データ健全性",
       "home.sentiment_title": "センチメント",
       "home.daily_summary_title": "デイリーサマリー",
@@ -89,11 +89,11 @@
       "home.fx_sub_fallback": "decision / fallback",
       "home.articles_sub_fallback": "digest latest",
       "home.updated_sub_fallback": "latest runtime stamp",
-      "home.sentiment_positive": "positive",
-      "home.sentiment_negative": "negative",
-      "home.sentiment_neutral": "neutral",
-      "home.sentiment_mixed": "mixed",
-      "home.sentiment_unknown": "unknown"
+      "home.sentiment_positive": "ポジティブ",
+      "home.sentiment_negative": "ネガティブ",
+      "home.sentiment_neutral": "ニュートラル",
+      "home.sentiment_mixed": "混在",
+      "home.sentiment_unknown": "不明"
     },
     th: {
       "home.title": "Home",
@@ -108,7 +108,7 @@
       "home.kpi_health_ok": "Health OK",
       "home.kpi_sentiment_items": "รายการเซนติเมนต์",
       "home.kpi_summary": "สรุป",
-      "home.events_today_title": "Events (today)",
+      "home.events_today_title": "เหตุการณ์วันนี้",
       "home.data_health_title": "สุขภาพข้อมูล",
       "home.sentiment_title": "เซนติเมนต์",
       "home.daily_summary_title": "สรุปรายวัน",
@@ -132,11 +132,11 @@
       "home.fx_sub_fallback": "decision / fallback",
       "home.articles_sub_fallback": "digest latest",
       "home.updated_sub_fallback": "latest runtime stamp",
-      "home.sentiment_positive": "positive",
-      "home.sentiment_negative": "negative",
-      "home.sentiment_neutral": "neutral",
-      "home.sentiment_mixed": "mixed",
-      "home.sentiment_unknown": "unknown"
+      "home.sentiment_positive": "เชิงบวก",
+      "home.sentiment_negative": "เชิงลบ",
+      "home.sentiment_neutral": "เป็นกลาง",
+      "home.sentiment_mixed": "ผสม",
+      "home.sentiment_unknown": "ไม่ทราบ"
     }
   };
 
@@ -295,37 +295,39 @@
   function getSummaryText() {
     const vm = safeObject(state.digestViewModel) || {};
     const summary = safeObject(state.summary) || {};
+    const highlightLines = pickI18nList(vm.highlights_i18n);
 
     return firstNonEmptyText([
       pickI18n(vm.summary_i18n, ""),
-      safeString(vm.summary, ""),
       pickI18n(summary.summary_i18n, ""),
-      safeString(summary.summary, ""),
-      safeString(summary.text, ""),
-      safeString(summary.text_summary, ""),
-      safeString(summary.daily_summary, ""),
-      safeString(summary.yesterday_summary_text, ""),
-      safeString(summary.yesterday_summary, "")
+      highlightLines.length > 0 ? highlightLines.join("\n") : ""
     ], "");
   }
 
   function getEventTitles(limit = 5) {
-    const cards = extractDigestCards(state.digestViewModel);
-    return cards
+    const vm = safeObject(state.digestViewModel) || {};
+    const cards = extractDigestCards(vm);
+    const cardLines = cards
       .slice(0, limit)
       .map((card) => {
         return firstNonEmptyText([
           pickI18n(card && card.title_i18n, ""),
-          safeString(card && card.title, ""),
-          safeString(card && card.headline, "")
+          pickI18n(card && card.summary_i18n, "")
         ], "");
       })
       .filter(Boolean);
+
+    if (cardLines.length > 0) {
+      return cardLines;
+    }
+
+    return pickI18nList(vm.highlights_i18n).slice(0, limit).filter(Boolean);
   }
 
   function getSentimentLines() {
     const sentiment = safeObject(state.sentiment) || {};
     const summary = safeObject(sentiment.summary) || {};
+    const vm = safeObject(state.digestViewModel) || {};
     const lines = [];
     const countLine = [
       ["positive", summary.positive],
@@ -342,31 +344,26 @@
       lines.push(countLine);
     }
 
-    const cards = extractDigestCards(state.digestViewModel);
-    const cardLines = cards.slice(0, 5).map((card) => {
-      return firstNonEmptyText([
-        pickI18n(card && card.title_i18n, ""),
-        safeString(card && card.title, "")
-      ], "");
-    }).filter(Boolean);
-
-    if (cardLines.length > 0) {
-      lines.push(...cardLines);
+    const articleLines = pickI18nList(vm.articles_i18n).slice(0, 5).filter(Boolean);
+    if (articleLines.length > 0) {
+      lines.push(...articleLines);
       return lines;
     }
 
-    const items = safeArray(sentiment.items);
-    items.slice(0, 5).forEach((item) => {
-      const row = safeObject(item) || {};
-      const label = safeString(row.sentiment, "unknown").toLowerCase();
-      const title = firstNonEmptyText([
-        pickI18n(row.title_i18n, ""),
-        safeString(row.title, "")
-      ], "");
-      if (title) {
-        lines.push(`${tr(`home.sentiment_${label}`)}: ${title}`);
-      }
-    });
+    const cards = extractDigestCards(vm);
+    const cardLines = cards
+      .slice(0, 5)
+      .map((card) => {
+        return firstNonEmptyText([
+          pickI18n(card && card.title_i18n, ""),
+          pickI18n(card && card.summary_i18n, "")
+        ], "");
+      })
+      .filter(Boolean);
+
+    if (cardLines.length > 0) {
+      lines.push(...cardLines);
+    }
 
     return lines;
   }
