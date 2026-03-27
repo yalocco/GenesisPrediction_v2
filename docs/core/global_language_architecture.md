@@ -564,3 +564,356 @@ analysis = i18n 生成
 UI = i18n 表示
 language state = 共通管理
 ```
+
+# UI i18n Template (Prediction-Based Standard)
+
+
+# 🧠 GenesisPrediction UI i18n テンプレート仕様書（確定版）
+
+---
+
+# 🎯 目的
+
+UIを以下に完全統一する
+
+* 翻訳ロジック完全排除
+* analysisの `*_i18n` のみ表示
+* 言語変更で全UIが再描画される
+
+---
+
+# 🔥 最重要原則（絶対遵守）
+
+1. UIは表示のみ（翻訳禁止）
+2. 言語判定は共通マネージャーのみ
+3. fallback禁止（UI側で補完しない）
+4. `_i18n` を最優先
+5. 静的・動的を分離
+6. 再描画はイベント駆動
+
+---
+
+# 🏗 全体アーキテクチャ
+
+```text
+analysis (SSOT)
+   ↓
+fetchJson()
+   ↓
+normalize()
+   ↓
+pickI18n()
+   ↓
+render()
+```
+
+---
+
+# 🧩 1. データ取得層
+
+## ルール
+
+* JSONパスは固定
+* UIで分岐しない
+
+```javascript
+const SOURCES = {
+  prediction: "/data/prediction/prediction_latest.json",
+  explanation: "/data/explanation/prediction_explanation_latest.json",
+  history: "/data/prediction/prediction_history_index.json"
+};
+```
+
+---
+
+# 🌐 2. 言語管理層（共通のみ使用）
+
+## 使用
+
+```javascript
+const lang = window.GP_LANG || "en";
+```
+
+または
+
+```javascript
+window.GP_LANG_MANAGER.get()
+```
+
+---
+
+## 禁止
+
+* localStorage直接参照 ❌
+* ページ独自言語変数 ❌
+
+---
+
+# 🏷 3. 静的UI文言層
+
+## HTML
+
+```html
+<h1 data-ui-text="title"></h1>
+```
+
+---
+
+## JS
+
+```javascript
+function applyStaticText(dict) {
+  document.querySelectorAll("[data-ui-text]").forEach(el => {
+    const key = el.dataset.uiText;
+    el.textContent = dict[key] || "";
+  });
+}
+```
+
+---
+
+## データ
+
+```javascript
+const UI_TEXT = {
+  title: {
+    en: "Prediction",
+    ja: "予測",
+    th: "การคาดการณ์"
+  }
+};
+```
+
+---
+
+# 🌍 4. 動的多言語層（核心）
+
+## 必須関数
+
+```javascript
+function pickI18n(obj, lang) {
+  if (!obj) return "";
+  return obj[lang] ?? obj["en"] ?? "";
+}
+```
+
+---
+
+## 配列版
+
+```javascript
+function pickI18nList(list, lang) {
+  if (!Array.isArray(list)) return [];
+  return list.map(item => pickI18n(item, lang));
+}
+```
+
+---
+
+## 使用例
+
+```javascript
+const title = pickI18n(data.title_i18n, lang);
+```
+
+---
+
+## 禁止
+
+```javascript
+if (!ja) translate(en) ❌
+```
+
+---
+
+# 🔄 5. 正規化層（超重要）
+
+## 役割
+
+* JSON構造のばらつきを吸収
+* UI用フォーマットに変換
+
+---
+
+## 例
+
+```javascript
+function normalizePrediction(data, lang) {
+  return {
+    title: pickI18n(data.title_i18n, lang),
+    summary: pickI18n(data.summary_i18n, lang),
+    drivers: pickI18nList(data.drivers_i18n, lang)
+  };
+}
+```
+
+---
+
+## ルール
+
+* normalize内でのみ `_i18n` 使用
+* renderでは使わない
+
+---
+
+# 🎨 6. 描画層
+
+## ルール
+
+* 描画は「表示のみ」
+* ロジック禁止
+* 翻訳禁止
+
+---
+
+## 例
+
+```javascript
+function render(state) {
+  document.getElementById("title").textContent = state.title;
+}
+```
+
+---
+
+# 🔁 7. 再描画（重要）
+
+## 初期
+
+```javascript
+init()
+  → fetch
+  → normalize
+  → render
+```
+
+---
+
+## 言語変更
+
+```javascript
+window.addEventListener("gp:lang-changed", () => {
+  renderFromState();
+});
+```
+
+---
+
+## 禁止
+
+* 再fetch ❌
+* 再normalize ❌
+
+---
+
+# 🧠 8. 状態管理
+
+```javascript
+let STATE = {
+  raw: {},
+  normalized: {}
+};
+```
+
+---
+
+## フロー
+
+```javascript
+STATE.raw = fetchedData;
+STATE.normalized = normalize(fetchedData, lang);
+render(STATE.normalized);
+```
+
+---
+
+# 🔥 9. ページ適用パターン
+
+---
+
+## パターンA（prediction型）
+
+* explanationあり
+* 長文あり
+
+👉 normalize必須
+
+---
+
+## パターンB（history型）
+
+* リスト中心
+
+👉 pickI18n中心
+
+---
+
+## パターンC（軽量）
+
+* index / overlay / sentiment
+
+👉 静的＋簡易pick
+
+---
+
+## パターンD（digest）
+
+* 複合
+
+👉 最後に対応
+
+---
+
+# 🚫 禁止事項まとめ
+
+* UIで翻訳
+* UIでfallback生成
+* JSON直接表示
+* langの個別管理
+* i18nなしデータの補完
+
+---
+
+# 🧪 テスト基準
+
+## 必須確認
+
+* EN/JA/TH 切替で即反映
+* リロード不要
+* 混在なし
+* 英語残りなし
+
+---
+
+# 🎯 完了定義
+
+* 全ページ `_i18n` のみ表示
+* UI翻訳ロジックゼロ
+* 言語変更イベントで完全再描画
+* JSONのみで言語切替成立
+
+---
+
+# 🚀 次スレの目的
+
+👉 この仕様を使って
+
+* overlay
+* sentiment
+* index
+* history
+* 最後に digest
+
+を一気に統一
+
+---
+
+# 👍 最後に
+
+この仕様は
+
+👉 **prediction.html を抽象化したもの**
+
+です
+
+---

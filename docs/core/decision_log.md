@@ -805,6 +805,18 @@ language = 共通管理
 
 UIはあらゆる状況で言語を生成・加工してはならない
 
+
+## 2026-03-27
+### UI i18n Template Standardization
+
+- Adopted prediction-based UI i18n template
+- Integrated into global_language_architecture.md
+- UI must not translate or fallback
+- All dynamic text must use *_i18n
+
+Status: adopted
+
+
 END OF DOCUMENT
 
 ```
