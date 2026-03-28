@@ -9,7 +9,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import requests
+
 SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parent
 LIB_DIR = SCRIPT_DIR / "lib"
 if str(LIB_DIR) not in sys.path:
     sys.path.insert(0, str(LIB_DIR))
@@ -21,9 +24,13 @@ except Exception:
     dict_translate = None
     dict_translate_lang_list = None
 
+from common.llm_translate import TranslationConfig, translate_text_block
+
 
 LANG_DEFAULT = "en"
 SUPPORTED_LANGUAGES = ["en", "ja", "th"]
+
+CACHE_PATH = REPO_ROOT / "data" / "translation_cache_digest.json"
 
 EXCLUDED_CATEGORY_KEYWORDS = {
     "entertainment",
@@ -213,6 +220,188 @@ def normalize_key_text(value: Any) -> str:
     return text
 
 
+def compact_digest_summary_text(value: Any, max_chars: int = 280) -> str:
+    text = normalize_text(value)
+    if not text:
+        return ""
+
+    text = re.sub(r"\bRead More:\s*https?://\S+", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"https?://\S+", "", text)
+    text = re.sub(r"\bThe post\b.+$", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s+", " ", text).strip()
+
+    if len(text) <= max_chars:
+        return text
+
+    cut = text[:max_chars].rstrip()
+    last_break = max(cut.rfind(" "), cut.rfind("。"), cut.rfind("."), cut.rfind("、"))
+    if last_break >= max_chars * 0.6:
+        cut = cut[:last_break].rstrip()
+    return cut + "…"
+
+
+def normalize_lang_map(value: Any) -> Dict[str, str]:
+    if not isinstance(value, dict):
+        return {}
+    out: Dict[str, str] = {}
+    for lang in SUPPORTED_LANGUAGES:
+        text = value.get(lang)
+        if text is None:
+            continue
+        text_str = str(text).strip()
+        if text_str:
+            out[lang] = text_str
+    return out
+
+
+def normalize_lang_list_map(value: Any) -> Dict[str, List[str]]:
+    if not isinstance(value, dict):
+        return {}
+    out: Dict[str, List[str]] = {}
+    for lang in SUPPORTED_LANGUAGES:
+        items = value.get(lang)
+        if not isinstance(items, list):
+            continue
+        out[lang] = [str(x).strip() for x in items if str(x).strip()]
+    return out
+
+
+def finalize_text_i18n(base_text: str, partial: Dict[str, str]) -> Dict[str, str]:
+    en_text = str(partial.get("en") or base_text or "").strip()
+    ja_text = str(partial.get("ja") or en_text).strip()
+    th_text = str(partial.get("th") or en_text).strip()
+    return {
+        "en": en_text,
+        "ja": ja_text,
+        "th": th_text,
+    }
+
+
+def finalize_list_i18n(base_list: List[str], partial: Dict[str, List[str]]) -> Dict[str, List[str]]:
+    en_list = partial.get("en") or list(base_list)
+    ja_list = partial.get("ja") or list(en_list)
+    th_list = partial.get("th") or list(en_list)
+    return {
+        "en": en_list,
+        "ja": ja_list,
+        "th": th_list,
+    }
+
+
+def english_shadow_text_i18n(value: Any) -> Dict[str, str]:
+    base_text = str(value or "").strip()
+    return finalize_text_i18n(base_text, {"en": base_text})
+
+
+def english_shadow_list_i18n(items: List[str]) -> Dict[str, List[str]]:
+    return finalize_list_i18n(list(items), {"en": list(items)})
+
+
+def dictionary_text_i18n(value: Any, category: str | None = None) -> Dict[str, str]:
+    base_text = str(value or "").strip()
+    if not base_text:
+        return {"en": "", "ja": "", "th": ""}
+
+    if dict_translate is not None:
+        try:
+            return finalize_text_i18n(base_text, dict_translate(base_text, category=category))
+        except Exception:
+            pass
+
+    return english_shadow_text_i18n(base_text)
+
+
+def dictionary_list_i18n(items: List[str], category: str | None = None) -> Dict[str, List[str]]:
+    cleaned = [str(x).strip() for x in items if str(x).strip()]
+    if not cleaned:
+        return {"en": [], "ja": [], "th": []}
+
+    if dict_translate_lang_list is not None:
+        try:
+            return dict_translate_lang_list(cleaned, category=category)
+        except Exception:
+            pass
+
+    return english_shadow_list_i18n(cleaned)
+
+
+def _load_cache() -> Dict[str, Dict[str, str]]:
+    if CACHE_PATH.exists():
+        try:
+            data = json.loads(CACHE_PATH.read_text(encoding="utf-8"))
+            return data if isinstance(data, dict) else {}
+        except Exception:
+            return {}
+    return {}
+
+
+def _save_cache(cache: Dict[str, Dict[str, str]]) -> None:
+    ensure_dir(CACHE_PATH.parent)
+    CACHE_PATH.write_text(json.dumps(cache, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _cache_key(prefix: str, text: str) -> str:
+    return f"{prefix}::{normalize_text(text)}"
+
+
+def _llm_text_i18n(
+    value: Any,
+    *,
+    config: TranslationConfig,
+    session: requests.Session,
+    cache: Dict[str, Dict[str, str]],
+    cache_prefix: str,
+) -> Dict[str, str]:
+    base_text = str(value or "").strip()
+    if not base_text:
+        return {"en": "", "ja": "", "th": ""}
+
+    key = _cache_key(cache_prefix, base_text)
+    cached = cache.get(key)
+    if isinstance(cached, dict):
+        return finalize_text_i18n(base_text, cached)
+
+    try:
+        translated = translate_text_block(base_text, config=config, session=session)
+        result = finalize_text_i18n(base_text, translated)
+    except Exception:
+        result = english_shadow_text_i18n(base_text)
+
+    cache[key] = {"ja": result["ja"], "th": result["th"]}
+    return result
+
+
+def _llm_list_i18n(
+    items: List[str],
+    *,
+    config: TranslationConfig,
+    session: requests.Session,
+    cache: Dict[str, Dict[str, str]],
+    cache_prefix: str,
+) -> Dict[str, List[str]]:
+    cleaned = [str(x).strip() for x in items if str(x).strip()]
+    if not cleaned:
+        return {"en": [], "ja": [], "th": []}
+
+    en_list: List[str] = []
+    ja_list: List[str] = []
+    th_list: List[str] = []
+
+    for item in cleaned:
+        text_i18n = _llm_text_i18n(
+            item,
+            config=config,
+            session=session,
+            cache=cache,
+            cache_prefix=cache_prefix,
+        )
+        en_list.append(text_i18n["en"])
+        ja_list.append(text_i18n["ja"])
+        th_list.append(text_i18n["th"])
+
+    return {"en": en_list, "ja": ja_list, "th": th_list}
+
+
 def extract_summary_text(summary_json: Dict[str, Any], daily_summary_json: Dict[str, Any]) -> Optional[str]:
     candidates: List[Any] = [
         summary_json.get("summary"),
@@ -303,91 +492,6 @@ def extract_highlights(summary_json: Dict[str, Any], daily_summary_json: Dict[st
         highlights.extend(titles[:5])
 
     return highlights[:8]
-
-
-def normalize_lang_map(value: Any) -> Dict[str, str]:
-    if not isinstance(value, dict):
-        return {}
-    out: Dict[str, str] = {}
-    for lang in SUPPORTED_LANGUAGES:
-        text = value.get(lang)
-        if text is None:
-            continue
-        text_str = str(text).strip()
-        if text_str:
-            out[lang] = text_str
-    return out
-
-
-def normalize_lang_list_map(value: Any) -> Dict[str, List[str]]:
-    if not isinstance(value, dict):
-        return {}
-    out: Dict[str, List[str]] = {}
-    for lang in SUPPORTED_LANGUAGES:
-        items = value.get(lang)
-        if not isinstance(items, list):
-            continue
-        out[lang] = [str(x).strip() for x in items if str(x).strip()]
-    return out
-
-
-def finalize_text_i18n(base_text: str, partial: Dict[str, str]) -> Dict[str, str]:
-    en_text = str(partial.get("en") or base_text or "").strip()
-    ja_text = str(partial.get("ja") or en_text).strip()
-    th_text = str(partial.get("th") or en_text).strip()
-    return {
-        "en": en_text,
-        "ja": ja_text,
-        "th": th_text,
-    }
-
-
-def finalize_list_i18n(base_list: List[str], partial: Dict[str, List[str]]) -> Dict[str, List[str]]:
-    en_list = partial.get("en") or list(base_list)
-    ja_list = partial.get("ja") or list(en_list)
-    th_list = partial.get("th") or list(en_list)
-    return {
-        "en": en_list,
-        "ja": ja_list,
-        "th": th_list,
-    }
-
-
-def english_shadow_text_i18n(value: Any) -> Dict[str, str]:
-    base_text = str(value or "").strip()
-    return finalize_text_i18n(base_text, {"en": base_text})
-
-
-def english_shadow_list_i18n(items: List[str]) -> Dict[str, List[str]]:
-    return finalize_list_i18n(list(items), {"en": list(items)})
-
-
-def dictionary_text_i18n(value: Any, category: str | None = None) -> Dict[str, str]:
-    base_text = str(value or "").strip()
-    if not base_text:
-        return {"en": "", "ja": "", "th": ""}
-
-    if dict_translate is not None:
-        try:
-            return finalize_text_i18n(base_text, dict_translate(base_text, category=category))
-        except Exception:
-            pass
-
-    return english_shadow_text_i18n(base_text)
-
-
-def dictionary_list_i18n(items: List[str], category: str | None = None) -> Dict[str, List[str]]:
-    cleaned = [str(x).strip() for x in items if str(x).strip()]
-    if not cleaned:
-        return {"en": [], "ja": [], "th": []}
-
-    if dict_translate_lang_list is not None:
-        try:
-            return dict_translate_lang_list(cleaned, category=category)
-        except Exception:
-            pass
-
-    return english_shadow_list_i18n(cleaned)
 
 
 def summarize_digest_headlines(titles: List[str], max_items: int = 3) -> List[str]:
@@ -549,36 +653,10 @@ def pick_i18n_text_map(data: Dict[str, Any], base_key: str) -> Dict[str, str]:
     return finalize_text_i18n(base_text, partial)
 
 
-def pick_i18n_list(data: Dict[str, Any], base_key: str) -> List[str]:
-    partial = normalize_lang_list_map(data.get(f"{base_key}_i18n"))
-    preferred = partial.get(LANG_DEFAULT)
-    if preferred:
-        return preferred
-    en_list = partial.get("en")
-    if en_list:
-        return en_list
-    base_list = normalize_list_items(data.get(base_key))
-    return base_list
-
-
 def pick_i18n_list_map(data: Dict[str, Any], base_key: str) -> Dict[str, List[str]]:
     base_list = normalize_list_items(data.get(base_key))
     partial = normalize_lang_list_map(data.get(f"{base_key}_i18n"))
     return finalize_list_i18n(base_list, partial)
-
-
-def extract_historical_context_items(prediction_json: Dict[str, Any]) -> List[str]:
-    historical_context = prediction_json.get("historical_context")
-    if isinstance(historical_context, dict):
-        summary_i18n = normalize_lang_map(historical_context.get("summary_i18n"))
-        if summary_i18n:
-            preferred = summary_i18n.get(LANG_DEFAULT) or summary_i18n.get("en")
-            if preferred:
-                return [str(preferred).strip()]
-        summary = first_non_empty(historical_context.get("summary"))
-        if summary:
-            return [summary]
-    return normalize_list_items(historical_context)
 
 
 def extract_historical_context_i18n(prediction_json: Dict[str, Any]) -> Dict[str, List[str]]:
@@ -978,7 +1056,14 @@ def compute_relevance(article: Dict[str, Any]) -> float:
     return round(relevance, 6)
 
 
-def normalize_news_article(item: Dict[str, Any], sentiment_index: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+def normalize_news_article(
+    item: Dict[str, Any],
+    sentiment_index: Dict[str, Dict[str, Any]],
+    *,
+    config: TranslationConfig,
+    session: requests.Session,
+    cache: Dict[str, Dict[str, str]],
+) -> Dict[str, Any]:
     title = first_non_empty(item.get("title"), item.get("headline"), item.get("name")) or "Untitled"
     url = first_non_empty(item.get("url"), item.get("link")) or "#"
 
@@ -986,20 +1071,22 @@ def normalize_news_article(item: Dict[str, Any], sentiment_index: Dict[str, Dict
     title_key = normalize_key_text(title)
     sentiment = sentiment_index.get("url", {}).get(url_key) or sentiment_index.get("title", {}).get(title_key) or {}
 
-    summary_text = first_non_empty(item.get("description"), item.get("summary"), item.get("content")) or "Summary not available."
+    summary_raw = first_non_empty(item.get("description"), item.get("summary"), item.get("content")) or "Summary not available."
+    summary_text = compact_digest_summary_text(summary_raw)
     source_text = normalize_source_name(item)
     category_text = normalize_category_text(item)
     label_text = first_non_empty(sentiment.get("label")) or "unknown"
 
     article = {
         "title": title,
-        "title_i18n": dictionary_text_i18n(title),
+        "title_i18n": _llm_text_i18n(title, config=config, session=session, cache=cache, cache_prefix="title"),
         "summary": summary_text,
-        "summary_i18n": dictionary_text_i18n(summary_text),
+        "summary_raw": summary_raw,
+        "summary_i18n": _llm_text_i18n(summary_text, config=config, session=session, cache=cache, cache_prefix="summary"),
         "url": url,
         "image": first_non_empty(item.get("urlToImage"), item.get("image"), item.get("thumbnail"), item.get("image_url")) or "",
         "source": source_text,
-        "source_i18n": dictionary_text_i18n(source_text),
+        "source_i18n": english_shadow_text_i18n(source_text),
         "publishedAt": first_non_empty(item.get("publishedAt"), item.get("published_at"), item.get("date"), item.get("datetime")) or "",
         "category": category_text,
         "category_i18n": dictionary_text_i18n(category_text),
@@ -1014,7 +1101,15 @@ def normalize_news_article(item: Dict[str, Any], sentiment_index: Dict[str, Dict
     return article
 
 
-def build_digest_cards(news_json: Dict[str, Any], sentiment_json: Dict[str, Any], limit: int = 48) -> List[Dict[str, Any]]:
+def build_digest_cards(
+    news_json: Dict[str, Any],
+    sentiment_json: Dict[str, Any],
+    *,
+    config: TranslationConfig,
+    session: requests.Session,
+    cache: Dict[str, Dict[str, str]],
+    limit: int = 48,
+) -> List[Dict[str, Any]]:
     sentiment_index = build_sentiment_index(sentiment_json)
     raw_items = extract_news_items(news_json)
 
@@ -1023,7 +1118,7 @@ def build_digest_cards(news_json: Dict[str, Any], sentiment_json: Dict[str, Any]
     seen_titles = set()
 
     for item in raw_items:
-        article = normalize_news_article(item, sentiment_index)
+        article = normalize_news_article(item, sentiment_index, config=config, session=session, cache=cache)
         url_key = normalize_url(article.get("url"))
         title_key = normalize_key_text(article.get("title"))
 
@@ -1064,6 +1159,10 @@ def build_payload(
     prediction_json: Dict[str, Any],
     fx_json: Dict[str, Any],
     digest_cards: List[Dict[str, Any]],
+    *,
+    config: TranslationConfig,
+    session: requests.Session,
+    cache: Dict[str, Dict[str, str]],
 ) -> Dict[str, Any]:
     new_urls = daily_summary_json.get("new_urls")
     if not isinstance(new_urls, list):
@@ -1081,6 +1180,9 @@ def build_payload(
     summary_value = summary_text or ""
     summary_i18n = build_digest_summary_compact_i18n(summary_value, titles, daily_summary_json)
 
+    highlights_i18n = _llm_list_i18n(highlights, config=config, session=session, cache=cache, cache_prefix="highlight")
+    articles_i18n = _llm_list_i18n(article_titles, config=config, session=session, cache=cache, cache_prefix="article_title")
+
     return {
         "status": "ok",
         "generated_at": now_iso(),
@@ -1091,9 +1193,9 @@ def build_payload(
         "summary_i18n": summary_i18n,
         "summary_available": bool(summary_text),
         "highlights": highlights,
-        "highlights_i18n": dictionary_list_i18n(highlights, category="ui_terms"),
+        "highlights_i18n": highlights_i18n,
         "articles": article_titles,
-        "articles_i18n": dictionary_list_i18n(article_titles),
+        "articles_i18n": articles_i18n,
         "cards": digest_cards,
         "meta": {
             "n_events": n_events,
@@ -1109,6 +1211,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Build digest view model.")
     parser.add_argument("--date", required=True, help="Target local date YYYY-MM-DD")
     parser.add_argument("--root", default=".", help="Repository root")
+    parser.add_argument("--model", default="gemma3:4b", help="Ollama model name")
+    parser.add_argument("--ollama-url", default="http://localhost:11435", help="Ollama API base URL")
+    parser.add_argument("--timeout", type=int, default=60, help="Per request timeout seconds")
     args = parser.parse_args()
 
     root = Path(args.root).resolve()
@@ -1133,21 +1238,36 @@ def main() -> None:
     prediction_json = load_json(prediction_latest_path)
     fx_json = load_json(fx_decision_latest_path)
 
+    cfg = TranslationConfig(ollama_url=args.ollama_url, model=args.model, timeout=args.timeout)
+    cache = _load_cache()
+
     summary_text = extract_summary_text(summary_json, daily_summary_json)
     titles = extract_titles(daily_news_json, daily_summary_json)
     highlights = extract_highlights(summary_json, daily_summary_json, titles)
-    digest_cards = build_digest_cards(daily_news_json, sentiment_json, limit=48)
 
-    payload = build_payload(
-        date_value=args.date,
-        summary_text=summary_text,
-        titles=titles,
-        highlights=highlights,
-        daily_summary_json=daily_summary_json,
-        prediction_json=prediction_json,
-        fx_json=fx_json,
-        digest_cards=digest_cards,
-    )
+    with requests.Session() as session:
+        digest_cards = build_digest_cards(
+            daily_news_json,
+            sentiment_json,
+            config=cfg,
+            session=session,
+            cache=cache,
+            limit=48,
+        )
+
+        payload = build_payload(
+            date_value=args.date,
+            summary_text=summary_text,
+            titles=titles,
+            highlights=highlights,
+            daily_summary_json=daily_summary_json,
+            prediction_json=prediction_json,
+            fx_json=fx_json,
+            digest_cards=digest_cards,
+            config=cfg,
+            session=session,
+            cache=cache,
+        )
 
     dated_path = digest_view_dir / f"{args.date}.json"
     latest_path_a = digest_dir / "view_model_latest.json"
@@ -1156,6 +1276,7 @@ def main() -> None:
     write_json(dated_path, payload)
     write_json(latest_path_a, payload)
     write_json(latest_path_b, payload)
+    _save_cache(cache)
 
     print(f"[OK] wrote dated : {dated_path.as_posix()}")
     print(f"[OK] wrote latest: {latest_path_a.as_posix()}")
