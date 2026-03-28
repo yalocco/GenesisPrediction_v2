@@ -2,6 +2,96 @@
   "use strict";
 
   const GLOBAL_STATUS_URL = "/analysis/global_status_latest.json";
+  const i18n = window.GP_I18N || window.GenesisI18n || null;
+  const manager = window.GP_LANG_MANAGER || null;
+  const LANG_CHANGED_EVENT =
+    (i18n && i18n.events && i18n.events.langChanged) ||
+    (manager && manager.LANG_CHANGED_EVENT) ||
+    "gp:lang-changed";
+
+  const UI_TEXT = {
+    en: {
+      "gs.label.date": "Date",
+      "gs.label.system": "System",
+      "gs.label.analysis": "Analysis",
+      "gs.label.prediction": "Prediction",
+      "gs.label.health": "Health",
+      "gs.label.fx_base": "FX Base",
+      "gs.label.fx_signal": "FX Signal",
+      "gs.label.trend": "Trend",
+      "gs.label.articles": "Articles",
+      "gs.label.highlights": "Highlights",
+      "gs.label.risk": "Risk",
+      "gs.label.positive": "Positive",
+      "gs.label.negative": "Negative",
+      "gs.label.regime": "Regime",
+      "gs.label.signal": "Signal",
+      "gs.label.confidence": "Confidence",
+      "gs.label.snapshots": "Snapshots",
+      "gs.label.drift": "Drift",
+      "gs.label.review": "Review",
+      "gs.sub.analysis_latest": "analysis latest",
+      "gs.state.ready": "Ready",
+      "gs.state.blocked": "Blocked",
+      "gs.prefix.health": "Health",
+      "gs.prefix.fx": "FX",
+      "gs.prefix.as_of": "as_of"
+    },
+    ja: {
+      "gs.label.date": "日付",
+      "gs.label.system": "システム",
+      "gs.label.analysis": "分析",
+      "gs.label.prediction": "予測",
+      "gs.label.health": "健全性",
+      "gs.label.fx_base": "FX基準",
+      "gs.label.fx_signal": "FXシグナル",
+      "gs.label.trend": "トレンド",
+      "gs.label.articles": "記事数",
+      "gs.label.highlights": "ハイライト",
+      "gs.label.risk": "リスク",
+      "gs.label.positive": "ポジティブ",
+      "gs.label.negative": "ネガティブ",
+      "gs.label.regime": "レジーム",
+      "gs.label.signal": "シグナル",
+      "gs.label.confidence": "信頼度",
+      "gs.label.snapshots": "スナップショット",
+      "gs.label.drift": "変化",
+      "gs.label.review": "レビュー",
+      "gs.sub.analysis_latest": "analysis latest",
+      "gs.state.ready": "準備完了",
+      "gs.state.blocked": "停止",
+      "gs.prefix.health": "健全性",
+      "gs.prefix.fx": "FX",
+      "gs.prefix.as_of": "as_of"
+    },
+    th: {
+      "gs.label.date": "วันที่",
+      "gs.label.system": "ระบบ",
+      "gs.label.analysis": "การวิเคราะห์",
+      "gs.label.prediction": "การคาดการณ์",
+      "gs.label.health": "สุขภาพข้อมูล",
+      "gs.label.fx_base": "ฐาน FX",
+      "gs.label.fx_signal": "สัญญาณ FX",
+      "gs.label.trend": "แนวโน้ม",
+      "gs.label.articles": "บทความ",
+      "gs.label.highlights": "ไฮไลต์",
+      "gs.label.risk": "ความเสี่ยง",
+      "gs.label.positive": "เชิงบวก",
+      "gs.label.negative": "เชิงลบ",
+      "gs.label.regime": "ระบอบ",
+      "gs.label.signal": "สัญญาณ",
+      "gs.label.confidence": "ความเชื่อมั่น",
+      "gs.label.snapshots": "สแนปช็อต",
+      "gs.label.drift": "การเปลี่ยนแปลง",
+      "gs.label.review": "การทบทวน",
+      "gs.sub.analysis_latest": "analysis latest",
+      "gs.state.ready": "พร้อม",
+      "gs.state.blocked": "ถูกบล็อก",
+      "gs.prefix.health": "สุขภาพข้อมูล",
+      "gs.prefix.fx": "FX",
+      "gs.prefix.as_of": "as_of"
+    }
+  };
 
   const DEFAULT_STATUS = {
     as_of: "--",
@@ -32,6 +122,24 @@
   function upper(value, fallback = "--") {
     const s = text(value, fallback);
     return s === fallback ? fallback : s.toUpperCase();
+  }
+
+  function getLang() {
+    if (i18n && typeof i18n.getLang === "function") {
+      return i18n.getLang();
+    }
+    if (manager && typeof manager.getLang === "function") {
+      return manager.getLang();
+    }
+    return String(window.GP_LANG || "en").trim().toLowerCase() || "en";
+  }
+
+  function tr(key) {
+    if (i18n && typeof i18n.translate === "function") {
+      return i18n.translate(UI_TEXT, key, getLang());
+    }
+    const lang = getLang();
+    return (UI_TEXT[lang] && UI_TEXT[lang][key]) || UI_TEXT.en[key] || key;
   }
 
   function normalizeStatusClass(value) {
@@ -150,77 +258,81 @@
     );
   }
 
-  function deriveHeaderReady(status) {
+  function deriveHeaderReadyText(status) {
     const health = upper(status.health);
-    if (health === "NG") return "Blocked";
-    return "Ready";
+    return health === "NG" ? tr("gs.state.blocked") : tr("gs.state.ready");
+  }
+
+  function deriveHeaderReadyClassValue(status) {
+    return upper(status.health) === "NG" ? "BLOCKED" : "READY";
   }
 
   function deriveHeaderFx(status) {
     const fx = upper(status.fx_regime);
-    if (fx === "--") return "FX: --";
-    return "FX: " + fx;
+    if (fx === "--") return `${tr("gs.prefix.fx")}: --`;
+    return `${tr("gs.prefix.fx")}: ${fx}`;
   }
 
   function buildCardsForPage(pageType, status) {
     const asOf = text(status.as_of || status.updated);
+    const analysisLatest = tr("gs.sub.analysis_latest");
 
     if (pageType === "overlay") {
       return [
-        { label: "Date", value: asOf, sub: "analysis latest", statusValue: "" },
-        { label: "FX Base", value: text(status.articles), sub: text(status.articles_sub, ""), statusValue: "" },
-        { label: "FX Signal", value: upper(status.fx_regime), sub: text(status.fx_regime_sub, ""), statusValue: status.fx_regime },
-        { label: "Trend", value: upper(status.global_risk), sub: text(status.global_risk_sub, ""), statusValue: status.global_risk },
-        { label: "Health", value: upper(status.health), sub: text(status.health_sub, ""), statusValue: status.health }
+        { label: tr("gs.label.date"), value: asOf, sub: analysisLatest, statusValue: "" },
+        { label: tr("gs.label.fx_base"), value: text(status.articles), sub: text(status.articles_sub, ""), statusValue: "" },
+        { label: tr("gs.label.fx_signal"), value: upper(status.fx_regime), sub: text(status.fx_regime_sub, ""), statusValue: status.fx_regime },
+        { label: tr("gs.label.trend"), value: upper(status.global_risk), sub: text(status.global_risk_sub, ""), statusValue: status.global_risk },
+        { label: tr("gs.label.health"), value: upper(status.health), sub: text(status.health_sub, ""), statusValue: status.health }
       ];
     }
 
     if (pageType === "digest") {
       return [
-        { label: "Date", value: asOf, sub: "analysis latest", statusValue: "" },
-        { label: "Articles", value: text(status.articles), sub: text(status.articles_sub, ""), statusValue: "" },
-        { label: "Highlights", value: upper(status.sentiment_balance), sub: text(status.sentiment_balance_sub, ""), statusValue: status.sentiment_balance },
-        { label: "Risk", value: upper(status.global_risk), sub: text(status.global_risk_sub, ""), statusValue: status.global_risk },
-        { label: "Health", value: upper(status.health), sub: text(status.health_sub, ""), statusValue: status.health }
+        { label: tr("gs.label.date"), value: asOf, sub: analysisLatest, statusValue: "" },
+        { label: tr("gs.label.articles"), value: text(status.articles), sub: text(status.articles_sub, ""), statusValue: "" },
+        { label: tr("gs.label.highlights"), value: upper(status.sentiment_balance), sub: text(status.sentiment_balance_sub, ""), statusValue: status.sentiment_balance },
+        { label: tr("gs.label.risk"), value: upper(status.global_risk), sub: text(status.global_risk_sub, ""), statusValue: status.global_risk },
+        { label: tr("gs.label.health"), value: upper(status.health), sub: text(status.health_sub, ""), statusValue: status.health }
       ];
     }
 
     if (pageType === "sentiment") {
       return [
-        { label: "Date", value: asOf, sub: "analysis latest", statusValue: "" },
-        { label: "Articles", value: text(status.articles), sub: text(status.articles_sub, ""), statusValue: "" },
-        { label: "Positive", value: upper(status.sentiment_balance), sub: text(status.sentiment_balance_sub, ""), statusValue: status.sentiment_balance },
-        { label: "Negative", value: upper(status.global_risk), sub: text(status.global_risk_sub, ""), statusValue: status.global_risk },
-        { label: "Health", value: upper(status.health), sub: text(status.health_sub, ""), statusValue: status.health }
+        { label: tr("gs.label.date"), value: asOf, sub: analysisLatest, statusValue: "" },
+        { label: tr("gs.label.articles"), value: text(status.articles), sub: text(status.articles_sub, ""), statusValue: "" },
+        { label: tr("gs.label.positive"), value: upper(status.sentiment_balance), sub: text(status.sentiment_balance_sub, ""), statusValue: status.sentiment_balance },
+        { label: tr("gs.label.negative"), value: upper(status.global_risk), sub: text(status.global_risk_sub, ""), statusValue: status.global_risk },
+        { label: tr("gs.label.health"), value: upper(status.health), sub: text(status.health_sub, ""), statusValue: status.health }
       ];
     }
 
     if (pageType === "prediction") {
       return [
-        { label: "Date", value: asOf, sub: "analysis latest", statusValue: "" },
-        { label: "Regime", value: upper(status.global_risk), sub: text(status.global_risk_sub, ""), statusValue: status.global_risk },
-        { label: "Signal", value: upper(status.sentiment_balance), sub: text(status.sentiment_balance_sub, ""), statusValue: status.sentiment_balance },
-        { label: "Confidence", value: text(status.articles), sub: text(status.articles_sub, ""), statusValue: "" },
-        { label: "Health", value: upper(status.health), sub: text(status.health_sub, ""), statusValue: status.health }
+        { label: tr("gs.label.date"), value: asOf, sub: analysisLatest, statusValue: "" },
+        { label: tr("gs.label.regime"), value: upper(status.global_risk), sub: text(status.global_risk_sub, ""), statusValue: status.global_risk },
+        { label: tr("gs.label.signal"), value: upper(status.sentiment_balance), sub: text(status.sentiment_balance_sub, ""), statusValue: status.sentiment_balance },
+        { label: tr("gs.label.confidence"), value: text(status.articles), sub: text(status.articles_sub, ""), statusValue: "" },
+        { label: tr("gs.label.health"), value: upper(status.health), sub: text(status.health_sub, ""), statusValue: status.health }
       ];
     }
 
     if (pageType === "history") {
       return [
-        { label: "Date", value: asOf, sub: "analysis latest", statusValue: "" },
-        { label: "Snapshots", value: text(status.articles), sub: text(status.articles_sub, ""), statusValue: "" },
-        { label: "Drift", value: upper(status.global_risk), sub: text(status.global_risk_sub, ""), statusValue: status.global_risk },
-        { label: "Review", value: upper(status.sentiment_balance), sub: text(status.sentiment_balance_sub, ""), statusValue: status.sentiment_balance },
-        { label: "Health", value: upper(status.health), sub: text(status.health_sub, ""), statusValue: status.health }
+        { label: tr("gs.label.date"), value: asOf, sub: analysisLatest, statusValue: "" },
+        { label: tr("gs.label.snapshots"), value: text(status.articles), sub: text(status.articles_sub, ""), statusValue: "" },
+        { label: tr("gs.label.drift"), value: upper(status.global_risk), sub: text(status.global_risk_sub, ""), statusValue: status.global_risk },
+        { label: tr("gs.label.review"), value: upper(status.sentiment_balance), sub: text(status.sentiment_balance_sub, ""), statusValue: status.sentiment_balance },
+        { label: tr("gs.label.health"), value: upper(status.health), sub: text(status.health_sub, ""), statusValue: status.health }
       ];
     }
 
     return [
-      { label: "Date", value: asOf, sub: "analysis latest", statusValue: "" },
-      { label: "System", value: text(status.articles), sub: text(status.articles_sub, ""), statusValue: "" },
-      { label: "Analysis", value: upper(status.sentiment_balance), sub: text(status.sentiment_balance_sub, ""), statusValue: status.sentiment_balance },
-      { label: "Prediction", value: upper(status.global_risk), sub: text(status.global_risk_sub, ""), statusValue: status.global_risk },
-      { label: "Health", value: upper(status.health), sub: text(status.health_sub, ""), statusValue: status.health }
+      { label: tr("gs.label.date"), value: asOf, sub: analysisLatest, statusValue: "" },
+      { label: tr("gs.label.system"), value: text(status.articles), sub: text(status.articles_sub, ""), statusValue: "" },
+      { label: tr("gs.label.analysis"), value: upper(status.sentiment_balance), sub: text(status.sentiment_balance_sub, ""), statusValue: status.sentiment_balance },
+      { label: tr("gs.label.prediction"), value: upper(status.global_risk), sub: text(status.global_risk_sub, ""), statusValue: status.global_risk },
+      { label: tr("gs.label.health"), value: upper(status.health), sub: text(status.health_sub, ""), statusValue: status.health }
     ];
   }
 
@@ -271,17 +383,18 @@
   function renderHeader(status) {
     const selectors = getHeaderSelectors();
 
-    const readyText = deriveHeaderReady(status);
-    const healthText = "Health: " + upper(status.health);
+    const readyText = deriveHeaderReadyText(status);
+    const readyClassValue = deriveHeaderReadyClassValue(status);
+    const healthText = `${tr("gs.prefix.health")}: ${upper(status.health)}`;
     const fxText = deriveHeaderFx(status);
-    const asOfText = "as_of: " + text(status.as_of || status.updated);
+    const asOfText = `${tr("gs.prefix.as_of")}: ${text(status.as_of || status.updated)}`;
 
     setFirstText(selectors.ready, readyText);
     setFirstText(selectors.health, healthText);
     setFirstText(selectors.fx, fxText);
     setFirstText(selectors.asof, asOfText);
 
-    setFirstClass(selectors.ready, readyText);
+    setFirstClass(selectors.ready, readyClassValue);
     setFirstClass(selectors.health, status.health);
     setFirstClass(selectors.fx, status.fx_regime);
     setFirstClass(selectors.asof, "");
@@ -371,6 +484,9 @@
 
   document.addEventListener("DOMContentLoaded", initGlobalStatus, { once: true });
   document.addEventListener("layout:mounted", function () {
+    renderAll(latestStatus);
+  });
+  document.addEventListener(LANG_CHANGED_EVENT, function () {
     renderAll(latestStatus);
   });
   window.addEventListener("load", function () {

@@ -296,16 +296,57 @@
       }
 
       function getI18n() {
-        return (window.GenesisI18n && typeof window.GenesisI18n.pickText === "function")
-          ? window.GenesisI18n
-          : null;
+        return window.GP_I18N || window.GenesisI18n || null;
+      }
+
+      function getCurrentLang() {
+        var manager = window.GP_LANG_MANAGER;
+        if (manager && typeof manager.getLang === "function") {
+          return String(manager.getLang() || "en").toLowerCase();
+        }
+        return String(window.GP_LANG || document.documentElement.lang || "en").toLowerCase();
+      }
+
+      function pickI18n(i18nValue, fallback) {
+        var lang = getCurrentLang();
+        var i18n = getI18n();
+        if (i18n && typeof i18n.pickI18n === "function") {
+          var picked = i18n.pickI18n(i18nValue, fallback, lang);
+          if (picked) return picked;
+        }
+        if (i18nValue && typeof i18nValue === "object" && !Array.isArray(i18nValue)) {
+          return textOr(
+            i18nValue[lang],
+            textOr(i18nValue.en, textOr(i18nValue.ja, textOr(i18nValue.th, fallback == null ? "" : fallback)))
+          );
+        }
+        return textOr(i18nValue, fallback == null ? "" : fallback);
+      }
+
+      function pickI18nList(i18nValue) {
+        var lang = getCurrentLang();
+        var i18n = getI18n();
+        if (i18n && typeof i18n.pickI18nList === "function") {
+          var picked = i18n.pickI18nList(i18nValue, lang);
+          if (Array.isArray(picked) && picked.length) return picked;
+        }
+        if (Array.isArray(i18nValue)) {
+          return i18nValue.map(function (item) {
+            return pickI18n(item, "");
+          }).filter(Boolean);
+        }
+        return [];
       }
 
       function pickText(obj, key, fallback) {
         var i18n = getI18n();
-        if (i18n) {
-          var picked = i18n.pickText(obj, key);
+        if (i18n && typeof i18n.pickText === "function") {
+          var picked = i18n.pickText(obj, key, getCurrentLang());
           if (picked) return picked;
+        }
+        if (obj && obj[key + "_i18n"]) {
+          var i18nPicked = pickI18n(obj[key + "_i18n"], "");
+          if (i18nPicked) return i18nPicked;
         }
         var direct = obj && obj[key];
         return textOr(direct, fallback == null ? "" : fallback);
@@ -314,8 +355,12 @@
       function pickList(obj, key) {
         var i18n = getI18n();
         if (i18n && typeof i18n.pickList === "function") {
-          var picked = i18n.pickList(obj, key);
+          var picked = i18n.pickList(obj, key, getCurrentLang());
           if (Array.isArray(picked) && picked.length) return picked;
+        }
+        if (obj && obj[key + "_i18n"]) {
+          var i18nPicked = pickI18nList(obj[key + "_i18n"]);
+          if (Array.isArray(i18nPicked) && i18nPicked.length) return i18nPicked;
         }
         var direct = obj && obj[key];
         return Array.isArray(direct) ? direct : [];
@@ -344,12 +389,19 @@
 
       function getSummaryText(digest, worldVm, summaryData) {
         return firstDefined(
+          digest && pickI18n(digest.summary_i18n, ""),
           pickText(digest, "summary", ""),
+          worldVm && pickI18n(worldVm.summary_i18n, ""),
           pickText(worldVm, "summary", ""),
+          worldVm && worldVm.today && pickI18n(worldVm.today.summary_i18n, ""),
           worldVm && worldVm.today && pickText(worldVm.today, "summary", ""),
+          worldVm && worldVm.meta && pickI18n(worldVm.meta.summary_i18n, ""),
           worldVm && worldVm.meta && pickText(worldVm.meta, "summary", ""),
+          summaryData && pickI18n(summaryData.summary_i18n, ""),
           summaryData && pickText(summaryData, "summary", ""),
+          summaryData && pickI18n(summaryData.text_summary_i18n, ""),
           summaryData && pickText(summaryData, "text_summary", ""),
+          summaryData && pickI18n(summaryData.daily_summary_i18n, ""),
           summaryData && pickText(summaryData, "daily_summary", ""),
           "No summary available."
         );

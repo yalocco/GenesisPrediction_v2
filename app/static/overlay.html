@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Overlay - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260318-fx-status-2" />
-  <link rel="stylesheet" href="/static/overlay.css?v=20260318-overlay-compact-1" />
+  <link rel="stylesheet" href="/static/app.css?v=20260329-overlay-i18n-full-2" />
+  <link rel="stylesheet" href="/static/overlay.css?v=20260329-overlay-i18n-full-2" />
 </head>
 <body>
   <div id="site-header"></div>
@@ -108,6 +108,31 @@
             </div>
           </div>
 
+          <div class="card overlay-card overlay-insight-card">
+            <div class="sectionTitle">
+              <h2 id="systemInsightTitle" data-i18n="overlay.system_insight">System Insight</h2>
+              <span id="insightHint" class="hint" data-i18n="overlay.insight_hint">analysis/explanation/*.json</span>
+            </div>
+            <div class="overlay-insight-shell">
+              <div id="insightHeadline" class="overlay-insight-headline mono">—</div>
+              <div id="insightSummary" class="overlay-insight-summary sub">—</div>
+              <div class="overlay-insight-grid">
+                <div>
+                  <div class="hint" data-i18n="overlay.interpretation">Interpretation</div>
+                  <div id="insightInterpretation" class="mono small">—</div>
+                </div>
+                <div>
+                  <div class="hint" data-i18n="overlay.watchpoints">Watchpoints</div>
+                  <div id="insightWatchpoints" class="mono small">—</div>
+                </div>
+              </div>
+              <div class="pillrow overlay-pills">
+                <span id="insightSource" class="pill">source: --</span>
+                <span id="insightStatus" class="pill">status: --</span>
+              </div>
+            </div>
+          </div>
+
           <div class="card signals-wrap">
             <div class="sectionTitle"><h2 id="economicSignalsTitle" data-i18n="overlay.economic_signals">Economic Signals</h2><span id="signalsHint" class="hint" data-i18n="overlay.signals_hint">world/economy article cards</span></div>
             <div class="signals-toolbar">
@@ -129,10 +154,10 @@
 
   <div id="site-footer"></div>
 
-  <script src="/static/common/lang_manager.js?v=20260323-lang-manager-1"></script>
-  <script src="/static/common/i18n.js?v=20260323-lang-manager-1"></script>
-  <script src="/static/common/global_status.js?v=20260318-fx-status-2"></script>
-  <script src="/static/common/layout.js?v=20260323-lang-manager-1"></script>
+  <script src="/static/common/lang_manager.js?v=20260329-overlay-i18n-full-2"></script>
+  <script src="/static/common/i18n.js?v=20260329-overlay-i18n-full-2"></script>
+  <script src="/static/common/global_status.js?v=20260329-overlay-i18n-full-2"></script>
+  <script src="/static/common/layout.js?v=20260329-overlay-i18n-full-2"></script>
 
   <script>
     (function () {
@@ -161,6 +186,30 @@
         if (!map || typeof map !== "object") return safeText(fallback, "");
         const lang = currentLang();
         return safeText(map[lang] || map.en || map.ja || map.th || fallback, "");
+      }
+
+      function pickI18nList(value, fallback) {
+        const lang = currentLang();
+        if (Array.isArray(value)) {
+          return value
+            .map((item) => {
+              if (item && typeof item === "object" && !Array.isArray(item)) {
+                return pickI18n(item, "");
+              }
+              return safeText(item, "");
+            })
+            .filter(Boolean);
+        }
+        if (value && typeof value === "object") {
+          const picked = value[lang] || value.en || value.ja || value.th || fallback;
+          if (Array.isArray(picked)) {
+            return picked.map((item) => safeText(item, "")).filter(Boolean);
+          }
+        }
+        if (Array.isArray(fallback)) {
+          return fallback.map((item) => safeText(item, "")).filter(Boolean);
+        }
+        return [];
       }
 
       function applyStaticI18n() {
@@ -251,11 +300,17 @@
       };
 
       const SIGNALS_CANDIDATES = [
-        "/analysis/world_view_model_latest.json",
-        "/analysis/view_model_latest.json",
         "/data/world_politics/analysis/view_model_latest.json",
+        "/analysis/view_model_latest.json",
+        "/analysis/world_view_model_latest.json",
         "/data/digest/view/view_model_latest.json",
         "/data/digest/view_model_latest.json"
+      ];
+
+      const INSIGHT_CANDIDATES = [
+        "/analysis/explanation/prediction_explanation_latest.json",
+        "/analysis/explanation/scenario_explanation_latest.json",
+        "/analysis/explanation/signal_explanation_latest.json"
       ];
 
       function safeText(value, fallback = "") {
@@ -468,6 +523,60 @@
         }
       }
 
+      function normalizeInsightDoc(doc) {
+        if (!doc || typeof doc !== "object") {
+          return null;
+        }
+
+        const headline = pickI18n(doc.headline_i18n, doc.headline || doc.decision_line || doc.summary || "");
+        const summary = pickI18n(doc.summary_i18n, doc.summary || doc.interpretation || "");
+        const interpretation = pickI18n(doc.interpretation_i18n, doc.interpretation || doc.why_it_matters || "");
+        const watchpoints = pickI18nList(doc.watchpoints_i18n, doc.watchpoints).slice(0, 3);
+        const status = safeText(doc.status, "--");
+        const subject = safeText(doc.subject, "insight");
+
+        return {
+          headline: headline || i18nText("overlay.insight_unavailable", "Insight not available."),
+          summary: summary || i18nText("overlay.insight_summary_unavailable", "Structured summary is not available."),
+          interpretation: interpretation || i18nText("overlay.interpretation_unavailable", "Interpretation is not available."),
+          watchpoints,
+          status,
+          subject
+        };
+      }
+
+      function renderInsight(doc, sourceUrl) {
+        const normalized = normalizeInsightDoc(doc);
+        if (!normalized) {
+          setText("insightHeadline", i18nText("overlay.insight_unavailable", "Insight not available."));
+          setText("insightSummary", i18nText("overlay.insight_summary_unavailable", "Structured summary is not available."));
+          setText("insightInterpretation", i18nText("overlay.interpretation_unavailable", "Interpretation is not available."));
+          setText("insightWatchpoints", i18nText("overlay.watchpoints_unavailable", "Watchpoints are not available."));
+          setText("insightSource", formatLabelValue("source_prefix", i18nText("overlay.missing", "missing")));
+          setText("insightStatus", formatLabelValue("status_prefix", i18nText("overlay.unavailable", "unavailable")));
+          return;
+        }
+
+        setText("insightHeadline", normalized.headline);
+        setText("insightSummary", normalized.summary);
+        setText("insightInterpretation", normalized.interpretation);
+        setText(
+          "insightWatchpoints",
+          normalized.watchpoints.length ? normalized.watchpoints.join("\n") : i18nText("overlay.watchpoints_unavailable", "Watchpoints are not available.")
+        );
+        setText("insightSource", formatLabelValue("source_prefix", sourceUrl || "--"));
+        setText("insightStatus", formatLabelValue("status_prefix", normalized.subject + " / " + normalized.status));
+      }
+
+      async function loadInsight() {
+        const picked = await pickFirstJson(INSIGHT_CANDIDATES);
+        if (!picked) {
+          renderInsight(null, null);
+          return;
+        }
+        renderInsight(picked.data || null, picked.url);
+      }
+
       async function loadSignals() {
         const picked = await pickFirstJson(SIGNALS_CANDIDATES);
         if (!picked) {
@@ -557,12 +666,14 @@
         const currentPair = select ? select.value : "JPYTHB";
         loadPair(currentPair);
         loadSignals();
+        loadInsight();
       });
 
       applyStaticI18n();
       loadGlobalStatusSummary();
       loadPair("JPYTHB");
       loadSignals();
+      loadInsight();
     })();
   </script>
 </body>
