@@ -85,6 +85,20 @@ SOURCE_I18N_MAP: Dict[str, Dict[str, str]] = {
     "War on the Rocks": {"ja": "War on the Rocks", "th": "War on the Rocks"},
 }
 
+SENTIMENT_LABELS: Dict[str, Dict[str, str]] = {
+    "positive": {"en": "positive", "ja": "ポジティブ", "th": "เชิงบวก"},
+    "negative": {"en": "negative", "ja": "ネガティブ", "th": "เชิงลบ"},
+    "neutral": {"en": "neutral", "ja": "中立", "th": "เป็นกลาง"},
+    "mixed": {"en": "mixed", "ja": "混合", "th": "ผสม"},
+    "unknown": {"en": "unknown", "ja": "不明", "th": "ไม่ทราบ"},
+}
+
+METHOD_LABELS: Dict[str, Dict[str, str]] = {
+    "lex": {"en": "lex", "ja": "辞書判定", "th": "พจนานุกรม"},
+    "fallback": {"en": "fallback", "ja": "fallback", "th": "fallback"},
+    "agg": {"en": "aggregate", "ja": "集計", "th": "สรุปรวม"},
+}
+
 PROPER_NOUNS = [
     "AIPAC", "Adult Braces", "Antichrist", "Apple TV+", "Australian Broadcasting Corporation",
     "Barcelona", "Bruce Springsteen", "CNBC", "COAC", "CSCAE", "CounterPunch", "Crikey",
@@ -195,6 +209,24 @@ def _source_i18n_block(source: str) -> Dict[str, str]:
     if mapped:
         return {"en": src, "ja": mapped["ja"], "th": mapped["th"]}
     return {"en": src, "ja": src, "th": src}
+
+def _label_i18n_block(value: str, mapping: Dict[str, Dict[str, str]]) -> Dict[str, str]:
+    key = _normalize_text(value).lower()
+    mapped = mapping.get(key)
+    if mapped:
+        return {"en": mapped["en"], "ja": mapped["ja"], "th": mapped["th"]}
+    raw = _normalize_text(value)
+    return {"en": raw, "ja": raw, "th": raw}
+
+
+def _label_counts_i18n_block(counts: Dict[str, int]) -> Dict[str, Dict[str, Any]]:
+    out: Dict[str, Dict[str, Any]] = {}
+    for key in ["positive", "negative", "neutral", "mixed", "unknown"]:
+        out[key] = {
+            "label_i18n": _label_i18n_block(key, SENTIMENT_LABELS),
+            "count": int(counts.get(key, 0)),
+        }
+    return out
 
 
 def _tokenize(*parts: str) -> List[str]:
@@ -466,14 +498,21 @@ def main() -> int:
             else:
                 fallback += 1
 
+            sentiment_i18n = _label_i18n_block(label, SENTIMENT_LABELS)
+            method_i18n = _label_i18n_block(score.method, METHOD_LABELS)
+            translated_title = _translate_item_text("title", title, cfg, session, cache)
+            translated_description = _translate_item_text("description", description, cfg, session, cache)
+
             out_items.append({
                 "url": url,
                 "title": title,
-                "title_i18n": _translate_item_text("title", title, cfg, session, cache),
+                "title_i18n": translated_title,
                 "source": source,
                 "source_i18n": _source_i18n_block(source),
                 "description": description,
-                "description_i18n": _translate_item_text("description", description, cfg, session, cache),
+                "description_i18n": translated_description,
+                "summary": description,
+                "summary_i18n": translated_description,
                 "publishedAt": published_at,
                 "image": image,
                 "risk": round(score.risk, 6),
@@ -482,8 +521,11 @@ def main() -> int:
                 "net": round(score.net, 6),
                 "score": round(score.net, 6),
                 "sentiment": label,
+                "sentiment_i18n": sentiment_i18n,
                 "sentiment_label": label,
+                "sentiment_label_i18n": sentiment_i18n,
                 "method": score.method,
+                "method_i18n": method_i18n,
             })
 
     n = len(out_items)
@@ -496,9 +538,12 @@ def main() -> int:
     today_score = Score(risk=avg_risk, positive=avg_pos, uncertainty=avg_unc, net=avg_net, method="agg")
     today_label = classify_sentiment(today_score) if n else "neutral"
 
+    today_label_i18n = _label_i18n_block(today_label, SENTIMENT_LABELS)
     payload = {
         "date": args.date.strip(),
         "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "lang_default": "en",
+        "languages": ["en", "ja", "th"],
         "items": out_items,
         "today": {
             "articles": n,
@@ -508,8 +553,11 @@ def main() -> int:
             "net": round(avg_net, 6),
             "score": round(avg_net, 6),
             "sentiment": today_label,
+            "sentiment_i18n": today_label_i18n,
             "sentiment_label": today_label,
+            "sentiment_label_i18n": today_label_i18n,
             "label_counts": label_counts,
+            "label_counts_i18n": _label_counts_i18n_block(label_counts),
         },
         "summary": {
             "rule_hit": int(rule_hit),
@@ -519,6 +567,7 @@ def main() -> int:
             "neutral": int(label_counts["neutral"]),
             "mixed": int(label_counts["mixed"]),
             "unknown": int(label_counts["unknown"]),
+            "label_counts_i18n": _label_counts_i18n_block(label_counts),
         },
         "base": args.date.strip(),
         "base_date": args.date.strip(),

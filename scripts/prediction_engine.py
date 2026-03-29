@@ -1348,7 +1348,10 @@ def build_prediction_output(
         "languages": SUPPORTED_LANGUAGES,
         "direction": direction,
         "dominant_scenario": dominant_scenario,
+        "dominant_scenario_i18n": label_from_map(dominant_scenario, SCENARIO_LABELS),
         "risk": risk,
+        "overall_risk": risk,
+        "overall_risk_i18n": label_from_map(risk, RISK_LABELS),
         "confidence": confidence,
         "action_bias": action_bias,
         "action_bias_i18n": label_from_map(action_bias, ACTION_BIAS_LABELS),
@@ -1376,9 +1379,38 @@ def build_prediction_output(
     output["monitoring_priorities"] = labelize_list(output.get("monitoring_priorities", []), lang="en")
     output["risk_flags"] = labelize_list(output.get("risk_flags", []), lang="en")
 
-    output["key_drivers_i18n"] = [labelize_i18n(item) for item in output.get("key_drivers_ids", [])]
-    output["monitoring_priorities_i18n"] = [labelize_i18n(item) for item in output.get("monitoring_priorities_ids", [])]
-    output["risk_flags_i18n"] = [labelize_i18n(item) for item in output.get("risk_flags_ids", [])]
+    output["key_drivers_i18n"] = finalize_list_i18n(
+        output.get("key_drivers", []),
+        {
+            "en": [labelize(item, "en") for item in output.get("key_drivers_ids", [])],
+            "ja": [labelize(item, "ja") for item in output.get("key_drivers_ids", [])],
+            "th": [labelize(item, "th") for item in output.get("key_drivers_ids", [])],
+        },
+    )
+    output["monitoring_priorities_i18n"] = finalize_list_i18n(
+        output.get("monitoring_priorities", []),
+        {
+            "en": [labelize(item, "en") for item in output.get("monitoring_priorities_ids", [])],
+            "ja": [labelize(item, "ja") for item in output.get("monitoring_priorities_ids", [])],
+            "th": [labelize(item, "th") for item in output.get("monitoring_priorities_ids", [])],
+        },
+    )
+    output["risk_flags_i18n"] = finalize_list_i18n(
+        output.get("risk_flags", []),
+        {
+            "en": [labelize(item, "en") for item in output.get("risk_flags_ids", [])],
+            "ja": [labelize(item, "ja") for item in output.get("risk_flags_ids", [])],
+            "th": [labelize(item, "th") for item in output.get("risk_flags_ids", [])],
+        },
+    )
+
+    # Backward-compatible aliases for Prediction History consumers.
+    output["drivers"] = list(output.get("key_drivers", []))
+    output["drivers_i18n"] = list(output.get("key_drivers_i18n", []))
+    output["watchpoints"] = list(output.get("monitoring_priorities", []))
+    output["watchpoints_i18n"] = list(output.get("monitoring_priorities_i18n", []))
+    output["invalidation_conditions"] = list(output.get("risk_flags", []))
+    output["invalidation_conditions_i18n"] = list(output.get("risk_flags_i18n", []))
 
     return output
 

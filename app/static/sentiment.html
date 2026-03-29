@@ -204,18 +204,22 @@
       function safeSetText(id, value){ var el = $(id); if(el) el.textContent = value; }
       function safeSetHref(id, href){ var el = $(id); if(el) el.setAttribute("href", href || "#"); }
 
-      const I18N = window.GP_I18N || null;
+      function getI18nApi(){
+        return window.GP_I18N || null;
+      }
 
       function uiText(key, fallback){
-        if (I18N && typeof I18N.translate === "function"){
-          return I18N.translate(window.GP_SENTIMENT_UI_TEXT || {}, key);
+        var api = getI18nApi();
+        if (api && typeof api.translate === "function"){
+          return api.translate(window.GP_SENTIMENT_UI_TEXT || {}, key);
         }
         return fallback || key;
       }
 
       function pickI18n(value, fallback){
-        if (I18N && typeof I18N.pickI18n === "function"){
-          return I18N.pickI18n(value, fallback || "");
+        var api = getI18nApi();
+        if (api && typeof api.pickI18n === "function"){
+          return api.pickI18n(value, fallback || "");
         }
         if (value && typeof value === "object"){
           return String(value.en || value.ja || value.th || fallback || "");
@@ -522,9 +526,12 @@
 
         if(q){
           arr = arr.filter(function(it){
-            return (it.title || "").toLowerCase().indexOf(q) >= 0 ||
-                   (it.source || "").toLowerCase().indexOf(q) >= 0 ||
-                   (it.summary || "").toLowerCase().indexOf(q) >= 0 ||
+            var titleText = pickI18n(it.title_i18n, it.title || "").toLowerCase();
+            var sourceText = pickI18n(it.source_i18n, it.source || "").toLowerCase();
+            var summaryText = pickI18n(it.summary_i18n, it.summary || "").toLowerCase();
+            return titleText.indexOf(q) >= 0 ||
+                   sourceText.indexOf(q) >= 0 ||
+                   summaryText.indexOf(q) >= 0 ||
                    (it.url || "").toLowerCase().indexOf(q) >= 0;
           });
         }
@@ -565,7 +572,7 @@
           var tdEmpty = document.createElement("td");
           tdEmpty.colSpan = 4;
           tdEmpty.className = "emptyRow";
-          tdEmpty.innerHTML = "No article items in sentiment_latest.json.<br>JSON summary is loaded, but per-article rows are empty.";
+          tdEmpty.innerHTML = uiText("sentiment.empty_articles", "No article items in sentiment_latest.json. JSON summary is loaded, but per-article rows are empty.").replace(/\n/g, "<br>");
           trEmpty.appendChild(tdEmpty);
           tbody.appendChild(trEmpty);
           return;
@@ -600,7 +607,7 @@
           a.href = it.url || "#";
           a.target = "_blank";
           a.rel = "noopener noreferrer";
-          a.textContent = pickI18n(it.title_i18n, it.title || "(missing title)");
+          a.textContent = pickI18n(it.title_i18n, it.title || uiText("sentiment.missing_title", "(missing title)"));
           td1.appendChild(a);
 
           if(it.summary){
@@ -612,7 +619,7 @@
 
           var u = document.createElement("div");
           u.className = "aUrl";
-          u.textContent = it.url || "(missing url)";
+          u.textContent = it.url || uiText("sentiment.missing_url", "(missing url)");
           td1.appendChild(u);
           tr.appendChild(td1);
 
@@ -648,10 +655,10 @@
             sp.textContent = label + " " + fmt3(val);
             return sp;
           }
-          mr.appendChild(pill("mRisk", "risk", it.risk));
-          mr.appendChild(pill("mPos", "pos", it.pos));
-          mr.appendChild(pill("mUnc", "unc", it.unc));
-          mr.appendChild(pill("mNet", "net", it.net));
+          mr.appendChild(pill("mRisk", uiText("sentiment.metric_risk", "risk"), it.risk));
+          mr.appendChild(pill("mPos", uiText("sentiment.metric_pos", "pos"), it.pos));
+          mr.appendChild(pill("mUnc", uiText("sentiment.metric_unc", "unc"), it.unc));
+          mr.appendChild(pill("mNet", uiText("sentiment.metric_net", "net"), it.net));
           td3.appendChild(mr);
           tr.appendChild(td3);
 
@@ -848,6 +855,18 @@
         window.addEventListener("resize", function(){ drawAll(); });
       }
 
+      function rerenderForLanguageChange(){
+        updateLocalPills();
+        drawAll();
+        render(state.items);
+      }
+
+      var langChangedEvent = "gp:lang-changed";
+      if (window.GP_I18N && window.GP_I18N.events && window.GP_I18N.events.langChanged){
+        langChangedEvent = window.GP_I18N.events.langChanged;
+      }
+      window.addEventListener(langChangedEvent, rerenderForLanguageChange);
+
       wire();
       updateLocalPills();
       loadAll();
@@ -909,7 +928,14 @@
           "sentiment.trend_points_prefix": "trend_points",
           "sentiment.sentiment_prefix": "sentiment",
           "sentiment.world_prefix": "world",
-          "sentiment.trend_prefix": "trend"
+          "sentiment.trend_prefix": "trend",
+          "sentiment.empty_articles": "No article items in sentiment_latest.json. JSON summary is loaded, but per-article rows are empty.",
+          "sentiment.missing_title": "(missing title)",
+          "sentiment.missing_url": "(missing url)",
+          "sentiment.metric_risk": "risk",
+          "sentiment.metric_pos": "pos",
+          "sentiment.metric_unc": "unc",
+          "sentiment.metric_net": "net"
         },
         ja: {
           "sentiment.title": "センチメント",
@@ -957,7 +983,14 @@
           "sentiment.trend_points_prefix": "trend_points",
           "sentiment.sentiment_prefix": "sentiment",
           "sentiment.world_prefix": "world",
-          "sentiment.trend_prefix": "trend"
+          "sentiment.trend_prefix": "trend",
+          "sentiment.empty_articles": "sentiment_latest.json に記事項目がありません。JSON サマリーは読み込まれましたが、記事行は空です。",
+          "sentiment.missing_title": "（タイトルなし）",
+          "sentiment.missing_url": "（URLなし）",
+          "sentiment.metric_risk": "risk",
+          "sentiment.metric_pos": "pos",
+          "sentiment.metric_unc": "unc",
+          "sentiment.metric_net": "net"
         },
         th: {
           "sentiment.title": "เซนติเมนต์",
@@ -1005,7 +1038,14 @@
           "sentiment.trend_points_prefix": "trend_points",
           "sentiment.sentiment_prefix": "sentiment",
           "sentiment.world_prefix": "world",
-          "sentiment.trend_prefix": "trend"
+          "sentiment.trend_prefix": "trend",
+          "sentiment.empty_articles": "ไม่มีรายการบทความใน sentiment_latest.json แต่โหลดสรุป JSON แล้ว อย่างไรก็ตามแถวบทความยังว่างอยู่",
+          "sentiment.missing_title": "(ไม่มีชื่อเรื่อง)",
+          "sentiment.missing_url": "(ไม่มี URL)",
+          "sentiment.metric_risk": "risk",
+          "sentiment.metric_pos": "pos",
+          "sentiment.metric_unc": "unc",
+          "sentiment.metric_net": "net"
         }
       };
       window.GP_SENTIMENT_UI_TEXT = UI_TEXT;
