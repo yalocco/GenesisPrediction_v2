@@ -1,4 +1,11 @@
 (() => {
+  sentiment: {
+    as_of: { en: "as_of", ja: "時点", th: "ณ วันที่" },
+    items: { en: "items", ja: "件数", th: "จำนวน" },
+    rendered: { en: "rendered", ja: "表示", th: "แสดงผล" },
+    trend_points: { en: "trend points", ja: "トレンド点", th: "จุดแนวโน้ม" }
+  },
+
   "use strict";
 
   const manager = window.GP_LANG_MANAGER || null;
