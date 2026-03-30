@@ -7,8 +7,8 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <title>Digest - GenesisPrediction v2</title>
-  <link rel="stylesheet" href="/static/app.css?v=20260329-digest-final-2" />
-  <link rel="stylesheet" href="/static/digest.css?v=20260329-digest-final-2" />
+  <link rel="stylesheet" href="/static/app.css?v=20260318-digest-final-1" />
+  <link rel="stylesheet" href="/static/digest.css?v=20260318-digest-final-1" />
 </head>
 <body>
   <div id="site-header"></div>
@@ -19,7 +19,7 @@
         <section class="panel digest-shell">
           <div class="digest-hero">
             <div class="h1" id="digestTitle">Digest</div>
-            <p id="heroText" class="sub">Integrated view of Summary, Prediction, FX, and Articles.</p>
+            <p id="heroText" class="sub">Prioritize the Digest ViewModel and present an integrated view of Summary, Highlights, Prediction, and FX.</p>
 
             <section class="card digest-card-top section-no-margin">
               <div class="sectionTitle">
@@ -46,39 +46,39 @@
             <section class="card highlightsCard">
               <div class="sectionTitle">
                 <h2 id="digestHighlightsTitle">Highlights</h2>
-                <span id="highlightsHint" class="hint">loading…</span>
+                <span id="highlightsHint" class="hint">digest preferred</span>
               </div>
 
               <div class="digest-kpis">
                 <div class="digest-kpi tone-articles">
                   <div class="k" id="digestKpiArticlesLabel">Articles</div>
                   <div id="kpiArticles" class="v">—</div>
-                  <div class="s" id="digestKpiArticlesSub">daily summary count</div>
+                  <div class="s">full article count</div>
                 </div>
                 <div class="digest-kpi tone-positive">
                   <div class="k" id="digestKpiPredictionRiskLabel">Prediction Risk</div>
                   <div id="kpiPredictionRisk" class="v">—</div>
-                  <div class="s" id="digestKpiPredictionRiskSub">prediction.overall_risk</div>
+                  <div class="s">prediction.latest.risk</div>
                 </div>
                 <div class="digest-kpi tone-negative">
                   <div class="k" id="digestKpiDominantScenarioLabel">Dominant Scenario</div>
                   <div id="kpiDominantScenario" class="v">—</div>
-                  <div class="s" id="digestKpiDominantScenarioSub">prediction.dominant_scenario</div>
+                  <div class="s">prediction.latest.dominant_scenario</div>
                 </div>
                 <div class="digest-kpi tone-neutral">
                   <div class="k" id="digestKpiConfidenceLabel">Confidence</div>
                   <div id="kpiConfidence" class="v">—</div>
-                  <div class="s" id="digestKpiConfidenceSub">prediction.confidence</div>
+                  <div class="s">prediction.latest.confidence_pct</div>
                 </div>
                 <div class="digest-kpi tone-mixed">
-                  <div class="k" id="digestKpiFxPairLabel">FX Source</div>
+                  <div class="k" id="digestKpiFxPairLabel">FX Pair</div>
                   <div id="kpiFxPair" class="v">—</div>
-                  <div class="s" id="digestKpiFxPairSub">fx.source</div>
+                  <div class="s">fx.latest.pair</div>
                 </div>
                 <div class="digest-kpi tone-fx">
                   <div class="k" id="digestKpiFxStatusLabel">FX Status</div>
                   <div id="kpiFxStatus" class="v">—</div>
-                  <div class="s" id="digestKpiFxStatusSub">fx.decision</div>
+                  <div class="s">fx.latest.status</div>
                 </div>
               </div>
 
@@ -90,17 +90,17 @@
                     <span id="predictionRiskPill" class="insightPill neutral">risk: --</span>
                     <span id="predictionConfPill" class="insightPill neutral">conf: --</span>
                   </div>
-                  <div id="predictionBody" class="insightBody">—</div>
+                  <div id="predictionBody" class="insightBody">Prediction not available.</div>
                 </div>
 
                 <div class="insightCard">
                   <div class="insightLabel" id="digestFxDecisionLabel">FX Decision</div>
                   <div id="fxValue" class="insightValue">—</div>
                   <div class="insightMeta">
-                    <span id="fxPairPill" class="insightPill neutral">source: --</span>
-                    <span id="fxActionPill" class="insightPill neutral">decision: --</span>
+                    <span id="fxPairPill" class="insightPill neutral">pair: --</span>
+                    <span id="fxActionPill" class="insightPill neutral">action: --</span>
                   </div>
-                  <div id="fxBody" class="insightBody">—</div>
+                  <div id="fxBody" class="insightBody">FX decision not available.</div>
                 </div>
               </div>
 
@@ -118,16 +118,16 @@
 
             <div class="toolbar">
               <div class="toolbar-left">
-                <button class="btn btn-small active" type="button" data-sort="risk" id="sortRiskBtn">Sort: risk</button>
-                <button class="btn btn-small" type="button" data-sort="score" id="sortScoreBtn">Sort: score</button>
-                <button class="btn btn-small" type="button" data-sort="newest" id="sortNewestBtn">Sort: newest</button>
+                <button class="btn btn-small active" type="button" data-sort="risk">Sort: risk</button>
+                <button class="btn btn-small" type="button" data-sort="score">Sort: score</button>
+                <button class="btn btn-small" type="button" data-sort="newest">Sort: newest</button>
               </div>
               <div class="toolbar-right">
                 <span id="articlesState" class="pill">loading…</span>
               </div>
             </div>
 
-            <div id="emptyState" class="emptyState">No articles available.</div>
+            <div id="emptyState" class="emptyState">No articles are available to display. Prioritize the Digest ViewModel, and only fall back to world_view_model_latest.json and then daily_news_latest.json when necessary.</div>
             <div id="articleGrid" class="articleGrid"></div>
             <div class="pillrow pillrow-top">
               <span id="articlesSource" class="pill">source: --</span>
@@ -140,161 +140,70 @@
 
   <div id="site-footer"></div>
 
-  <script src="/static/common/lang_manager.js?v=20260329-digest-final-2"></script>
-  <script src="/static/common/i18n.js?v=20260329-digest-final-2"></script>
-  <script src="/static/common/global_status.js?v=20260329-digest-final-2"></script>
-  <script src="/static/common/layout.js?v=20260329-digest-final-2"></script>
+  <script src="/static/common/lang_manager.js?v=20260323-lang-manager-1"></script>
+  <script src="/static/common/i18n.js?v=20260323-lang-manager-1"></script>
+  <script src="/static/common/global_status.js?v=20260318-digest-final-1"></script>
+  <script src="/static/common/layout.js?v=20260323-lang-manager-1"></script>
 
   <script>
     (function () {
       "use strict";
 
-      var SOURCES = {
-        globalStatus: "/analysis/global_status_latest.json",
-        summary: "/analysis/daily_summary_latest.json",
-        sentiment: "/analysis/sentiment_latest.json",
-        prediction: "/analysis/prediction_latest.json",
-        fx: "/analysis/fx/fx_decision_latest.json"
-      };
+      var DIGEST_CANDIDATES = [
+        "/data/digest/view_model_latest.json",
+        "/data/digest/view/view_model_latest.json",
+        "/analysis/digest/view_model_latest.json"
+      ];
 
-      var UI_TEXT = {
-        en: {
-          pageTitle: "Digest - GenesisPrediction v2",
-          title: "Digest",
-          hero: "Integrated view of Summary, Prediction, FX, and Articles.",
-          globalStatus: "Global Status",
-          summary: "Summary",
-          summaryReady: "daily summary latest",
-          summaryUnavailable: "summary unavailable",
-          highlights: "Highlights",
-          highlightsReady: "prediction + fx latest",
-          highlightsUnavailable: "highlight sources unavailable",
-          articles: "Articles",
-          predictionRisk: "Prediction Risk",
-          dominantScenario: "Dominant Scenario",
-          confidence: "Confidence",
-          fxSource: "FX Source",
-          fxStatus: "FX Status",
-          prediction: "Prediction",
-          fxDecision: "FX Decision",
-          articlesSub: "daily summary count",
-          predictionRiskSub: "prediction.overall_risk",
-          dominantScenarioSub: "prediction.dominant_scenario",
-          confidenceSub: "prediction.confidence",
-          fxSourceSub: "fx.source",
-          fxStatusSub: "fx.decision",
-          sourcePrefix: "source: ",
-          sortRisk: "Sort: risk",
-          sortScore: "Sort: score",
-          sortNewest: "Sort: newest",
-          articlesReady: "sentiment latest",
-          articlesUnavailable: "articles unavailable",
-          emptyArticles: "No articles available.",
-          topicOther: "other",
-          riskPill: "risk",
-          confPill: "conf",
-          fxSourcePill: "source",
-          fxDecisionPill: "decision",
-          unavailable: "unavailable",
-          unknown: "unknown"
-        },
-        ja: {
-          pageTitle: "ダイジェスト - GenesisPrediction v2",
-          title: "ダイジェスト",
-          hero: "Summary、Prediction、FX、Articles を統合表示します。",
-          globalStatus: "グローバルステータス",
-          summary: "サマリー",
-          summaryReady: "daily summary latest",
-          summaryUnavailable: "サマリー未取得",
-          highlights: "ハイライト",
-          highlightsReady: "prediction + fx latest",
-          highlightsUnavailable: "ハイライト元データ未取得",
-          articles: "記事",
-          predictionRisk: "予測リスク",
-          dominantScenario: "主要シナリオ",
-          confidence: "信頼度",
-          fxSource: "FXソース",
-          fxStatus: "FX状態",
-          prediction: "予測",
-          fxDecision: "FX判断",
-          articlesSub: "daily summary 件数",
-          predictionRiskSub: "prediction.overall_risk",
-          dominantScenarioSub: "prediction.dominant_scenario",
-          confidenceSub: "prediction.confidence",
-          fxSourceSub: "fx.source",
-          fxStatusSub: "fx.decision",
-          sourcePrefix: "source: ",
-          sortRisk: "並び順: risk",
-          sortScore: "並び順: score",
-          sortNewest: "並び順: newest",
-          articlesReady: "sentiment latest",
-          articlesUnavailable: "記事未取得",
-          emptyArticles: "表示できる記事がありません。",
-          topicOther: "その他",
-          riskPill: "risk",
-          confPill: "conf",
-          fxSourcePill: "source",
-          fxDecisionPill: "decision",
-          unavailable: "未取得",
-          unknown: "unknown"
-        },
-        th: {
-          pageTitle: "ไดเจสต์ - GenesisPrediction v2",
-          title: "ไดเจสต์",
-          hero: "มุมมองรวมของ Summary, Prediction, FX และ Articles",
-          globalStatus: "สถานะรวม",
-          summary: "สรุป",
-          summaryReady: "daily summary latest",
-          summaryUnavailable: "ไม่มีสรุป",
-          highlights: "ไฮไลต์",
-          highlightsReady: "prediction + fx latest",
-          highlightsUnavailable: "ไม่มีข้อมูลไฮไลต์",
-          articles: "บทความ",
-          predictionRisk: "ความเสี่ยงการคาดการณ์",
-          dominantScenario: "ฉากทัศน์หลัก",
-          confidence: "ความเชื่อมั่น",
-          fxSource: "แหล่ง FX",
-          fxStatus: "สถานะ FX",
-          prediction: "การคาดการณ์",
-          fxDecision: "การตัดสินใจ FX",
-          articlesSub: "จำนวนจาก daily summary",
-          predictionRiskSub: "prediction.overall_risk",
-          dominantScenarioSub: "prediction.dominant_scenario",
-          confidenceSub: "prediction.confidence",
-          fxSourceSub: "fx.source",
-          fxStatusSub: "fx.decision",
-          sourcePrefix: "source: ",
-          sortRisk: "เรียง: risk",
-          sortScore: "เรียง: score",
-          sortNewest: "เรียง: newest",
-          articlesReady: "sentiment latest",
-          articlesUnavailable: "ไม่มีบทความ",
-          emptyArticles: "ไม่มีบทความที่แสดงได้",
-          topicOther: "อื่นๆ",
-          riskPill: "risk",
-          confPill: "conf",
-          fxSourcePill: "source",
-          fxDecisionPill: "decision",
-          unavailable: "ไม่พร้อมใช้งาน",
-          unknown: "unknown"
-        }
-      };
+      var WORLD_VM_CANDIDATES = [
+        "/analysis/world_view_model_latest.json",
+        "/data/world_politics/analysis/view_model_latest.json",
+        "/analysis/view_model_latest.json"
+      ];
+
+      var SUMMARY_CANDIDATES = [
+        "/data/world_politics/analysis/daily_summary_latest.json",
+        "/analysis/daily_summary_latest.json",
+        "/analysis/world_politics/analysis/daily_summary_latest.json",
+        "/analysis/world_politics/daily_summary_latest.json"
+      ];
+
+      var NEWS_CANDIDATES = [
+        "/data/world_politics/analysis/daily_news_latest.json",
+        "/analysis/daily_news_latest.json",
+        "/analysis/world_politics/analysis/daily_news_latest.json",
+        "/analysis/world_politics/daily_news_latest.json"
+      ];
+
+      var SENTIMENT_CANDIDATES = [
+        "/data/world_politics/analysis/sentiment_latest.json",
+        "/analysis/sentiment_latest.json",
+        "/analysis/world_politics/analysis/sentiment_latest.json",
+        "/data/digest/sentiment_latest.json"
+      ];
 
       var state = {
         sort: "risk",
-        globalStatus: null,
-        summary: null,
-        sentiment: null,
-        prediction: null,
-        fx: null,
-        articles: []
+        articles: [],
+        digestPath: "-",
+        worldVmPath: "-",
+        summaryPath: "-",
+        newsPath: "-",
+        sentimentPath: "-",
+        summaryMode: "no-data",
+        articleMode: "no-data",
+        digestData: null,
+        worldVmData: null,
+        summaryData: null,
+        newsData: null,
+        sentimentRoot: null
       };
 
       function $(id) { return document.getElementById(id); }
 
-      function setText(id, value) {
+      function setText(id, v) {
         var el = $(id);
-        if (el) el.textContent = value == null ? "" : String(value);
+        if (el) el.textContent = v == null ? "" : String(v);
       }
 
       function firstDefined() {
@@ -316,62 +225,16 @@
         return text ? text : fallback;
       }
 
-      function getLang() {
-        var manager = window.GP_LANG_MANAGER;
-        if (manager && typeof manager.getLang === "function") {
-          return String(manager.getLang() || "en").toLowerCase();
-        }
-        return String(window.GP_LANG || document.documentElement.lang || "en").toLowerCase();
-      }
-
-      function ui(key) {
-        var lang = getLang();
-        if (lang !== "ja" && lang !== "th") lang = "en";
-        return (UI_TEXT[lang] && UI_TEXT[lang][key]) || UI_TEXT.en[key] || key;
-      }
-
-      function getI18n() {
-        return window.GP_I18N || window.GenesisI18n || null;
-      }
-
-      function pickI18n(i18nValue, fallback) {
-        var lang = getLang();
-        var i18n = getI18n();
-        if (i18n && typeof i18n.pickI18n === "function") {
-          var picked = i18n.pickI18n(i18nValue, fallback, lang);
-          if (picked !== undefined && picked !== null && picked !== "") return picked;
-        }
-        if (i18nValue && typeof i18nValue === "object" && !Array.isArray(i18nValue)) {
-          var direct = firstDefined(i18nValue[lang], i18nValue.en, i18nValue.ja, i18nValue.th);
-          return textOr(direct, fallback == null ? "" : fallback);
-        }
-        return textOr(i18nValue, fallback == null ? "" : fallback);
-      }
-
-      function pickText(obj, key, fallback) {
-        if (!obj) return fallback == null ? "" : fallback;
-        var i18n = getI18n();
-        if (i18n && typeof i18n.pickText === "function") {
-          var picked = i18n.pickText(obj, key, getLang());
-          if (picked !== undefined && picked !== null && picked !== "") return picked;
-        }
-        if (obj[key + "_i18n"]) {
-          var translated = pickI18n(obj[key + "_i18n"], "");
-          if (translated) return translated;
-        }
-        return textOr(obj[key], fallback == null ? "" : fallback);
-      }
-
       function fmtMetric(value) {
         var n = Number(value);
         if (!Number.isFinite(n)) return "--";
         return Math.abs(n) >= 100 ? String(Math.round(n)) : n.toFixed(2).replace(/\.00$/, "");
       }
 
-      function fmtPercentFromFraction(value) {
+      function fmtPercent(value) {
         var n = Number(value);
         if (!Number.isFinite(n)) return "--";
-        return (n * 100).toFixed(1).replace(/\.0$/, "") + "%";
+        return n.toFixed(1).replace(/\.0$/, "") + "%";
       }
 
       function fmtDate(value) {
@@ -379,7 +242,7 @@
         var d = new Date(value);
         if (Number.isNaN(d.getTime())) return String(value);
         try {
-          return d.toLocaleString(undefined, {
+          return d.toLocaleString("ja-JP", {
             year: "numeric",
             month: "2-digit",
             day: "2-digit",
@@ -402,9 +265,9 @@
 
       function normalizeStatusClass(value) {
         var v = String(value || "").trim().toUpperCase();
-        if (v === "SAFE" || v === "LOW" || v === "OK" || v === "READY" || v === "STABLE" || v === "POSITIVE") return "safe";
-        if (v === "CAUTION" || v === "WARN" || v === "WARNING" || v === "GUARDED" || v === "ELEVATED" || v === "MIX" || v === "MIXED" || v === "NEUTRAL" || v === "MONITOR") return "caution";
-        if (v === "DANGER" || v === "HIGH" || v === "CRITICAL" || v === "OFF" || v === "NG" || v === "ALERT" || v === "NEGATIVE") return "danger";
+        if (v === "SAFE" || v === "LOW" || v === "OK" || v === "READY" || v === "STABLE") return "safe";
+        if (v === "CAUTION" || v === "WARN" || v === "WARNING" || v === "GUARDED" || v === "ELEVATED" || v === "MIX") return "caution";
+        if (v === "DANGER" || v === "HIGH" || v === "CRITICAL" || v === "OFF" || v === "NG" || v === "ALERT") return "danger";
         return "neutral";
       }
 
@@ -415,151 +278,225 @@
         el.className = "insightPill " + normalizeStatusClass(statusValue);
       }
 
-      function fetchJson(url) {
-        return fetch(url, { cache: "no-store" })
-          .then(function (r) {
+      function fetchFirstJson(candidates) {
+        var i = 0;
+        function step() {
+          if (i >= candidates.length) return Promise.resolve(null);
+          var url = candidates[i++];
+          return fetch(url, { cache: "no-store" }).then(function (r) {
             if (!r.ok) throw new Error("HTTP " + r.status);
-            return r.json();
-          })
-          .catch(function () {
-            return null;
+            return r.json().then(function (j) {
+              return { url: url, data: j };
+            });
+          }).catch(function () {
+            return step();
           });
-      }
-
-      function pickTopics(summaryData) {
-        var topics = summaryData && summaryData.today && summaryData.today.topics;
-        if (!topics || typeof topics !== "object") return [];
-        var keys = Object.keys(topics).filter(function (key) {
-          return Number(topics[key]) > 0;
-        });
-        return keys.slice(0, 6).map(function (key) {
-          if (key === "other") return ui("topicOther");
-          return key;
-        });
-      }
-
-      function getSummaryBody(summaryData) {
-        if (!summaryData) return ui("unavailable");
-        var summaryText = firstDefined(
-          pickText(summaryData, "summary", ""),
-          pickText(summaryData, "text", ""),
-          pickText(summaryData, "text_summary", ""),
-          pickText(summaryData, "daily_summary", "")
-        );
-        return textOr(summaryText, ui("unavailable"));
-      }
-
-      function renderTopics(tags) {
-        var row = $("topicRow");
-        if (!row) return;
-        if (!tags.length) {
-          row.innerHTML = "";
-          return;
         }
-        row.innerHTML = tags.map(function (tag) {
-          return '<span class="topicTag">' + escapeHtml(tag) + '</span>';
-        }).join("");
+        return step();
       }
 
-      function getPredictionRisk(prediction) {
+      function getI18n() {
+        return window.GP_I18N || window.GenesisI18n || null;
+      }
+
+      function getCurrentLang() {
+        var manager = window.GP_LANG_MANAGER;
+        if (manager && typeof manager.getLang === "function") {
+          return String(manager.getLang() || "en").toLowerCase();
+        }
+        return String(window.GP_LANG || document.documentElement.lang || "en").toLowerCase();
+      }
+
+      function pickI18n(i18nValue, fallback) {
+        var lang = getCurrentLang();
+        var i18n = getI18n();
+        if (i18n && typeof i18n.pickI18n === "function") {
+          var picked = i18n.pickI18n(i18nValue, fallback, lang);
+          if (picked) return picked;
+        }
+        if (i18nValue && typeof i18nValue === "object" && !Array.isArray(i18nValue)) {
+          return textOr(
+            i18nValue[lang],
+            textOr(i18nValue.en, textOr(i18nValue.ja, textOr(i18nValue.th, fallback == null ? "" : fallback)))
+          );
+        }
+        return textOr(i18nValue, fallback == null ? "" : fallback);
+      }
+
+      function pickI18nList(i18nValue) {
+        var lang = getCurrentLang();
+        var i18n = getI18n();
+        if (i18n && typeof i18n.pickI18nList === "function") {
+          var picked = i18n.pickI18nList(i18nValue, lang);
+          if (Array.isArray(picked) && picked.length) return picked;
+        }
+        if (Array.isArray(i18nValue)) {
+          return i18nValue.map(function (item) {
+            return pickI18n(item, "");
+          }).filter(Boolean);
+        }
+        return [];
+      }
+
+      function pickText(obj, key, fallback) {
+        var i18n = getI18n();
+        if (i18n && typeof i18n.pickText === "function") {
+          var picked = i18n.pickText(obj, key, getCurrentLang());
+          if (picked) return picked;
+        }
+        if (obj && obj[key + "_i18n"]) {
+          var i18nPicked = pickI18n(obj[key + "_i18n"], "");
+          if (i18nPicked) return i18nPicked;
+        }
+        var direct = obj && obj[key];
+        return textOr(direct, fallback == null ? "" : fallback);
+      }
+
+      function pickList(obj, key) {
+        var i18n = getI18n();
+        if (i18n && typeof i18n.pickList === "function") {
+          var picked = i18n.pickList(obj, key, getCurrentLang());
+          if (Array.isArray(picked) && picked.length) return picked;
+        }
+        if (obj && obj[key + "_i18n"]) {
+          var i18nPicked = pickI18nList(obj[key + "_i18n"]);
+          if (Array.isArray(i18nPicked) && i18nPicked.length) return i18nPicked;
+        }
+        var direct = obj && obj[key];
+        return Array.isArray(direct) ? direct : [];
+      }
+
+      function getWorldPoliticsSection(vm) {
+        var sections = Array.isArray(vm && vm.sections) ? vm.sections : [];
+        for (var i = 0; i < sections.length; i++) {
+          var s = sections[i] || {};
+          var id = String(s.id || s.name || "").trim();
+          if (id === "world_politics" || id === "world-politics" || id === "worldPolitics") return s;
+        }
+        return sections[0] || null;
+      }
+
+      function getCards(vm) {
+        var section = getWorldPoliticsSection(vm);
+        if (section && Array.isArray(section.cards)) return section.cards;
+        if (vm && Array.isArray(vm.cards)) return vm.cards;
+        return [];
+      }
+
+      function getSentimentSummary(vm) {
+        return (vm && (vm.sentiment_summary || (vm.today && (vm.today.sentiment_summary || vm.today.sentiment)))) || {};
+      }
+
+      function getSummaryText(digest, worldVm, summaryData) {
         return firstDefined(
-          pickText(prediction, "overall_risk", ""),
-          pickText(prediction, "risk", ""),
-          prediction && prediction.overall_risk,
-          prediction && prediction.risk
+          digest && pickI18n(digest.summary_i18n, ""),
+          pickText(digest, "summary", ""),
+          worldVm && pickI18n(worldVm.summary_i18n, ""),
+          pickText(worldVm, "summary", ""),
+          worldVm && worldVm.today && pickI18n(worldVm.today.summary_i18n, ""),
+          worldVm && worldVm.today && pickText(worldVm.today, "summary", ""),
+          worldVm && worldVm.meta && pickI18n(worldVm.meta.summary_i18n, ""),
+          worldVm && worldVm.meta && pickText(worldVm.meta, "summary", ""),
+          summaryData && pickI18n(summaryData.summary_i18n, ""),
+          summaryData && pickText(summaryData, "summary", ""),
+          summaryData && pickI18n(summaryData.text_summary_i18n, ""),
+          summaryData && pickText(summaryData, "text_summary", ""),
+          summaryData && pickI18n(summaryData.daily_summary_i18n, ""),
+          summaryData && pickText(summaryData, "daily_summary", ""),
+          "No summary available."
         );
       }
 
-      function getPredictionDominantScenario(prediction) {
-        return firstDefined(
-          pickText(prediction, "dominant_scenario", ""),
-          prediction && prediction.dominant_scenario
-        );
+      function getTopicTags(digest, worldVm, summaryData) {
+        var out = [];
+
+        function push(value) {
+          if (value == null) return;
+          if (Array.isArray(value)) {
+            value.forEach(push);
+            return;
+          }
+          var text = String(value).trim();
+          if (text) out.push(text);
+        }
+
+        push(pickList(digest, "highlights"));
+        push(worldVm && pickList(worldVm, "topics"));
+        push(worldVm && worldVm.today && pickList(worldVm.today, "topics"));
+        push(summaryData && pickList(summaryData, "topics"));
+        push(digest && pickList(digest, "highlights"));
+        push(worldVm && worldVm.topics);
+        push(worldVm && worldVm.today && worldVm.today.topics);
+        push(summaryData && summaryData.topics);
+
+        return Array.from(new Set(out)).slice(0, 8);
       }
 
-      function getPredictionSummary(prediction) {
-        return firstDefined(
-          pickText(prediction, "summary", ""),
-          pickText(prediction, "prediction_statement", ""),
-          pickText(prediction, "primary_narrative", ""),
-          ui("unavailable")
-        );
+      function normalizeLabel(raw) {
+        var v = String(raw || "unknown").toLowerCase();
+        if (v === "positive" || v === "negative" || v === "neutral" || v === "mixed" || v === "unknown") return v;
+        return "unknown";
       }
 
-      function renderKpis() {
-        var summary = state.summary || {};
-        var prediction = state.prediction || {};
-        var fx = state.fx || {};
-
-        var articleCount = firstDefined(
-          summary.today && summary.today.count,
-          state.articles.length,
-          0
-        );
-        var riskText = textOr(getPredictionRisk(prediction), "--");
-        var scenarioText = textOr(getPredictionDominantScenario(prediction), "--");
-        var confidenceText = prediction && prediction.confidence != null ? fmtPercentFromFraction(prediction.confidence) : "--";
-        var fxSource = textOr(firstDefined(fx.source, summary.sources && summary.sources.predictions_file), "--");
-        var fxDecision = textOr(firstDefined(fx.decision, fx.regime, fx.status), "--");
-
-        setText("kpiArticles", String(articleCount));
-        setText("kpiPredictionRisk", riskText);
-        setText("kpiDominantScenario", scenarioText);
-        setText("kpiConfidence", confidenceText);
-        setText("kpiFxPair", fxSource);
-        setText("kpiFxStatus", fxDecision);
+      function pickValue(value, fallback) {
+        var i18n = getI18n();
+        if (i18n && typeof i18n.pickI18n === "function") {
+          var picked = i18n.pickI18n(value, "");
+          if (picked) return picked;
+        }
+        if (value && typeof value === "object") {
+          return textOr(firstDefined(value.name, value.id, value.label, value.text), fallback);
+        }
+        return textOr(value, fallback);
       }
 
-      function renderInsights() {
-        var prediction = state.prediction || {};
-        var fx = state.fx || {};
-
-        var riskText = textOr(getPredictionRisk(prediction), "--");
-        var scenarioText = textOr(getPredictionDominantScenario(prediction), "--");
-        var confidenceText = prediction && prediction.confidence != null ? fmtPercentFromFraction(prediction.confidence) : "--";
-        var predictionBody = getPredictionSummary(prediction);
-
-        setText("predictionValue", scenarioText);
-        setText("predictionBody", predictionBody);
-        applyInsightPill("predictionRiskPill", ui("riskPill") + ": " + riskText, riskText);
-        applyInsightPill("predictionConfPill", ui("confPill") + ": " + confidenceText, riskText);
-
-        var fxDecision = textOr(firstDefined(fx.decision, fx.regime, fx.status), "--");
-        var fxSource = textOr(firstDefined(fx.source, "--"), "--");
-        var fxBody = textOr(firstDefined(fx.reason, fx.summary, fx.source), ui("unavailable"));
-
-        setText("fxValue", fxDecision);
-        setText("fxBody", fxBody);
-        applyInsightPill("fxPairPill", ui("fxSourcePill") + ": " + fxSource, fxDecision);
-        applyInsightPill("fxActionPill", ui("fxDecisionPill") + ": " + fxDecision, fxDecision);
-      }
-
-      function normalizeArticle(item, index) {
-        item = item || {};
+      function normalizeArticle(card, index) {
+        card = card || {};
+        var sentiment = card.sentiment || {};
         var labelKey = firstDefined(
-          item.sentiment_label,
-          item.sentiment,
-          item.label,
-          "unknown"
+          sentiment.sentiment_label,
+          sentiment.sentiment,
+          sentiment.label,
+          card.sentiment_label,
+          card.sentiment,
+          card.label
         );
-        var labelText = firstDefined(
-          pickText(item, "sentiment_label", ""),
-          pickText(item, "sentiment", ""),
-          labelKey
-        );
+        var label = normalizeLabel(labelKey);
         return {
-          title: textOr(pickText(item, "title", ""), "Article " + (index + 1)),
-          summary: textOr(firstDefined(pickText(item, "summary", ""), pickText(item, "description", "")), ""),
+          title: textOr(firstDefined(pickText(card, "title", ""), pickText(card, "headline", ""), pickValue(card.title_i18n, ""), pickValue(card.headline_i18n, ""), card.title, card.headline), "Untitled article " + (index + 1)),
+          summary: textOr(firstDefined(pickText(card, "summary", ""), pickText(card, "description", ""), pickText(card, "content", ""), pickValue(card.summary_i18n, ""), pickValue(card.description_i18n, ""), pickValue(card.content_i18n, ""), card.summary, card.description, card.content), "Summary not available."),
+          url: firstDefined(card.url, card.link, "#") || "#",
+          image: firstDefined(card.image, card.urlToImage, card.thumbnail, card.image_url),
+          source: textOr(firstDefined(pickText(card, "source", ""), pickText(card, "publisher", ""), pickText(card, "domain", ""), pickValue(card.source_i18n, ""), pickValue(card.publisher_i18n, ""), card.source && pickValue(card.source, ""), card.publisher && pickValue(card.publisher, ""), card.domain), "Unknown source"),
+          category: textOr(firstDefined(pickText(card, "category", ""), pickValue(card.category_i18n, ""), card.category && pickValue(card.category, "")), ""),
+          publishedAt: firstDefined(card.publishedAt, card.published_at, card.date, card.datetime),
+          label: label,
+          labelText: textOr(firstDefined(pickText(card, "label", ""), pickValue(card.label_i18n, ""), pickValue(labelKey, ""), label), label),
+          risk: toNumber(firstDefined(sentiment.risk, sentiment.riskScore, card.risk, card.risk_score), 0),
+          score: toNumber(firstDefined(sentiment.score, sentiment.net, card.score, card.net), 0),
+          positive: toNumber(firstDefined(sentiment.positive, card.positive), 0),
+          uncertainty: toNumber(firstDefined(sentiment.uncertainty, card.uncertainty), 0)
+        };
+      }
+
+      function normalizeNewsArticle(item, index) {
+        item = item || {};
+        var source = item.source;
+        if (source && typeof source === "object") source = source.name || source.id || "";
+        return {
+          title: textOr(firstDefined(pickText(item, "title", ""), pickText(item, "headline", ""), pickValue(item.title_i18n, ""), item.title, item.headline), "News " + (index + 1)),
+          summary: textOr(firstDefined(pickText(item, "description", ""), pickText(item, "summary", ""), pickText(item, "content", ""), pickValue(item.description_i18n, ""), pickValue(item.summary_i18n, ""), item.description, item.summary, item.content), "Summary not available."),
           url: firstDefined(item.url, item.link, "#") || "#",
-          image: firstDefined(item.image, item.urlToImage, item.thumbnail),
-          source: textOr(pickText(item, "source", ""), ui("unknown")),
+          image: firstDefined(item.urlToImage, item.image, item.thumbnail),
+          source: textOr(firstDefined(pickText(item, "source", ""), pickText(item, "publisher", ""), pickValue(item.source_i18n, ""), pickValue(source, ""), item.publisher), "Unknown source"),
+          category: textOr(firstDefined(pickText(item, "category", ""), pickValue(item.category_i18n, ""), item.category), ""),
           publishedAt: firstDefined(item.publishedAt, item.published_at, item.date),
-          label: String(labelKey || "unknown").toLowerCase(),
-          labelText: textOr(labelText, String(labelKey || "unknown").toLowerCase()),
-          risk: toNumber(item.risk, 0),
-          score: toNumber(firstDefined(item.score, item.net), 0),
-          positive: toNumber(item.positive, 0),
-          uncertainty: toNumber(item.uncertainty, 0)
+          label: "unknown",
+          labelText: textOr(firstDefined(pickText(item, "label", ""), pickValue(item.label_i18n, ""), item.label), "unknown"),
+          risk: 0,
+          score: 0,
+          positive: 0,
+          uncertainty: 0
         };
       }
 
@@ -571,18 +508,79 @@
       function sortArticles(articles, sort) {
         var list = articles.slice();
         if (sort === "score") {
-          return list.sort(function (a, b) {
-            return (b.score - a.score) || (b.risk - a.risk);
-          });
+          return list.sort(function (a, b) { return (b.score - a.score) || (b.risk - a.risk); });
         }
         if (sort === "newest") {
-          return list.sort(function (a, b) {
-            return new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0);
-          });
+          return list.sort(function (a, b) { return new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0); });
         }
-        return list.sort(function (a, b) {
-          return (b.risk - a.risk) || (b.score - a.score);
-        });
+        return list.sort(function (a, b) { return (b.risk - a.risk) || (b.score - a.score); });
+      }
+
+      function renderTopics(tags) {
+        var row = $("topicRow");
+        if (!row) return;
+        if (!tags.length) {
+          row.innerHTML = '<span class="topicTag">highlights unavailable</span>';
+          return;
+        }
+        row.innerHTML = tags.map(function (tag) {
+          return '<span class="topicTag">' + escapeHtml(tag) + '</span>';
+        }).join("");
+      }
+
+      function renderKpis(digest, sentimentSummary, articleCount) {
+        var prediction = (digest && digest.prediction) || {};
+        var fx = (digest && digest.fx) || {};
+
+        setText("kpiArticles", String(toNumber(firstDefined(
+          digest && digest.meta && digest.meta.n_events,
+          sentimentSummary.articles,
+          articleCount
+        ), articleCount)));
+
+        setText("kpiPredictionRisk", textOr(pickText(prediction, "risk", "--"), "--").toUpperCase());
+        setText("kpiDominantScenario", textOr(pickText(prediction, "dominant_scenario", "--"), "--"));
+        setText("kpiConfidence", prediction.confidence_pct != null ? fmtPercent(prediction.confidence_pct) : "--");
+        setText("kpiFxPair", textOr(pickText(fx, "pair", "--"), "--"));
+        setText("kpiFxStatus", textOr(firstDefined(pickText(fx, "status", ""), fx.raw_status), "--").toUpperCase());
+      }
+
+      function renderInsights(digest) {
+        var prediction = (digest && digest.prediction) || {};
+        var fx = (digest && digest.fx) || {};
+
+        setText("predictionValue", textOr(pickText(prediction, "dominant_scenario", "--"), "--"));
+        setText(
+          "predictionBody",
+          textOr(
+            firstDefined(
+              pickText(prediction, "summary", ""),
+              pickText(prediction, "prediction_statement", ""),
+              pickText(prediction, "primary_narrative", "")
+            ),
+            "Prediction not available."
+          )
+        );
+        applyInsightPill("predictionRiskPill", "risk: " + textOr(pickText(prediction, "risk", "--"), "--").toUpperCase(), prediction.risk);
+        applyInsightPill(
+          "predictionConfPill",
+          "conf: " + (prediction.confidence_pct != null ? fmtPercent(prediction.confidence_pct) : "--"),
+          prediction.risk
+        );
+
+        setText("fxValue", textOr(firstDefined(pickText(fx, "status", ""), fx.raw_status), "--").toUpperCase());
+        setText(
+          "fxBody",
+          textOr(
+            firstDefined(
+              pickText(fx, "summary", ""),
+              pickText(fx, "reason", "")
+            ),
+            "FX decision not available."
+          )
+        );
+        applyInsightPill("fxPairPill", "pair: " + textOr(pickText(fx, "pair", "--"), "--"), fx.status || fx.raw_status);
+        applyInsightPill("fxActionPill", "action: " + textOr(pickText(fx, "action", "--"), "--"), fx.status || fx.raw_status);
       }
 
       function articleCard(article) {
@@ -597,17 +595,18 @@
             '<div class="thumbWrap">' + imageHtml + '</div>' +
             '<div class="articleBody">' +
               '<div class="articleMeta">' +
-                '<span class="badge ' + escapeHtml(article.label) + '">' + escapeHtml(article.labelText) + '</span>' +
+                '<span class="badge ' + escapeHtml(article.label) + '">' + escapeHtml(article.labelText || article.label) + '</span>' +
+                (article.category ? '<span class="badge">' + escapeHtml(article.category) + '</span>' : '') +
                 '<span class="badge">' + escapeHtml(article.source) + '</span>' +
                 '<span class="badge">' + escapeHtml(fmtDate(article.publishedAt)) + '</span>' +
               '</div>' +
               '<h3 class="articleTitle"><a href="' + escapeHtml(safeUrl) + '"' + target + '>' + escapeHtml(article.title) + '</a></h3>' +
               '<p class="articleSummary">' + escapeHtml(article.summary) + '</p>' +
               '<div class="scoreRow">' +
-                '<span class="scorePill">R ' + escapeHtml(fmtMetric(article.risk)) + '</span>' +
-                '<span class="scorePill">S ' + escapeHtml(fmtMetric(article.score)) + '</span>' +
-                '<span class="scorePill">P ' + escapeHtml(fmtMetric(article.positive)) + '</span>' +
-                '<span class="scorePill">U ' + escapeHtml(fmtMetric(article.uncertainty)) + '</span>' +
+                '<span class="scorePill">risk ' + escapeHtml(fmtMetric(article.risk)) + '</span>' +
+                '<span class="scorePill">score ' + escapeHtml(fmtMetric(article.score)) + '</span>' +
+                '<span class="scorePill">positive ' + escapeHtml(fmtMetric(article.positive)) + '</span>' +
+                '<span class="scorePill">unc ' + escapeHtml(fmtMetric(article.uncertainty)) + '</span>' +
               '</div>' +
             '</div>' +
           '</article>';
@@ -619,63 +618,17 @@
         var sorted = sortArticles(state.articles, state.sort);
 
         if (!sorted.length) {
-          if (grid) grid.innerHTML = "";
-          if (empty) empty.style.display = "block";
+          grid.innerHTML = "";
+          empty.style.display = "block";
           setText("renderedCount", "0");
           setText("totalCount", "0");
           return;
         }
 
-        if (empty) empty.style.display = "none";
-        if (grid) grid.innerHTML = sorted.map(articleCard).join("");
+        empty.style.display = "none";
+        grid.innerHTML = sorted.map(articleCard).join("");
         setText("renderedCount", String(sorted.length));
         setText("totalCount", String(sorted.length));
-      }
-
-      function applyStaticText() {
-        document.title = ui("pageTitle");
-        setText("digestTitle", ui("title"));
-        setText("heroText", ui("hero"));
-        setText("digestGlobalStatusTitle", ui("globalStatus"));
-        setText("digestSummaryTitle", ui("summary"));
-        setText("digestHighlightsTitle", ui("highlights"));
-        setText("digestArticlesTitle", ui("articles"));
-        setText("digestKpiArticlesLabel", ui("articles"));
-        setText("digestKpiPredictionRiskLabel", ui("predictionRisk"));
-        setText("digestKpiDominantScenarioLabel", ui("dominantScenario"));
-        setText("digestKpiConfidenceLabel", ui("confidence"));
-        setText("digestKpiFxPairLabel", ui("fxSource"));
-        setText("digestKpiFxStatusLabel", ui("fxStatus"));
-        setText("digestPredictionLabel", ui("prediction"));
-        setText("digestFxDecisionLabel", ui("fxDecision"));
-        setText("digestKpiArticlesSub", ui("articlesSub"));
-        setText("digestKpiPredictionRiskSub", ui("predictionRiskSub"));
-        setText("digestKpiDominantScenarioSub", ui("dominantScenarioSub"));
-        setText("digestKpiConfidenceSub", ui("confidenceSub"));
-        setText("digestKpiFxPairSub", ui("fxSourceSub"));
-        setText("digestKpiFxStatusSub", ui("fxStatusSub"));
-        setText("sortRiskBtn", ui("sortRisk"));
-        setText("sortScoreBtn", ui("sortScore"));
-        setText("sortNewestBtn", ui("sortNewest"));
-        setText("emptyState", ui("emptyArticles"));
-      }
-
-      function renderView() {
-        applyStaticText();
-
-        setText("summaryHint", state.summary ? ui("summaryReady") : ui("summaryUnavailable"));
-        setText("highlightsHint", (state.prediction || state.fx) ? ui("highlightsReady") : ui("highlightsUnavailable"));
-        setText("articlesState", state.articles.length ? ui("articlesReady") : ui("articlesUnavailable"));
-
-        setText("summarySource", ui("sourcePrefix") + SOURCES.summary);
-        setText("highlightsSource", ui("sourcePrefix") + SOURCES.prediction + " / " + SOURCES.fx);
-        setText("articlesSource", ui("sourcePrefix") + SOURCES.sentiment);
-
-        setText("summaryBody", getSummaryBody(state.summary));
-        renderTopics(pickTopics(state.summary));
-        renderKpis();
-        renderInsights();
-        renderArticles();
       }
 
       function wireToolbar() {
@@ -683,44 +636,291 @@
         buttons.forEach(function (button) {
           button.addEventListener("click", function () {
             state.sort = button.dataset.sort;
-            buttons.forEach(function (el) {
-              el.classList.toggle("active", el === button);
-            });
+            buttons.forEach(function (el) { el.classList.toggle("active", el === button); });
             renderArticles();
           });
         });
       }
 
+      function renderView() {
+        var digest = state.digestData;
+        var worldVm = state.worldVmData;
+        var summaryData = state.summaryData;
+        var newsData = state.newsData;
+        var sentimentRoot = state.sentimentRoot;
+
+        var digestCards = digest ? getCards(digest).map(normalizeArticle) : [];
+        var worldCards = worldVm ? getCards(worldVm).map(normalizeArticle) : [];
+        var newsItemsRaw =
+          Array.isArray(newsData && newsData.items) ? newsData.items :
+          Array.isArray(newsData && newsData.articles) ? newsData.articles :
+          Array.isArray(newsData) ? newsData :
+          [];
+        var newsItems = newsItemsRaw.map(normalizeNewsArticle);
+
+        state.summaryMode = digest ? "digest" : (worldVm ? "world-fallback" : (summaryData ? "summary-fallback" : "no-data"));
+        state.articleMode = digestCards.length ? "digest" : (worldCards.length ? "world-fallback" : (newsItems.length ? "news-fallback" : "no-data"));
+        state.articles = digestCards.length ? digestCards : (worldCards.length ? worldCards : newsItems);
+
+        var sentimentSummary = getSentimentSummary(worldVm || {});
+        if ((toNumber(firstDefined(sentimentSummary.positive_count, sentimentSummary.positive), 0) +
+            toNumber(firstDefined(sentimentSummary.negative_count, sentimentSummary.negative), 0) +
+            toNumber(firstDefined(sentimentSummary.neutral_count, sentimentSummary.neutral), 0) +
+            toNumber(firstDefined(sentimentSummary.mixed_count, sentimentSummary.mixed), 0) +
+            toNumber(firstDefined(sentimentSummary.unknown_count, sentimentSummary.unknown), 0)) <= 0 && sentimentRoot) {
+          sentimentSummary = {
+            articles: firstDefined(
+              sentimentRoot.today && sentimentRoot.today.articles,
+              sentimentRoot.items && sentimentRoot.items.length,
+              state.articles.length
+            ),
+            positive_count: firstDefined(
+              sentimentRoot.summary && sentimentRoot.summary.positive,
+              sentimentRoot.today && sentimentRoot.today.label_counts && sentimentRoot.today.label_counts.positive,
+              0
+            ),
+            negative_count: firstDefined(
+              sentimentRoot.summary && sentimentRoot.summary.negative,
+              sentimentRoot.today && sentimentRoot.today.label_counts && sentimentRoot.today.label_counts.negative,
+              0
+            ),
+            neutral_count: firstDefined(
+              sentimentRoot.summary && sentimentRoot.summary.neutral,
+              sentimentRoot.today && sentimentRoot.today.label_counts && sentimentRoot.today.label_counts.neutral,
+              0
+            ),
+            mixed_count: firstDefined(
+              sentimentRoot.summary && sentimentRoot.summary.mixed,
+              sentimentRoot.today && sentimentRoot.today.label_counts && sentimentRoot.today.label_counts.mixed,
+              0
+            ),
+            unknown_count: firstDefined(
+              sentimentRoot.summary && sentimentRoot.summary.unknown,
+              sentimentRoot.today && sentimentRoot.today.label_counts && sentimentRoot.today.label_counts.unknown,
+              0
+            )
+          };
+        }
+
+        var summaryText = textOr(getSummaryText(digest, worldVm, summaryData || {}), "No summary available.");
+        var topicTags = getTopicTags(digest, worldVm, summaryData || {});
+
+        setText("summaryBody", summaryText);
+        setText(
+          "summaryHint",
+          state.summaryMode === "digest" ? "digest preferred" :
+          state.summaryMode === "world-fallback" ? "world view fallback" :
+          state.summaryMode === "summary-fallback" ? "daily summary fallback" :
+          "no data"
+        );
+
+        setText(
+          "summarySource",
+          "source: " + (
+            state.summaryMode === "digest" ? state.digestPath :
+            state.summaryMode === "world-fallback" ? state.worldVmPath :
+            state.summaryPath
+          )
+        );
+
+        setText(
+          "highlightsSource",
+          "source: " + state.digestPath +
+          (state.sentimentPath !== "-" ? " / " + state.sentimentPath : "")
+        );
+
+        setText(
+          "articlesSource",
+          "source: " + (
+            state.articleMode === "digest" ? state.digestPath :
+            state.articleMode === "world-fallback" ? state.worldVmPath :
+            state.newsPath
+          )
+        );
+
+        setText(
+          "articlesState",
+          state.articleMode === "digest" ? "digest cards preferred" :
+          state.articleMode === "world-fallback" ? "world_view_model_latest fallback" :
+          state.articleMode === "news-fallback" ? "daily_news_latest fallback" :
+          "no articles"
+        );
+
+        if (state.summaryMode === "digest") {
+          setText("heroText", "Prioritize the Digest ViewModel and present Summary, Highlights, Prediction, and FX. If article cards are unavailable, fall back to the world view model or then to news.");
+          setText("highlightsHint", "digest preferred");
+        } else if (state.summaryMode === "world-fallback") {
+          setText("heroText", "The Digest ViewModel could not be loaded, so world_view_model_latest.json is being used as a fallback. Once Digest is generated, prefer the digest view model.");
+          setText("highlightsHint", "world fallback");
+        } else if (state.summaryMode === "summary-fallback") {
+          setText("heroText", "Digest and World View could not be loaded, so daily_summary_latest.json is being used as a fallback. In normal operation, prefer the digest view model.");
+          setText("highlightsHint", "summary fallback");
+        } else {
+          setText("heroText", "Digest, Summary, and News could not be loaded. Reload the page after data generation completes.");
+          setText("highlightsHint", "no data");
+        }
+
+        renderTopics(topicTags);
+        renderKpis(digest, sentimentSummary, state.articles.length);
+        renderInsights(digest);
+        renderArticles();
+      }
+
       async function init() {
         wireToolbar();
 
-        var loaded = await Promise.all([
-          fetchJson(SOURCES.globalStatus),
-          fetchJson(SOURCES.summary),
-          fetchJson(SOURCES.sentiment),
-          fetchJson(SOURCES.prediction),
-          fetchJson(SOURCES.fx)
-        ]);
+        var digestResult = await fetchFirstJson(DIGEST_CANDIDATES);
+        var worldVmResult = await fetchFirstJson(WORLD_VM_CANDIDATES);
+        var summaryResult = await fetchFirstJson(SUMMARY_CANDIDATES);
+        var newsResult = await fetchFirstJson(NEWS_CANDIDATES);
+        var sentimentResult = await fetchFirstJson(SENTIMENT_CANDIDATES);
 
-        state.globalStatus = loaded[0];
-        state.summary = loaded[1];
-        state.sentiment = loaded[2];
-        state.prediction = loaded[3];
-        state.fx = loaded[4];
-        state.articles = Array.isArray(state.sentiment && state.sentiment.items)
-          ? state.sentiment.items.map(normalizeArticle)
-          : [];
+        state.digestData = digestResult && digestResult.data ? digestResult.data : null;
+        state.worldVmData = worldVmResult && worldVmResult.data ? worldVmResult.data : null;
+        state.summaryData = summaryResult && summaryResult.data ? summaryResult.data : null;
+        state.newsData = newsResult && newsResult.data ? newsResult.data : null;
+        state.sentimentRoot = sentimentResult && sentimentResult.data ? sentimentResult.data : null;
+
+        state.digestPath = digestResult && digestResult.url ? digestResult.url : "-";
+        state.worldVmPath = worldVmResult && worldVmResult.url ? worldVmResult.url : "-";
+        state.summaryPath = summaryResult && summaryResult.url ? summaryResult.url : "-";
+        state.newsPath = newsResult && newsResult.url ? newsResult.url : "-";
+        state.sentimentPath = sentimentResult && sentimentResult.url ? sentimentResult.url : "-";
 
         renderView();
       }
 
       init();
 
-      var evt = (window.GP_LANG_MANAGER && window.GP_LANG_MANAGER.LANG_CHANGED_EVENT) || "gp:lang-changed";
-      window.addEventListener(evt, renderView);
-      document.addEventListener(evt, renderView);
-      document.addEventListener("DOMContentLoaded", renderView);
+      var digestLangEvent = (window.GP_LANG_MANAGER && window.GP_LANG_MANAGER.LANG_CHANGED_EVENT) || "gp:lang-changed";
+      window.addEventListener(digestLangEvent, renderView);
+      document.addEventListener(digestLangEvent, renderView);
     })();
   </script>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var UI_TEXT = {
+        en: {
+          title: "Digest",
+          hero: "Prioritize the Digest ViewModel and present an integrated view of Summary, Highlights, Prediction, and FX.",
+          globalStatus: "Global Status",
+          summary: "Summary",
+          highlights: "Highlights",
+          articles: "Articles",
+          predictionRisk: "Prediction Risk",
+          dominantScenario: "Dominant Scenario",
+          confidence: "Confidence",
+          fxPair: "FX Pair",
+          fxStatus: "FX Status",
+          prediction: "Prediction",
+          fxDecision: "FX Decision"
+        },
+        ja: {
+          title: "ダイジェスト",
+          hero: "Digest ViewModel を優先し、Summary、Highlights、Prediction、FX を統合表示します。",
+          globalStatus: "グローバルステータス",
+          summary: "サマリー",
+          highlights: "ハイライト",
+          articles: "記事",
+          predictionRisk: "予測リスク",
+          dominantScenario: "支配的シナリオ",
+          confidence: "信頼度",
+          fxPair: "FXペア",
+          fxStatus: "FX状態",
+          prediction: "予測",
+          fxDecision: "FX判断"
+        },
+        th: {
+          title: "ไดเจสต์",
+          hero: "ให้ความสำคัญกับ Digest ViewModel และแสดงภาพรวมแบบบูรณาการของ Summary, Highlights, Prediction และ FX",
+          globalStatus: "สถานะรวม",
+          summary: "สรุป",
+          highlights: "ไฮไลต์",
+          articles: "บทความ",
+          predictionRisk: "ความเสี่ยงการคาดการณ์",
+          dominantScenario: "ฉากทัศน์เด่น",
+          confidence: "ความเชื่อมั่น",
+          fxPair: "คู่ FX",
+          fxStatus: "สถานะ FX",
+          prediction: "การคาดการณ์",
+          fxDecision: "การตัดสินใจ FX"
+        }
+      };
+
+      function getLang() {
+        var m = window.GP_LANG_MANAGER;
+        if (m && typeof m.getLang === "function") return String(m.getLang() || "en").toLowerCase();
+        return String(window.GP_LANG || document.documentElement.lang || "en").toLowerCase();
+      }
+
+      function text(key) {
+        var lang = getLang();
+        if (lang !== "ja" && lang !== "th") lang = "en";
+        return (UI_TEXT[lang] && UI_TEXT[lang][key]) || UI_TEXT.en[key] || key;
+      }
+
+      function set(id, value) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = value;
+      }
+
+      function applyDigestStaticHeadings() {
+        set("digestTitle", text("title"));
+        set("heroText", text("hero"));
+        set("digestGlobalStatusTitle", text("globalStatus"));
+        set("digestSummaryTitle", text("summary"));
+        set("digestHighlightsTitle", text("highlights"));
+        set("digestKpiArticlesLabel", text("articles"));
+        set("digestKpiPredictionRiskLabel", text("predictionRisk"));
+        set("digestKpiDominantScenarioLabel", text("dominantScenario"));
+        set("digestKpiConfidenceLabel", text("confidence"));
+        set("digestKpiFxPairLabel", text("fxPair"));
+        set("digestKpiFxStatusLabel", text("fxStatus"));
+        set("digestPredictionLabel", text("prediction"));
+        set("digestFxDecisionLabel", text("fxDecision"));
+        set("digestArticlesTitle", text("articles"));
+      }
+
+      function scheduleApply() {
+        applyDigestStaticHeadings();
+        window.requestAnimationFrame(applyDigestStaticHeadings);
+        window.setTimeout(applyDigestStaticHeadings, 0);
+        window.setTimeout(applyDigestStaticHeadings, 80);
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", scheduleApply);
+      } else {
+        scheduleApply();
+      }
+
+      var evt = (window.GP_LANG_MANAGER && window.GP_LANG_MANAGER.LANG_CHANGED_EVENT) || "gp:lang-changed";
+      window.addEventListener(evt, scheduleApply);
+      document.addEventListener(evt, scheduleApply);
+
+      if (document.documentElement) {
+        var observer = new MutationObserver(function (mutations) {
+          for (var i = 0; i < mutations.length; i++) {
+            if (mutations[i].attributeName === "lang") {
+              scheduleApply();
+              break;
+            }
+          }
+        });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
+      }
+
+      document.addEventListener("change", function (event) {
+        var target = event && event.target;
+        if (target && target.id === "langSwitch") {
+          scheduleApply();
+        }
+      }, true);
+    })();
+  </script>
+
 </body>
 </html>
