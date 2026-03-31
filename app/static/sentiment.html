@@ -195,6 +195,216 @@
 
   <div id="site-footer"></div>
 
+  <script src="/static/common/lang_manager.js?v=20260323-lang-manager-1"></script>
+  <script src="/static/common/i18n.js?v=20260323-lang-manager-1"></script>
+  <script src="/static/common/global_status.js?v=20260318-sentiment-compact-1"></script>
+  <script src="/static/common/layout.js?v=20260323-lang-manager-1"></script>
+
+  <script>
+    (function () {
+      "use strict";
+
+      const UI_TEXT = {
+        en: {
+          "sentiment.title": "Sentiment",
+          "sentiment.subtitle": "Articles + thumbnails + sentiment join + 3-axis trend.",
+          "sentiment.controls": "Controls",
+          "sentiment.as_of": "as_of",
+          "sentiment.date": "date",
+          "sentiment.risk": "risk",
+          "sentiment.avg": "avg",
+          "sentiment.positive": "positive",
+          "sentiment.uncertainty": "uncertainty",
+          "sentiment.sources": "sources",
+          "sentiment.search_placeholder": "search (title/source/summary)",
+          "sentiment.all": "All",
+          "sentiment.positive_label": "Positive",
+          "sentiment.negative_label": "Negative",
+          "sentiment.neutral_label": "Neutral",
+          "sentiment.mixed_label": "Mixed",
+          "sentiment.unknown_label": "Unknown",
+          "sentiment.sort_risk": "risk ↓",
+          "sentiment.sort_positive": "positive ↓",
+          "sentiment.sort_uncertainty": "uncertainty ↓",
+          "sentiment.sort_net": "net ↓",
+          "sentiment.sort_date": "date ↓",
+          "sentiment.show_missing": "show missing",
+          "sentiment.trend_title": "3-Axis Trend",
+          "sentiment.trend_lead": "Risk / Positive / Uncertainty are displayed as independent lanes",
+          "sentiment.how_1": "Load sentiment_latest.json and use provided metrics / labels",
+          "sentiment.how_2": "Join by URL for title completion; fallback uses favicon",
+          "sentiment.how_3": "Join by URL for title completion; fallback uses favicon",
+          "sentiment.how_4": "Render sentiment_timeseries.csv as a 3-axis trend",
+          "sentiment.articles": "Articles",
+          "sentiment.th_title_summary_url": "title / summary / url",
+          "sentiment.th_source_date_sentiment": "source / date / sentiment",
+          "sentiment.metrics": "metrics",
+          "sentiment.open_json": "Open JSON",
+          "sentiment.open_csv": "Open CSV",
+          "sentiment.reload": "Reload",
+          "sentiment.reset_filters": "Reset filters",
+          "sentiment.open_sentiment_json": "Open sentiment_latest.json",
+          "sentiment.open_timeseries_csv": "Open sentiment_timeseries.csv",
+          "sentiment.showing": "showing",
+          "sentiment.items_prefix": "items",
+          "sentiment.rendered_prefix": "rendered",
+          "sentiment.trend_points_prefix": "trend_points",
+          "sentiment.sentiment_prefix": "sentiment",
+          "sentiment.world_prefix": "world",
+          "sentiment.trend_prefix": "trend",
+          "sentiment.empty_articles": "No article items in sentiment_latest.json. JSON summary is loaded, but per-article rows are empty.",
+          "sentiment.missing_title": "(missing title)",
+          "sentiment.missing_url": "(missing url)",
+          "sentiment.metric_risk": "risk",
+          "sentiment.metric_pos": "pos",
+          "sentiment.metric_unc": "unc",
+          "sentiment.metric_net": "net"
+        },
+        ja: {
+          "sentiment.title": "センチメント",
+          "sentiment.subtitle": "記事 + サムネイル + sentiment 結合 + 3軸トレンド。",
+          "sentiment.controls": "操作",
+          "sentiment.as_of": "as_of",
+          "sentiment.date": "日付",
+          "sentiment.risk": "リスク",
+          "sentiment.avg": "平均",
+          "sentiment.positive": "ポジティブ",
+          "sentiment.uncertainty": "不確実性",
+          "sentiment.sources": "ソース",
+          "sentiment.search_placeholder": "検索（title/source/summary）",
+          "sentiment.all": "すべて",
+          "sentiment.positive_label": "ポジティブ",
+          "sentiment.negative_label": "ネガティブ",
+          "sentiment.neutral_label": "ニュートラル",
+          "sentiment.mixed_label": "混合",
+          "sentiment.unknown_label": "不明",
+          "sentiment.sort_risk": "risk ↓",
+          "sentiment.sort_positive": "positive ↓",
+          "sentiment.sort_uncertainty": "uncertainty ↓",
+          "sentiment.sort_net": "net ↓",
+          "sentiment.sort_date": "date ↓",
+          "sentiment.show_missing": "欠落を表示",
+          "sentiment.trend_title": "3軸トレンド",
+          "sentiment.trend_lead": "Risk / Positive / Uncertainty を独立レーンで表示",
+          "sentiment.how_1": "sentiment_latest.json を読み込み、提供済みの metrics / labels を使用",
+          "sentiment.how_2": "URL 結合で title を補完し、fallback では favicon を使用",
+          "sentiment.how_3": "URL 結合で title を補完し、fallback では favicon を使用",
+          "sentiment.how_4": "sentiment_timeseries.csv を 3軸トレンドとして描画",
+          "sentiment.articles": "記事",
+          "sentiment.th_title_summary_url": "title / summary / url",
+          "sentiment.th_source_date_sentiment": "source / date / sentiment",
+          "sentiment.metrics": "指標",
+          "sentiment.open_json": "JSONを開く",
+          "sentiment.open_csv": "CSVを開く",
+          "sentiment.reload": "再読み込み",
+          "sentiment.reset_filters": "フィルタをリセット",
+          "sentiment.open_sentiment_json": "sentiment_latest.json を開く",
+          "sentiment.open_timeseries_csv": "sentiment_timeseries.csv を開く",
+          "sentiment.showing": "表示中",
+          "sentiment.items_prefix": "items",
+          "sentiment.rendered_prefix": "rendered",
+          "sentiment.trend_points_prefix": "trend_points",
+          "sentiment.sentiment_prefix": "sentiment",
+          "sentiment.world_prefix": "world",
+          "sentiment.trend_prefix": "trend",
+          "sentiment.empty_articles": "sentiment_latest.json に記事項目がありません。JSON サマリーは読み込まれましたが、記事行は空です。",
+          "sentiment.missing_title": "（タイトルなし）",
+          "sentiment.missing_url": "（URLなし）",
+          "sentiment.metric_risk": "risk",
+          "sentiment.metric_pos": "pos",
+          "sentiment.metric_unc": "unc",
+          "sentiment.metric_net": "net"
+        },
+        th: {
+          "sentiment.title": "เซนติเมนต์",
+          "sentiment.subtitle": "บทความ + ภาพย่อ + การรวม sentiment + แนวโน้ม 3 แกน",
+          "sentiment.controls": "ตัวควบคุม",
+          "sentiment.as_of": "as_of",
+          "sentiment.date": "วันที่",
+          "sentiment.risk": "ความเสี่ยง",
+          "sentiment.avg": "เฉลี่ย",
+          "sentiment.positive": "เชิงบวก",
+          "sentiment.uncertainty": "ความไม่แน่นอน",
+          "sentiment.sources": "แหล่งข้อมูล",
+          "sentiment.search_placeholder": "ค้นหา (title/source/summary)",
+          "sentiment.all": "ทั้งหมด",
+          "sentiment.positive_label": "เชิงบวก",
+          "sentiment.negative_label": "เชิงลบ",
+          "sentiment.neutral_label": "เป็นกลาง",
+          "sentiment.mixed_label": "ผสม",
+          "sentiment.unknown_label": "ไม่ทราบ",
+          "sentiment.sort_risk": "risk ↓",
+          "sentiment.sort_positive": "positive ↓",
+          "sentiment.sort_uncertainty": "uncertainty ↓",
+          "sentiment.sort_net": "net ↓",
+          "sentiment.sort_date": "date ↓",
+          "sentiment.show_missing": "แสดงรายการที่ขาด",
+          "sentiment.trend_title": "แนวโน้ม 3 แกน",
+          "sentiment.trend_lead": "แสดง Risk / Positive / Uncertainty เป็นเลนแยก",
+          "sentiment.how_1": "โหลด sentiment_latest.json และใช้ metrics / labels ที่มีมาให้",
+          "sentiment.how_2": "เชื่อมด้วย URL เพื่อเติม title ให้สมบูรณ์ และ fallback ใช้ favicon",
+          "sentiment.how_3": "เชื่อมด้วย URL เพื่อเติม title ให้สมบูรณ์ และ fallback ใช้ favicon",
+          "sentiment.how_4": "แสดง sentiment_timeseries.csv เป็นแนวโน้ม 3 แกน",
+          "sentiment.articles": "บทความ",
+          "sentiment.th_title_summary_url": "title / summary / url",
+          "sentiment.th_source_date_sentiment": "source / date / sentiment",
+          "sentiment.metrics": "ตัวชี้วัด",
+          "sentiment.open_json": "เปิด JSON",
+          "sentiment.open_csv": "เปิด CSV",
+          "sentiment.reload": "โหลดใหม่",
+          "sentiment.reset_filters": "รีเซ็ตตัวกรอง",
+          "sentiment.open_sentiment_json": "เปิด sentiment_latest.json",
+          "sentiment.open_timeseries_csv": "เปิด sentiment_timeseries.csv",
+          "sentiment.showing": "กำลังแสดง",
+          "sentiment.items_prefix": "items",
+          "sentiment.rendered_prefix": "rendered",
+          "sentiment.trend_points_prefix": "trend_points",
+          "sentiment.sentiment_prefix": "sentiment",
+          "sentiment.world_prefix": "world",
+          "sentiment.trend_prefix": "trend",
+          "sentiment.empty_articles": "ไม่มีรายการบทความใน sentiment_latest.json แต่โหลดสรุป JSON แล้ว อย่างไรก็ตามแถวบทความยังว่างอยู่",
+          "sentiment.missing_title": "(ไม่มีชื่อเรื่อง)",
+          "sentiment.missing_url": "(ไม่มี URL)",
+          "sentiment.metric_risk": "risk",
+          "sentiment.metric_pos": "pos",
+          "sentiment.metric_unc": "unc",
+          "sentiment.metric_net": "net"
+        }
+      };
+      window.GP_SENTIMENT_UI_TEXT = UI_TEXT;
+
+      function applyStaticI18n() {
+        const api = window.GP_I18N;
+        if (!api || typeof api.translate !== "function") return;
+
+        const lang = typeof api.getLang === "function" ? api.getLang() : (window.GP_LANG || "en");
+
+        document.querySelectorAll("[data-i18n]").forEach((el) => {
+          const key = el.getAttribute("data-i18n");
+          if (!key) return;
+          el.textContent = api.translate(UI_TEXT, key, lang);
+        });
+
+        document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+          const key = el.getAttribute("data-i18n-placeholder");
+          if (!key) return;
+          el.setAttribute("placeholder", api.translate(UI_TEXT, key, lang));
+        });
+      }
+
+      window.applyStaticI18n = applyStaticI18n;
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", applyStaticI18n);
+      } else {
+        applyStaticI18n();
+      }
+
+      const evt = (window.GP_I18N && window.GP_I18N.events && window.GP_I18N.events.langChanged) || "gp:lang-changed";
+      window.addEventListener(evt, applyStaticI18n);
+    })();
+  </script>
+
   <script>
     (function(){
       "use strict";
@@ -222,7 +432,15 @@
           return api.pickI18n(value, fallback || "");
         }
         if (value && typeof value === "object"){
-          return String(value.en || value.ja || value.th || fallback || "");
+          var lang = String(window.GP_LANG || "en").toLowerCase();
+          return String(
+            value[lang] ||
+            value.en ||
+            value.ja ||
+            value.th ||
+            fallback ||
+            ""
+          );
         }
         return String(value || fallback || "");
       }
@@ -453,7 +671,6 @@
         return out;
       }
 
-
       function formatDelta(series, key){
         if(!series || !series.length) return "Δ --";
         if(series.length === 1) return "Δ 0.000";
@@ -667,23 +884,23 @@
       }
 
       var SENT_JSON_CAND = [
-        "/analysis/world_politics/analysis/sentiment_latest.json",
         "/data/world_politics/analysis/sentiment_latest.json",
+        "/analysis/world_politics/sentiment_latest.json",
         "/data/digest/sentiment_latest.json",
         "/analysis/sentiment_latest.json"
       ];
 
       var WORLD_JSON_CAND = [
-        "/analysis/world_view_model_latest.json",
-        "/analysis/view_model_latest.json",
         "/data/world_politics/analysis/view_model_latest.json",
+        "/data/digest/view_model_latest.json",
         "/data/digest/view/view_model_latest.json",
-        "/data/digest/view_model_latest.json"
+        "/analysis/world_view_model_latest.json",
+        "/analysis/view_model_latest.json"
       ];
 
       var TS_CAND = [
-        "/analysis/world_politics/analysis/sentiment_timeseries.csv",
         "/data/world_politics/analysis/sentiment_timeseries.csv",
+        "/analysis/world_politics/sentiment_timeseries.csv",
         "/data/digest/sentiment_timeseries.csv",
         "/analysis/sentiment_timeseries.csv"
       ];
@@ -751,6 +968,15 @@
         drawAxis($("cvUnc"), series, "unc", "#f1d37b", "rgba(255,220,120,.10)");
       }
 
+      function rerenderEverything(){
+        if (typeof window.applyStaticI18n === "function") {
+          window.applyStaticI18n();
+        }
+        updateLocalPills();
+        drawAll();
+        render(state.items);
+      }
+
       function loadAll(){
         fetchJsonFirst(SENT_JSON_CAND).then(function(sentRes){
           state.sentPath = sentRes.path;
@@ -774,9 +1000,7 @@
                 "items=" + state.items.length + " trend_points=" + state.series.length + "\n" +
                 "today.articles=" + (state.overview.articles || 0)
               );
-              updateLocalPills();
-              drawAll();
-              render(state.items);
+              rerenderEverything();
             }).catch(function(){
               state.tsPath = "(unavailable)";
               state.series = [];
@@ -788,9 +1012,7 @@
                 "items=" + state.items.length + " trend_points=" + state.series.length + "\n" +
                 "today.articles=" + (state.overview.articles || 0)
               );
-              updateLocalPills();
-              drawAll();
-              render(state.items);
+              rerenderEverything();
             });
           }).catch(function(worldErr){
             state.worldPath = "-";
@@ -808,9 +1030,7 @@
                 "items=" + state.items.length + " trend_points=" + state.series.length + "\n" +
                 "today.articles=" + (state.overview.articles || 0)
               );
-              updateLocalPills();
-              drawAll();
-              render(state.items);
+              rerenderEverything();
             }).catch(function(){
               state.tsPath = "(unavailable)";
               state.series = [];
@@ -822,9 +1042,7 @@
                 "items=" + state.items.length + " trend_points=" + state.series.length + "\n" +
                 "today.articles=" + (state.overview.articles || 0)
               );
-              updateLocalPills();
-              drawAll();
-              render(state.items);
+              rerenderEverything();
             });
           });
         }).catch(function(e){
@@ -833,8 +1051,7 @@
           state.asOf = "-";
           state.overview = null;
           updateDebug("failed to load sentiment: " + safeText(e && e.message));
-          updateLocalPills();
-          drawAll();
+          rerenderEverything();
         });
       }
 
@@ -855,228 +1072,15 @@
         window.addEventListener("resize", function(){ drawAll(); });
       }
 
-      function rerenderForLanguageChange(){
-        updateLocalPills();
-        drawAll();
-        render(state.items);
-      }
-
       var langChangedEvent = "gp:lang-changed";
       if (window.GP_I18N && window.GP_I18N.events && window.GP_I18N.events.langChanged){
         langChangedEvent = window.GP_I18N.events.langChanged;
       }
-      window.addEventListener(langChangedEvent, rerenderForLanguageChange);
+      window.addEventListener(langChangedEvent, rerenderEverything);
 
       wire();
-      updateLocalPills();
+      rerenderEverything();
       loadAll();
-    })();
-  </script>
-  <script src="/static/common/lang_manager.js?v=20260323-lang-manager-1"></script>
-  <script src="/static/common/i18n.js?v=20260323-lang-manager-1"></script>
-  <script src="/static/common/global_status.js?v=20260318-sentiment-compact-1"></script>
-  <script src="/static/common/layout.js?v=20260323-lang-manager-1"></script>
-
-  <script>
-    (function () {
-      "use strict";
-
-      const UI_TEXT = {
-        en: {
-          "sentiment.title": "Sentiment",
-          "sentiment.subtitle": "Articles + thumbnails + sentiment join + 3-axis trend.",
-          "sentiment.controls": "Controls",
-          "sentiment.as_of": "as_of",
-          "sentiment.date": "date",
-          "sentiment.risk": "risk",
-          "sentiment.avg": "avg",
-          "sentiment.positive": "positive",
-          "sentiment.uncertainty": "uncertainty",
-          "sentiment.sources": "sources",
-          "sentiment.search_placeholder": "search (title/source/summary)",
-          "sentiment.all": "All",
-          "sentiment.positive_label": "Positive",
-          "sentiment.negative_label": "Negative",
-          "sentiment.neutral_label": "Neutral",
-          "sentiment.mixed_label": "Mixed",
-          "sentiment.unknown_label": "Unknown",
-          "sentiment.sort_risk": "risk ↓",
-          "sentiment.sort_positive": "positive ↓",
-          "sentiment.sort_uncertainty": "uncertainty ↓",
-          "sentiment.sort_net": "net ↓",
-          "sentiment.sort_date": "date ↓",
-          "sentiment.show_missing": "show missing",
-          "sentiment.trend_title": "3-Axis Trend",
-          "sentiment.trend_lead": "Risk / Positive / Uncertainty are displayed as independent lanes",
-          "sentiment.how_1": "Load sentiment_latest.json and use provided metrics / labels",
-          "sentiment.how_2": "Join by URL for title completion; fallback uses favicon",
-          "sentiment.how_3": "Join by URL for title completion; fallback uses favicon",
-          "sentiment.how_4": "Render sentiment_timeseries.csv as a 3-axis trend",
-          "sentiment.articles": "Articles",
-          "sentiment.th_title_summary_url": "title / summary / url",
-          "sentiment.th_source_date_sentiment": "source / date / sentiment",
-          "sentiment.metrics": "metrics",
-          "sentiment.open_json": "Open JSON",
-          "sentiment.open_csv": "Open CSV",
-          "sentiment.reload": "Reload",
-          "sentiment.reset_filters": "Reset filters",
-          "sentiment.open_sentiment_json": "Open sentiment_latest.json",
-          "sentiment.open_timeseries_csv": "Open sentiment_timeseries.csv",
-          "sentiment.showing": "showing",
-          "sentiment.items_prefix": "items",
-          "sentiment.rendered_prefix": "rendered",
-          "sentiment.trend_points_prefix": "trend_points",
-          "sentiment.sentiment_prefix": "sentiment",
-          "sentiment.world_prefix": "world",
-          "sentiment.trend_prefix": "trend",
-          "sentiment.empty_articles": "No article items in sentiment_latest.json. JSON summary is loaded, but per-article rows are empty.",
-          "sentiment.missing_title": "(missing title)",
-          "sentiment.missing_url": "(missing url)",
-          "sentiment.metric_risk": "risk",
-          "sentiment.metric_pos": "pos",
-          "sentiment.metric_unc": "unc",
-          "sentiment.metric_net": "net"
-        },
-        ja: {
-          "sentiment.title": "センチメント",
-          "sentiment.subtitle": "記事 + サムネイル + sentiment 結合 + 3軸トレンド。",
-          "sentiment.controls": "操作",
-          "sentiment.as_of": "as_of",
-          "sentiment.date": "日付",
-          "sentiment.risk": "リスク",
-          "sentiment.avg": "平均",
-          "sentiment.positive": "ポジティブ",
-          "sentiment.uncertainty": "不確実性",
-          "sentiment.sources": "ソース",
-          "sentiment.search_placeholder": "検索（title/source/summary）",
-          "sentiment.all": "すべて",
-          "sentiment.positive_label": "ポジティブ",
-          "sentiment.negative_label": "ネガティブ",
-          "sentiment.neutral_label": "ニュートラル",
-          "sentiment.mixed_label": "混合",
-          "sentiment.unknown_label": "不明",
-          "sentiment.sort_risk": "risk ↓",
-          "sentiment.sort_positive": "positive ↓",
-          "sentiment.sort_uncertainty": "uncertainty ↓",
-          "sentiment.sort_net": "net ↓",
-          "sentiment.sort_date": "date ↓",
-          "sentiment.show_missing": "欠落を表示",
-          "sentiment.trend_title": "3軸トレンド",
-          "sentiment.trend_lead": "Risk / Positive / Uncertainty を独立レーンで表示",
-          "sentiment.how_1": "sentiment_latest.json を読み込み、提供済みの metrics / labels を使用",
-          "sentiment.how_2": "URL 結合で title を補完し、fallback では favicon を使用",
-          "sentiment.how_3": "URL 結合で title を補完し、fallback では favicon を使用",
-          "sentiment.how_4": "sentiment_timeseries.csv を 3軸トレンドとして描画",
-          "sentiment.articles": "記事",
-          "sentiment.th_title_summary_url": "title / summary / url",
-          "sentiment.th_source_date_sentiment": "source / date / sentiment",
-          "sentiment.metrics": "指標",
-          "sentiment.open_json": "JSONを開く",
-          "sentiment.open_csv": "CSVを開く",
-          "sentiment.reload": "再読み込み",
-          "sentiment.reset_filters": "フィルタをリセット",
-          "sentiment.open_sentiment_json": "sentiment_latest.json を開く",
-          "sentiment.open_timeseries_csv": "sentiment_timeseries.csv を開く",
-          "sentiment.showing": "表示中",
-          "sentiment.items_prefix": "items",
-          "sentiment.rendered_prefix": "rendered",
-          "sentiment.trend_points_prefix": "trend_points",
-          "sentiment.sentiment_prefix": "sentiment",
-          "sentiment.world_prefix": "world",
-          "sentiment.trend_prefix": "trend",
-          "sentiment.empty_articles": "sentiment_latest.json に記事項目がありません。JSON サマリーは読み込まれましたが、記事行は空です。",
-          "sentiment.missing_title": "（タイトルなし）",
-          "sentiment.missing_url": "（URLなし）",
-          "sentiment.metric_risk": "risk",
-          "sentiment.metric_pos": "pos",
-          "sentiment.metric_unc": "unc",
-          "sentiment.metric_net": "net"
-        },
-        th: {
-          "sentiment.title": "เซนติเมนต์",
-          "sentiment.subtitle": "บทความ + ภาพย่อ + การรวม sentiment + แนวโน้ม 3 แกน",
-          "sentiment.controls": "ตัวควบคุม",
-          "sentiment.as_of": "as_of",
-          "sentiment.date": "วันที่",
-          "sentiment.risk": "ความเสี่ยง",
-          "sentiment.avg": "เฉลี่ย",
-          "sentiment.positive": "เชิงบวก",
-          "sentiment.uncertainty": "ความไม่แน่นอน",
-          "sentiment.sources": "แหล่งข้อมูล",
-          "sentiment.search_placeholder": "ค้นหา (title/source/summary)",
-          "sentiment.all": "ทั้งหมด",
-          "sentiment.positive_label": "เชิงบวก",
-          "sentiment.negative_label": "เชิงลบ",
-          "sentiment.neutral_label": "เป็นกลาง",
-          "sentiment.mixed_label": "ผสม",
-          "sentiment.unknown_label": "ไม่ทราบ",
-          "sentiment.sort_risk": "risk ↓",
-          "sentiment.sort_positive": "positive ↓",
-          "sentiment.sort_uncertainty": "uncertainty ↓",
-          "sentiment.sort_net": "net ↓",
-          "sentiment.sort_date": "date ↓",
-          "sentiment.show_missing": "แสดงรายการที่ขาด",
-          "sentiment.trend_title": "แนวโน้ม 3 แกน",
-          "sentiment.trend_lead": "แสดง Risk / Positive / Uncertainty เป็นเลนแยก",
-          "sentiment.how_1": "โหลด sentiment_latest.json และใช้ metrics / labels ที่มีมาให้",
-          "sentiment.how_2": "เชื่อมด้วย URL เพื่อเติม title ให้สมบูรณ์ และ fallback ใช้ favicon",
-          "sentiment.how_3": "เชื่อมด้วย URL เพื่อเติม title ให้สมบูรณ์ และ fallback ใช้ favicon",
-          "sentiment.how_4": "แสดง sentiment_timeseries.csv เป็นแนวโน้ม 3 แกน",
-          "sentiment.articles": "บทความ",
-          "sentiment.th_title_summary_url": "title / summary / url",
-          "sentiment.th_source_date_sentiment": "source / date / sentiment",
-          "sentiment.metrics": "ตัวชี้วัด",
-          "sentiment.open_json": "เปิด JSON",
-          "sentiment.open_csv": "เปิด CSV",
-          "sentiment.reload": "โหลดใหม่",
-          "sentiment.reset_filters": "รีเซ็ตตัวกรอง",
-          "sentiment.open_sentiment_json": "เปิด sentiment_latest.json",
-          "sentiment.open_timeseries_csv": "เปิด sentiment_timeseries.csv",
-          "sentiment.showing": "กำลังแสดง",
-          "sentiment.items_prefix": "items",
-          "sentiment.rendered_prefix": "rendered",
-          "sentiment.trend_points_prefix": "trend_points",
-          "sentiment.sentiment_prefix": "sentiment",
-          "sentiment.world_prefix": "world",
-          "sentiment.trend_prefix": "trend",
-          "sentiment.empty_articles": "ไม่มีรายการบทความใน sentiment_latest.json แต่โหลดสรุป JSON แล้ว อย่างไรก็ตามแถวบทความยังว่างอยู่",
-          "sentiment.missing_title": "(ไม่มีชื่อเรื่อง)",
-          "sentiment.missing_url": "(ไม่มี URL)",
-          "sentiment.metric_risk": "risk",
-          "sentiment.metric_pos": "pos",
-          "sentiment.metric_unc": "unc",
-          "sentiment.metric_net": "net"
-        }
-      };
-      window.GP_SENTIMENT_UI_TEXT = UI_TEXT;
-
-      function applyStaticI18n() {
-        const api = window.GP_I18N;
-        if (!api || typeof api.translate !== "function") return;
-
-        const lang = typeof api.getLang === "function" ? api.getLang() : (window.GP_LANG || "en");
-
-        document.querySelectorAll("[data-i18n]").forEach((el) => {
-          const key = el.getAttribute("data-i18n");
-          if (!key) return;
-          el.textContent = api.translate(UI_TEXT, key, lang);
-        });
-
-        document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
-          const key = el.getAttribute("data-i18n-placeholder");
-          if (!key) return;
-          el.setAttribute("placeholder", api.translate(UI_TEXT, key, lang));
-        });
-      }
-
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", applyStaticI18n);
-      } else {
-        applyStaticI18n();
-      }
-
-      const evt = (window.GP_I18N && window.GP_I18N.events && window.GP_I18N.events.langChanged) || "gp:lang-changed";
-      window.addEventListener(evt, applyStaticI18n);
     })();
   </script>
 
