@@ -1,12 +1,9 @@
 (() => {
-  sentiment: {
-    as_of: { en: "as_of", ja: "時点", th: "ณ วันที่" },
-    items: { en: "items", ja: "件数", th: "จำนวน" },
+  "use strict";
+  items: { en: "items", ja: "件数", th: "จำนวน" },
     rendered: { en: "rendered", ja: "表示", th: "แสดงผล" },
     trend_points: { en: "trend points", ja: "トレンド点", th: "จุดแนวโน้ม" }
   },
-
-  "use strict";
 
   const manager = window.GP_LANG_MANAGER || null;
   const DEFAULT_LANG = manager && manager.DEFAULT_LANG ? manager.DEFAULT_LANG : "en";
@@ -14,6 +11,12 @@
     manager && manager.LANG_CHANGED_EVENT ? manager.LANG_CHANGED_EVENT : "gp:lang-changed";
 
   const STATIC_TEXT = {
+  sentiment: {
+    as_of: { en: "as_of", ja: "時点", th: "ณ วันที่" },
+    items: { en: "items", ja: "件数", th: "จำนวน" },
+    rendered: { en: "rendered", ja: "表示", th: "แสดงผล" },
+    trend_points: { en: "trend points", ja: "トレンド点", th: "จุดแนวโน้ม" }
+  },
     en: {
       overlay: {
         overlay_title: "Overlay",

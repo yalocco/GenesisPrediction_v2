@@ -28,10 +28,10 @@
       "home.daily_summary_title": "Daily Summary",
       "home.open_json": "Open JSON",
       "home.loading": "loading…",
-      "home.source": "source",
-      "home.as_of": "as_of",
       "home.ready": "Ready",
       "home.unavailable": "No data",
+      "home.source": "source",
+      "home.as_of": "as_of",
       "home.summary_ready": "available",
       "home.summary_missing": "missing",
       "home.health_ok_count": "OK",
@@ -41,11 +41,11 @@
       "home.events_empty": "No event highlights",
       "home.sentiment_empty": "No sentiment items",
       "home.summary_empty": "No summary text",
-      "home.risk_sub_fallback": "สรุปรายวัน / เซนติเมนต์",
-      "home.sentiment_sub_fallback": "การกระจายบทความ",
-      "home.fx_sub_fallback": "การตัดสินใจ / fallback",
+      "home.risk_sub_fallback": "daily summary / sentiment",
+      "home.sentiment_sub_fallback": "article distribution",
+      "home.fx_sub_fallback": "decision / fallback",
       "home.articles_sub_fallback": "digest latest",
-      "home.updated_sub_fallback": "เวลารันล่าสุด",
+      "home.updated_sub_fallback": "latest runtime stamp",
       "home.sentiment_positive": "positive",
       "home.sentiment_negative": "negative",
       "home.sentiment_neutral": "neutral",
@@ -71,10 +71,10 @@
       "home.daily_summary_title": "デイリーサマリー",
       "home.open_json": "JSON を開く",
       "home.loading": "読み込み中…",
-      "home.source": "ソース",
-      "home.as_of": "as_of",
       "home.ready": "準備完了",
       "home.unavailable": "データなし",
+      "home.source": "ソース",
+      "home.as_of": "as_of",
       "home.summary_ready": "あり",
       "home.summary_missing": "なし",
       "home.health_ok_count": "OK",
@@ -84,11 +84,11 @@
       "home.events_empty": "イベントハイライトなし",
       "home.sentiment_empty": "センチメント項目なし",
       "home.summary_empty": "サマリーテキストなし",
-      "home.risk_sub_fallback": "สรุปรายวัน / เซนติเมนต์",
-      "home.sentiment_sub_fallback": "การกระจายบทความ",
-      "home.fx_sub_fallback": "การตัดสินใจ / fallback",
+      "home.risk_sub_fallback": "daily summary / sentiment",
+      "home.sentiment_sub_fallback": "article distribution",
+      "home.fx_sub_fallback": "decision / fallback",
       "home.articles_sub_fallback": "digest latest",
-      "home.updated_sub_fallback": "เวลารันล่าสุด",
+      "home.updated_sub_fallback": "latest runtime stamp",
       "home.sentiment_positive": "ポジティブ",
       "home.sentiment_negative": "ネガティブ",
       "home.sentiment_neutral": "ニュートラル",
@@ -114,10 +114,10 @@
       "home.daily_summary_title": "สรุปรายวัน",
       "home.open_json": "เปิด JSON",
       "home.loading": "กำลังโหลด…",
-      "home.source": "แหล่งที่มา",
-      "home.as_of": "as_of",
       "home.ready": "พร้อม",
       "home.unavailable": "ไม่มีข้อมูล",
+      "home.source": "แหล่งที่มา",
+      "home.as_of": "as_of",
       "home.summary_ready": "มี",
       "home.summary_missing": "ไม่มี",
       "home.health_ok_count": "OK",
@@ -140,12 +140,31 @@
     }
   };
 
+  const PATHS = {
+    globalStatus: ["/analysis/global_status_latest.json"],
+    digestViewModel: ["/data/digest/view_model_latest.json"],
+    health: [
+      "/data/digest/health_latest.json",
+      "/analysis/health_latest.json",
+      "/data/world_politics/analysis/health_latest.json"
+    ],
+    sentiment: [
+      "/data/world_politics/analysis/sentiment_latest.json",
+      "/analysis/sentiment_latest.json"
+    ],
+    summary: [
+      "/data/world_politics/analysis/daily_summary_latest.json",
+      "/analysis/daily_summary_latest.json"
+    ]
+  };
+
   const state = {
     globalStatus: null,
     digestViewModel: null,
     health: null,
     sentiment: null,
-    summary: null
+    summary: null,
+    loaded: false
   };
 
   function getLang() {
@@ -166,20 +185,6 @@
     return (HOME_TEXT[lang] && HOME_TEXT[lang][key]) || HOME_TEXT.en[key] || key;
   }
 
-  function pickI18n(value, fallback = "") {
-    if (i18n && typeof i18n.pickI18n === "function") {
-      return i18n.pickI18n(value, fallback, getLang());
-    }
-    return fallback;
-  }
-
-  function pickI18nList(value) {
-    if (i18n && typeof i18n.pickI18nList === "function") {
-      return i18n.pickI18nList(value, getLang());
-    }
-    return [];
-  }
-
   function safeString(value, fallback = "") {
     if (value === null || value === undefined) {
       return fallback;
@@ -196,17 +201,69 @@
     return value && typeof value === "object" && !Array.isArray(value) ? value : null;
   }
 
-  function setText(id, value) {
+  function firstNonEmptyText(values, fallback = "") {
+    for (const value of safeArray(values)) {
+      const text = safeString(value, "");
+      if (text) {
+        return text;
+      }
+    }
+    return fallback;
+  }
+
+  function pickI18n(value, fallback = "") {
+    if (value === null || value === undefined) {
+      return fallback;
+    }
+
+    if (typeof value === "string") {
+      return safeString(value, fallback);
+    }
+
+    if (i18n && typeof i18n.pickI18n === "function") {
+      const picked = i18n.pickI18n(value, "", getLang());
+      if (safeString(picked, "")) {
+        return safeString(picked, fallback);
+      }
+    }
+
+    if (typeof value === "object" && !Array.isArray(value)) {
+      const lang = getLang();
+      return firstNonEmptyText(
+        [value[lang], value.en, value.ja, value.th],
+        fallback
+      );
+    }
+
+    return fallback;
+  }
+
+  function pickI18nList(value) {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .map((item) => {
+        if (typeof item === "string") {
+          return safeString(item, "");
+        }
+        return pickI18n(item, "");
+      })
+      .filter(Boolean);
+  }
+
+  function setText(id, value, fallback = "—") {
     const node = document.getElementById(id);
     if (node) {
-      node.textContent = safeString(value, "—");
+      node.textContent = safeString(value, fallback);
     }
   }
 
-  function setBodyText(id, value) {
+  function setBodyText(id, value, fallbackKey = "home.unavailable") {
     const node = document.getElementById(id);
     if (node) {
-      node.textContent = safeString(value, tr("home.unavailable"));
+      node.textContent = safeString(value, tr(fallbackKey));
     }
   }
 
@@ -224,16 +281,29 @@
     }
   }
 
-  function setHint(id, ready) {
+  function setHint(id, mode) {
     const node = document.getElementById(id);
-    if (node) {
-      node.textContent = ready ? tr("home.ready") : tr("home.loading");
+    if (!node) return;
+
+    if (mode === "loading") {
+      node.textContent = tr("home.loading");
+      return;
     }
+
+    if (mode === "ready") {
+      node.textContent = tr("home.ready");
+      return;
+    }
+
+    node.textContent = tr("home.unavailable");
   }
 
   function applyStaticText() {
     if (i18n && typeof i18n.applyStaticUiText === "function") {
-      i18n.applyStaticUiText(document, HOME_TEXT, { attribute: "data-ui-text", lang: getLang() });
+      i18n.applyStaticUiText(document, HOME_TEXT, {
+        attribute: "data-ui-text",
+        lang: getLang()
+      });
       return;
     }
 
@@ -245,19 +315,23 @@
     });
   }
 
-  function fetchJsonCandidates(urls) {
-    const list = safeArray(urls).filter(Boolean);
+  async function fetchJsonCandidates(urls) {
+    const candidates = safeArray(urls).filter(Boolean);
 
-    return list.reduce((promise, url) => {
-      return promise.catch(async () => {
+    for (const url of candidates) {
+      try {
         const response = await fetch(url, { cache: "no-store" });
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
+          continue;
         }
         const json = await response.json();
         return { url, json };
-      });
-    }, Promise.reject(new Error("no-candidate")));
+      } catch (_error) {
+        // continue
+      }
+    }
+
+    throw new Error("no-candidate");
   }
 
   function extractDigestCards(viewModel) {
@@ -267,58 +341,183 @@
     }
 
     const sections = safeArray(root.sections);
-    const collected = [];
+    const fromSections = [];
 
     sections.forEach((section) => {
       safeArray(section && section.cards).forEach((card) => {
-        collected.push(card);
+        fromSections.push(card);
       });
     });
 
-    if (collected.length > 0) {
-      return collected;
+    if (fromSections.length > 0) {
+      return fromSections;
     }
 
     return safeArray(root.cards);
   }
 
-  function firstNonEmptyText(values, fallback = "") {
-    for (const value of safeArray(values)) {
-      const text = safeString(value, "");
-      if (text) {
-        return text;
-      }
-    }
-    return fallback;
+  function getDigestArticlesCount() {
+    const vm = safeObject(state.digestViewModel) || {};
+    const meta = safeObject(vm.meta) || {};
+    const cards = extractDigestCards(vm);
+
+    return firstNonEmptyText(
+      [
+        meta.n_events,
+        meta.digest_card_count,
+        safeArray(vm.highlights).length || "",
+        cards.length || "",
+        safeArray(vm.cards).length || ""
+      ],
+      ""
+    );
+  }
+
+  function getGlobalRisk() {
+    const gs = safeObject(state.globalStatus) || {};
+    const summary = safeObject(state.summary) || {};
+    const sentiment = safeObject(state.sentiment) || {};
+    const today = safeObject(sentiment.today) || {};
+
+    return firstNonEmptyText(
+      [
+        gs.global_risk,
+        summary.uncertainty,
+        today.sentiment_label,
+        today.sentiment
+      ],
+      "—"
+    );
+  }
+
+  function getSentimentBalance() {
+    const gs = safeObject(state.globalStatus) || {};
+    const sentiment = safeObject(state.sentiment) || {};
+    const today = safeObject(sentiment.today) || {};
+
+    return firstNonEmptyText(
+      [
+        gs.sentiment_balance,
+        pickI18n(today.sentiment_label_i18n, ""),
+        pickI18n(today.sentiment_i18n, ""),
+        today.sentiment_label,
+        today.sentiment
+      ],
+      "—"
+    );
+  }
+
+  function getFxRegime() {
+    const gs = safeObject(state.globalStatus) || {};
+    return firstNonEmptyText([gs.fx_regime], "—");
+  }
+
+  function getUpdatedStamp() {
+    const gs = safeObject(state.globalStatus) || {};
+    const vm = safeObject(state.digestViewModel) || {};
+    const health = safeObject(state.health) || {};
+    const sentiment = safeObject(state.sentiment) || {};
+    const summary = safeObject(state.summary) || {};
+
+    return firstNonEmptyText(
+      [
+        gs.updated,
+        vm.generated_at,
+        health.generated_at,
+        sentiment.generated_at,
+        summary.generated_at,
+        vm.date,
+        summary.date
+      ],
+      "—"
+    );
+  }
+
+  function getAsOfStamp() {
+    const gs = safeObject(state.globalStatus) || {};
+    const vm = safeObject(state.digestViewModel) || {};
+    const summary = safeObject(state.summary) || {};
+    const sentiment = safeObject(state.sentiment) || {};
+
+    return firstNonEmptyText(
+      [
+        gs.as_of,
+        vm.date,
+        summary.date,
+        sentiment.date,
+        gs.updated
+      ],
+      "--"
+    );
   }
 
   function getSummaryText() {
     const vm = safeObject(state.digestViewModel) || {};
     const summary = safeObject(state.summary) || {};
-    const highlightLines = pickI18nList(vm.highlights_i18n);
 
-    return firstNonEmptyText([
-      pickI18n(vm.summary_i18n, ""),
-      pickI18n(summary.summary_i18n, ""),
-      highlightLines.length > 0 ? highlightLines.join("\n") : ""
-    ], "");
+    const bulletText = safeArray(summary.bullets)
+      .map((item) => `• ${safeString(item, "")}`)
+      .filter(Boolean)
+      .join("\n");
+
+    const watchText = safeArray(summary.watch)
+      .map((item) => `- ${safeString(item, "")}`)
+      .filter(Boolean)
+      .join("\n");
+
+    const highlights = safeArray(vm.highlights)
+      .map((item) => safeString(item, ""))
+      .filter(Boolean)
+      .join("\n");
+
+    const highlightsI18n = pickI18nList(vm.highlights_i18n).join("\n");
+
+    return firstNonEmptyText(
+      [
+        pickI18n(vm.summary_i18n, ""),
+        safeString(vm.summary, ""),
+        safeString(summary.summary, ""),
+        safeString(summary.text, ""),
+        safeString(summary.headline, ""),
+        bulletText,
+        watchText,
+        highlightsI18n,
+        highlights
+      ],
+      ""
+    );
   }
 
-  function getEventTitles(limit = 5) {
+  function getEventLines(limit = 5) {
     const vm = safeObject(state.digestViewModel) || {};
     const cards = extractDigestCards(vm);
+
     const cardLines = cards
       .slice(0, limit)
       .map((card) => {
-        return firstNonEmptyText([
-          pickI18n(card && card.title_i18n, ""),
-          pickI18n(card && card.summary_i18n, "")
-        ], "");
+        return firstNonEmptyText(
+          [
+            pickI18n(card && card.title_i18n, ""),
+            safeString(card && card.title, ""),
+            pickI18n(card && card.summary_i18n, ""),
+            safeString(card && card.summary, "")
+          ],
+          ""
+        );
       })
       .filter(Boolean);
 
     if (cardLines.length > 0) {
       return cardLines;
+    }
+
+    const rawHighlights = safeArray(vm.highlights)
+      .slice(0, limit)
+      .map((item) => safeString(item, ""))
+      .filter(Boolean);
+
+    if (rawHighlights.length > 0) {
+      return rawHighlights;
     }
 
     return pickI18nList(vm.highlights_i18n).slice(0, limit).filter(Boolean);
@@ -327,8 +526,10 @@
   function getSentimentLines() {
     const sentiment = safeObject(state.sentiment) || {};
     const summary = safeObject(sentiment.summary) || {};
-    const vm = safeObject(state.digestViewModel) || {};
+    const today = safeObject(sentiment.today) || {};
+    const items = safeArray(sentiment.items);
     const lines = [];
+
     const countLine = [
       ["positive", summary.positive],
       ["negative", summary.negative],
@@ -344,25 +545,37 @@
       lines.push(countLine);
     }
 
-    const articleLines = pickI18nList(vm.articles_i18n).slice(0, 5).filter(Boolean);
-    if (articleLines.length > 0) {
-      lines.push(...articleLines);
-      return lines;
+    const todayLine = firstNonEmptyText(
+      [
+        pickI18n(today.sentiment_label_i18n, ""),
+        pickI18n(today.sentiment_i18n, ""),
+        today.sentiment_label,
+        today.sentiment
+      ],
+      ""
+    );
+
+    if (todayLine) {
+      lines.push(todayLine);
     }
 
-    const cards = extractDigestCards(vm);
-    const cardLines = cards
-      .slice(0, 5)
-      .map((card) => {
-        return firstNonEmptyText([
-          pickI18n(card && card.title_i18n, ""),
-          pickI18n(card && card.summary_i18n, "")
-        ], "");
+    const itemLines = items
+      .slice(0, 4)
+      .map((item) => {
+        return firstNonEmptyText(
+          [
+            pickI18n(item && item.title_i18n, ""),
+            safeString(item && item.title, ""),
+            pickI18n(item && item.summary_i18n, ""),
+            safeString(item && item.summary, "")
+          ],
+          ""
+        );
       })
       .filter(Boolean);
 
-    if (cardLines.length > 0) {
-      lines.push(...cardLines);
+    if (itemLines.length > 0) {
+      lines.push(...itemLines);
     }
 
     return lines;
@@ -371,49 +584,59 @@
   function renderGlobalStatus() {
     const gs = safeObject(state.globalStatus) || {};
 
-    setText("gsRisk", safeString(gs.global_risk, "—"));
-    setText("gsSentiment", safeString(gs.sentiment_balance, "—"));
-    setText("gsFx", safeString(gs.fx_regime, "—"));
-    setText("gsArticles", safeString(gs.articles, "—"));
-    setText("gsUpdated", safeString(gs.updated, "—"));
+    setText("gsRisk", getGlobalRisk());
+    setText("gsSentiment", getSentimentBalance());
+    setText("gsFx", getFxRegime());
+    setText("gsArticles", getDigestArticlesCount() || safeString(gs.articles, "—"));
+    setText("gsUpdated", getUpdatedStamp());
 
-    setText("gsRiskSub", safeString(gs.global_risk_sub, tr("home.risk_sub_fallback")));
-    setText("gsSentimentSub", safeString(gs.sentiment_balance_sub, tr("home.sentiment_sub_fallback")));
-    setText("gsFxSub", safeString(gs.fx_regime_sub, tr("home.fx_sub_fallback")));
-    setText("gsArticlesSub", safeString(gs.articles_sub, tr("home.articles_sub_fallback")));
-    setText("gsUpdatedSub", tr("home.updated_sub_fallback"));
+    setText("gsRiskSub", safeString(gs.global_risk_sub, tr("home.risk_sub_fallback")), tr("home.risk_sub_fallback"));
+    setText("gsSentimentSub", safeString(gs.sentiment_balance_sub, tr("home.sentiment_sub_fallback")), tr("home.sentiment_sub_fallback"));
+    setText("gsFxSub", safeString(gs.fx_regime_sub, tr("home.fx_sub_fallback")), tr("home.fx_sub_fallback"));
+    setText("gsArticlesSub", safeString(gs.articles_sub, tr("home.articles_sub_fallback")), tr("home.articles_sub_fallback"));
+    setText("gsUpdatedSub", safeString(gs.health_sub, tr("home.updated_sub_fallback")), tr("home.updated_sub_fallback"));
 
-    const asOf = safeString(gs.as_of || gs.updated, "--");
-    const ready = safeString(gs.health, "").toUpperCase() === "NG" ? tr("home.blocked") : tr("home.ready");
-
-    setText("pillAsOfLocal", `${tr("home.as_of")}: ${asOf}`);
-    setText("pillReadyLocal", ready);
+    setText("pillAsOfLocal", `${tr("home.as_of")}: ${getAsOfStamp()}`, `${tr("home.as_of")}: --`);
+    setText("pillReadyLocal", state.loaded ? tr("home.ready") : tr("home.loading"), tr("home.loading"));
   }
 
   function renderKpis() {
-    const digestCards = extractDigestCards(state.digestViewModel);
     const healthSummary = safeObject(state.health && state.health.summary) || safeObject(state.health) || {};
-    const sentimentSummary = safeObject(state.sentiment && state.sentiment.summary) || {};
+    const sentimentItems = safeArray(state.sentiment && state.sentiment.items);
     const summaryText = getSummaryText();
+    const eventLines = getEventLines(5);
 
-    setText("kpiEvents", digestCards.length > 0 ? String(digestCards.length) : "—");
+    setText("kpiEvents", eventLines.length > 0 ? String(eventLines.length) : "—");
     setText("kpiHealthOk", healthSummary.ok != null ? String(healthSummary.ok) : "—");
-    setText("kpiSentimentItems", sentimentSummary.mixed != null || sentimentSummary.positive != null || sentimentSummary.negative != null || sentimentSummary.neutral != null || sentimentSummary.unknown != null
-      ? String(safeArray(state.sentiment && state.sentiment.items).length || 0)
-      : "—");
+    setText("kpiSentimentItems", sentimentItems.length > 0 ? String(sentimentItems.length) : "—");
     setText("kpiSummaryState", summaryText ? tr("home.summary_ready") : tr("home.summary_missing"));
   }
 
   function renderEvents() {
-    const lines = getEventTitles(5);
-    setHint("evHint", lines.length > 0);
-    setBodyText("evBody", lines.length > 0 ? lines.join("\n") : tr("home.events_empty"));
+    const lines = getEventLines(5);
+
+    if (!state.loaded) {
+      setHint("evHint", "loading");
+      setBodyText("evBody", tr("home.loading"), "home.loading");
+      setSource("evSource", "--");
+      return;
+    }
+
+    setHint("evHint", lines.length > 0 ? "ready" : "empty");
+    setBodyText("evBody", lines.length > 0 ? lines.join("\n") : tr("home.events_empty"), "home.events_empty");
     setSource("evSource", state.digestViewModel ? "data/digest/view_model_latest.json" : "--");
   }
 
   function renderHealth() {
     const healthSummary = safeObject(state.health && state.health.summary) || safeObject(state.health) || {};
     const lines = [];
+
+    if (!state.loaded) {
+      setHint("healthHint", "loading");
+      setBodyText("healthBody", tr("home.loading"), "home.loading");
+      setSource("healthSource", "--");
+      return;
+    }
 
     if (healthSummary.ok != null) {
       lines.push(`${tr("home.health_ok_count")}: ${healthSummary.ok}`);
@@ -428,28 +651,50 @@
       lines.push(`${tr("home.health_total_count")}: ${healthSummary.total}`);
     }
 
-    setHint("healthHint", lines.length > 0);
+    setHint("healthHint", lines.length > 0 ? "ready" : "empty");
     setBodyText("healthBody", lines.length > 0 ? lines.join("\n") : tr("home.unavailable"));
-    setSource("healthSource", state.health ? "health_latest.json" : "--");
+    setSource("healthSource", state.health ? "data/digest/health_latest.json" : "--");
   }
 
   function renderSentiment() {
     const lines = getSentimentLines();
-    setHint("senHint", lines.length > 0);
-    setBodyText("senBody", lines.length > 0 ? lines.join("\n") : tr("home.sentiment_empty"));
+
+    if (!state.loaded) {
+      setHint("senHint", "loading");
+      setBodyText("senBody", tr("home.loading"), "home.loading");
+      setSource("senSource", "--");
+      return;
+    }
+
+    setHint("senHint", lines.length > 0 ? "ready" : "empty");
+    setBodyText("senBody", lines.length > 0 ? lines.join("\n") : tr("home.sentiment_empty"), "home.sentiment_empty");
     setSource("senSource", state.sentiment ? "data/world_politics/analysis/sentiment_latest.json" : "--");
   }
 
   function renderSummary() {
     const summaryText = getSummaryText();
-    setHint("sumHint", Boolean(summaryText));
-    setBodyText("sumBody", summaryText || tr("home.summary_empty"));
-    setSource("sumSource", state.summary || state.digestViewModel ? "data/world_politics/analysis/daily_summary_latest.json" : "--");
+
+    if (!state.loaded) {
+      setHint("sumHint", "loading");
+      setBodyText("sumBody", tr("home.loading"), "home.loading");
+      setSource("sumSource", "--");
+      return;
+    }
+
+    setHint("sumHint", summaryText ? "ready" : "empty");
+    setBodyText("sumBody", summaryText || tr("home.summary_empty"), "home.summary_empty");
+    setSource("sumSource", state.summary ? "data/world_politics/analysis/daily_summary_latest.json" : "--");
   }
 
   function renderAnchors() {
-    setHref("btnOpenHealth", state.health ? "/analysis/health_latest.json" : "#");
-    setHref("btnOpenSummary", state.summary ? "/data/world_politics/analysis/daily_summary_latest.json" : "#");
+    setHref(
+      "btnOpenHealth",
+      state.health ? "/data/digest/health_latest.json" : "#"
+    );
+    setHref(
+      "btnOpenSummary",
+      state.summary ? "/data/world_politics/analysis/daily_summary_latest.json" : "#"
+    );
   }
 
   function renderAll() {
@@ -464,49 +709,49 @@
   }
 
   async function loadAll() {
+    state.loaded = false;
+    renderAll();
+
     const jobs = [
-      fetchJsonCandidates([
-        "/analysis/global_status_latest.json"
-      ]).then(({ json }) => {
-        state.globalStatus = json;
-      }).catch(() => {
-        state.globalStatus = null;
-      }),
-      fetchJsonCandidates([
-        "/data/digest/view_model_latest.json"
-      ]).then(({ json }) => {
-        state.digestViewModel = json;
-      }).catch(() => {
-        state.digestViewModel = null;
-      }),
-      fetchJsonCandidates([
-        "/analysis/health_latest.json",
-        "/data/digest/health_latest.json",
-        "/data/world_politics/analysis/health_latest.json"
-      ]).then(({ json }) => {
-        state.health = json;
-      }).catch(() => {
-        state.health = null;
-      }),
-      fetchJsonCandidates([
-        "/data/world_politics/analysis/sentiment_latest.json",
-        "/analysis/sentiment_latest.json"
-      ]).then(({ json }) => {
-        state.sentiment = json;
-      }).catch(() => {
-        state.sentiment = null;
-      }),
-      fetchJsonCandidates([
-        "/data/world_politics/analysis/daily_summary_latest.json",
-        "/analysis/daily_summary_latest.json"
-      ]).then(({ json }) => {
-        state.summary = json;
-      }).catch(() => {
-        state.summary = null;
-      })
+      fetchJsonCandidates(PATHS.globalStatus)
+        .then(({ json }) => {
+          state.globalStatus = json;
+        })
+        .catch(() => {
+          state.globalStatus = null;
+        }),
+      fetchJsonCandidates(PATHS.digestViewModel)
+        .then(({ json }) => {
+          state.digestViewModel = json;
+        })
+        .catch(() => {
+          state.digestViewModel = null;
+        }),
+      fetchJsonCandidates(PATHS.health)
+        .then(({ json }) => {
+          state.health = json;
+        })
+        .catch(() => {
+          state.health = null;
+        }),
+      fetchJsonCandidates(PATHS.sentiment)
+        .then(({ json }) => {
+          state.sentiment = json;
+        })
+        .catch(() => {
+          state.sentiment = null;
+        }),
+      fetchJsonCandidates(PATHS.summary)
+        .then(({ json }) => {
+          state.summary = json;
+        })
+        .catch(() => {
+          state.summary = null;
+        })
     ];
 
     await Promise.all(jobs);
+    state.loaded = true;
     renderAll();
   }
 
@@ -515,10 +760,14 @@
   });
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => {
-      renderAll();
-      loadAll();
-    }, { once: true });
+    document.addEventListener(
+      "DOMContentLoaded",
+      () => {
+        renderAll();
+        loadAll();
+      },
+      { once: true }
+    );
   } else {
     renderAll();
     loadAll();
