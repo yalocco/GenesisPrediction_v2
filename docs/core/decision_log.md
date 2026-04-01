@@ -2,46 +2,157 @@
 
 Status: Active  
 Purpose: Architecture decision record  
-Last Updated: 2026-03-22
+Last Updated: 2026-03-30
 
 ---
 
 # 0. Purpose
 
-このドキュメントは
-
-GenesisPrediction v2 の
-
-**重要な設計判断**
-
-を記録する。
+このドキュメントは、GenesisPrediction v2 の重要な設計判断と運用判断を記録する。
 
 目的
 
 - 将来の自分が理由を思い出せるようにする
-- AIが設計意図を理解できるようにする
-- 同じ議論を繰り返さない
+- AI が設計意図を理解できるようにする
+- 同じ議論と事故を繰り返さないようにする
+- 実装ルールだけでなく運用ルールも固定する
 
 ---
 
-# 2026-03
+# 1. Core Principles
 
-## Decision: Introduce Vector Memory Architecture (Qdrant)
+## Decision: analysis is Single Source of Truth
+
+GenesisPrediction v2 の真実は `analysis/` を基準とする。
+
+責務分離
+
+```text
+scripts = 生成
+data    = 素材 / 中間成果 / 配布素材
+analysis = 最終成果
+UI      = 表示
+```
+
+固定ルール
+
+```text
+analysis = Single Source of Truth
+UI must not decide truth
+UI must not synthesize truth
+```
+
+意図
+
+- 再現性の確保
+- デバッグ容易性
+- 表示と生成の責務分離
+
+---
+
+## Decision: UI is read-only and display-only
 
 対象
 
 ```text
-docs/active/vector_memory_architecture.md
-Qdrant
-scripts/build_vector_memory.py
-scripts/vector_recall.py
-scripts/scenario_engine.py
-scripts/prediction_engine.py
-````
+app/static/*.html
+app/static/common/*.js
+```
 
-背景
+ルール
 
-GenesisPrediction は
+```text
+UI は analysis / data を読むだけ
+UI は計算しない
+UI は判定しない
+UI は日付決定しない
+UI は翻訳しない
+UI は fallback 生成しない
+UI は意味を作らない
+```
+
+意図
+
+- UI の純化
+- 不整合の防止
+- 将来の保守容易化
+
+補足
+
+```text
+UI = display only
+calculation / decision / translation = scripts / analysis only
+```
+
+---
+
+## Decision: Full file delivery only
+
+ルール
+
+```text
+差分提案禁止
+完全ファイルのみ
+```
+
+理由
+
+- コピペ事故防止
+- 不完全生成防止
+- セクション欠落防止
+
+---
+
+## Decision: Prevent incomplete file generation (Full File Integrity Rule)
+
+長文ファイル生成時に以下を禁止する。
+
+```text
+短縮生成
+省略生成
+推測生成
+行数大幅減少
+セクション欠落
+script / style 欠落
+```
+
+ルール
+
+```text
+既存ファイル未確認の生成禁止
+行数減少を正当理由なく許可しない
+長文ファイルはダウンロード形式優先
+```
+
+特に UI では厳格適用する。
+
+---
+
+## Decision: Existing file must be verified before generation
+
+既存ファイルがある場合は、必ずその内容を確認してから生成する。
+
+ルール
+
+```text
+既存ファイルを確認せずに生成しない
+既存構造に合わせて修正する
+中身不明のまま推測生成しない
+```
+
+意図
+
+- 構造整合性維持
+- 上書き事故防止
+- 再現性向上
+
+---
+
+# 2. Architecture Decisions
+
+## Decision: Pipeline structure is fixed
+
+GenesisPrediction v2 の基本構造は以下で固定する。
 
 ```text
 Observation
@@ -55,293 +166,61 @@ Scenario
 Prediction
 ```
 
-の構造を持つ。
-
-ただし latest だけでは
-
-* 過去の似た判断
-* 類似 scenario
-* 類似 signal
-* historical analog
-* decision history
-
-を十分に活かせない。
-
-また、
+補助層
 
 ```text
-decision_log
-historical pattern
-prediction history
-explanation artifacts
-```
-
-を
-
-**検索可能な参照記憶**
-
-として使いたい要求が生まれた。
-
-問題
-
-既存構造を壊したまま memory を追加すると、
-
-* analysis 以外に「真実」が増える
-* UI が記憶検索を始める
-* prediction が black-box 化する
-* docs / analysis / memory の責務が混ざる
-* 再現性が下がる
-
-危険がある。
-
-結論
-
-GenesisPrediction では
-
-```text
-Vector Memory = reference-only memory
-```
-
-とする。
-
-固定ルール
-
-```text
-analysis = Single Source of Truth
-Vector DB = reference memory only
-UI must not query vector memory directly
-scripts / engines only may use vector recall
-vector memory must never overwrite analysis
-```
-
-採用方針
-
-* Qdrant を external reference memory service として使う
-* まずは docs / analysis 由来の memory のみを index する
-* Scenario / Prediction が recall を補助入力として使う
-* recall 結果は必要に応じて analysis 側へ materialize する
-* Qdrant 停止時でも pipeline は継続する
-
-優先 memory 対象
-
-```text
-1. decision_log memory
-2. prediction / scenario history memory
-3. historical pattern / analog memory
-4. explanation memory
-```
-
-主な接続先
-
-```text
-scenario_engine.py
-prediction_engine.py
-```
-
-重要原則
-
-```text
-Vector Memory は判断補助
-Prediction / Scenario の代替ではない
+Explanation
+Vector Memory
+FX Decision
+History Snapshot
 ```
 
 ---
 
-## Decision: Reference Memory is compacted for UI (short-form only)
+## Decision: WorldDate = LOCAL DATE
+
+ニュース raw データはローカル日付で保存されるため、WorldDate は LOCAL DATE を採用する。
+
+```text
+data/world_politics/YYYY-MM-DD.json
+```
+
+旧仕様の `UTC yesterday` はズレを生むため不採用。
+
+---
+
+## Decision: Vector Memory = reference-only memory
 
 対象
 
 ```text
+Qdrant
+scripts/build_vector_memory.py
+scripts/vector_recall.py
 scripts/scenario_engine.py
-scripts/build_prediction_explanation.py
-analysis/prediction/reference_memory_latest.json
-analysis/explanation/prediction_explanation_latest.json
+scripts/prediction_engine.py
 ```
-
-背景
-
-Vector Memory により以下が取得可能になった。
-
-* decision_log
-* similar_cases
-* historical_patterns
-* historical_analogs
-
-これにより Scenario / Prediction は recall を判断補助として利用できるようになった。
-
-しかし、recall 結果をそのまま explanation artifact に渡すと、
-
-* 長文になりすぎる
-* document 全文や JSON 断片が混入する
-* UI の可読性が崩れる
-* memory 表示が explanation 本体より重くなる
-
-問題が発生した。
-
-問題
-
-reference_memory は本来
-
-```text
-検索用データ
-```
-
-であり、
-
-```text
-そのまま表示用データではない
-```
-
-特に vector recall の戻り値には、
-
-* decision_log の長い本文
-* scenario / prediction snapshot の長文 summary
-* explanation artifact の本文
-* JSON に近い raw text
-
-が含まれうる。
-
-これをそのまま UI に出すと、
-
-```text
-UI = read-only
-```
-
-という原則は守れても、
-
-```text
-UI = readable
-```
-
-が崩れる。
 
 結論
 
-GenesisPrediction では
-
 ```text
-Reference Memory = UI用に短文化して渡す
-```
-
-とする。
-
-ルール
-
-* decision_log → title のみ
-* historical_pattern / historical_analog → title のみ
-* scenario_snapshot / prediction_snapshot / signal_snapshot / explanation
-  → title が汎用的すぎる場合は summary を短文化して使う
-* JSON / 生テキスト / document 全文 → 除外
-* 最大 6 件まで
-* 短文化は analysis 側で行い、UI 側では行わない
-
-責務分離
-
-```text
-vector DB        = 生データ（完全）
-scenario_engine  = recall 実行
-reference_memory_latest.json = recall materialize
-build_prediction_explanation.py = 表示用 short-form 整形
-UI               = 表示のみ
+Vector Memory = reference-only memory
+analysis = Single Source of Truth
+Vector DB must never overwrite analysis
+UI must not query vector memory directly
 ```
 
 意図
 
-* UI の可読性を守る
-* explanation 本体の重心を守る
-* memory の暴走を防ぐ
-* 再現性を守る
-* architecture の純度を保つ
-
-補足
-
-Vector Memory は
-
-```text
-reference-only memory
-```
-
-であり、意思決定の主体ではない。
-
-また、
-
-```text
-UI は compacted reference_memory を読むだけ
-```
-
-であり、UI 側で要約・翻訳・整形をしてはならない。
-
----
-
-## Decision: Open WebUI Integration with Qdrant
-
-背景
-
-Open WebUI を Qdrant に接続し、
-
-Knowledge / File を vector search 可能にした。
-
-確認結果
-
-* Qdrant 接続成功
-* collection 作成確認
-* point 保存確認
-
-```text
-open-webui_files
-open-webui_knowledge
-```
-
-結論
-
-Open WebUI → Qdrant 接続は成立。
-
----
-
-## Decision: Qdrant instance can be shared
-
-* Open WebUI と GenesisPrediction は同一 Qdrant を共有してよい
-
-ただし：
-
-```text
-collection は必ず分離する
-```
-
----
-
-## Decision: Collection must be separated
-
-Open WebUI と GenesisPrediction の collection を分離する。
-
-```text
-Open WebUI:
-  open-webui_files
-  open-webui_knowledge
-
-GenesisPrediction:
-  genesis_reference_memory
-```
-
-理由
-
-* 管理責任の分離
-* 検索ノイズ防止
-* 将来の再構築容易性
-
----
-
-## Decision: Conversation is NOT auto-vectorized
-
-* Open WebUI の会話ログは自動で Qdrant に保存されない
-* 会話はそのままでは記憶対象としない
+- 記憶の補助利用
+- black-box 化防止
+- 真実の多重化防止
 
 ---
 
 ## Decision: Memory is promoted, not raw
 
-* 会話全文を保存しない
-* 確定した判断のみ記憶に昇格する
+会話・試行錯誤をそのまま記憶にしない。
 
 対象
 
@@ -357,391 +236,70 @@ insight
 仮説
 試行錯誤
 雑談
+一時ログ
 ```
 
 ---
 
 ## Decision: Decision Log is primary memory source
 
-* Vector Memory の第一優先は decision_log
-* build_vector_memory.py は decision_log を最優先で取り込む
+Vector Memory の第一優先は `decision_log.md` とする。
 
 ---
 
 ## Decision: build_vector_memory.py is single entrypoint
 
-* vector memory 構築は build_vector_memory.py に統一
-* スクリプトを増やさない
+Vector Memory 構築は `build_vector_memory.py` に統一する。  
+似た役割の build script を増やさない。
 
 ---
 
-## Decision: WorldDate = LOCAL DATE
+## Decision: Reference Memory is compacted for UI
 
-対象
+reference_memory は UI 用に短文化して渡す。
 
-```text
-scripts/run_morning_ritual.ps1
-```
-
-旧仕様
+ルール
 
 ```text
-WorldDate = UTC yesterday
-```
-
-問題
-
-```text
-missing raw news
-```
-
-原因
-
-ニュース raw データは
-
-```text
-data/world_politics/YYYY-MM-DD.json
-```
-
-として
-
-**ローカル日付で保存されている。**
-
-そのため
-
-```text
-UTC yesterday
-```
-
-と
-
-```text
-LOCAL DATE
-```
-
-がズレるケースが発生した。
-
-結論
-
-```text
-WorldDate = LOCAL DATE
+decision_log                -> title のみ
+historical_pattern/analog   -> title のみ
+snapshot / explanation      -> 必要なら summary を短文化
+JSON / raw text / 全文       -> UIへ渡さない
+最大 6 件まで
+短文化は analysis 側で行う
+UI 側で compact しない
 ```
 
 ---
 
-# 2026-02
+# 3. UI / i18n Decisions
 
-## Decision: analysis を SST とする
-
-GenesisPrediction v2 の真実は
-
-```text
-analysis/
-```
-
-のみ。
-
-理由
-
-```text
-scripts = 生成
-data = 素材
-analysis = 最終成果
-UI = 表示
-```
-
-責務分離を明確化するため。
-
----
-
-## Decision: UI は read-only
+## Decision: Global i18n Architecture Unification
 
 対象
 
 ```text
 app/static/*.html
-```
-
-ルール
-
-```text
-UIはanalysisを読むだけ
-```
-
-理由
-
-* 再現性
-* デバッグ容易性
-* 責務分離
-
----
-
-## Decision: 完全ファイル運用
-
-ルール
-
-```text
-差分提案禁止
-完全ファイルのみ
-```
-
-理由
-
-* コピペ事故防止
-* AI生成の途中欠落防止
-
----
-
-
-
-## Decision: Full file delivery must use download format
-
-背景
-
-長時間スレ・重いコンテキスト環境において、
-
-* 生成速度低下
-* 出力途中欠落
-* 行数不足の不完全生成
-* コピペ時の人為ミス
-
-が発生した。
-
-特にスレ終盤では、
-
-```text
-苦し紛れの短文化生成
-```
-
-が確認された。
-
-観察結果
-
-* ダウンロード方式は生成が高速
-* 重い環境でも安定
-* 完全ファイルの欠落が発生しない
-* コピペ事故が防げる
-
-結論
-
-GenesisPrediction では
-
-```text
-完全ファイルはダウンロード形式で提供する
-```
-
-とする。
-
-ルール
-
-* 長文コードはインライン出力禁止
-* HTML / CSS / Python / PowerShell / JSON などはすべて対象
-* スレ終盤では必須運用とする
-
-意図
-
-* 開発安定性の確保
-* ミスの削減
-* 再現性の維持
-
----
-
-## Decision: Existing file must be verified before generation
-
-背景
-
-既存ファイルが存在するにも関わらず、
-
-* 中身未確認のまま新規生成
-* 構造不一致
-* UI崩壊
-* デバッグ困難
-
-が発生した。
-
-問題
-
-AIが推測ベースでファイルを生成すると、
-
-```text
-実際の構造とズレる
-```
-
-リスクが高い。
-
-結論
-
-GenesisPrediction では
-
-```text
-既存ファイルを必ず確認してから生成する
-```
-
-とする。
-
-ルール
-
-* 生成前に必ず確認
-* 既存ファイルがある場合はユーザーに提出させる
-* 内容を確認せずに生成禁止
-* 既存ファイルベースで修正する
-
-意図
-
-* 構造の整合性維持
-* 上書き事故防止
-* デバッグ性向上
-* 再現性確保
-
----
-
-# Future Decisions
-
-将来ここに追加予定
-
-```text
-Prediction engine architecture
-Trend3 logic
-Scenario engine
-Risk scoring
-FX decision model
-Vector memory implementation freeze
-Reference memory artifact schema freeze
-Qdrant operational rule
-```
-
-## Decision: Prevent incomplete file generation (Full File Integrity Rule)
-
-背景
-
-長文ファイル（特に HTML / CSS / JS / JSON / Python）生成時に、
-
-* 行数が減少する
-* セクションが欠落する
-* 一部省略される
-* 推測生成が行われる
-
-といった不完全生成が多発した。
-
-特に UI フェーズにおいて、
-
-```text
-不完全ファイル = UI破壊
-```
-
-という重大な問題が発生した。
-
-問題
-
-AIは負荷やコンテキスト制限により、
-
-```text
-短縮生成
-省略生成
-推測生成
-```
-
-を行う傾向がある。
-
-これは
-
-```text
-Partial obedience
-```
-
-に該当し、GenesisPrediction の原則に違反する。
-
-結論
-
-GenesisPrediction では
-
-```text
-完全ファイル整合性ルール
-```
-
-を導入する。
-
-ルール
-
-```text
-・行数減少を禁止する
-・不完全生成（省略・簡略化）を禁止する
-・既存ファイル未確認の生成を禁止する
-・推測生成を禁止する
-・長文ファイルはダウンロード形式で提供する
-```
-
-追加ルール（UI強化）
-
-```text
-HTML生成では特に厳格適用する
-セクション欠落を禁止する
-script / style 欠落を禁止する
-```
-
-責務分離
-
-```text
-AI = 完全ファイル生成
-User = 既存ファイル提示
-System = 構造維持
-```
-
-意図
-
-* UI破壊事故の根絶
-* 行数欠落問題の解消
-* 推測生成の排除
-* 開発の再現性確保
-* 長期運用安定性の向上
-
-
-## Decision: Global i18n Architecture Unification (Prediction-based)
-
-対象
-
-```text
-app/static/*.html
+app/static/common/*.js
 scripts/build_*_view_model.py
 analysis/*_latest.json
-````
-
-背景
-
-各ページで多言語対応の状態が不統一であった。
-
-```text
-- Prediction は *_i18n を完全使用
-- Digest は部分対応
-- その他ページは英語直読みが残存
 ```
-
-この状態では
-
-* UIごとに挙動が異なる
-* 言語切替の一貫性が崩れる
-* 将来の保守が困難になる
-
-問題
-
-多言語処理の責務が曖昧であり、
-
-```text
-UI側で翻訳・fallback・補完が発生するリスク
-```
-
-があった。
 
 結論
 
-GenesisPrediction では
-
 ```text
-i18nはanalysis層で完全生成する
-UIは*_i18nを参照するのみ
+i18n は analysis 層で完全生成する
+UI は *_i18n を参照するのみ
 ```
 
-とする。
+固定ルール
+
+```text
+UI は pickI18n / pickI18nList のみ使用
+英語フィールド直接参照禁止
+UI で翻訳禁止
+UI で fallback ロジック禁止
+```
 
 基準実装
 
@@ -749,74 +307,410 @@ UIは*_i18nを参照するのみ
 prediction.html
 ```
 
-を唯一の正解とし、全ページをこれに統一する。
-
-固定ルール
-
-```text
-UIはpickI18n / pickI18nListのみ使用
-英語フィールド直接参照禁止
-UIで翻訳禁止
-UIでfallbackロジック禁止
-```
-
-Digest 特例
-
-```text
-summaryは自由文のため
-analysis側で圧縮構造化したsummary_i18nを生成する
-UIはそのまま表示する
-```
-
-適用対象
-
-```text
-index.html
-sentiment.html
-overlay.html
-digest.html
-prediction_history.html
-```
-
-適用順
-
-```text
-1. index
-2. sentiment
-3. overlay
-4. digest（完了）
-5. prediction_history
-```
-
-意図
-
-* 言語処理の完全一元化
-* UI純化（display only）
-* 再現性確保
-* 保守性向上
+を唯一の正解として全ページを統一する。
 
 最終状態
 
 ```text
 analysis = 言語生成
-UI = 表示のみ
+UI       = 表示のみ
 language = 共通管理
 ```
 
-UIはあらゆる状況で言語を生成・加工してはならない
+---
 
+## Decision: Language state must be centrally managed
+
+テーマと同様に言語状態も一箇所で集中管理する。
+
+ルール
+
+```text
+各ページ個別で言語判定を持たない
+localStorage を各ページで直接読まない
+LANG は共通マネージャーのみ参照
+静的文言も動的文言も共通 i18n helper 経由で解決
+```
+
+---
+
+## Decision: UI must never generate or process language
+
+固定ルール
+
+```text
+UI はあらゆる状況で言語を生成・加工してはならない
+```
+
+これには以下を含む。
+
+```text
+翻訳
+補完
+fallback 文生成
+意味の圧縮
+debug 表示を利用した擬似翻訳
+```
+
+---
+
+## Decision: Digest summary i18n must be generated in analysis
+
+Digest summary は自由文であるため、analysis 側で `summary_i18n` を生成し、UI はそれを表示するのみとする。
+
+---
+
+## Decision: Static UI labels may use central dictionary, but runtime text must come from analysis
+
+ルール
+
+```text
+固定ラベル = 共通 i18n 辞書で可
+動的本文   = analysis の *_i18n のみ
+```
+
+意図
+
+- 画面共通ラベルの安定運用
+- 動的テキスト責務の明確化
+
+---
+
+# 4. Deploy / Distribution Decisions
+
+## Decision: Deploy target is snapshot, not source of truth
+
+結論
+
+```text
+labos = 配信環境
+Git + analysis/data = 正
+```
+
+labos は配信用 snapshot であり、設計上の正ではない。
+
+ルール
+
+```text
+labos から設計を逆算しない
+labos を authoritative source とみなさない
+復旧時に labos から戻すのは最終手段
+```
+
+---
+
+## Decision: Local and deploy must be compared, but deploy must not redefine architecture
+
+deploy 側で見た目が安定していても、古い snapshot である可能性がある。  
+ローカルとの比較確認は必要だが、設計判断は Git / analysis / data を基準に行う。
+
+---
+
+# 5. Operations Decisions
+
+## Decision: Build environment and view environment must be separated
+
+結論
+
+生成環境と表示環境を分離する。
+
+### Build Environment（自宅PC）
+
+```text
+LLMあり
+Morning Ritual 実行可
+analysis/data 生成
+翻訳生成
+vector memory 再構築
+```
+
+### View Environment（会社PC）
+
+```text
+UI確認
+表示確認
+deploy確認
+analysis/data は外部同期
+build禁止
+Morning Ritual禁止
+```
+
+意図
+
+- 環境差事故の防止
+- i18n 欠落事故の防止
+- 生成物の純度維持
+
+---
+
+## Decision: Company PC must not regenerate analysis/data
+
+会社PCは確認専用とする。
+
+理由
+
+- 翻訳環境差による `_i18n` 欠落
+- view_model の英語化
+- overlay / digest / index の再崩壊
+
+固定ルール
+
+```text
+会社PCでは Morning Ritual を実行しない
+会社PCでは build script を実行しない
+会社PCは analysis/data の消費者とする
+```
+
+---
+
+## Decision: analysis/data USB sync is valid transport
+
+analysis と data を USB で同期する運用は SSOT transport として有効とする。
+
+前提
+
+```text
+自宅PC = 生成元
+会社PC = 消費先
+```
+
+ルール
+
+```text
+analysis + data は丸ごと同期
+差分判断を会社PCで行わない
+会社PCで再生成しない
+```
+
+---
+
+## Decision: Git restore is destructive and must be treated as rollback
+
+`git restore` は未コミット変更を完全に破棄する rollback 操作として扱う。
+
+ルール
+
+```text
+restore 前に必ず対象を確認する
+完成直後に restore しない
+restore は rollback 判断が確定した場合のみ使う
+```
+
+意図
+
+- 完成ファイル消失事故の防止
+- index / home_page.js 巻き戻し事故の防止
+
+---
+
+## Decision: Detached HEAD work must not be trusted as final state
+
+detached HEAD 上の作業は最終成果として扱わない。
+
+ルール
+
+```text
+detached HEAD を見つけたら main に戻す
+残す必要がある変更だけ stash か commit する
+不要変更は restore する
+```
+
+---
+
+## Decision: Local cache failures are operational incidents, not architecture failures
+
+`fastembed_cache` 破損などのキャッシュ異常は設計破綻ではなく運用事故として扱う。
+
+対処手順
+
+```text
+1. fastembed_cache を削除
+2. python scripts/build_vector_memory.py --recreate
+3. powershell -ExecutionPolicy Bypass -File scripts/run_post_ritual_checks.ps1
+```
+
+---
+
+## Decision: Automatic Vector Memory rebuild is valid self-healing behavior
+
+Post Ritual Checks で vector memory が stale と判定された場合、自動 rebuild を許可する。
+
+これは異常ではなく self-healing とみなす。
+
+---
+
+# 6. Debug / Fallback Decisions
+
+## Decision: Temporary debug/meta English is acceptable if it is not user-facing meaning content
+
+debug 表示・開発用メタ表示に限り、英語の短語は許容する。
+
+対象例
+
+```text
+as_of
+items
+rendered
+trend_points
+debug
+source path
+```
+
+ただし条件は以下。
+
+```text
+意味本文ではない
+翻訳対象の主文ではない
+UI設計判断を汚染しない
+```
+
+---
+
+## Decision: Unintended foreign-language contamination must be treated as abnormal noise
+
+日本語・英語・タイ語以外の言語が UI / 生成文に混入した場合は異常ノイズとみなす。
+
+ルール
+
+```text
+韓国語など想定外言語は正式対象に含めない
+混入を確認したらコード / data / runtime の順に切り分ける
+コード上に無ければ runtime noise と判断する
+```
+
+---
+
+# 7. Release Readiness Decisions
+
+## Decision: Do not add attractive new features before pre-release checklist is complete
+
+公開前は機能追加より検証を優先する。
+
+順序
+
+```text
+1. 公開前チェック
+2. 公開
+3. フィードバック収集
+4. 機能追加
+```
+
+---
+
+## Decision: Pre-release focus is stability, not expansion
+
+公開直前フェーズでは以下を優先する。
+
+```text
+UI整合
+多言語整合
+deploy整合
+データ欠損耐性
+説明可能性
+```
+
+新機能追加は公開後に行う。
+
+---
+
+# 8. Open WebUI / Shared Infra Decisions
+
+## Decision: Open WebUI Integration with Qdrant
+
+Open WebUI を Qdrant に接続し、Knowledge / File を vector search 可能にする。
+
+確認結果
+
+```text
+open-webui_files
+open-webui_knowledge
+```
+
+collection 作成と保存確認済み。
+
+---
+
+## Decision: Qdrant instance can be shared
+
+Open WebUI と GenesisPrediction は同一 Qdrant instance を共有してよい。  
+ただし collection は必ず分離する。
+
+---
+
+## Decision: Collection must be separated
+
+```text
+Open WebUI:
+  open-webui_files
+  open-webui_knowledge
+
+GenesisPrediction:
+  genesis_reference_memory
+```
+
+---
+
+## Decision: Conversation is NOT auto-vectorized
+
+Open WebUI 会話ログは自動で Qdrant に保存しない。  
+会話全文は記憶対象としない。
+
+---
+
+# 9. Operational Reminders
+
+## Build side reminder
+
+```text
+翻訳付き生成は自宅PCで行う
+provider_available=False のまま公開用データを作らない
+requests / ollama / model availability を確認する
+```
+
+## View side reminder
+
+```text
+会社PCは確認専用
+analysis/data を同期して使う
+UI問題と生成問題を混ぜない
+```
+
+## Recovery reminder
+
+```text
+まず Git 状態を clean にする
+次に自宅PCを正として確認する
+labos は最後の参考としてのみ使う
+```
+
+---
+
+# 10. Future Decisions
+
+将来ここに追加予定
+
+```text
+Prediction engine architecture freeze
+Trend / Signal schema freeze
+Scenario engine rule freeze
+Risk scoring freeze
+FX decision model freeze
+Release policy
+Public-facing explanation template
+```
+
+---
 
 ## 2026-03-27
 ### UI i18n Template Standardization
 
-- Adopted prediction-based UI i18n template
-- Integrated into global_language_architecture.md
+- Adopt prediction-based UI i18n template
+- Integrate into global_language_architecture.md
 - UI must not translate or fallback
 - All dynamic text must use *_i18n
 
 Status: adopted
 
+---
 
 END OF DOCUMENT
-
-```
