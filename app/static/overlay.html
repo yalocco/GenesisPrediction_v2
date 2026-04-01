@@ -167,9 +167,89 @@
       const LANG_CHANGED_EVENT =
         manager && manager.LANG_CHANGED_EVENT ? manager.LANG_CHANGED_EVENT : "gp:lang-changed";
 
+      const UI_TEXT = {
+        en: {
+          "overlay.overlay_title": "Overlay",
+          "overlay.overlay_subtitle": "Overlay is a layer that connects global events with market movements. It visualizes how observed developments manifest as FX, economic conditions, and risk. The focus here is not on causes, but on the resulting shape of the market.",
+          "overlay.global_status": "Global Status",
+          "overlay.fx_decision": "FX Decision",
+          "overlay.decision": "Decision",
+          "overlay.image": "Image",
+          "overlay.decision_json": "Decision JSON",
+          "overlay.controls": "Controls",
+          "overlay.pair": "Pair",
+          "overlay.open_decision_json": "Open decision JSON",
+          "overlay.reason": "Reason",
+          "overlay.fx_overlay": "FX Overlay",
+          "overlay.image_preview": "image preview",
+          "overlay.open_image": "Open image",
+          "overlay.system_insight": "System Insight",
+          "overlay.insight_hint": "analysis/explanation/*.json",
+          "overlay.interpretation": "Interpretation",
+          "overlay.watchpoints": "Watchpoints",
+          "overlay.economic_signals": "Economic Signals",
+          "overlay.signals_hint": "world/economy article cards",
+          "overlay.open_source_json": "Open source JSON",
+          "overlay.signals_empty": "Economic signal articles are not available. Check world_view_model_latest.json."
+        },
+        ja: {
+          "overlay.overlay_title": "オーバーレイ",
+          "overlay.overlay_subtitle": "Overlay は世界の出来事と市場の動きを接続するレイヤです。観測された展開が FX・景気・リスクとしてどのような形で現れているかを可視化します。ここで重視するのは原因ではなく、市場に現れた結果のかたちです。",
+          "overlay.global_status": "グローバルステータス",
+          "overlay.fx_decision": "FX 判断",
+          "overlay.decision": "判断",
+          "overlay.image": "画像",
+          "overlay.decision_json": "判断JSON",
+          "overlay.controls": "操作",
+          "overlay.pair": "ペア",
+          "overlay.open_decision_json": "判断JSONを開く",
+          "overlay.reason": "理由",
+          "overlay.fx_overlay": "FX オーバーレイ",
+          "overlay.image_preview": "画像プレビュー",
+          "overlay.open_image": "画像を開く",
+          "overlay.system_insight": "システム洞察",
+          "overlay.insight_hint": "analysis/explanation/*.json",
+          "overlay.interpretation": "解釈",
+          "overlay.watchpoints": "監視点",
+          "overlay.economic_signals": "経済シグナル",
+          "overlay.signals_hint": "world/economy 記事カード",
+          "overlay.open_source_json": "ソースJSONを開く",
+          "overlay.signals_empty": "経済シグナル記事はありません。world_view_model_latest.json を確認してください。"
+        },
+        th: {
+          "overlay.overlay_title": "โอเวอร์เลย์",
+          "overlay.overlay_subtitle": "Overlay เป็นเลเยอร์ที่เชื่อมเหตุการณ์โลกกับการเคลื่อนไหวของตลาด โดยแสดงให้เห็นว่าพัฒนาการที่สังเกตได้ปรากฏออกมาเป็น FX ภาวะเศรษฐกิจ และความเสี่ยงอย่างไร จุดเน้นที่นี่ไม่ใช่สาเหตุ แต่เป็นรูปร่างของผลลัพธ์ที่ปรากฏในตลาด",
+          "overlay.global_status": "สถานะรวม",
+          "overlay.fx_decision": "การตัดสินใจ FX",
+          "overlay.decision": "การตัดสินใจ",
+          "overlay.image": "ภาพ",
+          "overlay.decision_json": "Decision JSON",
+          "overlay.controls": "การควบคุม",
+          "overlay.pair": "คู่เงิน",
+          "overlay.open_decision_json": "เปิด Decision JSON",
+          "overlay.reason": "เหตุผล",
+          "overlay.fx_overlay": "FX Overlay",
+          "overlay.image_preview": "ตัวอย่างภาพ",
+          "overlay.open_image": "เปิดภาพ",
+          "overlay.system_insight": "มุมมองของระบบ",
+          "overlay.insight_hint": "analysis/explanation/*.json",
+          "overlay.interpretation": "การตีความ",
+          "overlay.watchpoints": "จุดเฝ้าระวัง",
+          "overlay.economic_signals": "สัญญาณเศรษฐกิจ",
+          "overlay.signals_hint": "การ์ดบทความ world/economy",
+          "overlay.open_source_json": "เปิด Source JSON",
+          "overlay.signals_empty": "ยังไม่มีบทความสัญญาณเศรษฐกิจ โปรดตรวจสอบ world_view_model_latest.json"
+        }
+      };
+
       function i18nText(key, fallback) {
+        const lang = currentLang();
+        const bucket = UI_TEXT[lang] || UI_TEXT.en || {};
+        const localValue = bucket[key] || (UI_TEXT.en && UI_TEXT.en[key]) || "";
+        if (localValue) return localValue;
+
         if (window.GP_I18N && typeof window.GP_I18N.t === "function") {
-          const v = window.GP_I18N.t(key);
+          const v = window.GP_I18N.t(key, lang, "");
           if (v && v !== key) return v;
         }
         return fallback || key;
@@ -218,6 +298,12 @@
           const text = i18nText(key, el.textContent || "");
           if (text) el.textContent = text;
         });
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", applyStaticI18n, { once: true });
+      } else {
+        applyStaticI18n();
       }
 
       function formatLabelValue(labelKey, value) {

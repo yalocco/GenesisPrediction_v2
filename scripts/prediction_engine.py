@@ -1406,11 +1406,11 @@ def build_prediction_output(
 
     # Backward-compatible aliases for Prediction History consumers.
     output["drivers"] = list(output.get("key_drivers", []))
-    output["drivers_i18n"] = list(output.get("key_drivers_i18n", []))
+    output["drivers_i18n"] = dict(output.get("key_drivers_i18n", {}))
     output["watchpoints"] = list(output.get("monitoring_priorities", []))
-    output["watchpoints_i18n"] = list(output.get("monitoring_priorities_i18n", []))
+    output["watchpoints_i18n"] = dict(output.get("monitoring_priorities_i18n", {}))
     output["invalidation_conditions"] = list(output.get("risk_flags", []))
-    output["invalidation_conditions_i18n"] = list(output.get("risk_flags_i18n", []))
+    output["invalidation_conditions_i18n"] = dict(output.get("risk_flags_i18n", {}))
 
     return output
 
