@@ -17,7 +17,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_server.ps1
 python scripts/check_vector_memory_freshness.py
 
 ■ VectorDB　更新
-python scripts/build_vector_memory.py
+python scripts/build_vector_memory.py --recreate
 
 ■ Deploy（自宅PC専用）
 powershell -ExecutionPolicy Bypass -File scripts/run_labos_publish.ps1
