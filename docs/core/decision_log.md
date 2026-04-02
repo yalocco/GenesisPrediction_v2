@@ -748,4 +748,65 @@ GenesisPredictionは
 
 ---
 
+## Decision: LangChain is not adopted for Vector Memory (v1)
+
+GenesisPrediction v2 における Vector Memory 実装では、
+LangChain などの外部オーケストレーションフレームワークは採用しない。
+
+### 結論
+
+```text
+Vector Memory は
+Qdrant + scripts / engines による
+シンプル構成で実装する
+```
+
+### 理由
+
+- 既存の責務分離（analysis / scripts / UI）がすでに完成している
+- Vector Memory は reference-only であり、判断主体ではない
+- LangChain を導入すると責務が曖昧になる可能性がある
+- ブラックボックス化を防ぐため
+- 再現性・デバッグ性を維持するため
+- Partial obedience（便利だから入れる）を防ぐため
+
+### 方針
+
+```text
+build_vector_memory.py を単一入口とする
+vector_recall は scripts 側で実装する
+Scenario Engine に最初に統合する
+Prediction Engine では補助的に使用する
+```
+
+### 許可される将来拡張
+
+```text
+LangChain は将来的に以下用途に限定して検討可能
+```
+
+- query 構築補助
+- metadata filter 整理
+- rerank 補助
+
+```text
+ただし判断ロジックには関与させない
+```
+
+### 非交渉ルール
+
+```text
+LangChain は
+- Prediction を生成しない
+- Scenario を決定しない
+- Explanation を生成しない
+- UI と接続しない
+
+Vector Memory は常に reference-only とする
+```
+
+Status: adopted
+
+---
+
 END OF DOCUMENT
