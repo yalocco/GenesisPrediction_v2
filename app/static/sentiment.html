@@ -373,22 +373,35 @@
       };
       window.GP_SENTIMENT_UI_TEXT = UI_TEXT;
 
+      function currentLang() {
+        const manager = window.GP_LANG_MANAGER || null;
+        const raw = manager && typeof manager.getLang === "function"
+          ? manager.getLang()
+          : (window.GP_LANG || document.documentElement.lang || "en");
+        const lang = String(raw || "en").toLowerCase();
+        return ["en", "ja", "th"].includes(lang) ? lang : "en";
+      }
+
+      function localText(key, fallback) {
+        const lang = currentLang();
+        const bucket = UI_TEXT[lang] || UI_TEXT.en || {};
+        return bucket[key] || (UI_TEXT.en && UI_TEXT.en[key]) || fallback || key;
+      }
+
+      window.GP_SENTIMENT_CURRENT_LANG = currentLang;
+      window.GP_SENTIMENT_LOCAL_TEXT = localText;
+
       function applyStaticI18n() {
-        const api = window.GP_I18N;
-        if (!api || typeof api.translate !== "function") return;
-
-        const lang = typeof api.getLang === "function" ? api.getLang() : (window.GP_LANG || "en");
-
         document.querySelectorAll("[data-i18n]").forEach((el) => {
           const key = el.getAttribute("data-i18n");
           if (!key) return;
-          el.textContent = api.translate(UI_TEXT, key, lang);
+          el.textContent = localText(key, el.textContent || "");
         });
 
         document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
           const key = el.getAttribute("data-i18n-placeholder");
           if (!key) return;
-          el.setAttribute("placeholder", api.translate(UI_TEXT, key, lang));
+          el.setAttribute("placeholder", localText(key, el.getAttribute("placeholder") || ""));
         });
       }
 
@@ -419,9 +432,8 @@
       }
 
       function uiText(key, fallback){
-        var api = getI18nApi();
-        if (api && typeof api.translate === "function"){
-          return api.translate(window.GP_SENTIMENT_UI_TEXT || {}, key);
+        if (typeof window.GP_SENTIMENT_LOCAL_TEXT === "function"){
+          return window.GP_SENTIMENT_LOCAL_TEXT(key, fallback || key);
         }
         return fallback || key;
       }

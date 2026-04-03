@@ -579,6 +579,68 @@ UI設計判断を汚染しない
 コード上に無ければ runtime noise と判断する
 ```
 
+## Decision: UI must not silently mask missing data
+
+UI は必要な data / analysis が欠損している場合、
+黙って正常表示を続けてはならない。
+
+禁止事項
+
+```text
+空表示のまま正常に見せる
+placeholder で誤魔化す
+古い値の流用で正常に見せる
+fallback による疑似正常化
+```
+
+必須ルール
+
+```text
+欠損状態は明示する
+loading / missing / unavailable を区別して表示する
+正常状態と誤認させない
+UI で補完して正常化しない
+```
+
+理由
+
+```text
+Silent failure は最も危険な不整合である
+「表示されているが正しくない」状態を防ぐため
+```
+
+---
+
+## Decision: Release requires analysis completeness
+
+公開対象の analysis / data は
+UI が必要とする完全性を満たしている必要がある。
+
+必須条件
+
+```text
+必要な *_latest.json が存在する
+必要な *_i18n フィールドが存在する
+UI が読むキーが揃っている
+latest / view_model / explanation の整合が取れている
+```
+
+未達時のルール
+
+```text
+deploy しない
+UI 修正で誤魔化さない
+analysis 側で不足を補う
+会社PCで再生成しない
+```
+
+理由
+
+```text
+UI は表示層であり
+不完全な analysis を補完してはならないため
+```
+
 ---
 
 # 7. Release Readiness Decisions
