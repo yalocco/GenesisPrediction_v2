@@ -1140,4 +1140,77 @@ Decision: Web copy-paste editing is prohibited for long files
 ```
 
 ---
+
+
+---
+
+## 2026-04-04
+### Deploy Verification Must Follow Deploy
+
+Decision: Deploy must be verified immediately after deployment
+
+ルール
+
+```text
+deploy 成功表示だけで完了とみなさない
+deploy 後に公開先 JSON をローカル成果物と比較する
+verification が失敗した場合は deploy 完了扱いにしない
+```
+
+最小確認対象
+
+```text
+analysis/prediction/prediction_latest.json
+analysis/explanation/prediction_explanation_latest.json
+```
+
+比較先
+
+```text
+https://labos.soma-samui.com/data/prediction/prediction_latest.json
+https://labos.soma-samui.com/data/explanation/prediction_explanation_latest.json
+```
+
+理由
+
+```text
+deploy は成功表示でも snapshot mismatch が起こり得る
+silent failure を排除するには deploy 後検証が必須である
+```
+
+---
+
+## 2026-04-04
+### Morning Ritual End-to-End Chain Is Valid
+
+Decision: Morning Ritual → Post Checks → Deploy → Verify の直列実行を正式運用として許可する
+
+正式フロー
+
+```text
+run_morning_ritual.ps1
+↓
+run_post_ritual_checks.ps1
+↓
+run_deploy_labos.ps1
+↓
+verify_deploy.py
+```
+
+ルール
+
+```text
+analysis 完成前に deploy しない
+post checks 未通過で deploy しない
+verify 未実行の deploy は最終完了とみなさない
+```
+
+意図
+
+```text
+朝の儀式から公開確認までを一つの運用線として固定し、
+手動判断の抜け漏れを防ぐため
+```
+
+
 # END OF DOCUMENT
