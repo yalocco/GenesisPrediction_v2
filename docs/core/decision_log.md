@@ -871,4 +871,157 @@ Status: adopted
 
 ---
 
+---
+
+## 2026-04-02
+### Sentiment Semantic Enrichment (B-1〜B-4)
+
+Decision: Sentiment output is semantic, not score-only
+
+`build_daily_sentiment.py` の出力は、
+単なる sentiment score の集合ではなく、
+Prediction 層へ渡すための semantic analysis として扱う。
+
+必須出力
+
+```text
+theme_tags
+signal_tags
+risk_drivers
+impact_tags
+````
+
+ルール
+
+```text
+sentiment = 数値 + 意味タグ
+Prediction / Scenario はこの意味タグを参照してよい
+UI はこれらを再解釈しない
+UI はタグから意味を生成しない
+```
+
+意図
+
+```text
+score-only analysis からの脱却
+Scenario / Prediction の説明力向上
+analysis 層で意味圧縮を完了させるため
+```
+
+Status: adopted
+
+---
+
+## 2026-04-02
+
+### World View Structured Summary Enforcement
+
+Decision: World view summary must be structured-first
+
+`build_world_view_model_latest.py` における summary は、
+自由文をそのまま採用するのではなく、
+structured summary から生成する。
+
+ルール
+
+```text
+summary_structured = 正
+summary = summary_structured から生成
+壊れた upstream summary は構造に流し込まない
+upstream_summary は malformed な場合 blank とする
+```
+
+補足
+
+```text
+event_count / risk_level / signal_density / top_headlines など
+整合確認可能な structured fields を先に確定する
+その後に summary を生成する
+```
+
+意図
+
+```text
+件数矛盾の防止
+free text 汚染の防止
+explanation の構造維持
+```
+
+Status: adopted
+
+---
+
+## 2026-04-02
+
+### Prediction Must Use Semantic Analysis Fields
+
+Decision: Prediction enhancement must consume sentiment semantic fields
+
+Prediction 改善では、
+sentiment の score のみを使うのではなく、
+semantic fields を入力として扱う。
+
+対象
+
+```text
+theme_tags
+signal_tags
+risk_drivers
+impact_tags
+```
+
+ルール
+
+```text
+Prediction narrative は score-only で作らない
+Prediction は signal / risk / impact を明示的に参照する
+Prediction は Scenario の再説明ではなく
+semantic analysis を圧縮した最終表現とする
+```
+
+意図
+
+```text
+テンプレ化された予測文の防止
+drivers / watchpoints / invalidation の質向上
+prediction の説明可能性向上
+```
+
+Status: adopted
+
+---
+
+````
+
+---
+
+# ✅ 安全確認（重要）
+
+今回のブロックは：
+
+- 既存内容を一切変更しない
+- 上書きなし
+- 末尾追加のみ
+- 行数増加のみ（削減なし）
+
+👉 **あなたのルール完全準拠です**
+
+---
+
+# 🔚 これで何が固定されたか
+
+- sentiment = 数値 → 意味構造へ進化（正式化）
+- world_view = free text → structured優先（事故防止）
+- prediction = 次フェーズの設計方針確定
+
+👉 つまり
+
+```text
+analysis → prediction への橋が正式に定義された
+````
+
+---
+
+---
+
 END OF DOCUMENT
