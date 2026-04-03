@@ -115,7 +115,6 @@ $fxDecisionLatest = Join-Path $repoRoot "analysis\fx\fx_decision_latest.json"
 $healthLatest = Join-Path $repoRoot "analysis\health_latest.json"
 $sentimentLatest = Join-Path $repoRoot "data\world_politics\analysis\sentiment_latest.json"
 $predictionHistoryIndex = Join-Path $repoRoot "data\prediction\prediction_history_index.json"
-$globalStatusLatest = Join-Path $repoRoot "analysis\global_status_latest.json"
 
 # ============================================================
 # 1) Main lane
@@ -141,9 +140,6 @@ if (-not $SkipPrediction) {
     Invoke-PythonScript -Name "prediction_engine" -RepoRoot $repoRoot -PythonExe $pythonExe -ScriptPath "scripts/prediction_engine.py"
     Invoke-PythonScript -Name "build_prediction_history_index" -RepoRoot $repoRoot -PythonExe $pythonExe -ScriptPath "scripts/build_prediction_history_index.py"
 
-    # ============================
-    # Explanation Layer（非ブロッキング）
-    # ============================
     try {
         Invoke-PythonScript -Name "prediction_explanation" -RepoRoot $repoRoot -PythonExe $pythonExe -ScriptPath "scripts/build_prediction_explanation.py"
         Invoke-PythonScript -Name "scenario_explanation" -RepoRoot $repoRoot -PythonExe $pythonExe -ScriptPath "scripts/build_scenario_explanation.py"
@@ -184,19 +180,10 @@ if (-not $SkipHealth) {
 }
 
 # ============================================================
-# 5) Refresh lane
+# 5) Refresh lane（唯一のglobal_status生成ポイント）
 # ============================================================
 if (-not $SkipRefresh) {
     Invoke-PowerShellScript -Name "refresh_latest_artifacts" -RepoRoot $repoRoot -ScriptPath "scripts/refresh_latest_artifacts.ps1" -Arguments @("-Date", $runDate)
-}
-
-# ============================================================
-# 6) Global Status lane
-# ============================================================
-Invoke-PythonScript -Name "build_global_status" -RepoRoot $repoRoot -PythonExe $pythonExe -ScriptPath "scripts/build_global_status.py"
-
-if ($Guard) {
-    Assert-PathExists -Path $globalStatusLatest
 }
 
 Write-Host ""
