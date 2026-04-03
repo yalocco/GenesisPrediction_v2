@@ -99,6 +99,80 @@ METHOD_LABELS: Dict[str, Dict[str, str]] = {
     "agg": {"en": "aggregate", "ja": "集計", "th": "สรุปรวม"},
 }
 
+THEME_LABELS: Dict[str, Dict[str, str]] = {
+    "middle_east": {"en": "middle_east", "ja": "中東", "th": "ตะวันออกกลาง"},
+    "ukraine_russia": {"en": "ukraine_russia", "ja": "ウクライナ・ロシア", "th": "ยูเครน-รัสเซีย"},
+    "china_taiwan": {"en": "china_taiwan", "ja": "中国・台湾", "th": "จีน-ไต้หวัน"},
+    "us_policy": {"en": "us_policy", "ja": "米国政策", "th": "นโยบายสหรัฐฯ"},
+    "europe_policy": {"en": "europe_policy", "ja": "欧州政策", "th": "นโยบายยุโรป"},
+    "energy": {"en": "energy", "ja": "エネルギー", "th": "พลังงาน"},
+    "inflation_rates": {"en": "inflation_rates", "ja": "インフレ・金利", "th": "เงินเฟ้อ-ดอกเบี้ย"},
+    "trade_supply_chain": {"en": "trade_supply_chain", "ja": "貿易・供給網", "th": "การค้า-ห่วงโซ่อุปทาน"},
+    "market_financials": {"en": "market_financials", "ja": "市場・金融", "th": "ตลาด-การเงิน"},
+    "food_agriculture": {"en": "food_agriculture", "ja": "食料・農業", "th": "อาหาร-เกษตร"},
+    "technology_ai": {"en": "technology_ai", "ja": "技術・AI", "th": "เทคโนโลยี-AI"},
+    "social_politics": {"en": "social_politics", "ja": "社会・政治文化", "th": "สังคม-การเมืองวัฒนธรรม"},
+    "religion_values": {"en": "religion_values", "ja": "宗教・価値観", "th": "ศาสนา-คุณค่า"},
+    "sports_entertainment": {"en": "sports_entertainment", "ja": "スポーツ・娯楽", "th": "กีฬา-บันเทิง"},
+    "human_rights": {"en": "human_rights", "ja": "人権", "th": "สิทธิมนุษยชน"},
+    "space_science": {"en": "space_science", "ja": "宇宙・科学", "th": "อวกาศ-วิทยาศาสตร์"},
+    "general": {"en": "general", "ja": "一般", "th": "ทั่วไป"},
+}
+
+SIGNAL_LABELS: Dict[str, Dict[str, str]] = {
+    "geopolitics": {"en": "geopolitics", "ja": "地政学", "th": "ภูมิรัฐศาสตร์"},
+    "policy_shift": {"en": "policy_shift", "ja": "政策変化", "th": "การเปลี่ยนนโยบาย"},
+    "monetary_policy": {"en": "monetary_policy", "ja": "金融政策", "th": "นโยบายการเงิน"},
+    "market_stress": {"en": "market_stress", "ja": "市場ストレス", "th": "ความตึงเครียดตลาด"},
+    "energy_shock": {"en": "energy_shock", "ja": "エネルギーショック", "th": "ช็อกพลังงาน"},
+    "trade_disruption": {"en": "trade_disruption", "ja": "貿易混乱", "th": "การหยุดชะงักทางการค้า"},
+    "food_price_pressure": {"en": "food_price_pressure", "ja": "食料価格圧力", "th": "แรงกดดันราคาอาหาร"},
+    "social_instability": {"en": "social_instability", "ja": "社会不安定", "th": "ความไม่มั่นคงทางสังคม"},
+    "technology_competition": {"en": "technology_competition", "ja": "技術競争", "th": "การแข่งขันเทคโนโลยี"},
+    "human_rights_pressure": {"en": "human_rights_pressure", "ja": "人権圧力", "th": "แรงกดดันด้านสิทธิมนุษยชน"},
+    "cultural_signal": {"en": "cultural_signal", "ja": "文化シグナル", "th": "สัญญาณทางวัฒนธรรม"},
+    "general": {"en": "general", "ja": "一般", "th": "ทั่วไป"},
+}
+
+RISK_DRIVER_LABELS: Dict[str, Dict[str, str]] = {
+    "military_escalation": {"en": "military_escalation", "ja": "軍事的エスカレーション", "th": "การยกระดับทางทหาร"},
+    "policy_uncertainty": {"en": "policy_uncertainty", "ja": "政策不確実性", "th": "ความไม่แน่นอนของนโยบาย"},
+    "market_fragility": {"en": "market_fragility", "ja": "市場の脆弱性", "th": "ความเปราะบางของตลาด"},
+    "energy_supply_risk": {"en": "energy_supply_risk", "ja": "エネルギー供給リスク", "th": "ความเสี่ยงด้านพลังงาน"},
+    "social_unrest": {"en": "social_unrest", "ja": "社会不安", "th": "ความไม่สงบทางสังคม"},
+    "general": {"en": "general", "ja": "一般", "th": "ทั่วไป"},
+}
+
+IMPACT_LABELS: Dict[str, Dict[str, str]] = {
+    "inflation_up": {"en": "inflation_up", "ja": "インフレ上昇", "th": "เงินเฟ้อเพิ่มขึ้น"},
+    "risk_off": {"en": "risk_off", "ja": "リスクオフ", "th": "หลีกเลี่ยงความเสี่ยง"},
+    "supply_disruption": {"en": "supply_disruption", "ja": "供給混乱", "th": "การหยุดชะงักของอุปทาน"},
+    "growth_down": {"en": "growth_down", "ja": "成長鈍化", "th": "การเติบโตชะลอลง"},
+    "policy_repricing": {"en": "policy_repricing", "ja": "政策再評価", "th": "การประเมินนโยบายใหม่"},
+    "energy_cost_up": {"en": "energy_cost_up", "ja": "エネルギーコスト上昇", "th": "ต้นทุนพลังงานสูงขึ้น"},
+    "market_volatility": {"en": "market_volatility", "ja": "市場変動性", "th": "ความผันผวนของตลาด"},
+    "general": {"en": "general", "ja": "一般", "th": "ทั่วไป"},
+}
+
+THEME_RULES: List[tuple[str, List[str]]] = [
+    ("middle_east", ["iran", "israel", "gaza", "hormuz", "tehran", "hezbollah", "lebanon", "middle east"]),
+    ("ukraine_russia", ["ukraine", "russia", "moscow", "kyiv", "putin"]),
+    ("china_taiwan", ["china", "taiwan", "beijing", "south china sea", "pla"]),
+    ("us_policy", ["trump", "congress", "white house", "senate", "house", "u.s.", "us ", "american policy"]),
+    ("europe_policy", ["eu", "european union", "lords", "parliament", "religious freedom"]),
+    ("energy", ["oil", "gas", "energy", "fuel", "lng", "barrel"]),
+    ("inflation_rates", ["inflation", "interest rate", "rates", "yield", "fed", "ecb", "boj"]),
+    ("trade_supply_chain", ["tariff", "sanction", "shipping", "supply chain", "export", "import", "trade"]),
+    ("market_financials", ["market", "stocks", "equity", "bond", "liquidity", "bank", "credit", "financial"]),
+    ("food_agriculture", ["fertilizer", "grain", "food", "harvest", "crop", "agriculture"]),
+    ("technology_ai", ["ai", "artificial intelligence", "streaming", "apple", "netflix", "hbo", "tech"]),
+    ("social_politics", ["cpac", "campaign", "activism", "misinformation", "election", "political campaigns"]),
+    ("religion_values", ["jesus", "christian", "church", "religious", "faith"]),
+    ("sports_entertainment", ["eurovision", "festival", "tour", "film festival", "webby", "sports", "band", "disney"]),
+    ("human_rights", ["human rights", "transgender", "service members", "rights campaign"]),
+    ("space_science", ["lunar", "space", "democracies", "science"]),
+]
+
 PROPER_NOUNS = [
     "AIPAC", "Adult Braces", "Antichrist", "Apple TV+", "Australian Broadcasting Corporation",
     "Barcelona", "Bruce Springsteen", "CNBC", "COAC", "CSCAE", "CounterPunch", "Crikey",
@@ -121,6 +195,7 @@ BAD_OUTPUT_FRAGMENTS = {
     "vůdơ", "partly", "premiere", "cameo", "fear of the dark", "deadpool",
     "man without fear", "the post ", "appeared first on "
 }
+
 
 @dataclass
 class TranslationConfig:
@@ -210,6 +285,7 @@ def _source_i18n_block(source: str) -> Dict[str, str]:
         return {"en": src, "ja": mapped["ja"], "th": mapped["th"]}
     return {"en": src, "ja": src, "th": src}
 
+
 def _label_i18n_block(value: str, mapping: Dict[str, Dict[str, str]]) -> Dict[str, str]:
     key = _normalize_text(value).lower()
     mapped = mapping.get(key)
@@ -217,6 +293,24 @@ def _label_i18n_block(value: str, mapping: Dict[str, Dict[str, str]]) -> Dict[st
         return {"en": mapped["en"], "ja": mapped["ja"], "th": mapped["th"]}
     raw = _normalize_text(value)
     return {"en": raw, "ja": raw, "th": raw}
+
+
+def _list_i18n_block(values: List[str], mapping: Dict[str, Dict[str, str]]) -> Dict[str, List[str]]:
+    cleaned = [_normalize_text(v).lower() for v in values if _normalize_text(v)]
+    en: List[str] = []
+    ja: List[str] = []
+    th: List[str] = []
+    for key in cleaned:
+        mapped = mapping.get(key)
+        if mapped:
+            en.append(mapped["en"])
+            ja.append(mapped["ja"])
+            th.append(mapped["th"])
+        else:
+            en.append(key)
+            ja.append(key)
+            th.append(key)
+    return {"en": en, "ja": ja, "th": th}
 
 
 def _label_counts_i18n_block(counts: Dict[str, int]) -> Dict[str, Dict[str, Any]]:
@@ -266,13 +360,68 @@ def classify_sentiment(score: Score) -> str:
     return "neutral"
 
 
+def _extract_theme_tags(title: str, desc: str, source: str = "") -> List[str]:
+    text = " ".join(x for x in [title, desc, source] if x).lower()
+    tags: List[str] = []
+    for theme, keywords in THEME_RULES:
+        if any(keyword in text for keyword in keywords):
+            tags.append(theme)
+    if not tags:
+        tags.append("general")
+    deduped: List[str] = []
+    seen = set()
+    for tag in tags:
+        if tag not in seen:
+            deduped.append(tag)
+            seen.add(tag)
+    return deduped[:6]
+
+
+def _extract_signal_tags(title: str, desc: str, theme_tags: List[str]) -> List[str]:
+    text = " ".join(x for x in [title, desc] if x).lower()
+    tags: List[str] = []
+
+    if any(t in theme_tags for t in ["middle_east", "ukraine_russia", "china_taiwan"]):
+        tags.append("geopolitics")
+    if any(t in theme_tags for t in ["us_policy", "europe_policy", "social_politics"]):
+        tags.append("policy_shift")
+    if "fed" in text or "ecb" in text or "boj" in text or "interest rate" in text or "rates" in text:
+        tags.append("monetary_policy")
+    if any(t in theme_tags for t in ["market_financials", "inflation_rates"]) or any(k in text for k in ["bank", "credit", "bond", "equity", "liquidity", "market"]):
+        tags.append("market_stress")
+    if "oil" in text or "gas" in text or "lng" in text or "fuel" in text or "energy" in text:
+        tags.append("energy_shock")
+    if any(k in text for k in ["tariff", "sanction", "shipping", "supply chain", "export", "import", "trade"]):
+        tags.append("trade_disruption")
+    if any(k in text for k in ["fertilizer", "grain", "food", "crop", "harvest", "agriculture"]):
+        tags.append("food_price_pressure")
+    if any(k in text for k in ["protest", "activism", "misinformation", "civil conflict", "shutdown"]):
+        tags.append("social_instability")
+    if any(t in theme_tags for t in ["technology_ai"]) or any(k in text for k in ["ai", "technology", "streaming", "apple", "netflix", "hbo"]):
+        tags.append("technology_competition")
+    if any(t in theme_tags for t in ["human_rights"]) or any(k in text for k in ["human rights", "transgender", "rights campaign"]):
+        tags.append("human_rights_pressure")
+    if any(t in theme_tags for t in ["sports_entertainment", "religion_values"]) or any(k in text for k in ["festival", "tour", "film", "music", "faith", "jesus"]):
+        tags.append("cultural_signal")
+
+    if not tags:
+        tags.append("general")
+
+    deduped: List[str] = []
+    seen = set()
+    for tag in tags:
+        if tag not in seen:
+            deduped.append(tag)
+            seen.add(tag)
+    return deduped[:6]
+
+
 def _label_counts(items: List[Dict[str, Any]]) -> Dict[str, int]:
     out = {"positive": 0, "negative": 0, "neutral": 0, "mixed": 0, "unknown": 0}
     for item in items:
         lab = _normalize_text(item.get("sentiment") or item.get("sentiment_label") or "unknown").lower()
         out[lab if lab in out else "unknown"] += 1
     return out
-
 
 def _load_cache() -> Dict[str, Dict[str, str]]:
     if not CACHE_PATH.exists():
@@ -285,11 +434,9 @@ def _load_cache() -> Dict[str, Dict[str, str]]:
         return {}
     return {}
 
-
 def _save_cache(cache: Dict[str, Dict[str, str]]) -> None:
     CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
     CACHE_PATH.write_text(json.dumps(cache, ensure_ascii=False, indent=2), encoding="utf-8")
-
 
 def _restore_proper_nouns(text: str) -> str:
     out = text
@@ -297,10 +444,8 @@ def _restore_proper_nouns(text: str) -> str:
         out = re.sub(re.escape(noun), noun, out, flags=re.IGNORECASE)
     return out
 
-
 def _sanitize_translation(text: str) -> str:
     return _restore_proper_nouns(_normalize_text(text))
-
 
 def _english_leak_score(src_en: str, translated: str) -> int:
     src = _normalize_text(src_en).lower()
@@ -315,7 +460,6 @@ def _english_leak_score(src_en: str, translated: str) -> int:
         elif wl not in src:
             count += 1
     return count
-
 
 def _looks_corrupted_translation(src_en: str, translated: str) -> bool:
     src = _normalize_text(src_en)
@@ -339,7 +483,6 @@ def _looks_corrupted_translation(src_en: str, translated: str) -> bool:
         return True
     return False
 
-
 def _parse_llm_json(raw: str) -> Dict[str, str] | None:
     raw = raw.strip()
     if not raw:
@@ -362,7 +505,6 @@ def _parse_llm_json(raw: str) -> Dict[str, str] | None:
     if not ja or not th:
         return None
     return {"ja": ja, "th": th}
-
 
 def _call_ollama_json(text: str, cfg: TranslationConfig, session: requests.Session, strict: bool = False) -> Dict[str, str] | None:
     protected = ", ".join(PROPER_NOUNS)
@@ -402,7 +544,6 @@ Output JSON:
     except Exception:
         return None
 
-
 def _translated_block_valid(src: str, block: Dict[str, str]) -> bool:
     if not block:
         return False
@@ -416,26 +557,22 @@ def _translated_block_valid(src: str, block: Dict[str, str]) -> bool:
         return False
     return True
 
-
 def _translate_item_text(kind: str, value: str, cfg: TranslationConfig, session: requests.Session, cache: Dict[str, Dict[str, str]]) -> Dict[str, str]:
     src = _clean_for_translation(value, limit=220 if kind == "title" else 280)
     if not src:
         return {"en": "", "ja": "", "th": ""}
-
     cache_key = f"{kind}::{src}"
     cached = cache.get(cache_key)
     if isinstance(cached, dict):
         cached_block = {"en": src, "ja": _normalize_text(cached.get("ja", src)), "th": _normalize_text(cached.get("th", src))}
         if _translated_block_valid(src, cached_block):
             return cached_block
-
     first = _call_ollama_json(src, cfg, session, strict=False)
     if first:
         first_block = {"en": src, "ja": first["ja"], "th": first["th"]}
         if _translated_block_valid(src, first_block):
             cache[cache_key] = {"ja": first_block["ja"], "th": first_block["th"]}
             return first_block
-
     retry_src = _clean_for_translation(src, limit=200 if kind == "description" else 180)
     second = _call_ollama_json(retry_src, cfg, session, strict=True)
     if second:
@@ -443,11 +580,69 @@ def _translate_item_text(kind: str, value: str, cfg: TranslationConfig, session:
         if _translated_block_valid(src, second_block):
             cache[cache_key] = {"ja": second_block["ja"], "th": second_block["th"]}
             return second_block
-
     out = {"en": src, "ja": src, "th": src}
     cache[cache_key] = {"ja": out["ja"], "th": out["th"]}
     return out
 
+def _extract_risk_drivers(title: str, desc: str, signal_tags: List[str]) -> List[str]:
+    text = " ".join(x for x in [title, desc] if x).lower()
+    tags: List[str] = []
+    if any(k in text for k in ["attack", "strike", "missile", "war", "military", "retaliation"]):
+        tags.append("military_escalation")
+    if any(k in text for k in ["policy", "uncertain", "uncertainty", "election", "tariff", "warning"]):
+        tags.append("policy_uncertainty")
+    if "market_stress" in signal_tags or any(k in text for k in ["bank", "liquidity", "crisis", "credit", "bond"]):
+        tags.append("market_fragility")
+    if "energy_shock" in signal_tags or any(k in text for k in ["oil", "gas", "energy", "supply", "hormuz"]):
+        tags.append("energy_supply_risk")
+    if "social_instability" in signal_tags or any(k in text for k in ["protest", "riot", "unrest", "crackdown"]):
+        tags.append("social_unrest")
+    if not tags:
+        tags.append("general")
+    deduped: List[str] = []
+    seen = set()
+    for tag in tags:
+        if tag not in seen:
+            deduped.append(tag)
+            seen.add(tag)
+    return deduped[:6]
+
+def _extract_impact_tags(title: str, desc: str, theme_tags: List[str], signal_tags: List[str], risk_drivers: List[str]) -> List[str]:
+    text = " ".join(x for x in [title, desc] if x).lower()
+    tags: List[str] = []
+    if any(k in text for k in ["inflation", "price", "prices", "cost", "fertilizer", "food"]) or "food_price_pressure" in signal_tags:
+        tags.append("inflation_up")
+    if any(d in risk_drivers for d in ["military_escalation", "market_fragility"]) or any(k in text for k in ["panic", "shock", "uncertainty", "volatility"]):
+        tags.append("risk_off")
+    if "trade_disruption" in signal_tags or any(k in text for k in ["shipping", "supply chain", "shortage", "export", "import"]):
+        tags.append("supply_disruption")
+    if any(k in text for k in ["recession", "decline", "slump", "growth", "slowdown", "collapse"]):
+        tags.append("growth_down")
+    if any(d in risk_drivers for d in ["policy_uncertainty"]) or any(k in text for k in ["policy", "tariff", "sanction", "election", "fed", "ecb", "boj"]):
+        tags.append("policy_repricing")
+    if "energy_shock" in signal_tags or "energy_supply_risk" in risk_drivers or any(k in text for k in ["oil", "gas", "energy", "fuel"]):
+        tags.append("energy_cost_up")
+    if "market_stress" in signal_tags or any(k in text for k in ["market", "equity", "bond", "bank", "credit", "liquidity"]):
+        tags.append("market_volatility")
+    if not tags:
+        tags.append("general")
+    deduped: List[str] = []
+    seen = set()
+    for tag in tags:
+        if tag not in seen:
+            deduped.append(tag)
+            seen.add(tag)
+    return deduped[:6]
+
+def _aggregate_tag_counts(items: List[Dict[str, Any]], field_name: str) -> Dict[str, int]:
+    counts: Dict[str, int] = {}
+    for item in items:
+        for tag in item.get(field_name, []) if isinstance(item.get(field_name), list) else []:
+            key = _normalize_text(tag).lower()
+            if not key:
+                continue
+            counts[key] = counts.get(key, 0) + 1
+    return dict(sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])))
 
 def _resolve_input(date: str) -> Path:
     raw_daily = DATA_WORLD_DIR / f"{date}.json"
@@ -460,7 +655,6 @@ def _resolve_input(date: str) -> Path:
     if latest_daily.exists():
         return latest_daily
     raise SystemExit(f"[ERR] missing daily news input: {raw_daily} / {analysis_daily} / {latest_daily}")
-
 
 def main() -> int:
     parser = argparse.ArgumentParser()
@@ -492,6 +686,10 @@ def main() -> int:
 
             score = score_text(title, description)
             label = classify_sentiment(score)
+            theme_tags = _extract_theme_tags(title, description, source)
+            signal_tags = _extract_signal_tags(title, description, theme_tags)
+            risk_drivers = _extract_risk_drivers(title, description, signal_tags)
+            impact_tags = _extract_impact_tags(title, description, theme_tags, signal_tags, risk_drivers)
 
             if score.method == "lex":
                 rule_hit += 1
@@ -500,6 +698,10 @@ def main() -> int:
 
             sentiment_i18n = _label_i18n_block(label, SENTIMENT_LABELS)
             method_i18n = _label_i18n_block(score.method, METHOD_LABELS)
+            theme_tags_i18n = _list_i18n_block(theme_tags, THEME_LABELS)
+            signal_tags_i18n = _list_i18n_block(signal_tags, SIGNAL_LABELS)
+            risk_drivers_i18n = _list_i18n_block(risk_drivers, RISK_DRIVER_LABELS)
+            impact_tags_i18n = _list_i18n_block(impact_tags, IMPACT_LABELS)
             translated_title = _translate_item_text("title", title, cfg, session, cache)
             translated_description = _translate_item_text("description", description, cfg, session, cache)
 
@@ -526,6 +728,14 @@ def main() -> int:
                 "sentiment_label_i18n": sentiment_i18n,
                 "method": score.method,
                 "method_i18n": method_i18n,
+                "theme_tags": theme_tags,
+                "theme_tags_i18n": theme_tags_i18n,
+                "signal_tags": signal_tags,
+                "signal_tags_i18n": signal_tags_i18n,
+                "risk_drivers": risk_drivers,
+                "risk_drivers_i18n": risk_drivers_i18n,
+                "impact_tags": impact_tags,
+                "impact_tags_i18n": impact_tags_i18n,
             })
 
     n = len(out_items)
@@ -535,6 +745,14 @@ def main() -> int:
     avg_net = sum(x["net"] for x in out_items) / n if n else 0.0
 
     label_counts = _label_counts(out_items)
+    theme_counts = _aggregate_tag_counts(out_items, "theme_tags")
+    signal_counts = _aggregate_tag_counts(out_items, "signal_tags")
+    risk_driver_counts = _aggregate_tag_counts(out_items, "risk_drivers")
+    impact_counts = _aggregate_tag_counts(out_items, "impact_tags")
+    top_theme_tags = list(theme_counts.keys())[:5]
+    top_signal_tags = list(signal_counts.keys())[:5]
+    top_risk_drivers = list(risk_driver_counts.keys())[:5]
+    top_impact_tags = list(impact_counts.keys())[:5]
     today_score = Score(risk=avg_risk, positive=avg_pos, uncertainty=avg_unc, net=avg_net, method="agg")
     today_label = classify_sentiment(today_score) if n else "neutral"
 
@@ -558,6 +776,18 @@ def main() -> int:
             "sentiment_label_i18n": today_label_i18n,
             "label_counts": label_counts,
             "label_counts_i18n": _label_counts_i18n_block(label_counts),
+            "theme_counts": theme_counts,
+            "top_theme_tags": top_theme_tags,
+            "top_theme_tags_i18n": _list_i18n_block(top_theme_tags, THEME_LABELS),
+            "signal_counts": signal_counts,
+            "top_signal_tags": top_signal_tags,
+            "top_signal_tags_i18n": _list_i18n_block(top_signal_tags, SIGNAL_LABELS),
+            "risk_driver_counts": risk_driver_counts,
+            "top_risk_drivers": top_risk_drivers,
+            "top_risk_drivers_i18n": _list_i18n_block(top_risk_drivers, RISK_DRIVER_LABELS),
+            "impact_counts": impact_counts,
+            "top_impact_tags": top_impact_tags,
+            "top_impact_tags_i18n": _list_i18n_block(top_impact_tags, IMPACT_LABELS),
         },
         "summary": {
             "rule_hit": int(rule_hit),
@@ -568,6 +798,18 @@ def main() -> int:
             "mixed": int(label_counts["mixed"]),
             "unknown": int(label_counts["unknown"]),
             "label_counts_i18n": _label_counts_i18n_block(label_counts),
+            "theme_counts": theme_counts,
+            "top_theme_tags": top_theme_tags,
+            "top_theme_tags_i18n": _list_i18n_block(top_theme_tags, THEME_LABELS),
+            "signal_counts": signal_counts,
+            "top_signal_tags": top_signal_tags,
+            "top_signal_tags_i18n": _list_i18n_block(top_signal_tags, SIGNAL_LABELS),
+            "risk_driver_counts": risk_driver_counts,
+            "top_risk_drivers": top_risk_drivers,
+            "top_risk_drivers_i18n": _list_i18n_block(top_risk_drivers, RISK_DRIVER_LABELS),
+            "impact_counts": impact_counts,
+            "top_impact_tags": top_impact_tags,
+            "top_impact_tags_i18n": _list_i18n_block(top_impact_tags, IMPACT_LABELS),
         },
         "base": args.date.strip(),
         "base_date": args.date.strip(),
@@ -592,6 +834,10 @@ def main() -> int:
         f"mixed:{label_counts['mixed']} "
         f"unknown:{label_counts['unknown']}"
     )
+    print(f"  themes={top_theme_tags}")
+    print(f"  signals={top_signal_tags}")
+    print(f"  risk_drivers={top_risk_drivers}")
+    print(f"  impacts={top_impact_tags}")
     return 0
 
 
