@@ -46,7 +46,7 @@ function Invoke-PowerShellScript {
     $exitCode = $LASTEXITCODE
 
     if ($exitCode -ne 0) {
-        throw "Script failed with exit code $exitCode: $ScriptPath $($ScriptArguments -join ' ')"
+        throw "Script failed with exit code ${exitCode}: $ScriptPath $($ScriptArguments -join ' ')"
     }
 }
 
@@ -66,7 +66,7 @@ function Invoke-PythonScript {
     $exitCode = $LASTEXITCODE
 
     if ($exitCode -ne 0) {
-        throw "Python script failed with exit code $exitCode: $ScriptPath $($ScriptArguments -join ' ')"
+        throw "Python script failed with exit code ${exitCode}: $ScriptPath $($ScriptArguments -join ' ')"
     }
 }
 
