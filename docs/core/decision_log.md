@@ -2,7 +2,7 @@
 
 Status: Active  
 Purpose: Architecture decision record  
-Last Updated: 2026-03-30
+Last Updated: 2026-04-04
 
 ---
 
@@ -407,6 +407,48 @@ deploy 側で見た目が安定していても、古い snapshot である可能
 
 ---
 
+## Decision: Deploy must be full replacement, not overlay
+
+deploy 処理は既存ファイルの上に重ねる overlay ではなく、  
+完全置換（full replacement）でなければならない。
+
+禁止事項
+
+```text
+既存ディレクトリを残したまま展開する
+data / analysis を部分上書きする
+古い snapshot が混在する状態を許容する
+```
+
+必須ルール
+
+```text
+deploy 前に対象ディレクトリを削除する
+data / analysis / static を完全に置き換える
+deploy は「コピー」ではなく「状態の再現」とする
+```
+
+理由
+
+```text
+overlay deploy は古い data を残し、
+UI上は正常に見えるが実際には不整合となる
+
+これは silent failure の一種であり、
+検知が困難で再発率が非常に高い
+```
+
+補足
+
+```text
+local（analysis/data）と deploy の差異が出た場合、
+deploy 側の上書き不完全を最優先で疑う
+```
+
+Status: adopted
+
+---
+
 # 5. Operations Decisions
 
 ## Decision: Build environment and view environment must be separated
@@ -579,9 +621,11 @@ UI設計判断を汚染しない
 コード上に無ければ runtime noise と判断する
 ```
 
+---
+
 ## Decision: UI must not silently mask missing data
 
-UI は必要な data / analysis が欠損している場合、
+UI は必要な data / analysis が欠損している場合、  
 黙って正常表示を続けてはならない。
 
 禁止事項
@@ -613,7 +657,7 @@ Silent failure は最も危険な不整合である
 
 ## Decision: Release requires analysis completeness
 
-公開対象の analysis / data は
+公開対象の analysis / data は  
 UI が必要とする完全性を満たしている必要がある。
 
 必須条件
@@ -774,6 +818,8 @@ Public-facing explanation template
 
 Status: adopted
 
+---
+
 ## Decision: Incomplete Input Guard (No Guessing Rule)
 
 必要な情報が揃っていない場合、AIは生成を行ってはならない。
@@ -800,19 +846,19 @@ Status: adopted
 
 ■理由
 
-不完全な状態での生成は一見正しく見えるが、
+不完全な状態での生成は一見正しく見えるが、  
 後に重大な不整合を生む。
 
-GenesisPredictionは
-「それっぽい正解」ではなく
-「完全に整合した正解」のみを許容する。
+GenesisPredictionは  
+「それっぽい正解」ではなく  
+「完全に整合した正解」のみを許容する。  
 情報不足状態での出力は「無効」とみなす。
 
 ---
 
 ## Decision: LangChain is not adopted for Vector Memory (v1)
 
-GenesisPrediction v2 における Vector Memory 実装では、
+GenesisPrediction v2 における Vector Memory 実装では、  
 LangChain などの外部オーケストレーションフレームワークは採用しない。
 
 ### 結論
@@ -871,15 +917,13 @@ Status: adopted
 
 ---
 
----
-
 ## 2026-04-02
 ### Sentiment Semantic Enrichment (B-1〜B-4)
 
 Decision: Sentiment output is semantic, not score-only
 
-`build_daily_sentiment.py` の出力は、
-単なる sentiment score の集合ではなく、
+`build_daily_sentiment.py` の出力は、  
+単なる sentiment score の集合ではなく、  
 Prediction 層へ渡すための semantic analysis として扱う。
 
 必須出力
@@ -889,7 +933,7 @@ theme_tags
 signal_tags
 risk_drivers
 impact_tags
-````
+```
 
 ルール
 
@@ -913,13 +957,12 @@ Status: adopted
 ---
 
 ## 2026-04-02
-
 ### World View Structured Summary Enforcement
 
 Decision: World view summary must be structured-first
 
-`build_world_view_model_latest.py` における summary は、
-自由文をそのまま採用するのではなく、
+`build_world_view_model_latest.py` における summary は、  
+自由文をそのまま採用するのではなく、  
 structured summary から生成する。
 
 ルール
@@ -952,13 +995,12 @@ Status: adopted
 ---
 
 ## 2026-04-02
-
 ### Prediction Must Use Semantic Analysis Fields
 
 Decision: Prediction enhancement must consume sentiment semantic fields
 
-Prediction 改善では、
-sentiment の score のみを使うのではなく、
+Prediction 改善では、  
+sentiment の score のみを使うのではなく、  
 semantic fields を入力として扱う。
 
 対象
@@ -991,37 +1033,111 @@ Status: adopted
 
 ---
 
-````
-
 ---
 
-# ✅ 安全確認（重要）
+## 2026-04-04
+### Deploy Hardening (Full Replacement, Target-Only, Permission-Aware)
 
-今回のブロックは：
+Decision: Deploy must be target-isolated and permission-aware
 
-- 既存内容を一切変更しない
-- 上書きなし
-- 末尾追加のみ
-- 行数増加のみ（削減なし）
-
-👉 **あなたのルール完全準拠です**
-
----
-
-# 🔚 これで何が固定されたか
-
-- sentiment = 数値 → 意味構造へ進化（正式化）
-- world_view = free text → structured優先（事故防止）
-- prediction = 次フェーズの設計方針確定
-
-👉 つまり
+ルール
 
 ```text
-analysis → prediction への橋が正式に定義された
-````
+- labos.soma-samui.com 以外のディレクトリを操作しない
+- public_html 直下を削除しない
+- 他サイト領域に影響を与えない
+```
+
+理由
+
+```text
+レンタルサーバーでは複数サイトが共存しているため、
+誤削除は即サービス停止につながる
+```
 
 ---
 
+### Deploy Payload Self-Deletion Guard
+
+Decision: Deploy must avoid self-deletion of payload
+
+ルール
+
+```text
+cleanup 処理で deploy payload（tar）を除外する
+find 使用時は必ず除外条件を入れる
+例: find ... ! -name 'deploy_payload.tar.gz'
+```
+
+理由
+
+```text
+payload が削除されると展開不能となり、
+空ディレクトリが生成される（silent failure）
+```
+
 ---
 
-END OF DOCUMENT
+### Deploy Permission Constraints (Conoha)
+
+Decision: Deploy must be permission-aware
+
+ルール
+
+```text
+- ディレクトリ自体の削除ではなく中身のみ削除する
+- 許可されたパスにのみ scp / ssh を行う
+- public_html 親階層への書き込み/削除を前提にしない
+```
+
+理由
+
+```text
+レンタルサーバーでは root 権限が無く、
+rm -rf や配置先に制限があるため
+```
+
+---
+
+## 2026-04-04
+### Full File Integrity Reinforcement (Line Count & Copy Safety)
+
+Decision: Line count integrity must be enforced
+
+ルール
+
+```text
+- 元ファイルより大幅に行数が減る場合は生成禁止
+- 行数減少は必ず理由を説明する
+- 行数が半分以下になる場合は不完全とみなす
+- 生成後に行数を自己確認する
+```
+
+理由
+
+```text
+長文ファイルでは一部欠落が検知しにくく、
+重大な機能欠損や不整合を引き起こすため
+```
+
+---
+
+Decision: Web copy-paste editing is prohibited for long files
+
+ルール
+
+```text
+- 長文コードはWebからのコピペ編集を禁止する
+- 必ずダウンロードファイルで編集する
+- 保存可能形式での受け渡しを優先する
+```
+
+理由
+
+```text
+コードブロック崩壊、インデント破壊、
+不可視文字混入により PowerShell / bash が誤動作するため
+```
+
+---
+# END OF DOCUMENT

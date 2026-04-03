@@ -1,7 +1,8 @@
 # =========================================================
 # GenesisPrediction v2
 # build_labos_deploy_payload.ps1
-# LABOS Deploy Payload Builder (Phase4 / Explanation-ready)
+# LABOS Deploy Payload Builder
+# (FULL PAYLOAD / analysis+data / target-safe deploy support)
 # =========================================================
 
 param(
@@ -15,39 +16,30 @@ function Log($msg) {
     Write-Host "[build_labos_deploy_payload] $msg"
 }
 
-# ---------------------------------------------------------
-# Resolve paths
-# ---------------------------------------------------------
-$root = Resolve-Path $RepoRoot
+$root = (Resolve-Path $RepoRoot).Path
 $out  = Join-Path $root $OutDir
 
 Log "ROOT : $root"
 Log "OUT  : $out"
 
-# Clean
 if (Test-Path $out) {
     Remove-Item -Recurse -Force $out
 }
 New-Item -ItemType Directory -Path $out | Out-Null
 
-# ---------------------------------------------------------
-# 0. Root files for public deploy
-# ---------------------------------------------------------
 $rootFiles = @(
     ".htaccess"
 )
 
 foreach ($name in $rootFiles) {
     $src = Join-Path $root $name
-    if (Test-Path $src) {
-        Copy-Item -Force $src $out
-        Log "Copy root file: $name"
+    if (!(Test-Path $src)) {
+        throw "Missing required root file: $src"
     }
+    Copy-Item -Force $src $out
+    Log "Copy root file: $name"
 }
 
-# ---------------------------------------------------------
-# 1. Copy static UI
-# ---------------------------------------------------------
 $staticSrc = Join-Path $root "app/static"
 $staticDst = Join-Path $out  "static"
 
@@ -58,7 +50,6 @@ if (!(Test-Path $staticSrc)) {
 Log "Copy static..."
 Copy-Item -Recurse -Force $staticSrc $staticDst
 
-# publish root html entrypoints too
 $rootHtml = @(
     "index.html",
     "overlay.html",
@@ -70,78 +61,61 @@ $rootHtml = @(
 
 foreach ($name in $rootHtml) {
     $src = Join-Path $staticSrc $name
-    if (Test-Path $src) {
-        Copy-Item -Force $src (Join-Path $out $name)
-        Log "Copy root html: $name"
+    if (!(Test-Path $src)) {
+        throw "Missing required root html: $src"
     }
+    Copy-Item -Force $src (Join-Path $out $name)
+    Log "Copy root html: $name"
 }
 
-# ---------------------------------------------------------
-# 2. Prepare data / analysis directories
-# ---------------------------------------------------------
-$dataDst = Join-Path $out "data"
-$analysisDst = Join-Path $out "analysis"
-
-New-Item -ItemType Directory -Path $dataDst -Force | Out-Null
-New-Item -ItemType Directory -Path $analysisDst -Force | Out-Null
-
-# ---------------------------------------------------------
-# 3. Copy existing data directory
-# ---------------------------------------------------------
 $dataSrc = Join-Path $root "data"
-if (Test-Path $dataSrc) {
-    Log "Copy data..."
-    Copy-Item -Recurse -Force "$dataSrc\*" $dataDst
+$dataDst = Join-Path $out  "data"
+
+if (!(Test-Path $dataSrc)) {
+    throw "data directory not found: $dataSrc"
 }
 
-# ---------------------------------------------------------
-# 4. Copy prediction artifacts from analysis -> data/prediction
-# ---------------------------------------------------------
-$analysisPrediction = Join-Path $root "analysis\prediction"
-$dataPredictionDst  = Join-Path $dataDst "prediction"
+Log "Copy full data directory..."
+Copy-Item -Recurse -Force $dataSrc $dataDst
 
-if (!(Test-Path $analysisPrediction)) {
-    throw "analysis/prediction not found: $analysisPrediction"
+$analysisSrc = Join-Path $root "analysis"
+$analysisDst = Join-Path $out  "analysis"
+
+if (!(Test-Path $analysisSrc)) {
+    throw "analysis directory not found: $analysisSrc"
 }
 
-Log "Copy prediction (analysis -> data)..."
+Log "Copy full analysis directory..."
+Copy-Item -Recurse -Force $analysisSrc $analysisDst
+
+$analysisPredictionSrc = Join-Path $analysisDst "prediction"
+$dataPredictionDst     = Join-Path $dataDst "prediction"
+
+if (!(Test-Path $analysisPredictionSrc)) {
+    throw "analysis/prediction not found in payload: $analysisPredictionSrc"
+}
+
+Log "Copy prediction compatibility snapshot (analysis -> data/prediction)..."
+if (Test-Path $dataPredictionDst) {
+    Remove-Item -Recurse -Force $dataPredictionDst
+}
 New-Item -ItemType Directory -Path $dataPredictionDst -Force | Out-Null
-Copy-Item -Recurse -Force "$analysisPrediction\*" $dataPredictionDst
+Copy-Item -Recurse -Force "$analysisPredictionSrc\*" $dataPredictionDst
 
-# ---------------------------------------------------------
-# 5. Copy explanation artifacts from analysis -> analysis/explanation
-#    and -> data/explanation for backward compatibility
-# ---------------------------------------------------------
-$analysisExplanationSrc = Join-Path $root "analysis\explanation"
-$analysisExplanationDst = Join-Path $analysisDst "explanation"
+$analysisExplanationSrc = Join-Path $analysisDst "explanation"
 $dataExplanationDst     = Join-Path $dataDst "explanation"
 
 if (!(Test-Path $analysisExplanationSrc)) {
-    throw "analysis/explanation not found: $analysisExplanationSrc"
+    throw "analysis/explanation not found in payload: $analysisExplanationSrc"
 }
 
-Log "Copy explanation (analysis -> analysis / data)..."
-New-Item -ItemType Directory -Path $analysisExplanationDst -Force | Out-Null
+Log "Copy explanation compatibility snapshot (analysis -> data/explanation)..."
+if (Test-Path $dataExplanationDst) {
+    Remove-Item -Recurse -Force $dataExplanationDst
+}
 New-Item -ItemType Directory -Path $dataExplanationDst -Force | Out-Null
-
-Copy-Item -Recurse -Force "$analysisExplanationSrc\*" $analysisExplanationDst
 Copy-Item -Recurse -Force "$analysisExplanationSrc\*" $dataExplanationDst
 
-# ---------------------------------------------------------
-# 6. Copy FX analysis required by UI
-# ---------------------------------------------------------
-$analysisFxSrc = Join-Path $root "analysis\fx"
-$analysisFxDst = Join-Path $analysisDst "fx"
-
-if (Test-Path $analysisFxSrc) {
-    Log "Copy fx analysis..."
-    New-Item -ItemType Directory -Path $analysisFxDst -Force | Out-Null
-    Copy-Item -Recurse -Force "$analysisFxSrc\*" $analysisFxDst
-}
-
-# ---------------------------------------------------------
-# 7. Required files check
-# ---------------------------------------------------------
 $requiredPrediction = @(
     "trend_latest.json",
     "signal_latest.json",
@@ -152,9 +126,13 @@ $requiredPrediction = @(
 )
 
 foreach ($f in $requiredPrediction) {
-    $p = Join-Path $dataPredictionDst $f
-    if (!(Test-Path $p)) {
-        throw "Missing required prediction file: $p"
+    $p1 = Join-Path $analysisPredictionSrc $f
+    $p2 = Join-Path $dataPredictionDst $f
+    if (!(Test-Path $p1)) {
+        throw "Missing required prediction file in analysis payload: $p1"
+    }
+    if (!(Test-Path $p2)) {
+        throw "Missing required prediction file in data compatibility payload: $p2"
     }
 }
 
@@ -164,33 +142,28 @@ $requiredExplanation = @(
 )
 
 foreach ($f in $requiredExplanation) {
-    $p1 = Join-Path $analysisExplanationDst $f
+    $p1 = Join-Path $analysisExplanationSrc $f
     $p2 = Join-Path $dataExplanationDst $f
     if (!(Test-Path $p1)) {
-        throw "Missing required explanation file: $p1"
+        throw "Missing required explanation file in analysis payload: $p1"
     }
     if (!(Test-Path $p2)) {
-        throw "Missing required explanation compatibility file: $p2"
+        throw "Missing required explanation file in data compatibility payload: $p2"
     }
 }
 
 Log "All required prediction files OK"
 Log "All required explanation files OK"
 
-# ---------------------------------------------------------
-# 8. History check
-# ---------------------------------------------------------
-$historyDir = Join-Path $dataPredictionDst "history"
+$historyDir = Join-Path $analysisPredictionSrc "history"
 if (!(Test-Path $historyDir)) {
-    Log "[WARN] history directory not found"
-} else {
+    Log "[WARN] analysis history directory not found"
+}
+else {
     $count = (Get-ChildItem $historyDir -Recurse -Filter prediction.json | Measure-Object).Count
-    Log "History snapshots: $count"
+    Log "Analysis history snapshots: $count"
 }
 
-# ---------------------------------------------------------
-# 9. Manifest
-# ---------------------------------------------------------
 $manifest = @{
     built_at = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ssK")
     out_dir = $out.ToString()
@@ -199,19 +172,16 @@ $manifest = @{
         "root html",
         "static/",
         "data/",
-        "data/prediction/",
-        "data/explanation/",
-        "analysis/explanation/",
-        "analysis/fx/"
+        "analysis/",
+        "data/prediction/ (compatibility copy from analysis/prediction)",
+        "data/explanation/ (compatibility copy from analysis/explanation)"
     )
+    deploy_scope = "target hierarchy only: labos.soma-samui.com"
 }
 
 $manifestPath = Join-Path $out "manifest.json"
-$manifest | ConvertTo-Json -Depth 5 | Set-Content -Encoding UTF8 $manifestPath
+$manifest | ConvertTo-Json -Depth 6 | Set-Content -Encoding UTF8 $manifestPath
 Log "Manifest written: $manifestPath"
 
-# ---------------------------------------------------------
-# 10. Summary
-# ---------------------------------------------------------
 Log "Payload build complete"
 Log "OUTPUT: $out"
