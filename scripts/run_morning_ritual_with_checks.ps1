@@ -215,7 +215,7 @@ try {
     # -----------------------------
     Write-Section "Run Post Ritual Checks"
 
-    $postArgs = @("-AutoRebuildVectorMemory", $false)
+    $postArgs = @()
     Write-Host ("CMD: powershell -ExecutionPolicy Bypass -File {0} {1}" -f $PostChecks, ($postArgs -join " "))
     try {
         Invoke-PowerShellScript -ScriptPath $PostChecks -ScriptArguments $postArgs
