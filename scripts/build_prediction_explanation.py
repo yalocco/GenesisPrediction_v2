@@ -778,12 +778,25 @@ def extract_monitor(
     scenario: dict[str, Any] | None,
     signal: dict[str, Any] | None,
 ) -> list[dict[str, str]]:
-    collected: list[dict[str, str]] = []
+    """Mirror prediction.monitoring_priorities/watchpoints when present.
 
-    for raw in normalize_list(pick_first(prediction, "watchpoints", "monitoring_priorities", default=[])):
+    Explanation should not expand watchpoints from scenario/signal if prediction
+    already provides its own finalized monitoring list.
+    """
+    prediction_monitor = normalize_list(
+        pick_first(prediction, "watchpoints", "monitoring_priorities", default=[])
+    )
+    mirrored: list[dict[str, str]] = []
+    for raw in prediction_monitor:
         item = normalize_monitor_struct(raw)
         if item:
-            collected.append(item)
+            mirrored.append(item)
+
+    mirrored = dedupe_dict_list(mirrored, ["item"])
+    if mirrored:
+        return mirrored
+
+    collected: list[dict[str, str]] = []
 
     for raw in normalize_list(pick_first(scenario, "watchpoints", default=[])):
         item = normalize_monitor_struct(raw)
@@ -806,11 +819,11 @@ def extract_monitor(
             {"item": "scenario balance shift"},
         ]
 
-    return dedupe_dict_list(collected, ["item"])[:6]
+    return dedupe_dict_list(collected, ["item"])
 
 
 def extract_watchpoints_from_monitor(monitor: list[dict[str, str]]) -> list[str]:
-    return dedupe_keep_order([item["item"] for item in monitor if item.get("item")])[:6]
+    return dedupe_keep_order([item["item"] for item in monitor if item.get("item")])
 
 
 def normalize_historical_struct(item: Any) -> dict[str, Any] | None:

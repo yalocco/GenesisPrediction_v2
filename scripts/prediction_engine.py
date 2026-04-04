@@ -29,6 +29,7 @@ HISTORICAL_PATTERN_LATEST_PATH = PREDICTION_DIR / "historical_pattern_latest.jso
 HISTORICAL_ANALOG_LATEST_PATH = PREDICTION_DIR / "historical_analog_latest.json"
 SCENARIO_LATEST_PATH = PREDICTION_DIR / "scenario_latest.json"
 REFERENCE_MEMORY_LATEST_PATH = PREDICTION_DIR / "reference_memory_latest.json"
+SENTIMENT_LATEST_PATH = ROOT / "data" / "world_politics" / "analysis" / "sentiment_latest.json"
 
 PREDICTION_LATEST_PATH = PREDICTION_DIR / "prediction_latest.json"
 
@@ -182,6 +183,59 @@ OUTCOME_LABELS = {
         "en": "liquidity weakens",
         "ja": "流動性低下",
         "th": "สภาพคล่องอ่อนตัว",
+    },
+}
+
+
+GENERIC_SEMANTIC_TAGS = {
+    "",
+    "general",
+    "medium",
+    "low",
+    "high",
+    "critical",
+    "derived",
+    "risk",
+    "news",
+    "headline",
+    "intensity",
+    "health",
+    "confidence",
+    "sentiment",
+}
+
+LOW_SIGNAL_NOISE_TAGS = {
+    "overall_direction_falling",
+    "risk_level_critical",
+    "risk_trend_low",
+    "sentiment_trend_falling",
+    "pipeline_stress",
+    "pipeline_health",
+    "health_signals_accelerating",
+    "confidence_moderate",
+    "confidence_trend_stable",
+}
+
+SEMANTIC_CATEGORY_LABELS = {
+    "themes": {
+        "en": "themes",
+        "ja": "テーマ",
+        "th": "ธีม",
+    },
+    "signals": {
+        "en": "signals",
+        "ja": "シグナル",
+        "th": "สัญญาณ",
+    },
+    "risk_drivers": {
+        "en": "risk drivers",
+        "ja": "リスク要因",
+        "th": "ปัจจัยเสี่ยง",
+    },
+    "impacts": {
+        "en": "impact paths",
+        "ja": "波及経路",
+        "th": "เส้นทางผลกระทบ",
     },
 }
 
@@ -692,6 +746,160 @@ def collect_trend_tags(trend_data: Dict[str, Any]) -> List[str]:
     return unique_preserve_order([x for x in tags if x])
 
 
+
+
+def is_generic_semantic_tag(value: Any) -> bool:
+    tag = normalize_text(value)
+    return (not tag) or tag in GENERIC_SEMANTIC_TAGS
+
+
+def is_low_signal_noise_tag(value: Any) -> bool:
+    tag = normalize_text(value)
+    return tag in LOW_SIGNAL_NOISE_TAGS
+
+
+def pick_sentiment_today(sentiment_data: Dict[str, Any]) -> Dict[str, Any]:
+    today = sentiment_data.get("today", {})
+    return today if isinstance(today, dict) else {}
+
+
+def extract_semantic_ids(today: Dict[str, Any], field_name: str) -> List[str]:
+    raw = today.get(field_name, [])
+    if not isinstance(raw, list):
+        return []
+    items: List[str] = []
+    for item in raw:
+        tag = normalize_text(item)
+        if is_generic_semantic_tag(tag):
+            continue
+        items.append(tag)
+    return unique_preserve_order(items)
+
+
+def extract_semantic_i18n(today: Dict[str, Any], field_name: str, fallback_ids: List[str]) -> Dict[str, List[str]]:
+    raw = ensure_lang_list_map(today.get(field_name))
+    source_key = field_name.replace("_i18n", "")
+    source_ids = today.get(source_key, [])
+    if raw and isinstance(source_ids, list):
+        aligned = {"en": [], "ja": [], "th": []}
+        for idx, raw_id in enumerate(source_ids):
+            normalized_id = normalize_text(raw_id)
+            if normalized_id not in fallback_ids:
+                continue
+            aligned["en"].append(labelize(raw_id, lang="en"))
+            aligned["ja"].append((raw.get("ja") or [])[idx] if idx < len(raw.get("ja") or []) else labelize(raw_id, lang="ja"))
+            aligned["th"].append((raw.get("th") or [])[idx] if idx < len(raw.get("th") or []) else labelize(raw_id, lang="th"))
+        if aligned["en"]:
+            return aligned
+    return {
+        "en": [labelize(x, lang="en") for x in fallback_ids],
+        "ja": [labelize(x, lang="ja") for x in fallback_ids],
+        "th": [labelize(x, lang="th") for x in fallback_ids],
+    }
+
+
+def collect_sentiment_semantic_context(sentiment_data: Dict[str, Any]) -> Dict[str, Any]:
+    today = pick_sentiment_today(sentiment_data)
+
+    theme_ids = extract_semantic_ids(today, "top_theme_tags")[:3]
+    signal_ids = extract_semantic_ids(today, "top_signal_tags")[:3]
+    risk_driver_ids = extract_semantic_ids(today, "top_risk_drivers")[:3]
+    impact_ids = extract_semantic_ids(today, "top_impact_tags")[:3]
+
+    return {
+        "themes": {
+            "ids": theme_ids,
+            "i18n": extract_semantic_i18n(today, "top_theme_tags_i18n", theme_ids),
+        },
+        "signals": {
+            "ids": signal_ids,
+            "i18n": extract_semantic_i18n(today, "top_signal_tags_i18n", signal_ids),
+        },
+        "risk_drivers": {
+            "ids": risk_driver_ids,
+            "i18n": extract_semantic_i18n(today, "top_risk_drivers_i18n", risk_driver_ids),
+        },
+        "impacts": {
+            "ids": impact_ids,
+            "i18n": extract_semantic_i18n(today, "top_impact_tags_i18n", impact_ids),
+        },
+        "sentiment_label": normalize_text(today.get("sentiment_label") or today.get("sentiment")),
+        "mixed_share": round(
+            safe_float((today.get("label_counts") or {}).get("mixed", 0.0))
+            / max(safe_float(today.get("articles", 0.0), 1.0), 1.0),
+            4,
+        ) if isinstance(today.get("label_counts"), dict) else 0.0,
+    }
+
+
+def build_semantic_summary_lines(semantic_context: Dict[str, Any]) -> Dict[str, str]:
+    themes = semantic_context.get("themes", {})
+    signals = semantic_context.get("signals", {})
+    risk_drivers = semantic_context.get("risk_drivers", {})
+    impacts = semantic_context.get("impacts", {})
+
+    theme_i18n = ensure_lang_list_map(themes.get("i18n"))
+    signal_i18n = ensure_lang_list_map(signals.get("i18n"))
+    risk_driver_i18n = ensure_lang_list_map(risk_drivers.get("i18n"))
+    impact_i18n = ensure_lang_list_map(impacts.get("i18n"))
+
+    clauses = {"en": "", "ja": "", "th": ""}
+
+    if theme_i18n.get("en"):
+        clauses["en"] += " Semantic backdrop is centered on " + ", ".join(theme_i18n["en"][:2]) + "."
+        clauses["ja"] += " 意味的な地合いは " + "・".join(theme_i18n["ja"][:2]) + " を中心に形成されている。"
+        clauses["th"] += " ภาพรวมเชิงความหมายกำลังขับเคลื่อนด้วย " + " และ ".join(theme_i18n["th"][:2]) + "."
+
+    if signal_i18n.get("en"):
+        clauses["en"] += " Active signals are led by " + ", ".join(signal_i18n["en"][:2]) + "."
+        clauses["ja"] += " 主なアクティブシグナルは " + "・".join(signal_i18n["ja"][:2]) + " である。"
+        clauses["th"] += " สัญญาณที่เด่นที่สุดคือ " + " และ ".join(signal_i18n["th"][:2]) + "."
+
+    if risk_driver_i18n.get("en"):
+        clauses["en"] += " Main risk drivers are " + ", ".join(risk_driver_i18n["en"][:2]) + "."
+        clauses["ja"] += " 主なリスク要因は " + "・".join(risk_driver_i18n["ja"][:2]) + " である。"
+        clauses["th"] += " ปัจจัยเสี่ยงหลักคือ " + " และ ".join(risk_driver_i18n["th"][:2]) + "."
+
+    if impact_i18n.get("en"):
+        clauses["en"] += " Likely transmission runs through " + ", ".join(impact_i18n["en"][:2]) + "."
+        clauses["ja"] += " 波及経路としては " + "・".join(impact_i18n["ja"][:2]) + " が意識される。"
+        clauses["th"] += " เส้นทางผลกระทบที่น่าจับตาคือ " + " และ ".join(impact_i18n["th"][:2]) + "."
+
+    return {lang: text.strip() for lang, text in clauses.items()}
+
+
+def build_primary_narrative(
+    scenario_data: Dict[str, Any],
+    semantic_context: Dict[str, Any],
+) -> str:
+    base_narrative = choose_primary_narrative(scenario_data)
+    semantic_lines = build_semantic_summary_lines(semantic_context)
+    semantic_en = semantic_lines.get("en", "").strip()
+    if not semantic_en:
+        return base_narrative
+    if semantic_en in base_narrative:
+        return base_narrative
+    return f"{base_narrative} {semantic_en}".strip()
+
+
+def build_primary_narrative_i18n(
+    scenario_data: Dict[str, Any],
+    primary_narrative: str,
+    semantic_context: Dict[str, Any],
+) -> Dict[str, str]:
+    base_i18n = choose_primary_narrative_i18n(
+        scenario_data=scenario_data,
+        primary_narrative=choose_primary_narrative(scenario_data),
+    )
+    semantic_lines = build_semantic_summary_lines(semantic_context)
+    return finalize_text_i18n(
+        primary_narrative,
+        {
+            "en": f"{base_i18n.get('en', '').strip()} {semantic_lines.get('en', '').strip()}".strip(),
+            "ja": f"{base_i18n.get('ja', '').strip()} {semantic_lines.get('ja', '').strip()}".strip(),
+            "th": f"{base_i18n.get('th', '').strip()} {semantic_lines.get('th', '').strip()}".strip(),
+        },
+    )
 def classify_prediction_direction(
     scenario_data: Dict[str, Any],
     signal_data: Dict[str, Any],
@@ -743,14 +951,21 @@ def build_prediction_statement(
     dominant_pattern: str,
     dominant_analog: str,
     memory_summary: str,
+    semantic_context: Dict[str, Any],
 ) -> str:
     dominant_pattern_label = labelize(dominant_pattern, lang="en")
     dominant_analog_label = labelize(dominant_analog, lang="en")
+    semantic_lines = build_semantic_summary_lines(semantic_context)
 
     sentence = (
-        f"Primary outlook is {dominant_scenario} with {risk} risk and "
-        f"{direction} directional bias at confidence {confidence:.2f}."
+        f"Primary outlook remains {labelize(dominant_scenario, lang='en')} "
+        f"with {labelize(risk, lang='en')} risk and "
+        f"{labelize(direction, lang='en')} directional bias at confidence {confidence:.2f}."
     )
+
+    semantic_en = semantic_lines.get("en", "").strip()
+    if semantic_en:
+        sentence += f" {semantic_en}"
 
     if dominant_pattern_label and dominant_analog_label:
         sentence += (
@@ -777,28 +992,35 @@ def build_prediction_statement_i18n(
     dominant_analog: str,
     memory_summary: str,
     prediction_statement_en: str,
+    semantic_context: Dict[str, Any],
 ) -> Dict[str, str]:
     scenario_labels = label_from_map(dominant_scenario, SCENARIO_LABELS)
     risk_labels = label_from_map(risk, RISK_LABELS)
     direction_labels = label_from_map(direction, DIRECTION_LABELS)
     dominant_pattern_labels = labelize_i18n(dominant_pattern)
     dominant_analog_labels = labelize_i18n(dominant_analog)
+    semantic_lines = build_semantic_summary_lines(semantic_context)
 
     en = (
-        f"Primary outlook is {scenario_labels['en']} with {risk_labels['en']} risk and "
+        f"Primary outlook remains {scenario_labels['en']} with {risk_labels['en']} risk and "
         f"{direction_labels['en']} directional bias at confidence {confidence:.2f}."
     )
     ja = (
-        f"主要見通しは {scenario_labels['ja']}。"
+        f"主要見通しは {scenario_labels['ja']} を維持している。"
         f"リスクは {risk_labels['ja']}、方向性は {direction_labels['ja']}、"
         f"信頼度は {confidence:.2f}。"
     )
     th = (
-        f"มุมมองหลักคือ {scenario_labels['th']} "
+        f"มุมมองหลักยังคงเป็น {scenario_labels['th']} "
         f"โดยมีระดับความเสี่ยง {risk_labels['th']} "
         f"และทิศทาง {direction_labels['th']} "
         f"ที่ความเชื่อมั่น {confidence:.2f}."
     )
+
+    if semantic_lines.get("en"):
+        en += f" {semantic_lines['en']}"
+        ja += f" {semantic_lines['ja']}"
+        th += f" {semantic_lines['th']}"
 
     if dominant_pattern_labels["en"] and dominant_analog_labels["en"]:
         en += (
@@ -916,15 +1138,32 @@ def build_prediction_drivers(
     pattern_data: Dict[str, Any],
     analog_data: Dict[str, Any],
     reference_memory: Dict[str, Any],
+    semantic_context: Dict[str, Any],
 ) -> List[str]:
     drivers: List[str] = []
 
-    drivers.extend(collect_trend_tags(trend_data)[:5])
-    drivers.extend(collect_signal_tags(signal_data)[:6])
+    for group_name in ("signals", "risk_drivers", "impacts", "themes"):
+        group = semantic_context.get(group_name, {})
+        ids = group.get("ids", [])
+        if isinstance(ids, list):
+            drivers.extend(normalize_text(x) for x in ids[:2] if normalize_text(x))
 
-    for item in scenario_data.get("key_drivers", [])[:6]:
-        if item is not None:
-            drivers.append(normalize_text(item))
+    drivers.extend(
+        x for x in collect_trend_tags(trend_data)[:5]
+        if not is_generic_semantic_tag(x)
+    )
+    drivers.extend(
+        x for x in collect_signal_tags(signal_data)[:6]
+        if not is_generic_semantic_tag(x) and not is_low_signal_noise_tag(x)
+    )
+
+    for item in scenario_data.get("key_drivers", [])[:8]:
+        if item is None:
+            continue
+        normalized = normalize_text(item)
+        if not normalized or is_generic_semantic_tag(normalized):
+            continue
+        drivers.append(normalized)
 
     dominant_pattern = pattern_data.get("dominant_pattern")
     dominant_analog = analog_data.get("dominant_analog")
@@ -1083,13 +1322,17 @@ def build_summary(
     confidence: float,
     historical_context: Dict[str, Any],
     memory_summary: str,
+    semantic_context: Dict[str, Any],
 ) -> str:
     base = (
-        f"Prediction is {direction}. "
-        f"Dominant scenario is {dominant_scenario}. "
-        f"Risk is {risk}. "
-        f"Confidence is {confidence:.2f}."
+        f"Prediction remains {labelize(dominant_scenario, lang='en')} under "
+        f"{labelize(risk, lang='en')} risk with a {labelize(direction, lang='en')} bias "
+        f"at confidence {confidence:.2f}."
     )
+
+    semantic_en = build_semantic_summary_lines(semantic_context).get("en", "").strip()
+    if semantic_en:
+        base += f" {semantic_en}"
 
     historical_summary = historical_context.get("summary")
     if historical_summary:
@@ -1109,30 +1352,34 @@ def build_summary_i18n(
     historical_context: Dict[str, Any],
     memory_summary: str,
     summary_en: str,
+    semantic_context: Dict[str, Any],
 ) -> Dict[str, str]:
     direction_labels = label_from_map(direction, DIRECTION_LABELS)
     scenario_labels = label_from_map(dominant_scenario, SCENARIO_LABELS)
     risk_labels = label_from_map(risk, RISK_LABELS)
     historical_summary_i18n = ensure_lang_map(historical_context.get("summary_i18n"))
+    semantic_lines = build_semantic_summary_lines(semantic_context)
 
     en = (
-        f"Prediction is {direction_labels['en']}. "
-        f"Dominant scenario is {scenario_labels['en']}. "
-        f"Risk is {risk_labels['en']}. "
-        f"Confidence is {confidence:.2f}."
+        f"Prediction remains {scenario_labels['en']} under {risk_labels['en']} risk "
+        f"with a {direction_labels['en']} bias at confidence {confidence:.2f}."
     )
     ja = (
-        f"予測は {direction_labels['ja']}。"
-        f"主要シナリオは {scenario_labels['ja']}。"
-        f"リスクは {risk_labels['ja']}。"
+        f"予測は {scenario_labels['ja']} を維持している。"
+        f"リスクは {risk_labels['ja']}、方向性は {direction_labels['ja']}、"
         f"信頼度は {confidence:.2f}。"
     )
     th = (
-        f"การคาดการณ์อยู่ในทิศทาง {direction_labels['th']}. "
-        f"สถานการณ์หลักคือ {scenario_labels['th']}. "
-        f"ความเสี่ยงอยู่ในระดับ {risk_labels['th']}. "
-        f"ความเชื่อมั่นอยู่ที่ {confidence:.2f}."
+        f"การคาดการณ์ยังคงเป็น {scenario_labels['th']} "
+        f"ภายใต้ความเสี่ยงระดับ {risk_labels['th']} "
+        f"พร้อมทิศทาง {direction_labels['th']} "
+        f"ที่ความเชื่อมั่น {confidence:.2f}."
     )
+
+    if semantic_lines.get("en"):
+        en += f" {semantic_lines['en']}".rstrip()
+        ja += f" {semantic_lines['ja']}".rstrip()
+        th += f" {semantic_lines['th']}".rstrip()
 
     if historical_summary_i18n:
         en += f" {historical_summary_i18n.get('en', '')}".rstrip()
@@ -1220,6 +1467,7 @@ def build_prediction_output(
     pattern_data: Dict[str, Any],
     analog_data: Dict[str, Any],
     reference_memory_data: Dict[str, Any],
+    sentiment_data: Dict[str, Any],
 ) -> Dict[str, Any]:
     as_of = (
         scenario_data.get("as_of")
@@ -1233,6 +1481,7 @@ def build_prediction_output(
     dominant_scenario = normalize_text(scenario_data.get("dominant_scenario")) or "base_case"
     risk = normalize_text(scenario_data.get("risk")) or "guarded"
     memory_summary = extract_memory_summary(reference_memory_data)
+    semantic_context = collect_sentiment_semantic_context(sentiment_data)
 
     historical_context = build_historical_context(
         pattern_data=pattern_data,
@@ -1275,7 +1524,10 @@ def build_prediction_output(
         reference_memory=reference_memory_data,
     )
 
-    primary_narrative = choose_primary_narrative(scenario_data)
+    primary_narrative = build_primary_narrative(
+        scenario_data=scenario_data,
+        semantic_context=semantic_context,
+    )
 
     prediction_statement = build_prediction_statement(
         dominant_scenario=dominant_scenario,
@@ -1285,6 +1537,7 @@ def build_prediction_output(
         dominant_pattern=str(historical_context.get("dominant_pattern_id") or ""),
         dominant_analog=str(historical_context.get("dominant_analog_id") or ""),
         memory_summary=memory_summary,
+        semantic_context=semantic_context,
     )
 
     prediction_statement_i18n = build_prediction_statement_i18n(
@@ -1296,11 +1549,13 @@ def build_prediction_output(
         dominant_analog=str(historical_context.get("dominant_analog_id") or ""),
         memory_summary=memory_summary,
         prediction_statement_en=prediction_statement,
+        semantic_context=semantic_context,
     )
 
-    primary_narrative_i18n = choose_primary_narrative_i18n(
+    primary_narrative_i18n = build_primary_narrative_i18n(
         scenario_data=scenario_data,
         primary_narrative=primary_narrative,
+        semantic_context=semantic_context,
     )
 
     expected_outcomes_i18n = build_expected_outcomes_i18n(
@@ -1315,6 +1570,7 @@ def build_prediction_output(
         pattern_data=pattern_data,
         analog_data=analog_data,
         reference_memory=reference_memory_data,
+        semantic_context=semantic_context,
     )
 
     summary = build_summary(
@@ -1324,6 +1580,7 @@ def build_prediction_output(
         confidence=confidence,
         historical_context=historical_context,
         memory_summary=memory_summary,
+        semantic_context=semantic_context,
     )
 
     summary_i18n = build_summary_i18n(
@@ -1334,6 +1591,7 @@ def build_prediction_output(
         historical_context=historical_context,
         memory_summary=memory_summary,
         summary_en=summary,
+        semantic_context=semantic_context,
     )
 
     risk_flags_raw = scenario_data.get("risk_flags", [])
@@ -1365,6 +1623,7 @@ def build_prediction_output(
         "expected_outcomes_i18n": expected_outcomes_i18n,
         "risk_flags": risk_flags_raw,
         "historical_context": historical_context,
+        "semantic_context": semantic_context,
         "scenario_bias": scenario_data.get("scenario_bias", {}),
         "reference_memory": build_reference_memory_output(reference_memory_data),
         "summary": summary,
@@ -1426,6 +1685,7 @@ def main() -> None:
     signal_data = load_json(SIGNAL_LATEST_PATH)
     scenario_data = load_json(SCENARIO_LATEST_PATH)
     pattern_data = load_json(HISTORICAL_PATTERN_LATEST_PATH)
+    sentiment_data = load_json(SENTIMENT_LATEST_PATH)
     analog_data = load_json(HISTORICAL_ANALOG_LATEST_PATH)
     direct_reference_memory = load_json(REFERENCE_MEMORY_LATEST_PATH)
 
@@ -1442,6 +1702,7 @@ def main() -> None:
         pattern_data=pattern_data,
         analog_data=analog_data,
         reference_memory_data=reference_memory_data,
+        sentiment_data=sentiment_data,
     )
 
     write_json(PREDICTION_LATEST_PATH, prediction_output)
