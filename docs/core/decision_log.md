@@ -355,12 +355,138 @@ debug 表示を利用した擬似翻訳
 
 ---
 
+Status: adopted
+
+---
+
+## 2026-04-04
+### Explanation Is a Mirror of Prediction
+
+Decision: Explanation must mirror prediction, not reinterpret it
+
+対象
+
+```text
+analysis/prediction/prediction_latest.json
+analysis/explanation/prediction_explanation_latest.json
+scripts/build_prediction_explanation.py
+```
+
+ルール
+
+```text
+explanation は prediction の mirror とする
+explanation は新しい意味を生成してはならない
+summary は prediction_statement を優先して mirror する
+drivers は key_drivers を mirror する
+watchpoints は monitoring_priorities を mirror する
+```
+
+補足
+
+```text
+Prediction = truth
+Explanation = structured mirror
+UI = read-only consumer
+```
+
+理由
+
+```text
+prediction と explanation の意味ズレを防ぐ
+explanation layer を analysis-side の説明層として固定する
+UI 側の再解釈圧力を防ぐ
+```
+
+Status: adopted
+
+---
+
+## 2026-04-04
+### Watchpoints Must Not Be Mixed Across Layers
+
+Decision: Prediction watchpoints must take priority over scenario/signal watchpoints
+
+対象
+
+```text
+scripts/build_prediction_explanation.py
+prediction.monitoring_priorities
+scenario.watchpoints
+signal.watchpoints
+```
+
+ルール
+
+```text
+prediction.monitoring_priorities が存在する場合
+explanation.watchpoints はそれのみを使用する
+scenario / signal 由来の watchpoint を混ぜない
+prediction 側に watchpoints が無い場合のみ fallback を許可する
+```
+
+理由
+
+```text
+watchpoint 件数不一致の防止
+explanation による勝手な拡張の防止
+prediction = truth の原則維持
+```
+
+Status: adopted
+
+---
 ## Decision: Digest summary i18n must be generated in analysis
 
 Digest summary は自由文であるため、analysis 側で `summary_i18n` を生成し、UI はそれを表示するのみとする。
 
 ---
 
+Status: adopted
+
+---
+
+## 2026-04-04
+### Runtime UI Text Must Not Compete With Static i18n
+
+Decision: Static labels and runtime text must not double-define the same field
+
+対象
+
+```text
+app/static/*.html
+heroText
+section titles
+static UI labels
+```
+
+禁止事項
+
+```text
+静的文言を共通 i18n で設定した後に
+別の runtime ロジックで同じDOMへ英語直書き上書きすること
+```
+
+ルール
+
+```text
+同一DOMノードの文言責務は一系統に限定する
+固定ラベルは共通 i18n 辞書で統一する
+動的本文は analysis の *_i18n だけを使う
+静的文言と動的文言の二重定義を禁止する
+```
+
+理由
+
+```text
+初期表示では日本語、再描画後は英語になる競合を防ぐ
+local / deploy で見え方がずれる事故を防ぐ
+UI を read-only に保つ
+```
+
+Status: adopted
+
+---
 ## Decision: Static UI labels may use central dictionary, but runtime text must come from analysis
 
 ルール
@@ -574,6 +700,79 @@ detached HEAD を見つけたら main に戻す
 
 ---
 
+Status: adopted
+
+---
+
+## 2026-04-04
+### Automation Must Expose Phase Status and Unified Exit Code
+
+Decision: Unattended automation must expose per-phase status and final exit code
+
+対象
+
+```text
+scripts/run_morning_ritual_with_checks.ps1
+```
+
+ルール
+
+```text
+各フェーズは OK / FAIL / SKIP を明示する
+対象フェーズ:
+- ritual
+- post
+- deploy
+- verify
+
+最終結果は 0 / 1 の exit code に統一する
+0 = success
+1 = failure
+```
+
+補足
+
+```text
+ログだけ読まないと状況が分からない状態を禁止する
+Final Status を最後に必ず出力する
+```
+
+理由
+
+```text
+Windows Task Scheduler / cron 連携を容易にする
+無人運用時の障害切り分けを高速化する
+deploy 失敗や verify 未実行を見落とさないため
+```
+
+Status: adopted
+
+---
+
+## 2026-04-04
+### Automatic Vector Memory Rebuild Is Accepted as Self-Healing in Pipeline
+
+Decision: WARN -> rebuild -> re-check -> OK is正常運用として扱う
+
+ルール
+
+```text
+vector memory freshness が WARN の場合
+自動 rebuild を許可する
+re-check で fresh を確認する
+re-check が通らない場合は FAIL とする
+```
+
+理由
+
+```text
+reference memory は補助層であり、
+stale を検知して自動回復できることは運用品質向上につながるため
+```
+
+Status: adopted
+
+---
 ## Decision: Automatic Vector Memory rebuild is valid self-healing behavior
 
 Post Ritual Checks で vector memory が stale と判定された場合、自動 rebuild を許可する。
