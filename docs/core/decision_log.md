@@ -1491,3 +1491,127 @@ Prediction を explanation と分離するため
 ```
 
 Status: adopted
+
+
+---
+
+## 2026-04-04
+### Dirty Repo Guard Enforcement (Run Requires Clean Working Tree)
+
+Decision: All run scripts must execute on a clean working tree
+
+対象
+
+```text
+scripts/run_daily_with_publish.ps1
+scripts/run_morning_ritual.ps1
+scripts/run_morning_ritual_with_checks.ps1
+```
+
+ルール
+
+```text
+run系スクリプト実行前は working tree を clean にする
+
+許可される方法
+- git commit による clean 化
+
+禁止
+- dirty 状態での実行
+- push による回避（無効）
+- 同じ状態での再実行ループ
+```
+
+補足
+
+```text
+dirty guard は remote 状態ではなく
+local working tree を基準とする
+
+したがって
+push は無関係
+commit のみが解決手段である
+```
+
+理由
+
+```text
+未確定変更での分析生成を防ぐため
+再現性を保証するため
+deploy 不整合の防止
+```
+
+Status: adopted
+
+---
+
+## 2026-04-04
+### Pre-Run Commit Rule (Operational Requirement)
+
+Decision: Commit before run is mandatory
+
+ルール
+
+```text
+run 前は必ず commit を行う
+
+標準手順
+git add -A
+git commit -m "auto commit before run"
+```
+
+意図
+
+```text
+dirty guard 回避の標準化
+運用の単純化
+実行失敗ループの防止
+```
+
+Status: adopted
+
+---
+
+## 2026-04-04
+### PowerShell Switch Parameter Rule (No Boolean Value Passing)
+
+Decision: SwitchParameter must not receive explicit boolean values
+
+対象
+
+```text
+PowerShell scripts
+-AutoRebuildVectorMemory
+```
+
+ルール
+
+```text
+switch パラメータは値を渡さない
+
+正:
+-AutoRebuildVectorMemory
+
+誤:
+-AutoRebuildVectorMemory False
+-AutoRebuildVectorMemory:$false
+```
+
+補足
+
+```text
+付ける = True
+付けない = False
+
+False を渡すと positional 引数として解釈され、
+想定外のパラメータエラーを引き起こす
+```
+
+理由
+
+```text
+PowerShell の仕様に起因する事故防止
+引数解釈バグの防止
+```
+
+Status: adopted
