@@ -88,7 +88,7 @@ function Invoke-PowerShellScript {
         [string]$ScriptPath,
 
         [Parameter(Mandatory = $false)]
-        [string[]]$ScriptArguments = @()
+        [object[]]$ScriptArguments = @()
     )
 
     & powershell -ExecutionPolicy Bypass -File $ScriptPath @ScriptArguments
@@ -215,7 +215,7 @@ try {
     # -----------------------------
     Write-Section "Run Post Ritual Checks"
 
-    $postArgs = @("-AutoRebuildVectorMemory:$false")
+    $postArgs = @("-AutoRebuildVectorMemory", $false)
     Write-Host ("CMD: powershell -ExecutionPolicy Bypass -File {0} {1}" -f $PostChecks, ($postArgs -join " "))
     try {
         Invoke-PowerShellScript -ScriptPath $PostChecks -ScriptArguments $postArgs
