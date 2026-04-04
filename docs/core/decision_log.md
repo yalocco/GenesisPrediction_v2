@@ -2036,3 +2036,277 @@ Status: adopted
 ---
 
 # END OF DOCUMENT
+
+---
+## 2026-04-04
+### Scenario Transmission Must Be Deterministic Per Branch
+
+Decision: Scenario transmission outcome must be deterministic by branch
+
+対象
+
+```text
+scripts/scenario_engine.py
+scenario.transmission_chain
+scenario.transmission_chain_i18n
+```
+
+ルール
+
+```text
+best_case  は stabilizes / moderates 系に固定する
+base_case  は down / up 系の中間悪化に固定する
+worst_case は sharp / default 系に固定する
+
+同じ driver でも
+scenario が違えば
+到達 outcome を変える
+```
+
+補足
+
+```text
+transmission_chain は
+driver -> propagation -> outcome
+の因果鎖として扱う
+
+best_case なのに equities_down のような
+branch と逆方向の終点を許可しない
+```
+
+理由
+
+```text
+Scenario を説明テンプレではなく
+判断入力分岐として成立させるため
+Prediction へ渡す因果の質を固定するため
+```
+
+Status: adopted
+
+---
+
+## 2026-04-04
+### Scenario Narrative Must Be Built From Structured Drivers, Not Raw Tags
+
+Decision: Scenario narrative must use structured_drivers as source of truth
+
+対象
+
+```text
+scripts/scenario_engine.py
+scenario.narrative
+scenario.narrative_i18n
+```
+
+ルール
+
+```text
+narrative は raw signal / raw trend tag から直接組み立てない
+narrative は structured_drivers を正規化して使用する
+
+使用優先
+- core_drivers
+- pressure_modifiers
+- trend_context
+```
+
+禁止事項
+
+```text
+overall_direction_* の露出
+risk_level_* の露出
+raw watchpoint token の露出
+signal_tags / trend_tags 直接依存の narrative 生成
+```
+
+理由
+
+```text
+構造は正しいのに文章だけが汚れる事故を防ぐため
+Scenario narrative を SSOT 準拠の説明文として固定するため
+```
+
+Status: adopted
+
+---
+
+## 2026-04-04
+### Scenario Narrative Outcomes Must Align With Branch Outcomes
+
+Decision: Scenario narrative outcome text must follow branch-specific deterministic outcomes
+
+対象
+
+```text
+scripts/scenario_engine.py
+scenario.narrative
+scenario.expected_outcomes
+scenario.transmission_chain
+```
+
+ルール
+
+```text
+best_case narrative は
+equities_stabilizes / credit_spreads_moderates / growth_stabilizes / currency_stabilizes
+を基準にする
+
+base_case narrative は
+equities_down / credit_spreads_up / growth_down / currency_down
+を基準にする
+
+worst_case narrative は
+equities_sharp_down / credit_spreads_sharp_up / growth_sharp_down / currency_sharp_down
+を基準にする
+```
+
+禁止事項
+
+```text
+best_case narrative に equities_down を混ぜる
+worst_case narrative に弱い base 表現を残す
+narrative と transmission の不一致を許可する
+```
+
+理由
+
+```text
+Scenario 説明文と因果鎖を一致させ
+branch の説得力を固定するため
+```
+
+Status: adopted
+
+---
+
+## 2026-04-04
+### Internal Scenario / Transmission Tokens Must Be Snake Case
+
+Decision: Internal causal tokens must be snake_case and display text must be resolved only through i18n maps
+
+対象
+
+```text
+scripts/scenario_engine.py
+transmission_chain
+expected_outcomes
+watchpoint_roles
+TERM_LABELS / TRANSMISSION_TERM_LABELS / OUTCOME_LABELS
+```
+
+ルール
+
+```text
+内部トークンは snake_case に統一する
+表示文は i18n 辞書でのみ解決する
+
+例
+pressure_easing
+mobility_restrictions
+credit_spreads_sharp_up
+unemployment_sharp_up
+safe_haven_sharp_up
+fiscal_subsidy_up
+```
+
+禁止事項
+
+```text
+snake_case と space-separated token の混在
+内部トークンを表示用文字列として使う
+UI で token を整形して救済する
+```
+
+理由
+
+```text
+因果鎖・outcome・i18n の整合を保つため
+最後の token 混在バグを再発させないため
+```
+
+Status: adopted
+
+---
+
+## 2026-04-04
+### Scenario Must Carry Invalidation Conditions
+
+Decision: Each scenario branch must define invalidation conditions
+
+対象
+
+```text
+scripts/scenario_engine.py
+scenario.invalidation_i18n
+```
+
+ルール
+
+```text
+best / base / worst の各 branch は
+その branch が崩れる条件を持つ
+
+invalidation は explanation 用ではなく
+判断破棄条件として扱う
+```
+
+補足
+
+```text
+best_case  = 再悪化で無効
+base_case  = 安定化または同時悪化で無効
+worst_case = ストレス緩和または信認回復で無効
+```
+
+理由
+
+```text
+Scenario を monitoring-linked branch として完成させるため
+Prediction / Explanation の判断破棄条件を analysis 側で固定するため
+```
+
+Status: adopted
+
+---
+
+## 2026-04-04
+### Scenario Engine Final Polish Completed
+
+Decision: Scenario engine is considered production-ready when causal branches, deterministic transmission, aligned narratives, snake_case internal tokens, and invalidation are all present
+
+対象
+
+```text
+analysis/prediction/scenario_latest.json
+scripts/scenario_engine.py
+```
+
+完成条件
+
+```text
+1. key_drivers が cause-oriented
+2. structured_drivers が cause / modifier / trend / downstream に分離
+3. transmission_chain が branch deterministic
+4. narrative が structured_drivers 準拠
+5. narrative outcome と transmission が一致
+6. internal token が snake_case に統一
+7. invalidation_i18n を各 scenario が持つ
+```
+
+完成状態
+
+```text
+Scenario = cause-oriented branch engine
+Prediction = decision-grade conclusion
+Explanation = mirror
+```
+
+理由
+
+```text
+Prediction Enhancement フェーズの scenario 側ゴールを固定し
+以後この状態を baseline として扱うため
+```
+
+Status: adopted

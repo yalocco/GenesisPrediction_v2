@@ -460,6 +460,135 @@ PHRASE_I18N = {
 }
 
 
+TRANSMISSION_TERM_LABELS = {
+    "pressure_easing": {
+        "en": "pressure easing",
+        "ja": "圧力緩和",
+        "th": "แรงกดดันเริ่มผ่อนคลาย",
+    },
+    "mobility_restrictions": {
+        "en": "mobility restrictions",
+        "ja": "移動制限",
+        "th": "ข้อจำกัดการเดินทาง",
+    },
+    "credit_spreads_sharp_up": {
+        "en": "credit spreads sharp up",
+        "ja": "信用スプレッド急拡大",
+        "th": "ส่วนต่างเครดิตพุ่งสูงรุนแรง",
+    },
+    "unemployment_sharp_up": {
+        "en": "unemployment sharp up",
+        "ja": "失業率急上昇",
+        "th": "การว่างงานพุ่งสูงรุนแรง",
+    },
+    "safe_haven_sharp_up": {
+        "en": "safe haven demand surges",
+        "ja": "安全資産需要急増",
+        "th": "แรงซื้อสินทรัพย์ปลอดภัยพุ่งสูง",
+    },
+    "fiscal_subsidy_up": {
+        "en": "fiscal subsidy expansion",
+        "ja": "財政補助拡大",
+        "th": "การอุดหนุนการคลังขยายตัว",
+    },
+    "credit contraction": {
+        "en": "credit contraction",
+        "ja": "信用収縮",
+        "th": "สินเชื่อหดตัว",
+    },
+    "funding squeeze": {
+        "en": "funding squeeze",
+        "ja": "資金逼迫",
+        "th": "ภาวะเงินทุนตึงตัว",
+    },
+    "policy repricing": {
+        "en": "policy repricing",
+        "ja": "政策再評価",
+        "th": "การประเมินนโยบายใหม่",
+    },
+    "risk off": {
+        "en": "risk off",
+        "ja": "リスクオフ",
+        "th": "หลีกเลี่ยงความเสี่ยง",
+    },
+    "import price surge": {
+        "en": "import price surge",
+        "ja": "輸入価格急騰",
+        "th": "ราคานำเข้าพุ่งสูง",
+    },
+    "forced deleveraging": {
+        "en": "forced deleveraging",
+        "ja": "強制的なデレバレッジ",
+        "th": "การลดเลเวอเรจแบบถูกบีบ",
+    },
+    "supply delay": {
+        "en": "supply delay",
+        "ja": "供給遅延",
+        "th": "ความล่าช้าด้านอุปทาน",
+    },
+    "energy pass-through": {
+        "en": "energy pass-through",
+        "ja": "エネルギー価格転嫁",
+        "th": "การส่งผ่านราคาพลังงาน",
+    },
+    "liquidity scramble": {
+        "en": "liquidity scramble",
+        "ja": "流動性確保の奔走",
+        "th": "การแสวงหาสภาพคล่องอย่างตื่นตระหนก",
+    },
+    "capital flight": {
+        "en": "capital flight",
+        "ja": "資本逃避",
+        "th": "เงินทุนไหลออกอย่างรวดเร็ว",
+    },
+    "policy_stabilization": {
+        "en": "policy stabilization",
+        "ja": "政策安定化",
+        "th": "นโยบายช่วยพยุงเสถียรภาพ",
+    },
+    "funding_squeeze": {
+        "en": "funding squeeze",
+        "ja": "資金逼迫",
+        "th": "ภาวะเงินทุนตึงตัว",
+    },
+    "credit_contraction": {
+        "en": "credit contraction",
+        "ja": "信用収縮",
+        "th": "สินเชื่อหดตัว",
+    },
+    "import_price_surge": {
+        "en": "import price surge",
+        "ja": "輸入価格急騰",
+        "th": "ราคานำเข้าพุ่งสูง",
+    },
+    "pressure_easing": {
+        "en": "pressure easing",
+        "ja": "圧力緩和",
+        "th": "แรงกดดันเริ่มผ่อนคลาย",
+    },
+    "mobility_restrictions": {
+        "en": "mobility restrictions",
+        "ja": "移動制限",
+        "th": "ข้อจำกัดการเดินทาง",
+    },
+    "bank_funding_stress": {
+        "en": "bank funding stress",
+        "ja": "銀行の資金調達ストレス",
+        "th": "ความตึงตัวของเงินทุนธนาคาร",
+    },
+    "currency_instability": {
+        "en": "currency instability",
+        "ja": "通貨不安定",
+        "th": "ความไม่เสถียรของค่าเงิน",
+    },
+    "social_unrest": {
+        "en": "social unrest",
+        "ja": "社会不安",
+        "th": "ความไม่สงบทางสังคม",
+    },
+}
+
+
 SIGNAL_CATEGORY_LABELS = {
     "pressure signals": {
         "en": "pressure signals",
@@ -1330,9 +1459,187 @@ def classify_watchpoint_roles(watchpoints: List[str]) -> Dict[str, List[str]]:
     }
 
 
+def format_transmission_chain_i18n(chain: List[str]) -> Dict[str, str]:
+    translated = [render_term_i18n(item) for item in chain if normalize_text(item)]
+    return {
+        "en": " -> ".join(item["en"] for item in translated if item.get("en")),
+        "ja": " → ".join(item["ja"] for item in translated if item.get("ja")),
+        "th": " -> ".join(item["th"] for item in translated if item.get("th")),
+    }
+
+
+def select_outcome_by_scenario(
+    scenario_id: str,
+    downstream: List[str],
+    preferred_group: Optional[str] = None,
+    *fallbacks: str,
+) -> str:
+    normalized = [normalize_text(x) for x in downstream if normalize_text(x)]
+
+    deterministic_map = {
+        "best_case": {
+            "market": "equities_stabilizes",
+            "growth": "growth_stabilizes",
+            "currency": "currency_stabilizes",
+            "credit": "credit_spreads_moderates",
+            "labor": "unemployment_moderates",
+            "haven": "safe_haven_moderates",
+            "default": "credit_spreads_moderates",
+            "inflation": "inflation_up",
+            "generic": "growth_stabilizes",
+        },
+        "base_case": {
+            "market": "equities_down",
+            "growth": "growth_down",
+            "currency": "currency_down",
+            "credit": "credit_spreads_up",
+            "labor": "unemployment_up",
+            "haven": "safe_haven_up",
+            "default": "default_risk_up",
+            "inflation": "inflation_up",
+            "generic": "equities_down",
+        },
+        "worst_case": {
+            "market": "equities_sharp_down",
+            "growth": "growth_sharp_down",
+            "currency": "currency_sharp_down",
+            "credit": "credit_spreads_sharp_up",
+            "labor": "unemployment_sharp_up",
+            "haven": "safe_haven_sharp_up",
+            "default": "default_risk_up",
+            "inflation": "inflation_up",
+            "generic": "equities_sharp_down",
+        },
+    }
+
+    scenario_map = deterministic_map.get(scenario_id, deterministic_map["base_case"])
+
+    group_aliases = {
+        "equities": "market",
+        "stocks": "market",
+        "market": "market",
+        "growth": "growth",
+        "currency": "currency",
+        "fx": "currency",
+        "credit": "credit",
+        "spreads": "credit",
+        "labor": "labor",
+        "employment": "labor",
+        "haven": "haven",
+        "safe_haven": "haven",
+        "default": "default",
+        "inflation": "inflation",
+        "prices": "inflation",
+    }
+
+    if preferred_group:
+        canonical_group = group_aliases.get(normalize_text(preferred_group), normalize_text(preferred_group))
+        forced = scenario_map.get(canonical_group)
+        if forced:
+            return forced
+
+    if normalized:
+        if scenario_id == "best_case":
+            for token in normalized:
+                if "stabil" in token or "moderate" in token:
+                    return token
+        elif scenario_id == "worst_case":
+            for token in normalized:
+                if "sharp" in token or "default" in token:
+                    return token
+        else:
+            for token in normalized:
+                if token in {
+                    "equities_down", "growth_down", "currency_down",
+                    "credit_spreads_up", "default_risk_up", "inflation_up",
+                }:
+                    return token
+
+    if fallbacks:
+        for fallback in fallbacks:
+            fallback_norm = normalize_text(fallback)
+            if fallback_norm:
+                return fallback_norm
+
+    return scenario_map["generic"]
+
+
+def build_transmission_chain(
+    scenario_id: str,
+    structured_drivers: Dict[str, List[str]],
+    expected_outcomes: List[str],
+    watchpoint_roles: Dict[str, List[str]],
+) -> List[List[str]]:
+    core_drivers = unique_preserve_order(structured_drivers.get("core_drivers", []))
+    modifiers = unique_preserve_order(structured_drivers.get("pressure_modifiers", []))
+    downstream = unique_preserve_order(expected_outcomes or structured_drivers.get("downstream_risks", []))
+
+    scenario_midpoint = {
+        "best_case": "policy stabilization",
+        "base_case": "selective spillover",
+        "worst_case": "cross-domain contagion",
+    }
+    fallback_mid = scenario_midpoint.get(scenario_id, "selective spillover")
+
+    chain_templates = {
+        "banking stress": ["banking_stress", "credit_contraction", select_outcome_by_scenario(scenario_id, downstream, "credit", "default_risk_up")],
+        "currency instability": ["currency_instability", "import_price_surge", select_outcome_by_scenario(scenario_id, downstream, "currency", "currency_down")],
+        "social unrest": ["social_unrest", "mobility_restrictions", select_outcome_by_scenario(scenario_id, downstream, "growth", "growth_down")],
+        "trade disruption": ["trade_disruption", "supply_delay", select_outcome_by_scenario(scenario_id, downstream, "growth", "growth_down")],
+        "energy stress": ["energy_stress", "energy_pass_through", select_outcome_by_scenario(scenario_id, downstream, "inflation", "inflation_up")],
+        "military tension": ["military_tension", "risk_off", select_outcome_by_scenario(scenario_id, downstream, "market", "equities_down")],
+        "policy failure": ["policy_failure", "confidence_breakdown", select_outcome_by_scenario(scenario_id, downstream, "default", "default_risk_up")],
+        "confidence erosion": ["confidence_erosion", "risk_off", select_outcome_by_scenario(scenario_id, downstream, "market", "equities_down")],
+        "credit spread widening": ["credit_spread_widening", "funding_squeeze", select_outcome_by_scenario(scenario_id, downstream, "credit", "default_risk_up")],
+        "systemic stress": ["systemic_stress", "liquidity_scramble", select_outcome_by_scenario(scenario_id, downstream, "market", "equities_down")],
+        "regime shift pressure": ["regime_shift_pressure", "policy_repricing", select_outcome_by_scenario(scenario_id, downstream, "market", "equities_down")],
+        "cross-domain contagion": ["cross_domain_contagion", "forced_deleveraging", select_outcome_by_scenario(scenario_id, downstream, "growth", "growth_down")],
+    }
+
+    chains: List[List[str]] = []
+    for driver in core_drivers[:4]:
+        key = normalize_text(driver)
+        template = chain_templates.get(key)
+        if template:
+            chains.append(template)
+
+    if not chains:
+        default_outcome = select_outcome_by_scenario(scenario_id, downstream, "growth", "growth_down")
+        for driver in core_drivers[:2]:
+            norm = normalize_text(driver)
+            if norm:
+                chains.append([norm, fallback_mid, default_outcome])
+
+    if scenario_id == "best_case" and watchpoint_roles.get("stabilization"):
+        chains.append(["pressure_easing", "policy_stabilization", "growth_stabilizes"])
+    elif scenario_id == "worst_case" and watchpoint_roles.get("escalation"):
+        chains.append(["bank_funding_stress", "funding_squeeze", "default_risk_up"])
+
+    cleaned: List[List[str]] = []
+    for chain in chains:
+        tokens = [normalize_text(x) for x in chain if normalize_text(x)]
+        if len(tokens) >= 3:
+            cleaned.append(tokens[:3])
+
+    return unique_preserve_order(cleaned)[:5]
+
+
+def render_transmission_chain(chains: List[List[str]]) -> Dict[str, List[str]]:
+    rendered = {"en": [], "ja": [], "th": []}
+    for chain in chains:
+        formatted = format_transmission_chain_i18n(chain)
+        if formatted["en"]:
+            rendered["en"].append(formatted["en"])
+        if formatted["ja"]:
+            rendered["ja"].append(formatted["ja"])
+        if formatted["th"]:
+            rendered["th"].append(formatted["th"])
+    return rendered
+
+
 def merge_term_labels() -> Dict[str, Dict[str, str]]:
     merged: Dict[str, Dict[str, str]] = {}
-    for mapping in (DRIVER_LABELS, WATCHPOINT_LABELS, OUTCOME_LABELS, PHRASE_I18N):
+    for mapping in (DRIVER_LABELS, WATCHPOINT_LABELS, OUTCOME_LABELS, PHRASE_I18N, TRANSMISSION_TERM_LABELS):
         merged.update(mapping)
     return merged
 
@@ -1351,6 +1658,92 @@ def join_term_texts(values: List[str], limit: int = 5) -> Dict[str, str]:
         return {"en": "", "ja": "", "th": ""}
 
     translated = [render_term_i18n(item) for item in items]
+    return {
+        "en": ", ".join(item["en"] for item in translated if item.get("en")),
+        "ja": "、".join(item["ja"] for item in translated if item.get("ja")),
+        "th": ", ".join(item["th"] for item in translated if item.get("th")),
+    }
+
+
+def sanitize_narrative_tokens(values: List[str]) -> List[str]:
+    sanitized: List[str] = []
+    for value in values or []:
+        token = canonicalize_driver_token(value)
+        if token:
+            sanitized.append(token)
+    return unique_preserve_order(sanitized)
+
+
+def build_scenario_outcome_text_i18n(scenario_id: str) -> Dict[str, str]:
+    scenario_outcomes = {
+        "best_case": [
+            "equities_stabilizes",
+            "credit_spreads_moderates",
+            "growth_stabilizes",
+            "currency_stabilizes",
+        ],
+        "base_case": [
+            "equities_down",
+            "credit_spreads_up",
+            "growth_down",
+            "currency_down",
+        ],
+        "worst_case": [
+            "equities_sharp_down",
+            "credit_spreads_sharp_up",
+            "growth_sharp_down",
+            "currency_sharp_down",
+        ],
+    }
+    return join_term_texts(scenario_outcomes.get(scenario_id, scenario_outcomes["base_case"]), limit=4)
+
+
+def summarize_structured_signals_i18n(
+    core_drivers: List[str],
+    pressure_modifiers: List[str],
+    trend_context: List[str],
+) -> Dict[str, str]:
+    categories: List[str] = []
+
+    core_tokens = [normalize_text(x) for x in core_drivers if normalize_text(x)]
+    modifier_tokens = [normalize_text(x) for x in pressure_modifiers if normalize_text(x)]
+    trend_tokens = [normalize_text(x) for x in trend_context if normalize_text(x)]
+
+    if core_tokens or modifier_tokens or trend_tokens:
+        categories.append("pressure signals")
+
+    if any("headline" in token for token in modifier_tokens):
+        categories.append("headline intensity signals")
+
+    if any("confidence" in token for token in modifier_tokens):
+        categories.append("confidence signals")
+
+    if any(
+        token in {
+            "policy stabilization",
+            "uptrend pressure",
+        }
+        for token in core_tokens + trend_tokens
+    ):
+        categories.append("stabilization signals")
+
+    if any(
+        token in {
+            "banking stress",
+            "currency instability",
+            "social unrest",
+            "systemic stress",
+            "cross-domain contagion",
+        }
+        for token in core_tokens + modifier_tokens
+    ):
+        categories.append("system stress signals")
+
+    categories = unique_preserve_order(categories)[:3]
+    if not categories:
+        categories = ["pressure signals"]
+
+    translated = [label_from_map(category, SIGNAL_CATEGORY_LABELS) for category in categories]
     return {
         "en": ", ".join(item["en"] for item in translated if item.get("en")),
         "ja": "、".join(item["ja"] for item in translated if item.get("ja")),
@@ -1428,11 +1821,15 @@ def build_scenario_narrative_i18n(
     dominant_pattern: Optional[str],
     dominant_analog: Optional[str],
 ) -> Dict[str, str]:
-    core_text = join_term_texts(structured_drivers.get("core_drivers", []), limit=4)
-    modifier_text = join_term_texts(structured_drivers.get("pressure_modifiers", []), limit=3)
-    trend_text = join_term_texts(structured_drivers.get("trend_context", []) or trend_tags, limit=3)
-    signal_text = summarize_signal_tags_i18n(signal_tags)
-    outcome_text = join_term_texts(expected_outcomes, limit=4)
+    core_clean = sanitize_narrative_tokens(structured_drivers.get("core_drivers", []))
+    modifier_clean = sanitize_narrative_tokens(structured_drivers.get("pressure_modifiers", []))
+    trend_clean = sanitize_narrative_tokens(structured_drivers.get("trend_context", []))
+
+    core_text = join_term_texts(core_clean, limit=4)
+    modifier_text = join_term_texts(modifier_clean, limit=3)
+    trend_text = join_term_texts(trend_clean, limit=3)
+    signal_text = summarize_structured_signals_i18n(core_clean, modifier_clean, trend_clean)
+    outcome_text = build_scenario_outcome_text_i18n(scenario_id)
     memory_text = build_memory_background_i18n(dominant_pattern, dominant_analog)
     risk_text = label_from_map(risk_label, RISK_LABELS)
 
@@ -1769,6 +2166,7 @@ def build_best_case(
     stress_vector: Dict[str, float],
     dominant_pattern: Optional[str],
     dominant_analog: Optional[str],
+    transmission_chains: List[List[str]],
 ) -> Dict[str, Any]:
     narrative_i18n = build_scenario_narrative_i18n(
         scenario_id="best_case",
@@ -1803,6 +2201,7 @@ def build_best_case(
         watchpoint_roles.get("stabilization", [])[:3]
         + watchpoint_roles.get("persistence", [])[:2]
     )[:6]
+    transmission_chain_i18n = render_transmission_chain(transmission_chains)
 
     return {
         "scenario_id": "best_case",
@@ -1822,6 +2221,9 @@ def build_best_case(
             "persistence": watchpoint_roles.get("persistence", [])[:3],
             "escalation": watchpoint_roles.get("escalation", [])[:2],
         },
+        "transmission_chain": [" -> ".join(chain) for chain in transmission_chains],
+        "transmission_chain_i18n": transmission_chain_i18n,
+        "invalidation_i18n": build_scenario_invalidation_i18n("best_case"),
         "historical_support": {
             "dominant_pattern": dominant_pattern,
             "dominant_analog": dominant_analog,
@@ -1840,6 +2242,7 @@ def build_base_case(
     stress_vector: Dict[str, float],
     dominant_pattern: Optional[str],
     dominant_analog: Optional[str],
+    transmission_chains: List[List[str]],
 ) -> Dict[str, Any]:
     narrative_i18n = build_scenario_narrative_i18n(
         scenario_id="base_case",
@@ -1864,6 +2267,7 @@ def build_base_case(
         watchpoint_roles.get("persistence", [])[:4]
         + watchpoint_roles.get("escalation", [])[:2]
     )[:8]
+    transmission_chain_i18n = render_transmission_chain(transmission_chains)
 
     return {
         "scenario_id": "base_case",
@@ -1883,6 +2287,9 @@ def build_base_case(
             "persistence": watchpoint_roles.get("persistence", [])[:6],
             "escalation": watchpoint_roles.get("escalation", [])[:4],
         },
+        "transmission_chain": [" -> ".join(chain) for chain in transmission_chains],
+        "transmission_chain_i18n": transmission_chain_i18n,
+        "invalidation_i18n": build_scenario_invalidation_i18n("base_case"),
         "historical_support": {
             "dominant_pattern": dominant_pattern,
             "dominant_analog": dominant_analog,
@@ -1901,6 +2308,7 @@ def build_worst_case(
     stress_vector: Dict[str, float],
     dominant_pattern: Optional[str],
     dominant_analog: Optional[str],
+    transmission_chains: List[List[str]],
 ) -> Dict[str, Any]:
     narrative_i18n = build_scenario_narrative_i18n(
         scenario_id="worst_case",
@@ -1935,6 +2343,7 @@ def build_worst_case(
         watchpoint_roles.get("escalation", [])[:6]
         + watchpoint_roles.get("persistence", [])[:2]
     )[:10]
+    transmission_chain_i18n = render_transmission_chain(transmission_chains)
 
     return {
         "scenario_id": "worst_case",
@@ -1954,6 +2363,9 @@ def build_worst_case(
             "persistence": watchpoint_roles.get("persistence", [])[:3],
             "escalation": watchpoint_roles.get("escalation", [])[:6],
         },
+        "transmission_chain": [" -> ".join(chain) for chain in transmission_chains],
+        "transmission_chain_i18n": transmission_chain_i18n,
+        "invalidation_i18n": build_scenario_invalidation_i18n("worst_case"),
         "historical_support": {
             "dominant_pattern": dominant_pattern,
             "dominant_analog": dominant_analog,
@@ -1980,6 +2392,54 @@ def choose_dominant_scenario(
     if worst_case > best_case:
         return "worst_case"
     return "best_case"
+
+
+
+def build_scenario_invalidation_i18n(scenario_id: str) -> Dict[str, List[str]]:
+    invalidations = {
+        "best_case": [
+            {
+                "en": "Invalidated if bank funding stress and credit spread widening re-accelerate together.",
+                "ja": "銀行の資金調達ストレスと信用スプレッド拡大が同時に再加速した場合、このシナリオは無効化される。",
+                "th": "หากความตึงตัวของเงินทุนธนาคารและส่วนต่างเครดิตขยายกว้างเร่งขึ้นพร้อมกัน ให้ถือว่าฉากทัศน์นี้ใช้ไม่ได้",
+            },
+            {
+                "en": "Invalidated if currency instability spills into persistent import-price stress.",
+                "ja": "通貨不安定が持続的な輸入価格ストレスへ波及した場合、このシナリオは無効化される。",
+                "th": "หากความไม่เสถียรของค่าเงินลามเป็นแรงกดดันด้านราคานำเข้าอย่างต่อเนื่อง ให้ถือว่าฉากทัศน์นี้ใช้ไม่ได้",
+            },
+        ],
+        "base_case": [
+            {
+                "en": "Invalidated if watchpoints stabilize broadly enough to shift conditions toward the best case.",
+                "ja": "監視点が広く安定化し、状況が最良シナリオ側へ移る場合、このシナリオは無効化される。",
+                "th": "หากจุดเฝ้าระวังส่วนใหญ่ทรงตัวจนเงื่อนไขขยับไปทางกรณีดีที่สุด ให้ถือว่าฉากทัศน์นี้ใช้ไม่ได้",
+            },
+            {
+                "en": "Invalidated if funding, spreads, and liquidity deteriorate together toward systemic stress.",
+                "ja": "資金調達・スプレッド・流動性が同時悪化し、システミックストレスへ向かう場合、このシナリオは無効化される。",
+                "th": "หากเงินทุน สเปรด และสภาพคล่องแย่ลงพร้อมกันจนเข้าใกล้ความตึงเครียดเชิงระบบ ให้ถือว่าฉากทัศน์นี้ใช้ไม่ได้",
+            },
+        ],
+        "worst_case": [
+            {
+                "en": "Invalidated if bank funding stress eases and credit spreads stop widening.",
+                "ja": "銀行の資金調達ストレスが緩和し、信用スプレッド拡大が止まる場合、このシナリオは無効化される。",
+                "th": "หากความตึงตัวของเงินทุนธนาคารผ่อนคลายและส่วนต่างเครดิตหยุดขยาย ให้ถือว่าฉากทัศน์นี้ใช้ไม่ได้",
+            },
+            {
+                "en": "Invalidated if policy stabilization restores confidence before cross-domain contagion takes hold.",
+                "ja": "領域横断の波及が定着する前に政策安定化が信認を回復させた場合、このシナリオは無効化される。",
+                "th": "หากนโยบายช่วยพยุงเสถียรภาพฟื้นความเชื่อมั่นได้ก่อนที่การลุกลามข้ามภาคส่วนจะฝังตัว ให้ถือว่าฉากทัศน์นี้ใช้ไม่ได้",
+            },
+        ],
+    }
+    selected = invalidations.get(scenario_id, invalidations["base_case"])
+    return {
+        "en": [item["en"] for item in selected],
+        "ja": [item["ja"] for item in selected],
+        "th": [item["th"] for item in selected],
+    }
 
 
 def build_summary(
@@ -2399,6 +2859,26 @@ def build_scenario_output(
         reference_memory_data=reference_memory_data,
     )
     watchpoint_roles = classify_watchpoint_roles(watchpoints)
+
+    best_case_transmission = build_transmission_chain(
+        scenario_id="best_case",
+        structured_drivers=structured_drivers,
+        expected_outcomes=expected_outcomes,
+        watchpoint_roles=watchpoint_roles,
+    )
+    base_case_transmission = build_transmission_chain(
+        scenario_id="base_case",
+        structured_drivers=structured_drivers,
+        expected_outcomes=expected_outcomes,
+        watchpoint_roles=watchpoint_roles,
+    )
+    worst_case_transmission = build_transmission_chain(
+        scenario_id="worst_case",
+        structured_drivers=structured_drivers,
+        expected_outcomes=expected_outcomes,
+        watchpoint_roles=watchpoint_roles,
+    )
+
     confidence = calculate_scenario_confidence(
         trend_data=trend_data,
         signal_data=signal_data,
@@ -2418,6 +2898,7 @@ def build_scenario_output(
             stress_vector=stress_vector,
             dominant_pattern=dominant_pattern,
             dominant_analog=dominant_analog,
+            transmission_chains=best_case_transmission,
         ),
         build_base_case(
             risk_label=risk_label,
@@ -2429,6 +2910,7 @@ def build_scenario_output(
             stress_vector=stress_vector,
             dominant_pattern=dominant_pattern,
             dominant_analog=dominant_analog,
+            transmission_chains=base_case_transmission,
         ),
         build_worst_case(
             risk_label=risk_label,
@@ -2440,6 +2922,7 @@ def build_scenario_output(
             stress_vector=stress_vector,
             dominant_pattern=dominant_pattern,
             dominant_analog=dominant_analog,
+            transmission_chains=worst_case_transmission,
         ),
     ]
 
@@ -2512,6 +2995,16 @@ def build_scenario_output(
         },
         "expected_outcomes": structured_drivers.get("downstream_risks", [])[:10] or expected_outcomes[:10],
         "expected_outcomes_i18n": list_i18n(structured_drivers.get("downstream_risks", [])[:10] or expected_outcomes[:10], OUTCOME_LABELS),
+        "transmission_chain": {
+            "best_case": [" -> ".join(chain) for chain in best_case_transmission],
+            "base_case": [" -> ".join(chain) for chain in base_case_transmission],
+            "worst_case": [" -> ".join(chain) for chain in worst_case_transmission],
+        },
+        "transmission_chain_i18n": {
+            "best_case": render_transmission_chain(best_case_transmission),
+            "base_case": render_transmission_chain(base_case_transmission),
+            "worst_case": render_transmission_chain(worst_case_transmission),
+        },
         "historical_context": {
             "dominant_pattern": dominant_pattern,
             "pattern_confidence": round(safe_float(historical_pattern_data.get("pattern_confidence")), 4),

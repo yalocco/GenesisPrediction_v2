@@ -962,6 +962,7 @@ def build_primary_narrative(
 
     structured = get_structured_drivers(scenario_data)
     roles = get_scenario_watchpoint_roles(scenario_data)
+    scenario_bias = collect_scenario_probabilities(scenario_data)
 
     core_drivers = filter_prediction_driver_tokens(structured.get("core_drivers", []))[:3]
     modifiers = filter_prediction_driver_tokens(structured.get("pressure_modifiers", []))[:2]
@@ -975,15 +976,38 @@ def build_primary_narrative(
     propagation_text = render_label_list(propagation, lang="en", limit=3)
     escalation_text = render_label_list(escalation, lang="en", limit=3)
 
-    base = f"{dominant_label} remains the working path under {risk_label} conditions."
+    base = f"{dominant_label} remains the lead operating path under {risk_label} conditions."
+
+    base_prob = safe_float(scenario_bias.get("base_case"))
+    worst_prob = safe_float(scenario_bias.get("worst_case"))
+    best_prob = safe_float(scenario_bias.get("best_case"))
+    if base_prob or worst_prob or best_prob:
+        if worst_prob >= max(0.25, base_prob - 0.10):
+            base += (
+                f" The branch balance still carries material tail risk "
+                f"(base {base_prob:.2f} vs worst {worst_prob:.2f}; best {best_prob:.2f})."
+            )
+        else:
+            base += (
+                f" Scenario balance still favors the base path "
+                f"(base {base_prob:.2f}; worst {worst_prob:.2f}; best {best_prob:.2f})."
+            )
+
     if driver_text:
-        base += f" Core pressure is still concentrated in {driver_text}."
+        base += f" Core pressure is concentrated in {driver_text}."
     if modifier_text:
-        base += f" Modifiers such as {modifier_text} keep normalization incomplete."
+        base += f" Modifiers such as {modifier_text} are preventing a clean normalization."
     if propagation_text:
-        base += f" The main downside propagation runs through {propagation_text}."
+        base += f" The most likely transmission path runs through {propagation_text}."
     if escalation_text:
-        base += f" A worse turn is most likely if {escalation_text} deteriorate together."
+        base += f" A worse turn becomes more likely if {escalation_text} deteriorate together."
+
+    semantic_drivers = filter_prediction_driver_tokens(normalize_token_list((semantic_context.get("risk_drivers") or {}).get("ids")))[:2]
+    semantic_impacts = normalize_token_list((semantic_context.get("impacts") or {}).get("ids"))[:2]
+    if semantic_drivers:
+        base += f" Outside the scenario core, semantic pressure is also building in {render_label_list(semantic_drivers, 'en', 2)}."
+    if semantic_impacts:
+        base += f" That keeps spillover risk focused on {render_label_list(semantic_impacts, 'en', 2)}."
 
     historical_context = scenario_data.get("historical_context", {})
     if isinstance(historical_context, dict):
@@ -1000,7 +1024,6 @@ def build_primary_narrative(
                 base += f" Historically, the structure resembles {analog_label}."
 
     return base.strip()
-
 
 def build_primary_narrative_i18n(
     scenario_data: Dict[str, Any],
@@ -1118,16 +1141,33 @@ def build_prediction_statement(
     dominant_analog: str,
     memory_summary: str,
     semantic_context: Dict[str, Any],
+    scenario_probabilities: Dict[str, float],
 ) -> str:
     dominant_pattern_label = labelize(dominant_pattern, lang="en")
     dominant_analog_label = labelize(dominant_analog, lang="en")
     semantic_lines = build_semantic_summary_lines(semantic_context)
+
+    base_prob = safe_float(scenario_probabilities.get("base_case"))
+    worst_prob = safe_float(scenario_probabilities.get("worst_case"))
+    best_prob = safe_float(scenario_probabilities.get("best_case"))
 
     sentence = (
         f"Primary outlook remains {labelize(dominant_scenario, lang='en')} "
         f"with {labelize(risk, lang='en')} risk and "
         f"{labelize(direction, lang='en')} directional bias at confidence {confidence:.2f}."
     )
+
+    if base_prob or worst_prob or best_prob:
+        if worst_prob >= max(0.25, base_prob - 0.10):
+            sentence += (
+                f" Downside remains live because worst-case weight ({worst_prob:.2f}) "
+                f"is still close to the base path ({base_prob:.2f}), while upside stays capped at {best_prob:.2f}."
+            )
+        else:
+            sentence += (
+                f" Scenario balance still favors the base path ({base_prob:.2f}) "
+                f"over worst-case ({worst_prob:.2f}) and best-case ({best_prob:.2f})."
+            )
 
     semantic_en = semantic_lines.get("en", "").strip()
     if semantic_en:
@@ -1148,7 +1188,6 @@ def build_prediction_statement(
 
     return sentence
 
-
 def build_prediction_statement_i18n(
     dominant_scenario: str,
     risk: str,
@@ -1159,6 +1198,7 @@ def build_prediction_statement_i18n(
     memory_summary: str,
     prediction_statement_en: str,
     semantic_context: Dict[str, Any],
+    scenario_probabilities: Dict[str, float],
 ) -> Dict[str, str]:
     scenario_labels = label_from_map(dominant_scenario, SCENARIO_LABELS)
     risk_labels = label_from_map(risk, RISK_LABELS)
@@ -1166,6 +1206,10 @@ def build_prediction_statement_i18n(
     dominant_pattern_labels = labelize_i18n(dominant_pattern)
     dominant_analog_labels = labelize_i18n(dominant_analog)
     semantic_lines = build_semantic_summary_lines(semantic_context)
+
+    base_prob = safe_float(scenario_probabilities.get("base_case"))
+    worst_prob = safe_float(scenario_probabilities.get("worst_case"))
+    best_prob = safe_float(scenario_probabilities.get("best_case"))
 
     en = (
         f"Primary outlook remains {scenario_labels['en']} with {risk_labels['en']} risk and "
@@ -1178,52 +1222,69 @@ def build_prediction_statement_i18n(
     )
     th = (
         f"มุมมองหลักยังคงเป็น {scenario_labels['th']} "
-        f"โดยมีระดับความเสี่ยง {risk_labels['th']} "
-        f"และทิศทาง {direction_labels['th']} "
+        f"โดยมีระดับความเสี่ยง {risk_labels['th']} และทิศทาง {direction_labels['th']} "
         f"ที่ความเชื่อมั่น {confidence:.2f}."
     )
+
+    if base_prob or worst_prob or best_prob:
+        if worst_prob >= max(0.25, base_prob - 0.10):
+            en += (
+                f" Downside remains live because worst-case weight ({worst_prob:.2f}) "
+                f"is still close to the base path ({base_prob:.2f}), while upside stays capped at {best_prob:.2f}."
+            )
+            ja += (
+                f" 最悪ケース比重 {worst_prob:.2f} が基本経路 {base_prob:.2f} にまだ近く、"
+                f"上振れ余地は {best_prob:.2f} にとどまるため、下方尾部リスクはなお生きている。"
+            )
+            th += (
+                f" น้ำหนักกรณีเลวร้าย {worst_prob:.2f} ยังใกล้กับกรณีฐาน {base_prob:.2f} "
+                f"ขณะที่โอกาสขาขึ้นถูกจำกัดที่ {best_prob:.2f} จึงยังต้องเฝ้าระวังความเสี่ยงด้านลบ."
+            )
+        else:
+            en += (
+                f" Scenario balance still favors the base path ({base_prob:.2f}) "
+                f"over worst-case ({worst_prob:.2f}) and best-case ({best_prob:.2f})."
+            )
+            ja += (
+                f" シナリオ配分は、最悪ケース {worst_prob:.2f} と最良ケース {best_prob:.2f} を上回り、"
+                f"基本経路 {base_prob:.2f} を優位としている。"
+            )
+            th += (
+                f" สมดุลของสถานการณ์ยังให้น้ำหนักกรณีฐาน {base_prob:.2f} สูงกว่า "
+                f"กรณีเลวร้าย {worst_prob:.2f} และกรณีดีที่สุด {best_prob:.2f}."
+            )
 
     if semantic_lines.get("en"):
         en += f" {semantic_lines['en']}"
         ja += f" {semantic_lines['ja']}"
         th += f" {semantic_lines['th']}"
 
-    if dominant_pattern_labels["en"] and dominant_analog_labels["en"]:
+    if dominant_pattern_labels.get("en") and dominant_analog_labels.get("en"):
         en += (
             f" Historical support is led by pattern {dominant_pattern_labels['en']} "
             f"and analog {dominant_analog_labels['en']}."
         )
-        ja += (
-            f" 歴史的裏付けはパターン {dominant_pattern_labels['ja']} "
-            f"とアナログ {dominant_analog_labels['ja']} が主導している。"
-        )
-        th += (
-            f" แรงสนับสนุนทางประวัติศาสตร์นำโดย pattern {dominant_pattern_labels['th']} "
-            f"และ analog {dominant_analog_labels['th']}."
-        )
-    elif dominant_pattern_labels["en"]:
+        ja += f" 歴史的裏付けは {dominant_pattern_labels['ja']} と {dominant_analog_labels['ja']} が主導している。"
+        th += f" แรงหนุนจากประวัติศาสตร์นำโดยรูปแบบ {dominant_pattern_labels['th']} และกรณีเทียบเคียง {dominant_analog_labels['th']}."
+    elif dominant_pattern_labels.get("en"):
         en += f" Historical support is led by pattern {dominant_pattern_labels['en']}."
-        ja += f" 歴史的裏付けはパターン {dominant_pattern_labels['ja']} が主導している。"
-        th += f" แรงสนับสนุนทางประวัติศาสตร์นำโดย pattern {dominant_pattern_labels['th']}."
-    elif dominant_analog_labels["en"]:
+        ja += f" 歴史的裏付けは {dominant_pattern_labels['ja']} が主導している。"
+        th += f" แรงหนุนจากประวัติศาสตร์นำโดยรูปแบบ {dominant_pattern_labels['th']}."
+    elif dominant_analog_labels.get("en"):
         en += f" Historical support is led by analog {dominant_analog_labels['en']}."
-        ja += f" 歴史的裏付けはアナログ {dominant_analog_labels['ja']} が主導している。"
-        th += f" แรงสนับสนุนทางประวัติศาสตร์นำโดย analog {dominant_analog_labels['th']}."
+        ja += f" 歴史的裏付けは {dominant_analog_labels['ja']} が主導している。"
+        th += f" แรงหนุนจากประวัติศาสตร์นำโดยกรณีเทียบเคียง {dominant_analog_labels['th']}."
 
     if memory_summary:
         en += f" Memory context: {memory_summary}."
         ja += f" 記憶参照文脈: {memory_summary}。"
         th += f" บริบทจากหน่วยความจำ: {memory_summary}."
 
-    return finalize_text_i18n(
-        prediction_statement_en,
-        {
-            "en": en,
-            "ja": ja,
-            "th": th,
-        },
-    )
-
+    return finalize_text_i18n(prediction_statement_en, {
+        "en": en.strip(),
+        "ja": ja.strip(),
+        "th": th.strip(),
+    })
 
 def build_action_bias(
     dominant_scenario: str,
@@ -1593,6 +1654,409 @@ def build_reference_memory_output(reference_memory: Dict[str, Any]) -> Dict[str,
     }
 
 
+def collect_scenario_probabilities(scenario_data: Dict[str, Any]) -> Dict[str, float]:
+    scenario_bias = scenario_data.get("scenario_bias", {})
+    out = {
+        "best_case": 0.0,
+        "base_case": 0.0,
+        "worst_case": 0.0,
+    }
+
+    if isinstance(scenario_bias, dict):
+        for key in list(out.keys()):
+            out[key] = round(clamp01(safe_float(scenario_bias.get(key))), 4)
+
+    scenarios = scenario_data.get("scenarios", [])
+    if isinstance(scenarios, list):
+        for item in scenarios:
+            if not isinstance(item, dict):
+                continue
+            scenario_id = normalize_text(item.get("scenario_id"))
+            if scenario_id not in out:
+                continue
+            value = item.get("probability")
+            if value is None:
+                value = item.get("weight")
+            if value is None:
+                continue
+            out[scenario_id] = round(clamp01(safe_float(value)), 4)
+
+    total = sum(out.values())
+    if total > 1.25:
+        return {k: round(v / total, 4) for k, v in out.items()}
+    return out
+
+
+def classify_scenario_balance(scenario_probabilities: Dict[str, float]) -> str:
+    base_prob = safe_float(scenario_probabilities.get("base_case"))
+    worst_prob = safe_float(scenario_probabilities.get("worst_case"))
+    best_prob = safe_float(scenario_probabilities.get("best_case"))
+
+    if worst_prob >= max(0.35, base_prob):
+        return "downside_pressure"
+    if worst_prob >= max(0.25, base_prob - 0.10):
+        return "material_tail_risk"
+    if base_prob >= max(0.45, worst_prob + 0.12) and best_prob <= 0.25:
+        return "base_case_control"
+    if best_prob >= max(0.30, worst_prob + 0.08):
+        return "constructive_optional"
+    return "balanced_range"
+
+
+def build_driver_structure(
+    scenario_data: Dict[str, Any],
+    semantic_context: Dict[str, Any],
+    prediction_drivers: List[str],
+    historical_context: Dict[str, Any],
+) -> Dict[str, List[str]]:
+    structured = get_structured_drivers(scenario_data)
+    risk_driver_ids = filter_prediction_driver_tokens(normalize_token_list((semantic_context.get("risk_drivers") or {}).get("ids")))[:3]
+    impact_ids = normalize_token_list((semantic_context.get("impacts") or {}).get("ids"))[:3]
+
+    historical: List[str] = []
+    pattern_id = normalize_text(historical_context.get("dominant_pattern_id") or historical_context.get("dominant_pattern"))
+    analog_id = normalize_text(historical_context.get("dominant_analog_id") or historical_context.get("dominant_analog"))
+    if pattern_id:
+        historical.append(pattern_id)
+    if analog_id:
+        historical.append(analog_id)
+
+    return {
+        "core": unique_preserve_order(filter_prediction_driver_tokens(structured.get("core_drivers", []))[:4]),
+        "modifiers": unique_preserve_order(filter_prediction_driver_tokens(structured.get("pressure_modifiers", []))[:3]),
+        "semantic": unique_preserve_order(risk_driver_ids[:3]),
+        "transmission": unique_preserve_order(impact_ids[:3]),
+        "historical": unique_preserve_order(historical[:2]),
+        "flat": unique_preserve_order([normalize_text(x) for x in prediction_drivers if normalize_text(x)])[:6],
+    }
+
+
+def build_driver_structure_i18n(driver_structure: Dict[str, List[str]]) -> Dict[str, Any]:
+    out: Dict[str, Any] = {}
+    for key, values in driver_structure.items():
+        out[key] = {
+            "en": [labelize(item, "en") for item in values],
+            "ja": [labelize(item, "ja") for item in values],
+            "th": [labelize(item, "th") for item in values],
+        }
+    return out
+
+
+DECISION_POSTURE_LABELS = {
+    "protect_capital_now": {
+        "en": "protect capital now",
+        "ja": "資本保全を最優先",
+        "th": "ปกป้องเงินทุนเป็นอันดับแรก",
+    },
+    "operate_defensively": {
+        "en": "operate defensively",
+        "ja": "防御姿勢で運用",
+        "th": "ดำเนินการแบบตั้งรับ",
+    },
+    "base_case_with_tail_hedge": {
+        "en": "base case with tail hedge",
+        "ja": "基本線維持＋尾部ヘッジ",
+        "th": "ยึดกรณีฐานพร้อมป้องกันความเสี่ยงปลายหาง",
+    },
+    "selective_reengagement": {
+        "en": "selective re-engagement",
+        "ja": "限定的な再関与",
+        "th": "กลับเข้าดำเนินการอย่างเลือกสรร",
+    },
+    "wait_for_resolution": {
+        "en": "wait for resolution",
+        "ja": "解像度待ち",
+        "th": "รอความชัดเจนเพิ่มเติม",
+    },
+    "monitor_and_adapt": {
+        "en": "monitor and adapt",
+        "ja": "監視しつつ調整",
+        "th": "ติดตามและปรับตัว",
+    },
+}
+
+
+SCENARIO_BALANCE_LABELS = {
+    "downside_pressure": {
+        "en": "downside pressure",
+        "ja": "下方圧力優勢",
+        "th": "แรงกดดันด้านลบเด่น",
+    },
+    "material_tail_risk": {
+        "en": "material tail risk",
+        "ja": "無視できない尾部リスク",
+        "th": "มีความเสี่ยงปลายหางอย่างมีนัยสำคัญ",
+    },
+    "base_case_control": {
+        "en": "base-case control",
+        "ja": "基本ケース優位",
+        "th": "กรณีฐานยังควบคุมภาพรวม",
+    },
+    "constructive_optional": {
+        "en": "constructive optionality",
+        "ja": "建設的な上振れ余地",
+        "th": "มีทางเลือกเชิงบวก",
+    },
+    "balanced_range": {
+        "en": "balanced range",
+        "ja": "均衡レンジ",
+        "th": "สมดุลในกรอบ",
+    },
+}
+
+
+def build_decision_posture(
+    dominant_scenario: str,
+    risk: str,
+    direction: str,
+    confidence: float,
+    scenario_balance: str,
+    action_bias: str,
+) -> str:
+    if dominant_scenario == "worst_case" or risk in {"critical", "high"}:
+        return "protect_capital_now"
+    if action_bias == "defensive" and scenario_balance in {"downside_pressure", "material_tail_risk"}:
+        return "operate_defensively"
+    if scenario_balance == "material_tail_risk":
+        return "base_case_with_tail_hedge"
+    if scenario_balance == "base_case_control" and confidence >= 0.68 and direction in {"stabilizing", "stable_to_guarded"}:
+        return "selective_reengagement"
+    if confidence < 0.45:
+        return "wait_for_resolution"
+    return "monitor_and_adapt"
+
+
+def build_decision_summary(
+    posture: str,
+    dominant_scenario: str,
+    scenario_balance: str,
+    scenario_probabilities: Dict[str, float],
+    monitoring_priorities: List[str],
+    expected_outcomes: List[str],
+) -> str:
+    posture_label = label_from_map(posture, DECISION_POSTURE_LABELS)["en"]
+    dominant_label = label_from_map(dominant_scenario, SCENARIO_LABELS)["en"]
+    balance_label = label_from_map(scenario_balance, SCENARIO_BALANCE_LABELS)["en"]
+
+    base_prob = safe_float(scenario_probabilities.get("base_case"))
+    worst_prob = safe_float(scenario_probabilities.get("worst_case"))
+    best_prob = safe_float(scenario_probabilities.get("best_case"))
+
+    summary = (
+        f"Decision posture: {posture_label}. Operate on {dominant_label} as the active plan, "
+        f"but treat the branch mix as {balance_label} (best {best_prob:.2f} / base {base_prob:.2f} / worst {worst_prob:.2f})."
+    )
+    if monitoring_priorities:
+        summary += f" Escalate if {render_label_list(monitoring_priorities, 'en', 3)} worsen together."
+    if expected_outcomes:
+        summary += f" Expected spillover is most visible through {render_label_list(expected_outcomes, 'en', 3)}."
+    return summary.strip()
+
+
+def build_decision_summary_i18n(
+    posture: str,
+    dominant_scenario: str,
+    scenario_balance: str,
+    scenario_probabilities: Dict[str, float],
+    monitoring_priorities: List[str],
+    expected_outcomes: List[str],
+    decision_summary_en: str,
+) -> Dict[str, str]:
+    posture_labels = label_from_map(posture, DECISION_POSTURE_LABELS)
+    dominant_labels = label_from_map(dominant_scenario, SCENARIO_LABELS)
+    balance_labels = label_from_map(scenario_balance, SCENARIO_BALANCE_LABELS)
+
+    base_prob = safe_float(scenario_probabilities.get("base_case"))
+    worst_prob = safe_float(scenario_probabilities.get("worst_case"))
+    best_prob = safe_float(scenario_probabilities.get("best_case"))
+
+    en = (
+        f"Decision posture: {posture_labels['en']}. Operate on {dominant_labels['en']} as the active plan, "
+        f"but treat the branch mix as {balance_labels['en']} (best {best_prob:.2f} / base {base_prob:.2f} / worst {worst_prob:.2f})."
+    )
+    ja = (
+        f"意思決定姿勢は「{posture_labels['ja']}」。運用上の主計画は {dominant_labels['ja']} とするが、"
+        f"分岐バランスは「{balance_labels['ja']}」として扱う（最良 {best_prob:.2f} / 基本 {base_prob:.2f} / 最悪 {worst_prob:.2f}）。"
+    )
+    th = (
+        f"ท่าทีการตัดสินใจคือ {posture_labels['th']} โดยใช้ {dominant_labels['th']} เป็นแผนหลัก "
+        f"แต่ต้องมองสมดุลของสถานการณ์ว่าเป็น {balance_labels['th']} (ดีที่สุด {best_prob:.2f} / ฐาน {base_prob:.2f} / แย่ที่สุด {worst_prob:.2f})."
+    )
+
+    if monitoring_priorities:
+        en += f" Escalate if {render_label_list(monitoring_priorities, 'en', 3)} worsen together."
+        ja += f" {render_label_list(monitoring_priorities, 'ja', 3)} が同時に悪化したら防御を強める。"
+        th += f" หาก {render_label_list(monitoring_priorities, 'th', 3)} แย่ลงพร้อมกัน ให้เพิ่มระดับการป้องกัน."
+    if expected_outcomes:
+        en += f" Expected spillover is most visible through {render_label_list(expected_outcomes, 'en', 3)}."
+        ja += f" 想定される波及は主に {render_label_list(expected_outcomes, 'ja', 3)} に表れる。"
+        th += f" ผลกระทบต่อเนื่องที่คาดว่าจะเห็นชัดคือ {render_label_list(expected_outcomes, 'th', 3)}."
+
+    return finalize_text_i18n(decision_summary_en, {
+        "en": en.strip(),
+        "ja": ja.strip(),
+        "th": th.strip(),
+    })
+
+
+def build_decision_guardrails(scenario_data: Dict[str, Any], monitoring_priorities: List[str]) -> Dict[str, List[str]]:
+    roles = get_scenario_watchpoint_roles(scenario_data)
+    return {
+        "escalation": unique_preserve_order(roles.get("escalation", []) + monitoring_priorities[:2])[:4],
+        "persistence": unique_preserve_order(roles.get("persistence", []))[:3],
+        "stabilization": unique_preserve_order(roles.get("stabilization", []))[:3],
+    }
+
+
+def build_decision_guardrails_i18n(guardrails: Dict[str, List[str]]) -> Dict[str, Any]:
+    out: Dict[str, Any] = {}
+    for key, values in guardrails.items():
+        out[key] = {
+            "en": [labelize(item, "en") for item in values],
+            "ja": [labelize(item, "ja") for item in values],
+            "th": [labelize(item, "th") for item in values],
+        }
+    return out
+
+
+def build_decision_actions(
+    posture: str,
+    scenario_balance: str,
+    decision_guardrails: Dict[str, List[str]],
+    monitoring_priorities: List[str],
+) -> Dict[str, List[str]]:
+    escalation = unique_preserve_order(decision_guardrails.get("escalation", []) + monitoring_priorities[:2])[:3]
+    stabilization = unique_preserve_order(decision_guardrails.get("stabilization", []))[:2]
+
+    base_case: List[str] = ["maintain_core_positioning"]
+    if scenario_balance in {"downside_pressure", "material_tail_risk"}:
+        base_case.append("keep_tail_hedge_active")
+    else:
+        base_case.append("avoid_overreaction")
+    if escalation:
+        base_case.append(f"monitor::{escalation[0]}")
+
+    worst_case: List[str] = [
+        "reduce_exposure",
+        "raise_defensive_buffer",
+    ]
+    if escalation:
+        worst_case.append(f"escalate_on::{escalation[0]}")
+
+    best_case: List[str] = ["selective_reengagement"]
+    if stabilization:
+        best_case.append(f"add_risk_only_if::{stabilization[0]}")
+    else:
+        best_case.append("add_risk_selectively")
+    best_case.append("prefer_high_conviction_only")
+
+    if posture == "protect_capital_now":
+        worst_case = unique_preserve_order(["protect_capital_now"] + worst_case)[:4]
+    elif posture == "selective_reengagement":
+        best_case = unique_preserve_order(["lean_into_stabilization"] + best_case)[:4]
+
+    return {
+        "base_case": unique_preserve_order(base_case)[:4],
+        "worst_case": unique_preserve_order(worst_case)[:4],
+        "best_case": unique_preserve_order(best_case)[:4],
+    }
+
+
+def build_decision_actions_i18n(actions: Dict[str, List[str]]) -> Dict[str, Any]:
+    ACTION_TEXT = {
+        "maintain_core_positioning": {
+            "en": "maintain core positioning",
+            "ja": "中核ポジションを維持する",
+            "th": "คงสถานะหลักไว้",
+        },
+        "keep_tail_hedge_active": {
+            "en": "keep tail hedge active",
+            "ja": "尾部ヘッジを維持する",
+            "th": "คงการป้องกันความเสี่ยงปลายหางไว้",
+        },
+        "avoid_overreaction": {
+            "en": "avoid overreaction",
+            "ja": "過剰反応を避ける",
+            "th": "หลีกเลี่ยงการตอบสนองเกินเหตุ",
+        },
+        "reduce_exposure": {
+            "en": "reduce exposure",
+            "ja": "エクスポージャーを落とす",
+            "th": "ลดการเปิดรับความเสี่ยง",
+        },
+        "raise_defensive_buffer": {
+            "en": "raise defensive buffer",
+            "ja": "防御バッファを厚くする",
+            "th": "เพิ่มกันชนเชิงป้องกัน",
+        },
+        "protect_capital_now": {
+            "en": "protect capital now",
+            "ja": "今は資本保全を優先する",
+            "th": "ให้ความสำคัญกับการปกป้องเงินทุนทันที",
+        },
+        "selective_reengagement": {
+            "en": "re-engage selectively",
+            "ja": "限定的に再関与する",
+            "th": "กลับเข้าดำเนินการอย่างเลือกสรร",
+        },
+        "lean_into_stabilization": {
+            "en": "lean into stabilization gradually",
+            "ja": "安定化を確認しながら段階的に寄せる",
+            "th": "ค่อย ๆ เพิ่มน้ำหนักเมื่อการทรงตัวชัดเจน",
+        },
+        "add_risk_selectively": {
+            "en": "add risk selectively",
+            "ja": "リスク追加は選択的に行う",
+            "th": "เพิ่มความเสี่ยงอย่างเลือกสรร",
+        },
+        "prefer_high_conviction_only": {
+            "en": "prefer high-conviction only",
+            "ja": "高確度領域に限定する",
+            "th": "จำกัดเฉพาะจุดที่มีความเชื่อมั่นสูง",
+        },
+    }
+
+    def render_token(token: str, lang: str) -> str:
+        token = normalize_text(token)
+        if token.startswith("monitor::"):
+            target = token.split("::", 1)[1]
+            target_label = labelize(target, lang)
+            if lang == "ja":
+                return f"{target_label} を重点監視する"
+            if lang == "th":
+                return f"ติดตาม {target_label} อย่างใกล้ชิด"
+            return f"monitor {target_label} closely"
+        if token.startswith("escalate_on::"):
+            target = token.split("::", 1)[1]
+            target_label = labelize(target, lang)
+            if lang == "ja":
+                return f"{target_label} が悪化したら防御を強める"
+            if lang == "th":
+                return f"เพิ่มการป้องกันหาก {target_label} แย่ลง"
+            return f"escalate defense if {target_label} worsens"
+        if token.startswith("add_risk_only_if::"):
+            target = token.split("::", 1)[1]
+            target_label = labelize(target, lang)
+            if lang == "ja":
+                return f"{target_label} を確認できる場合にのみリスクを増やす"
+            if lang == "th":
+                return f"เพิ่มความเสี่ยงเฉพาะเมื่อเห็น {target_label}"
+            return f"add risk only if {target_label} appears"
+        labels = ACTION_TEXT.get(token)
+        if labels:
+            return labels.get(lang) or labels.get("en") or token
+        return labelize(token, lang)
+
+    out: Dict[str, Any] = {}
+    for scenario_id, items in actions.items():
+        out[scenario_id] = {
+            "en": [render_token(item, "en") for item in items],
+            "ja": [render_token(item, "ja") for item in items],
+            "th": [render_token(item, "th") for item in items],
+        }
+    return out
+
+
 def build_prediction_output(
     trend_data: Dict[str, Any],
     signal_data: Dict[str, Any],
@@ -1615,6 +2079,8 @@ def build_prediction_output(
     risk = normalize_text(scenario_data.get("risk")) or "guarded"
     memory_summary = extract_memory_summary(reference_memory_data)
     semantic_context = collect_sentiment_semantic_context(sentiment_data)
+    scenario_probabilities = collect_scenario_probabilities(scenario_data)
+    scenario_balance = classify_scenario_balance(scenario_probabilities)
 
     historical_context = build_historical_context(
         pattern_data=pattern_data,
@@ -1657,6 +2123,15 @@ def build_prediction_output(
         reference_memory=reference_memory_data,
     )
 
+    decision_posture = build_decision_posture(
+        dominant_scenario=dominant_scenario,
+        risk=risk,
+        direction=direction,
+        confidence=confidence,
+        scenario_balance=scenario_balance,
+        action_bias=action_bias,
+    )
+
     primary_narrative = build_primary_narrative(
         scenario_data=scenario_data,
         semantic_context=semantic_context,
@@ -1671,6 +2146,7 @@ def build_prediction_output(
         dominant_analog=str(historical_context.get("dominant_analog_id") or ""),
         memory_summary=memory_summary,
         semantic_context=semantic_context,
+        scenario_probabilities=scenario_probabilities,
     )
 
     prediction_statement_i18n = build_prediction_statement_i18n(
@@ -1683,6 +2159,7 @@ def build_prediction_output(
         memory_summary=memory_summary,
         prediction_statement_en=prediction_statement,
         semantic_context=semantic_context,
+        scenario_probabilities=scenario_probabilities,
     )
 
     primary_narrative_i18n = build_primary_narrative_i18n(
@@ -1705,6 +2182,44 @@ def build_prediction_output(
         reference_memory=reference_memory_data,
         semantic_context=semantic_context,
     )
+
+    driver_structure = build_driver_structure(
+        scenario_data=scenario_data,
+        semantic_context=semantic_context,
+        prediction_drivers=prediction_drivers,
+        historical_context=historical_context,
+    )
+    driver_structure_i18n = build_driver_structure_i18n(driver_structure)
+
+    decision_summary = build_decision_summary(
+        posture=decision_posture,
+        dominant_scenario=dominant_scenario,
+        scenario_balance=scenario_balance,
+        scenario_probabilities=scenario_probabilities,
+        monitoring_priorities=monitoring_priorities,
+        expected_outcomes=expected_outcomes,
+    )
+    decision_summary_i18n = build_decision_summary_i18n(
+        posture=decision_posture,
+        dominant_scenario=dominant_scenario,
+        scenario_balance=scenario_balance,
+        scenario_probabilities=scenario_probabilities,
+        monitoring_priorities=monitoring_priorities,
+        expected_outcomes=expected_outcomes,
+        decision_summary_en=decision_summary,
+    )
+    decision_guardrails = build_decision_guardrails(
+        scenario_data=scenario_data,
+        monitoring_priorities=monitoring_priorities,
+    )
+    decision_guardrails_i18n = build_decision_guardrails_i18n(decision_guardrails)
+    decision_actions = build_decision_actions(
+        posture=decision_posture,
+        scenario_balance=scenario_balance,
+        decision_guardrails=decision_guardrails,
+        monitoring_priorities=monitoring_priorities,
+    )
+    decision_actions_i18n = build_decision_actions_i18n(decision_actions)
 
     summary = build_summary(
         direction=direction,
@@ -1744,14 +2259,27 @@ def build_prediction_output(
         "overall_risk": risk,
         "overall_risk_i18n": label_from_map(risk, RISK_LABELS),
         "confidence": confidence,
+        "scenario_probabilities": scenario_probabilities,
+        "scenario_balance": scenario_balance,
+        "scenario_balance_i18n": label_from_map(scenario_balance, SCENARIO_BALANCE_LABELS),
         "action_bias": action_bias,
         "action_bias_i18n": label_from_map(action_bias, ACTION_BIAS_LABELS),
+        "decision_posture": decision_posture,
+        "decision_posture_i18n": label_from_map(decision_posture, DECISION_POSTURE_LABELS),
         "prediction_statement": prediction_statement,
         "prediction_statement_i18n": prediction_statement_i18n,
         "primary_narrative": primary_narrative,
         "primary_narrative_i18n": primary_narrative_i18n,
         "key_drivers": prediction_drivers,
+        "driver_structure": driver_structure,
+        "driver_structure_i18n": driver_structure_i18n,
         "monitoring_priorities": monitoring_priorities,
+        "decision_summary": decision_summary,
+        "decision_summary_i18n": decision_summary_i18n,
+        "decision_guardrails": decision_guardrails,
+        "decision_guardrails_i18n": decision_guardrails_i18n,
+        "decision_actions": decision_actions,
+        "decision_actions_i18n": decision_actions_i18n,
         "expected_outcomes": expected_outcomes,
         "expected_outcomes_i18n": expected_outcomes_i18n,
         "risk_flags": risk_flags_raw,
