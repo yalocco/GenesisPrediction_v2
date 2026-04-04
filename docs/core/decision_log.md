@@ -2310,3 +2310,98 @@ Prediction Enhancement フェーズの scenario 側ゴールを固定し
 ```
 
 Status: adopted
+
+
+---
+
+## 2026-04-05
+### Markdown Editing Must Use Download-Based Full File Workflow
+
+Decision: Long markdown files (especially decision_log.md) must not be edited via browser copy-paste
+
+対象
+
+```text
+docs/*.md
+特に decision_log.md
+```
+
+---
+
+### 背景
+
+ブラウザ経由のコピペ編集により以下の問題が発生した：
+
+```text
+コードブロック崩壊
+インデント破壊
+不可視文字混入
+構造崩壊
+PowerShell / bash 誤動作
+```
+
+---
+
+### 新ルール
+
+```text
+.md ファイルはブラウザコピペ編集を禁止する
+```
+
+---
+
+### 必須運用
+
+```text
+完全ファイルをダウンロード形式で受け取る
+ローカルエディタで編集する
+保存後に上書きする
+```
+
+---
+
+### 禁止事項
+
+```text
+ブラウザ上での直接編集
+部分コピペによる追記
+差分貼り付け
+コードブロックを含む断片編集
+```
+
+---
+
+### 理由
+
+```text
+Markdown は構造依存が強く、
+部分編集で容易に破壊されるため
+```
+
+---
+
+### 既存ルールとの関係
+
+```text
+完全ファイルのみ
+不完全生成禁止
+長文ファイルはダウンロード形式優先
+```
+
+を強化するものである
+
+---
+
+### 本質
+
+```text
+Markdown はコードである
+
+テキストではない
+```
+
+---
+
+Status: adopted
+
+---
