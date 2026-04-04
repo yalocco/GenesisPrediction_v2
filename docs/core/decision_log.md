@@ -1413,3 +1413,81 @@ verify 未実行の deploy は最終完了とみなさない
 
 
 # END OF DOCUMENT
+
+
+---
+
+## 2026-04-04
+### Prediction Enhancement Phase 2 Completion (Recall Alignment & Text Quality)
+
+Decision: Vector Memory remains reference-only in Prediction
+
+ルール
+
+```text
+Prediction は Vector Memory を補助情報として参照する
+Prediction の truth は Scenario / analysis に依存する
+Vector Memory は prediction を上書きしない
+UI は Vector Memory を直接参照しない
+```
+
+理由
+
+```text
+判断主体の一貫性維持
+black-box 化の防止
+SSOT 原則の維持
+```
+
+Status: adopted
+
+---
+
+Decision: Prediction recall support must stay internally consistent
+
+ルール
+
+```text
+reference_memory.summary にヒットが存在する場合
+Prediction 側の recall_support_level はそれと矛盾してはならない
+
+compact item（arrays）が空でも
+summary に基づく fallback により整合を保つ
+```
+
+理由
+
+```text
+summary と support_level の不整合防止
+UI 表示の信頼性確保
+Prediction の説明一貫性維持
+```
+
+Status: adopted
+
+---
+
+Decision: Prediction text must be short, strong, and public-facing
+
+ルール
+
+```text
+prediction_statement / summary は最終要約とする
+冗長な semantic 列挙を含めない
+internal metadata（例: similar_cases=1）を本文に露出しすぎない
+
+構造は以下に限定する
+1. 結論
+2. ドライバー / watchpoint
+3. 歴史的文脈（必要な場合のみ）
+```
+
+理由
+
+```text
+Prediction を explanation と分離するため
+可読性と公開品質の向上
+情報過多によるノイズ防止
+```
+
+Status: adopted
