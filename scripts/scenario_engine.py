@@ -907,6 +907,22 @@ def canonicalize_driver_token(value: Any) -> str:
     if not token:
         return ""
 
+    invalid_final_drivers = {
+        "guarded",
+        "health_degradation",
+        "stabilization",
+        "opportunity_window",
+        "base_case",
+        "best_case",
+        "worst_case",
+        "基本シナリオ",
+        "最良シナリオ",
+        "最悪シナリオ",
+        "กรณีฐาน",
+        "กรณีดีที่สุด",
+        "กรณีเลวร้ายที่สุด",
+    }
+
     if token.startswith("expected:"):
         token = token.split(":", 1)[1].strip()
     if token.startswith("historical:"):
@@ -968,6 +984,8 @@ def canonicalize_driver_token(value: Any) -> str:
         "risk_trend_guarded",
     }
     if token in noise_tokens:
+        return ""
+    if token in invalid_final_drivers:
         return ""
     if token.startswith("monitor ") or token.startswith("check ") or token.startswith("invalidated if") or token.startswith("watch for "):
         return ""
@@ -1035,7 +1053,10 @@ def canonicalize_driver_token(value: Any) -> str:
         "rates up": "rates up",
     }
     if token in replacements:
-        return replacements[token]
+        token = replacements[token]
+        if token in invalid_final_drivers:
+            return ""
+        return token
 
     keyword_map = [
         (("bank", "repo", "interbank", "money market", "loan loss"), "banking stress"),
@@ -1057,8 +1078,12 @@ def canonicalize_driver_token(value: Any) -> str:
     ]
     for keywords, mapped in keyword_map:
         if any(keyword in token for keyword in keywords):
+            if mapped in invalid_final_drivers:
+                return ""
             return mapped
 
+    if token in invalid_final_drivers:
+        return ""
     return token
 
 
@@ -1135,15 +1160,29 @@ def build_structured_drivers(
         "rates up",
         "credit spread widening",
     }
+    invalid_final_tokens = {
+        "regime shift pressure",
+        "stress building",
+        "systemic stress",
+        "headline pressure",
+        "critical risk regime",
+        "volatility expansion",
+        "confidence erosion",
+        "confidence breakdown",
+        "cross-domain contagion",
+        "downtrend pressure",
+        "uptrend pressure",
+    }
 
     for raw in list(signal_tags or []) + list(trend_tags or []):
         token = canonicalize_driver_token(raw)
-        if not token:
+        if not token or token in invalid_final_tokens:
             continue
         if token in trend_tokens:
             trend_context.append(token)
         elif token in modifier_tokens:
-            pressure_modifiers.append(token)
+            if token not in invalid_final_tokens:
+                pressure_modifiers.append(token)
         elif token in downstream_tokens:
             downstream_risks.append(token)
         else:
@@ -1157,16 +1196,31 @@ def build_structured_drivers(
 
     for raw in extract_reference_drivers(reference_memory_data or {}):
         token = canonicalize_driver_token(raw)
-        if not token:
+        if not token or token in invalid_final_tokens:
             continue
         if token in modifier_tokens:
-            pressure_modifiers.append(token)
+            if token not in invalid_final_tokens:
+                pressure_modifiers.append(token)
         elif token in trend_tokens:
             trend_context.append(token)
         elif token in downstream_tokens:
             downstream_risks.append(token)
         else:
             core_drivers.append(token)
+
+    core_drivers = [
+        item for item in unique_preserve_order(core_drivers)
+        if normalize_text(item) not in invalid_final_tokens
+    ]
+    pressure_modifiers = [
+        item for item in unique_preserve_order(pressure_modifiers)
+        if normalize_text(item) not in invalid_final_tokens
+    ]
+    trend_context = [
+        item for item in unique_preserve_order(trend_context)
+        if normalize_text(item) not in invalid_final_tokens
+    ]
+    downstream_risks = unique_preserve_order(downstream_risks)
 
     core_drivers = sorted(
         unique_preserve_order(core_drivers),
@@ -1209,28 +1263,18 @@ def build_key_drivers(
     )
 
     core = list(structured.get("core_drivers", []))
-    modifiers = list(structured.get("pressure_modifiers", []))
 
     drivers: List[str] = []
-    drivers.extend(core[:5])
-
-    for item in modifiers:
+    for item in core:
         token = normalize_text(item)
-        if not token or token in drivers:
+        if not token:
             continue
-        if token in {
-            "stress building",
-            "headline pressure",
-            "regime shift pressure",
-            "systemic stress",
-            "confidence erosion",
-            "critical risk regime",
-        }:
+        if token not in drivers:
             drivers.append(token)
-        if len(drivers) >= 7:
+        if len(drivers) >= 5:
             break
 
-    return unique_preserve_order([normalize_text(x) for x in drivers if normalize_text(x)])[:6]
+    return unique_preserve_order([normalize_text(x) for x in drivers if normalize_text(x)])[:5]
 
 
 
@@ -2404,13 +2448,7 @@ def build_scenario_output(
         risk_label=risk_label,
     )
 
-    key_drivers = build_key_drivers(
-        signal_tags=signal_tags,
-        trend_tags=trend_tags,
-        dominant_pattern=dominant_pattern,
-        expected_outcomes=expected_outcomes,
-        reference_memory_data=reference_memory_data,
-    )
+    key_drivers = unique_preserve_order(structured_drivers.get("core_drivers", []))[:5]
 
     risk_flags = build_risk_flags(
         signal_tags=signal_tags,

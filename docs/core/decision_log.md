@@ -1928,4 +1928,111 @@ Status: adopted
 
 ---
 
+
+## 2026-04-04
+### Scenario Driver Canonicalization Must Exclude Scenario Labels
+
+Decision: scenario driver canonicalization must drop scenario-name labels before structured classification
+
+対象
+
+```text
+scripts/scenario_engine.py
+canonicalize_driver_token()
+scenario.key_drivers
+scenario.structured_drivers.core_drivers
+```
+
+ルール
+
+```text
+scenario label は driver に含めない
+除外対象には以下を含む
+- base_case / best_case / worst_case
+- 基本シナリオ / 最良シナリオ / 最悪シナリオ
+- กรณีฐาน / กรณีดีที่สุด / กรณีเลวร้ายที่สุด
+```
+
+補足
+
+```text
+シナリオ名は branch label であり cause ではない
+driver canonicalization の入口で除去する
+後段の structured_drivers / key_drivers / scenario narratives に流さない
+```
+
+理由
+
+```text
+scenario label が core_drivers に混入すると
+Prediction へ非因果ラベルが伝播するため
+driver purity を維持し
+Scenario = cause-oriented branches を完成形として固定するため
+```
+
+Status: adopted
+
+---
+
+## 2026-04-04
+### Prediction Enhancement (Cause-Oriented Scenario + Decision-Grade Prediction) Is Completed
+
+Decision: Prediction Enhancement phase is complete when scenario drivers are purified and prediction remains decision-grade
+
+対象
+
+```text
+analysis/prediction/scenario_latest.json
+analysis/prediction/prediction_latest.json
+scripts/scenario_engine.py
+scripts/prediction_engine.py
+```
+
+完成条件
+
+```text
+scenario.key_drivers は cause-oriented driver のみ
+scenario.structured_drivers.core_drivers は cause-oriented driver のみ
+prediction.key_drivers は scenario core + semantic risk drivers を統合した短い因果列
+prediction は explanation ではなく decision-grade conclusion を維持する
+```
+
+確認済み状態
+
+```text
+scenario.key_drivers
+- banking stress
+- currency instability
+- social unrest
+
+prediction.key_drivers
+- banking stress
+- currency instability
+- social unrest
+- military escalation
+- market fragility
+- energy supply risk
+```
+
+補足
+
+```text
+Scenario = 原因の整理
+Prediction = 最終判断
+Explanation = mirror
+```
+
+理由
+
+```text
+Prediction Enhancement の本命目的
+「Predictionの質を1段引き上げる」
+を architecture ルールとして固定するため
+以後はこの状態を baseline として扱うため
+```
+
+Status: adopted
+
+---
+
 # END OF DOCUMENT
