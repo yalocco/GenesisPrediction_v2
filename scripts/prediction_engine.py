@@ -1460,6 +1460,80 @@ def build_reference_memory_output(reference_memory: Dict[str, Any]) -> Dict[str,
     }
 
 
+def compact_reference_items(items: Any, limit: int = 3) -> List[Dict[str, Any]]:
+    out: List[Dict[str, Any]] = []
+    if not isinstance(items, list):
+        return out
+
+    for item in items[:limit]:
+        if not isinstance(item, dict):
+            continue
+        out.append(
+            {
+                "memory_type": item.get("memory_type"),
+                "as_of": item.get("as_of"),
+                "title": item.get("title"),
+                "title_i18n": ensure_lang_map(item.get("title_i18n")),
+                "summary": item.get("summary"),
+                "summary_i18n": ensure_lang_map(item.get("summary_i18n")),
+                "source_path": item.get("source_path"),
+                "tags": item.get("tags") if isinstance(item.get("tags"), list) else [],
+                "confidence": item.get("confidence"),
+                "overall_risk": item.get("overall_risk"),
+                "dominant_scenario": item.get("dominant_scenario"),
+            }
+        )
+    return out
+
+
+def build_prediction_recall_support(reference_memory: Dict[str, Any]) -> Dict[str, Any]:
+    if not isinstance(reference_memory, dict):
+        reference_memory = {}
+
+    decision_refs = compact_reference_items(reference_memory.get("decision_refs"), limit=3)
+    similar_cases = compact_reference_items(reference_memory.get("similar_cases"), limit=3)
+    historical_patterns = compact_reference_items(reference_memory.get("historical_patterns"), limit=2)
+    historical_analogs = compact_reference_items(reference_memory.get("historical_analogs"), limit=2)
+
+    total_hits = (
+        len(decision_refs)
+        + len(similar_cases)
+        + len(historical_patterns)
+        + len(historical_analogs)
+    )
+
+    if total_hits >= 6:
+        support_level = "strong"
+    elif total_hits >= 3:
+        support_level = "moderate"
+    elif total_hits >= 1:
+        support_level = "limited"
+    else:
+        support_level = "none"
+
+    summary = extract_memory_summary(reference_memory)
+    if summary:
+        recall_note = summary
+    elif total_hits > 0:
+        recall_note = (
+            f"decision_refs={len(decision_refs)}, "
+            f"similar_cases={len(similar_cases)}, "
+            f"historical_patterns={len(historical_patterns)}, "
+            f"historical_analogs={len(historical_analogs)}"
+        )
+    else:
+        recall_note = ""
+
+    return {
+        "support_level": support_level,
+        "recall_note": recall_note,
+        "decision_refs": decision_refs,
+        "analogous_cases": similar_cases,
+        "historical_patterns": historical_patterns,
+        "historical_analogs": historical_analogs,
+    }
+
+
 def build_prediction_output(
     trend_data: Dict[str, Any],
     signal_data: Dict[str, Any],
@@ -1598,10 +1672,12 @@ def build_prediction_output(
     if not isinstance(risk_flags_raw, list):
         risk_flags_raw = []
 
+    recall_support = build_prediction_recall_support(reference_memory_data)
+
     output = {
         "as_of": as_of,
         "generated_at": utc_now_iso(),
-        "engine_version": "v3_vector_memory_integrated_i18n_phase4_data_i18n",
+        "engine_version": "v3_vector_memory_integrated_i18n_phase4_data_i18n_recall_support",
         "lang_default": LANG_DEFAULT,
         "languages": SUPPORTED_LANGUAGES,
         "direction": direction,
@@ -1626,6 +1702,12 @@ def build_prediction_output(
         "semantic_context": semantic_context,
         "scenario_bias": scenario_data.get("scenario_bias", {}),
         "reference_memory": build_reference_memory_output(reference_memory_data),
+        "recall_support_level": recall_support.get("support_level"),
+        "recall_note": recall_support.get("recall_note", ""),
+        "decision_refs": recall_support.get("decision_refs", []),
+        "analogous_cases": recall_support.get("analogous_cases", []),
+        "recalled_historical_patterns": recall_support.get("historical_patterns", []),
+        "recalled_historical_analogs": recall_support.get("historical_analogs", []),
         "summary": summary,
         "summary_i18n": summary_i18n,
     }
