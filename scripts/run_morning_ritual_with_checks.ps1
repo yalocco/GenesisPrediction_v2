@@ -210,12 +210,15 @@ try {
 
     # -----------------------------
     # 2) Run Post Ritual Checks
+    #    Morning Ritual 側で vector memory を正位置 rebuild 済みのため
+    #    ここでは確認専用にする
     # -----------------------------
     Write-Section "Run Post Ritual Checks"
 
-    Write-Host "CMD: powershell -ExecutionPolicy Bypass -File $PostChecks"
+    $postArgs = @("-AutoRebuildVectorMemory:$false")
+    Write-Host ("CMD: powershell -ExecutionPolicy Bypass -File {0} {1}" -f $PostChecks, ($postArgs -join " "))
     try {
-        Invoke-PowerShellScript -ScriptPath $PostChecks
+        Invoke-PowerShellScript -ScriptPath $PostChecks -ScriptArguments $postArgs
         Set-StepStatus -Step "post" -Status "OK"
     }
     catch {

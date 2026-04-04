@@ -5,6 +5,7 @@ param(
     [switch]$SkipFx,
     [switch]$SkipHealth,
     [switch]$SkipRefresh,
+    [switch]$SkipVectorMemory,
     [switch]$Guard = $true
 )
 
@@ -90,6 +91,38 @@ function Invoke-PythonScript {
     }
 }
 
+function Invoke-OptionalPythonScript {
+    param(
+        [string]$Name,
+        [string]$RepoRoot,
+        [string]$PythonExe,
+        [string]$ScriptPath,
+        [string[]]$Arguments = @()
+    )
+
+    Write-Host ""
+    Write-Host ("[{0}] === {1} ===" -f (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss"), $Name)
+
+    Push-Location $RepoRoot
+    try {
+        & $PythonExe $ScriptPath @Arguments
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host ("[OK] {0}" -f $Name)
+            return $true
+        }
+
+        Write-Warning ("{0} failed with exit code {1} (non-blocking)" -f $Name, $LASTEXITCODE)
+        return $false
+    }
+    catch {
+        Write-Warning ("{0} failed (non-blocking): {1}" -f $Name, $_.Exception.Message)
+        return $false
+    }
+    finally {
+        Pop-Location
+    }
+}
+
 function Assert-PathExists {
     param([string]$Path, [string]$Message = "")
 
@@ -115,6 +148,7 @@ $fxDecisionLatest = Join-Path $repoRoot "analysis\fx\fx_decision_latest.json"
 $healthLatest = Join-Path $repoRoot "analysis\health_latest.json"
 $sentimentLatest = Join-Path $repoRoot "data\world_politics\analysis\sentiment_latest.json"
 $predictionHistoryIndex = Join-Path $repoRoot "data\prediction\prediction_history_index.json"
+$vectorBuildScript = Join-Path $repoRoot "scripts\build_vector_memory.py"
 
 # ============================================================
 # 1) Main lane
@@ -184,6 +218,20 @@ if (-not $SkipHealth) {
 # ============================================================
 if (-not $SkipRefresh) {
     Invoke-PowerShellScript -Name "refresh_latest_artifacts" -RepoRoot $repoRoot -ScriptPath "scripts/refresh_latest_artifacts.ps1" -Arguments @("-Date", $runDate)
+}
+
+# ============================================================
+# 6) Vector Memory lane（prediction/explanation/history 更新後の正位置）
+#    - reference-only memory
+#    - failure-safe / non-blocking
+# ============================================================
+if (-not $SkipVectorMemory) {
+    if (Test-Path $vectorBuildScript) {
+        Invoke-OptionalPythonScript -Name "build_vector_memory (--recreate)" -RepoRoot $repoRoot -PythonExe $pythonExe -ScriptPath "scripts/build_vector_memory.py" -Arguments @("--recreate") | Out-Null
+    }
+    else {
+        Write-Warning "build_vector_memory.py not found (non-blocking)"
+    }
 }
 
 Write-Host ""
