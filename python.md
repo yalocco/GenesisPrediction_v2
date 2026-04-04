@@ -5,6 +5,10 @@
 powershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual_with_checks.ps1
 powershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual.ps1
 
+ガード阻止
+git add -A
+git commit -m "WIP: pass dirty guard before morning ritual"
+
 
 【日付指定で実行する場合】
 powershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual.ps1 -Date 2026-02-24
