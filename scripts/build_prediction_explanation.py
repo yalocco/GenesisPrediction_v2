@@ -704,45 +704,20 @@ def normalize_driver_struct(item: Any) -> dict[str, str] | None:
 
 def extract_drivers(
     prediction: dict[str, Any] | None,
-    scenario: dict[str, Any] | None,
-    signal: dict[str, Any] | None,
-    dominant_scenario: str | None,
-    confidence: float | None,
-    risk_value: str | None,
 ) -> list[dict[str, str]]:
+    """Pure mirror of prediction-layer drivers.
+
+    Explanation must not reconstruct drivers from scenario/signal. It mirrors
+    prediction.key_drivers/drivers only.
+    """
     collected: list[dict[str, str]] = []
 
-    for raw in normalize_list(pick_first(prediction, "drivers", "key_drivers", default=[])):
+    for raw in normalize_list(pick_first(prediction, "key_drivers", "drivers", default=[])):
         item = normalize_driver_struct(raw)
         if item:
             collected.append(item)
 
-    for raw in normalize_list(pick_first(scenario, "drivers", "key_drivers", default=[]))[:3]:
-        item = normalize_driver_struct(raw)
-        if item:
-            collected.append(item)
-
-    for raw in normalize_list(pick_first(signal, "drivers", "signals", default=[]))[:3]:
-        item = normalize_driver_struct(raw)
-        if item:
-            collected.append(item)
-
-    if dominant_scenario:
-        collected.insert(0, {"driver": "dominant scenario alignment"})
-
-    band = confidence_band(confidence)
-    if band == "high":
-        collected.append({"driver": "confidence support"})
-    elif band == "medium":
-        collected.append({"driver": "moderate confidence"})
-    elif band == "low":
-        collected.append({"driver": "fragile confidence"})
-    else:
-        collected.append({"driver": "limited confidence visibility"})
-
-    collected = dedupe_dict_list(collected, ["driver"])[:6]
-    return collected
-
+    return dedupe_dict_list(collected, ["driver"])[:8]
 
 def normalize_monitor_struct(item: Any) -> dict[str, str] | None:
     if item is None:
@@ -775,52 +750,18 @@ def normalize_monitor_struct(item: Any) -> dict[str, str] | None:
 
 def extract_monitor(
     prediction: dict[str, Any] | None,
-    scenario: dict[str, Any] | None,
-    signal: dict[str, Any] | None,
 ) -> list[dict[str, str]]:
-    """Mirror prediction.monitoring_priorities/watchpoints when present.
-
-    Explanation should not expand watchpoints from scenario/signal if prediction
-    already provides its own finalized monitoring list.
-    """
-    prediction_monitor = normalize_list(
-        pick_first(prediction, "watchpoints", "monitoring_priorities", default=[])
-    )
+    """Pure mirror of prediction-layer monitoring priorities/watchpoints."""
     mirrored: list[dict[str, str]] = []
-    for raw in prediction_monitor:
+
+    for raw in normalize_list(
+        pick_first(prediction, "monitoring_priorities", "watchpoints", default=[])
+    ):
         item = normalize_monitor_struct(raw)
         if item:
             mirrored.append(item)
 
-    mirrored = dedupe_dict_list(mirrored, ["item"])
-    if mirrored:
-        return mirrored
-
-    collected: list[dict[str, str]] = []
-
-    for raw in normalize_list(pick_first(scenario, "watchpoints", default=[])):
-        item = normalize_monitor_struct(raw)
-        if item:
-            collected.append(item)
-
-    for raw in normalize_list(pick_first(signal, "watchpoints", default=[])):
-        item = normalize_monitor_struct(raw)
-        if item:
-            collected.append(item)
-
-    signal_count = pick_first(prediction, "signal_count", "signalCount", default=None)
-    if isinstance(signal_count, (int, float)) or (isinstance(signal_count, str) and signal_count.strip()):
-        collected.append({"item": "signal_count"})
-
-    if not collected:
-        collected = [
-            {"item": "key driver weakening"},
-            {"item": "deterioration-side signal increase"},
-            {"item": "scenario balance shift"},
-        ]
-
-    return dedupe_dict_list(collected, ["item"])
-
+    return dedupe_dict_list(mirrored, ["item"])[:12]
 
 def extract_watchpoints_from_monitor(monitor: list[dict[str, str]]) -> list[str]:
     return dedupe_keep_order([item["item"] for item in monitor if item.get("item")])
@@ -912,97 +853,50 @@ def normalize_implication_struct(item: Any, fallback_confidence: float | None) -
 
 def extract_implications(
     prediction: dict[str, Any] | None,
-    scenario: dict[str, Any] | None,
     confidence: float | None,
 ) -> list[dict[str, Any]]:
+    """Pure mirror of prediction-layer expected outcomes/implications."""
     collected: list[dict[str, Any]] = []
 
-    for raw in normalize_list(pick_first(prediction, "expected_outcomes", "implications", default=[])):
+    for raw in normalize_list(
+        pick_first(prediction, "expected_outcomes", "implications", default=[])
+    ):
         item = normalize_implication_struct(raw, confidence)
         if item:
             collected.append(item)
 
-    for raw in normalize_list(pick_first(scenario, "expected_outcomes", "implications", default=[]))[:3]:
-        item = normalize_implication_struct(raw, confidence)
-        if item:
-            collected.append(item)
-
-    if not collected and confidence is not None:
-        collected.append({"outcome": "scenario persistence", "confidence": confidence})
-
-    return dedupe_dict_list(collected, ["outcome"])[:6]
-
+    return dedupe_dict_list(collected, ["outcome"])[:10]
 
 def extract_risks(
     prediction: dict[str, Any] | None,
-    dominant_scenario: str | None,
-    confidence: float | None,
-    historical: list[dict[str, Any]],
 ) -> list[str]:
-    collected: list[str] = []
+    """Pure mirror of prediction-layer risk flags.
 
-    risk_level = normalize_str(
-        pick_first(prediction, "overall_risk", "risk_level", "global_risk", "risk")
-    )
-    if risk_level:
-        collected.append("overall_risk_current")
-
-    band = confidence_band(confidence)
-    if band == "low":
-        collected.append("low_confidence_overread_risk")
-    elif band == "medium":
-        collected.append("moderate_confidence_overread_risk")
-
-    if dominant_scenario:
-        collected.append("dominant_scenario_fixation_risk")
-
-    if historical:
-        collected.append("historical_replay_misread_risk")
-
-    return dedupe_keep_order(collected)[:6]
-
+    Explanation must not create new risk items.
+    """
+    return to_text_list(
+        pick_first(
+            prediction,
+            "risk_flags",
+            "risks",
+            "risk_flag_items",
+            default=[],
+        )
+    )[:8]
 
 def extract_invalidation(
     prediction: dict[str, Any] | None,
-    scenario: dict[str, Any] | None,
-    dominant_scenario: str | None,
 ) -> list[str]:
-    collected: list[str] = []
-
-    raw_pred = to_text_list(
+    """Pure mirror of prediction-layer invalidation conditions."""
+    return to_text_list(
         pick_first(
             prediction,
+            "invalidation_conditions",
             "invalidation",
             "invalidators",
-            "invalidation_conditions",
             default=[],
         )
-    )
-    raw_scn = to_text_list(
-        pick_first(
-            scenario,
-            "invalidation",
-            "invalidators",
-            "invalidation_conditions",
-            default=[],
-        )
-    )
-
-    if dominant_scenario:
-        scenario_label = label_for_scenario(dominant_scenario)["en"]
-        collected.append(f"dominant branch changes away from {scenario_label}")
-
-    if raw_pred or raw_scn:
-        collected.append("existing invalidation condition is triggered")
-    else:
-        collected.extend([
-            "confidence drops materially",
-            "multiple watchpoints deteriorate at the same time",
-        ])
-
-    return dedupe_keep_order(collected)[:6]
-
-
+    )[:8]
 
 def truncate_text(text: str, max_len: int = 96) -> str:
     s = compact_spaces(text)
@@ -2052,28 +1946,13 @@ def build_prediction_explanation(
     confidence = extract_confidence(prediction, scenario)
     risk_value = extract_risk(prediction)
 
-    drivers = extract_drivers(
-        prediction,
-        scenario,
-        signal,
-        dominant_scenario,
-        confidence,
-        risk_value,
-    )
-    monitor = extract_monitor(
-        prediction,
-        scenario,
-        signal,
-    )
+    drivers = extract_drivers(prediction)
+    monitor = extract_monitor(prediction)
     watchpoints = extract_watchpoints_from_monitor(monitor)
     historical = extract_historical(historical_pattern, historical_analog)
-    implications = extract_implications(
-        prediction,
-        scenario,
-        confidence,
-    )
-    risks = extract_risks(prediction, dominant_scenario, confidence, historical)
-    invalidation = extract_invalidation(prediction, scenario, dominant_scenario)
+    implications = extract_implications(prediction, confidence)
+    risks = extract_risks(prediction)
+    invalidation = extract_invalidation(prediction)
     reference_memory_entries = extract_reference_memory_entries(reference_memory)
 
     headline_i18n = i18n_for_headline(dominant_scenario, watchpoints, confidence)

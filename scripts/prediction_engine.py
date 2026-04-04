@@ -414,6 +414,90 @@ LABEL_REGISTRY = {
 }
 
 
+PREDICTION_DRIVER_NOISE = {
+    "guarded",
+    "stable",
+    "high",
+    "critical",
+    "low",
+    "balanced",
+    "defensive",
+    "constructive",
+    "health_degradation",
+    "health deterioration",
+    "stabilization",
+    "pressure_easing",
+    "pressure easing",
+    "event_density_high",
+    "event_density_rising",
+    "headline_surge",
+    "headline_intensity_accelerating",
+    "risk_level_critical",
+    "overall_direction_falling",
+    "overall direction falling",
+}
+
+PREDICTION_MONITORING_NOISE = {
+    "banking_stress",
+    "banking stress",
+}
+
+
+def normalize_token_list(values: Any) -> List[str]:
+    if not isinstance(values, list):
+        return []
+    return unique_preserve_order([normalize_text(x) for x in values if normalize_text(x)])
+
+
+def filter_prediction_driver_tokens(values: List[str]) -> List[str]:
+    allowed: List[str] = []
+    for raw in values or []:
+        token = normalize_text(raw)
+        if not token or token in PREDICTION_DRIVER_NOISE:
+            continue
+        if is_generic_semantic_tag(token) or is_low_signal_noise_tag(token):
+            continue
+        allowed.append(token)
+    return unique_preserve_order(allowed)
+
+
+def get_scenario_watchpoint_roles(scenario_data: Dict[str, Any]) -> Dict[str, List[str]]:
+    roles = scenario_data.get("watchpoint_roles", {})
+    if not isinstance(roles, dict):
+        return {"escalation": [], "persistence": [], "stabilization": []}
+    return {
+        "escalation": normalize_token_list(roles.get("escalation")),
+        "persistence": normalize_token_list(roles.get("persistence")),
+        "stabilization": normalize_token_list(roles.get("stabilization")),
+    }
+
+
+def get_structured_drivers(scenario_data: Dict[str, Any]) -> Dict[str, List[str]]:
+    structured = scenario_data.get("structured_drivers", {})
+    if not isinstance(structured, dict):
+        return {
+            "core_drivers": [],
+            "pressure_modifiers": [],
+            "trend_context": [],
+            "downstream_risks": [],
+        }
+    return {
+        "core_drivers": normalize_token_list(structured.get("core_drivers")),
+        "pressure_modifiers": normalize_token_list(structured.get("pressure_modifiers")),
+        "trend_context": normalize_token_list(structured.get("trend_context")),
+        "downstream_risks": normalize_token_list(structured.get("downstream_risks")),
+    }
+
+
+def render_label_list(values: List[str], lang: str = "en", limit: int = 3) -> str:
+    items = [labelize(x, lang=lang) for x in values[:limit] if str(x).strip()]
+    if not items:
+        return ""
+    if lang == "ja":
+        return "・".join(items)
+    return ", ".join(items)
+
+
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
@@ -868,18 +952,54 @@ def build_semantic_summary_lines(semantic_context: Dict[str, Any]) -> Dict[str, 
     return {lang: text.strip() for lang, text in clauses.items()}
 
 
+
 def build_primary_narrative(
     scenario_data: Dict[str, Any],
     semantic_context: Dict[str, Any],
 ) -> str:
-    base_narrative = choose_primary_narrative(scenario_data)
-    semantic_lines = build_semantic_summary_lines(semantic_context)
-    semantic_en = semantic_lines.get("en", "").strip()
-    if not semantic_en:
-        return base_narrative
-    if semantic_en in base_narrative:
-        return base_narrative
-    return f"{base_narrative} {semantic_en}".strip()
+    dominant = normalize_text(scenario_data.get("dominant_scenario")) or "base_case"
+    risk = normalize_text(scenario_data.get("risk")) or "guarded"
+
+    structured = get_structured_drivers(scenario_data)
+    roles = get_scenario_watchpoint_roles(scenario_data)
+
+    core_drivers = filter_prediction_driver_tokens(structured.get("core_drivers", []))[:3]
+    modifiers = filter_prediction_driver_tokens(structured.get("pressure_modifiers", []))[:2]
+    propagation = normalize_token_list(scenario_data.get("expected_outcomes"))[:3]
+    escalation = roles.get("escalation", [])[:3]
+
+    dominant_label = labelize(dominant, lang="en")
+    risk_label = labelize(risk, lang="en")
+    driver_text = render_label_list(core_drivers, lang="en", limit=3)
+    modifier_text = render_label_list(modifiers, lang="en", limit=2)
+    propagation_text = render_label_list(propagation, lang="en", limit=3)
+    escalation_text = render_label_list(escalation, lang="en", limit=3)
+
+    base = f"{dominant_label} remains the working path under {risk_label} conditions."
+    if driver_text:
+        base += f" Core pressure is still concentrated in {driver_text}."
+    if modifier_text:
+        base += f" Modifiers such as {modifier_text} keep normalization incomplete."
+    if propagation_text:
+        base += f" The main downside propagation runs through {propagation_text}."
+    if escalation_text:
+        base += f" A worse turn is most likely if {escalation_text} deteriorate together."
+
+    historical_context = scenario_data.get("historical_context", {})
+    if isinstance(historical_context, dict):
+        pattern = historical_context.get("dominant_pattern")
+        analog = historical_context.get("dominant_analog")
+        pattern_label = labelize(pattern, lang="en")
+        analog_label = labelize(analog, lang="en")
+        if pattern_label or analog_label:
+            if pattern_label and analog_label:
+                base += f" Historically, the structure is closest to {pattern_label} and resembles {analog_label}."
+            elif pattern_label:
+                base += f" Historically, the structure is closest to {pattern_label}."
+            else:
+                base += f" Historically, the structure resembles {analog_label}."
+
+    return base.strip()
 
 
 def build_primary_narrative_i18n(
@@ -887,20 +1007,66 @@ def build_primary_narrative_i18n(
     primary_narrative: str,
     semantic_context: Dict[str, Any],
 ) -> Dict[str, str]:
-    base_i18n = choose_primary_narrative_i18n(
-        scenario_data=scenario_data,
-        primary_narrative=choose_primary_narrative(scenario_data),
-    )
-    semantic_lines = build_semantic_summary_lines(semantic_context)
-    return finalize_text_i18n(
-        primary_narrative,
-        {
-            "en": f"{base_i18n.get('en', '').strip()} {semantic_lines.get('en', '').strip()}".strip(),
-            "ja": f"{base_i18n.get('ja', '').strip()} {semantic_lines.get('ja', '').strip()}".strip(),
-            "th": f"{base_i18n.get('th', '').strip()} {semantic_lines.get('th', '').strip()}".strip(),
-        },
-    )
+    dominant = normalize_text(scenario_data.get("dominant_scenario")) or "base_case"
+    risk = normalize_text(scenario_data.get("risk")) or "guarded"
+
+    structured = get_structured_drivers(scenario_data)
+    roles = get_scenario_watchpoint_roles(scenario_data)
+
+    core_drivers = filter_prediction_driver_tokens(structured.get("core_drivers", []))[:3]
+    modifiers = filter_prediction_driver_tokens(structured.get("pressure_modifiers", []))[:2]
+    propagation = normalize_token_list(scenario_data.get("expected_outcomes"))[:3]
+    escalation = roles.get("escalation", [])[:3]
+
+    dominant_i18n = label_from_map(dominant, SCENARIO_LABELS)
+    risk_i18n = label_from_map(risk, RISK_LABELS)
+
+    en = f"{labelize(dominant, 'en')} remains the working path under {labelize(risk, 'en')} conditions."
+    ja = f"{dominant_i18n['ja']} が引き続き主経路であり、条件は {risk_i18n['ja']} にある。"
+    th = f"{dominant_i18n['th']} ยังคงเป็นเส้นทางหลักภายใต้ภาวะ {risk_i18n['th']}."
+
+    if core_drivers:
+        en += f" Core pressure is still concentrated in {render_label_list(core_drivers, 'en', 3)}."
+        ja += f" 中核圧力はなお {render_label_list(core_drivers, 'ja', 3)} に集中している。"
+        th += f" แรงกดดันหลักยังกระจุกอยู่ที่ {render_label_list(core_drivers, 'th', 3)}."
+    if modifiers:
+        en += f" Modifiers such as {render_label_list(modifiers, 'en', 2)} keep normalization incomplete."
+        ja += f" {render_label_list(modifiers, 'ja', 2)} のような修飾要因が正常化を不完全なままにしている。"
+        th += f" ตัวเสริมอย่าง {render_label_list(modifiers, 'th', 2)} ทำให้การกลับสู่ภาวะปกติยังไม่สมบูรณ์."
+    if propagation:
+        en += f" The main downside propagation runs through {render_label_list(propagation, 'en', 3)}."
+        ja += f" 主な下方波及経路は {render_label_list(propagation, 'ja', 3)} である。"
+        th += f" การลุกลามขาลงหลักเกิดผ่าน {render_label_list(propagation, 'th', 3)}."
+    if escalation:
+        en += f" A worse turn is most likely if {render_label_list(escalation, 'en', 3)} deteriorate together."
+        ja += f" {render_label_list(escalation, 'ja', 3)} が同時に悪化すると、さらに悪い分岐へ移りやすい。"
+        th += f" หาก {render_label_list(escalation, 'th', 3)} แย่ลงพร้อมกัน โอกาสเข้าสู่กรณีที่แย่กว่าจะสูงขึ้น."
+
+    historical_context = scenario_data.get("historical_context", {})
+    if isinstance(historical_context, dict):
+        pattern = historical_context.get("dominant_pattern")
+        analog = historical_context.get("dominant_analog")
+        pattern_i18n = labelize_i18n(pattern)
+        analog_i18n = labelize_i18n(analog)
+        if pattern_i18n.get("en") or analog_i18n.get("en"):
+            if pattern_i18n.get("en") and analog_i18n.get("en"):
+                en += f" Historically, the structure is closest to {pattern_i18n['en']} and resembles {analog_i18n['en']}."
+                ja += f" 歴史的には {pattern_i18n['ja']} に最も近く、{analog_i18n['ja']} に似た輪郭を持つ。"
+                th += f" ในเชิงประวัติศาสตร์ โครงสร้างนี้ใกล้กับ {pattern_i18n['th']} และคล้าย {analog_i18n['th']}."
+            elif pattern_i18n.get("en"):
+                en += f" Historically, the structure is closest to {pattern_i18n['en']}."
+                ja += f" 歴史的には {pattern_i18n['ja']} に最も近い。"
+                th += f" ในเชิงประวัติศาสตร์ โครงสร้างนี้ใกล้กับ {pattern_i18n['th']} มากที่สุด."
+            else:
+                en += f" Historically, the structure resembles {analog_i18n['en']}."
+                ja += f" 歴史的には {analog_i18n['ja']} に似た輪郭を持つ。"
+                th += f" ในเชิงประวัติศาสตร์ โครงสร้างนี้คล้าย {analog_i18n['th']}."
+
+    return finalize_text_i18n(primary_narrative, {"en": en, "ja": ja, "th": th})
+
+
 def classify_prediction_direction(
+
     scenario_data: Dict[str, Any],
     signal_data: Dict[str, Any],
     pattern_data: Dict[str, Any],
@@ -1083,52 +1249,46 @@ def build_action_bias(
     return "balanced"
 
 
+
 def build_monitoring_priorities(
     scenario_data: Dict[str, Any],
     pattern_data: Dict[str, Any],
     analog_data: Dict[str, Any],
     reference_memory: Dict[str, Any],
 ) -> List[str]:
+    roles = get_scenario_watchpoint_roles(scenario_data)
     priorities: List[str] = []
 
-    for item in scenario_data.get("watchpoints", [])[:6]:
-        if item is not None:
-            priorities.append(normalize_text(item))
+    priorities.extend(roles.get("escalation", [])[:4])
+    priorities.extend(roles.get("persistence", [])[:3])
+    priorities.extend(roles.get("stabilization", [])[:2])
+
+    for item in normalize_token_list(scenario_data.get("watchpoints"))[:6]:
+        priorities.append(item)
 
     historical_context = scenario_data.get("historical_context", {})
     if isinstance(historical_context, dict):
-        for item in historical_context.get("historical_watchpoints", [])[:6]:
-            if item is not None:
-                priorities.append(normalize_text(item))
+        priorities.extend(normalize_token_list(historical_context.get("historical_watchpoints"))[:4])
 
     matched_patterns = pattern_data.get("matched_patterns", [])
     if isinstance(matched_patterns, list):
-        for item in matched_patterns[:2]:
+        for item in matched_patterns[:1]:
             if isinstance(item, dict):
-                for wp in item.get("watchpoints", [])[:3]:
-                    if wp is not None:
-                        priorities.append(normalize_text(wp))
+                priorities.extend(normalize_token_list(item.get("watchpoints"))[:2])
 
     top_analogs = analog_data.get("top_analogs", [])
     if isinstance(top_analogs, list):
-        for item in top_analogs[:2]:
+        for item in top_analogs[:1]:
             if isinstance(item, dict):
-                for wp in item.get("watchpoints", [])[:3]:
-                    if wp is not None:
-                        priorities.append(normalize_text(wp))
-                for sim in item.get("similarities", [])[:2]:
-                    if sim is not None:
-                        priorities.append(normalize_text(sim))
+                priorities.extend(normalize_token_list(item.get("watchpoints"))[:2])
 
-    for bucket_name in ("historical_patterns", "historical_analogs", "similar_cases"):
-        for item in reference_memory.get(bucket_name, [])[:2]:
-            if not isinstance(item, dict):
-                continue
-            for tag in item.get("tags", [])[:3]:
-                if tag is not None:
-                    priorities.append(normalize_text(tag))
+    cleaned = []
+    for token in unique_preserve_order([x for x in priorities if x]):
+        if token in PREDICTION_MONITORING_NOISE:
+            continue
+        cleaned.append(token)
+    return cleaned[:8]
 
-    return unique_preserve_order([x for x in priorities if x])[:12]
 
 
 def build_prediction_drivers(
@@ -1140,58 +1300,31 @@ def build_prediction_drivers(
     reference_memory: Dict[str, Any],
     semantic_context: Dict[str, Any],
 ) -> List[str]:
+    structured = get_structured_drivers(scenario_data)
     drivers: List[str] = []
 
-    for group_name in ("signals", "risk_drivers", "impacts", "themes"):
-        group = semantic_context.get(group_name, {})
-        ids = group.get("ids", [])
-        if isinstance(ids, list):
-            drivers.extend(normalize_text(x) for x in ids[:2] if normalize_text(x))
+    drivers.extend(filter_prediction_driver_tokens(structured.get("core_drivers", []))[:3])
+    drivers.extend(filter_prediction_driver_tokens(structured.get("pressure_modifiers", []))[:2])
 
-    drivers.extend(
-        x for x in collect_trend_tags(trend_data)[:5]
-        if not is_generic_semantic_tag(x)
-    )
-    drivers.extend(
-        x for x in collect_signal_tags(signal_data)[:6]
-        if not is_generic_semantic_tag(x) and not is_low_signal_noise_tag(x)
-    )
+    risk_driver_ids = normalize_token_list((semantic_context.get("risk_drivers") or {}).get("ids"))
+    for token in filter_prediction_driver_tokens(risk_driver_ids):
+        if token not in drivers:
+            drivers.append(token)
+        if len(drivers) >= 6:
+            break
 
-    for item in scenario_data.get("key_drivers", [])[:8]:
-        if item is None:
-            continue
-        normalized = normalize_text(item)
-        if not normalized or is_generic_semantic_tag(normalized):
-            continue
-        drivers.append(normalized)
+    if len(drivers) < 4:
+        for token in filter_prediction_driver_tokens(normalize_token_list(scenario_data.get("key_drivers"))):
+            if token not in drivers:
+                drivers.append(token)
+            if len(drivers) >= 6:
+                break
 
-    dominant_pattern = pattern_data.get("dominant_pattern")
-    dominant_analog = analog_data.get("dominant_analog")
-    if dominant_pattern:
-        drivers.append(f"historical_pattern:{normalize_text(dominant_pattern)}")
-    if dominant_analog:
-        drivers.append(f"historical_analog:{normalize_text(dominant_analog)}")
-
-    for item in reference_memory.get("historical_patterns", [])[:2]:
-        if isinstance(item, dict) and item.get("title"):
-            drivers.append(f"memory_pattern:{normalize_text(item.get('title'))}")
-
-    for item in reference_memory.get("historical_analogs", [])[:2]:
-        if isinstance(item, dict) and item.get("title"):
-            drivers.append(f"memory_analog:{normalize_text(item.get('title'))}")
-
-    for item in reference_memory.get("similar_cases", [])[:2]:
-        if isinstance(item, dict) and item.get("title"):
-            drivers.append(f"memory_case:{normalize_text(item.get('title'))}")
-
-    memory_summary = extract_memory_summary(reference_memory)
-    if memory_summary:
-        drivers.append(f"memory:{normalize_text(memory_summary)}")
-
-    return unique_preserve_order([x for x in drivers if x])[:14]
+    return unique_preserve_order(drivers)[:6]
 
 
 def build_historical_context(
+
     pattern_data: Dict[str, Any],
     analog_data: Dict[str, Any],
     scenario_data: Dict[str, Any],

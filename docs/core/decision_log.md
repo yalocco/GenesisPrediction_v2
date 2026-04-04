@@ -1412,7 +1412,6 @@ verify 未実行の deploy は最終完了とみなさない
 ```
 
 
-# END OF DOCUMENT
 
 
 ---
@@ -1615,3 +1614,318 @@ PowerShell の仕様に起因する事故防止
 ```
 
 Status: adopted
+
+## 2026-04-04
+### Scenario Engine Must Produce Causal Branches, Not Templates
+
+Decision: Scenario output must be causal, branch-readable, and monitoring-linked
+
+対象
+
+```text
+scripts/scenario_engine.py
+analysis/prediction/scenario_latest.json
+```
+
+ルール
+
+```text
+scenario narrative はテンプレ説明文にしない
+best / base / worst は因果の流れで記述する
+
+最低構造
+1. current flow
+2. active pressure / signal
+3. core drivers
+4. propagation
+5. branch watchpoint condition
+6. historical background
+```
+
+補足
+
+```text
+watchpoints は単なる一覧ではなく branch trigger として扱う
+watchpoint_roles は以下に整理する
+- stabilization
+- persistence
+- escalation
+```
+
+理由
+
+```text
+Scenario を Prediction の土台として使うため
+best / base / worst の説得力を高めるため
+watchpoints を判断材料に昇格させるため
+```
+
+Status: adopted
+
+---
+
+## 2026-04-04
+### Scenario Drivers Must Be Cause-Oriented
+
+Decision: Scenario key_drivers must be cause-oriented and separated from outcomes
+
+対象
+
+```text
+scripts/scenario_engine.py
+scenario.key_drivers
+scenario.structured_drivers
+scenario.expected_outcomes
+```
+
+ルール
+
+```text
+key_drivers には原因寄りの driver のみを置く
+state / intensity / meta tag / outcome を混ぜない
+
+structured_drivers は以下で整理する
+- core_drivers
+- pressure_modifiers
+- trend_context
+- downstream_risks
+```
+
+補足
+
+```text
+downstream_risks は expected_outcomes 側へ寄せる
+trend_context は narrative 材料とする
+```
+
+理由
+
+```text
+driver と outcome の混線防止
+Prediction 側へ渡す因果材料の純化
+説明可能性の向上
+```
+
+Status: adopted
+
+---
+
+## 2026-04-04
+### Prediction Must Be Decision-Grade, Not Scenario Restatement
+
+Decision: Prediction is the decision-grade conclusion layer
+
+対象
+
+```text
+scripts/prediction_engine.py
+analysis/prediction/prediction_latest.json
+```
+
+ルール
+
+```text
+Prediction は Scenario の再説明にしない
+Prediction は判断に使える最終結論とする
+
+prediction_statement は以下を優先する
+1. dominant scenario
+2. risk / direction
+3. main propagation
+4. escalation or branch condition
+5. historical support（必要時）
+```
+
+補足
+
+```text
+primary_narrative は短く一本化する
+長い scenario narrative の貼り付けを禁止する
+```
+
+理由
+
+```text
+Prediction と Explanation の責務分離
+公開品質と判断性の向上
+説明過多によるノイズ防止
+```
+
+Status: adopted
+
+---
+
+## 2026-04-04
+### Prediction Drivers Must Be Limited and Cause-Oriented
+
+Decision: Prediction key_drivers must be short and cause-oriented
+
+対象
+
+```text
+scripts/prediction_engine.py
+prediction.key_drivers
+prediction.drivers
+```
+
+ルール
+
+```text
+prediction key_drivers は 4〜6 件程度に制限する
+原因寄り driver を優先する
+state / meta / trend label / monitoring item を混ぜない
+```
+
+禁止事項
+
+```text
+overall_direction_* の混入
+risk_level_* の混入
+pressure_easing の混入
+watchpoint の混入
+internal metadata の混入
+```
+
+理由
+
+```text
+意思決定時の視認性向上
+driver の意味純度維持
+Scenario との責務分離
+```
+
+Status: adopted
+
+---
+
+## 2026-04-04
+### Prediction Monitoring Priorities Must Follow Branch Logic
+
+Decision: Prediction monitoring_priorities must be ordered by branch logic
+
+対象
+
+```text
+scripts/prediction_engine.py
+prediction.monitoring_priorities
+prediction.watchpoints
+```
+
+ルール
+
+```text
+monitoring_priorities は branch trigger を優先する
+並び順は以下を基本とする
+1. escalation
+2. persistence
+3. stabilization
+```
+
+補足
+
+```text
+単なる watchpoint 全列挙は禁止
+分岐判定に効く項目を優先する
+```
+
+理由
+
+```text
+監視の優先順位を明確にするため
+Prediction を判断支援として使いやすくするため
+```
+
+Status: adopted
+
+---
+
+## 2026-04-04
+### Explanation Must Be Mirror-Only Across Structured Fields
+
+Decision: Explanation must mirror prediction fields directly and must not reconstruct them from lower layers
+
+対象
+
+```text
+scripts/build_prediction_explanation.py
+analysis/explanation/prediction_explanation_latest.json
+```
+
+ルール
+
+```text
+drivers       = prediction.key_drivers / prediction.drivers を mirror
+monitor       = prediction.monitoring_priorities / prediction.watchpoints を mirror
+implications  = prediction.expected_outcomes / prediction.implications を mirror
+risks         = prediction.risk_flags を mirror
+invalidation  = prediction.invalidation_conditions を mirror
+```
+
+禁止事項
+
+```text
+scenario / signal / historical から explanation 用の再構成をしない
+prediction に存在しない structured field を explanation 側で新規生成しない
+```
+
+理由
+
+```text
+Explanation が第二の truth layer になることを防ぐため
+Prediction = truth / Explanation = mirror を厳密化するため
+```
+
+Status: adopted
+
+---
+
+## 2026-04-04
+### Explanation May Clarify Reading, But Must Not Create New Truth
+
+Decision: Explanation may structure reading guidance, but must not create new factual content
+
+対象
+
+```text
+headline
+summary
+interpretation
+decision_line
+narrative_flow
+must_not_mean
+ui_terms
+```
+
+ルール
+
+```text
+Explanation は prediction の読み方整理に限定する
+許可されるのは以下
+- human-readable structuring
+- mirror-based wording
+- misread prevention
+- UI term explanation
+```
+
+禁止事項
+
+```text
+新しい原因の追加
+新しい watchpoint の追加
+新しい implication の追加
+Prediction にないリスク判断の追加
+```
+
+理由
+
+```text
+説明層の責務固定
+UI 側の再解釈圧力抑制
+analysis artifact 間の整合維持
+```
+
+Status: adopted
+
+---
+
+# END OF DOCUMENT
