@@ -2,8 +2,7 @@
 
 ■ ルーティーン（最短・安全）
 【朝の儀式（正式）】
-powershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual_with_checks.ps1
-powershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual.ps1
+ypowershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual.ps1
 
 ガード阻止
 git add -A
@@ -27,28 +26,8 @@ python scripts/build_vector_memory.py --recreate
 ■ Deploy（自宅PC専用）
 powershell -ExecutionPolicy Bypass -File scripts/run_labos_publish.ps1
 
-# 会社PC
-powershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual.ps1
-
-# 自宅PC
-powershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual.ps1 -DeployLabos
-
-# Deploy
-powershell -ExecutionPolicy Bypass -File scripts/run_deploy_labos.ps1
-
-上は以下を同時に行う
-powershell -ExecutionPolicy Bypass -File scripts/run_deploy_labos.ps1
-powershell -ExecutionPolicy Bypass -File scripts/build_labos_deploy_payload.ps1
+■ decision_index（更新）
+python build_decision_index.py --input docs/core/decision_log.md --output docs/core/decision_index.md
 
 
---------------------------------------------------------------
-docs/ui_data_dependencies.md を更新しますか？
-
---------------------------------------------------------------
-新スレ立ち上げ時
-AI bootstrap
-docs/ai_bootstrap.md を読み込んでください。
-
-Thread Task:
-（今回の作業内容）
 --------------------------------------------------------------
