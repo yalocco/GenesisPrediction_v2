@@ -2,7 +2,7 @@
 
 ■ ルーティーン（最短・安全）
 【朝の儀式（正式）】
-ypowershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual.ps1
+powershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual.ps1
 
 ガード阻止
 git add -A
