@@ -2405,3 +2405,71 @@ Markdown はコードである
 Status: adopted
 
 ---
+
+
+## 2026-04-05
+### Prediction Output Must Preserve Structure (No Partial Translation)
+
+Decision:
+Prediction output must never use partial word-level translation fallback.
+
+Rule:
+- Unknown phrases must remain unchanged (raw text)
+- No word-by-word translation allowed
+- All translation must be:
+  - label registry based
+  - phrase mapping based
+  - or explicitly defined
+
+Reason:
+Partial translation creates corrupted mixed-language outputs
+(e.g. "debtbubbleand銀行crisis")
+
+Impact:
+- Stabilizes i18n output
+- Preserves semantic integrity
+- Improves UI reliability
+
+Status: adopted
+
+---
+
+## 2026-04-05
+### Scenario Labels Must Not Use Generic Translation
+
+Decision:
+Scenario-related labels must always use SCENARIO_LABELS mapping.
+
+Rule:
+- base_case / best_case / worst_case must not go through labelize()
+- Must use label_from_map(..., SCENARIO_LABELS)
+
+Reason:
+Scenario is structural truth, not free text
+
+Impact:
+- Prevents semantic drift
+- Ensures consistency across prediction / explanation / UI
+
+Status: adopted
+
+---
+
+## 2026-04-05
+### Prediction Enhancement v4 Completed
+
+Status: adopted
+
+Summary:
+- narrative compressed
+- drivers structured
+- monitoring converted to triggers
+- invalidation clarified
+- scenario → prediction alignment enforced
+- vector memory restricted to reference-only
+- i18n stabilized
+
+Result:
+Prediction Engine reached production-ready state
+
+---
