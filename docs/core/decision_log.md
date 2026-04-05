@@ -2035,8 +2035,6 @@ Status: adopted
 
 ---
 
-# END OF DOCUMENT
-
 ---
 ## 2026-04-04
 ### Scenario Transmission Must Be Deterministic Per Branch
@@ -2472,4 +2470,85 @@ Summary:
 Result:
 Prediction Engine reached production-ready state
 
+---
+
+---
+
+## 2026-04-05
+### Prediction Layer i18n Must Be Fully Resolved in Analysis (Structure Fix)
+
+Decision: Prediction layer i18n must be fully generated in analysis and must not rely on UI fallback
+
+対象
+
+```text
+scripts/prediction_engine.py
+analysis/prediction/prediction_latest.json
+```
+
+ルール
+
+```text
+すべての出力は *_i18n で完結させる
+UI は翻訳・補完・fallback を一切行わない
+
+translation = analysis
+UI = selector only
+```
+
+必須条件
+
+```text
+reference_memory.summary_i18n を完全生成する
+historical_pattern / historical_analog prefix を翻訳対象に含める
+expected_outcomes を完全辞書化する
+
+英語残り禁止
+部分翻訳禁止
+runtime補完禁止
+```
+
+禁止事項
+
+```text
+UIで翻訳する
+UIでfallbackする
+英語をそのまま表示する
+単語単位の翻訳
+```
+
+理由
+
+```text
+i18n不完全状態はUI崩壊の原因となる
+表示層での補完は責務違反である
+analysis側で完全性を担保することで
+再現性・安定性・整合性を確保するため
+```
+
+補足
+
+```text
+Step1: reference_memory i18n
+Step2: historical prefix translation
+Step3: expected_outcomes i18n
+
+の3段階で構造固定を完了した
+```
+
+最終状態
+
+```text
+Prediction = fully localized structured output
+Explanation = mirror
+UI = read-only renderer
+```
+
+Status: adopted
+
+---
+
+---
+
+# END OF DOCUMENT
 ---
