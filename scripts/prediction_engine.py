@@ -950,6 +950,76 @@ def format_reference_memory_summary(summary: str) -> str:
     return "; ".join(rendered)
 
 
+def translate_reference_memory_clause(clause: str, lang: str) -> str:
+    raw = str(clause or "").strip()
+    if not raw:
+        return ""
+    if lang == "en":
+        return raw
+
+    patterns = [
+        (r"^(\d+) similar historical cases detected$", {
+            "ja": "{count}件の類似する歴史事例を検出",
+            "th": "ตรวจพบกรณีประวัติศาสตร์ที่คล้ายกัน {count} กรณี",
+        }),
+        (r"^(\d+) similar historical case detected$", {
+            "ja": "類似する歴史事例を{count}件検出",
+            "th": "ตรวจพบกรณีประวัติศาสตร์ที่คล้ายกัน {count} กรณี",
+        }),
+        (r"^(\d+) decision references matched$", {
+            "ja": "{count}件の意思決定参照が一致",
+            "th": "พบการอ้างอิงการตัดสินใจที่ตรงกัน {count} รายการ",
+        }),
+        (r"^(\d+) decision reference matched$", {
+            "ja": "意思決定参照が{count}件一致",
+            "th": "พบการอ้างอิงการตัดสินใจที่ตรงกัน {count} รายการ",
+        }),
+        (r"^(\d+) historical patterns matched$", {
+            "ja": "{count}件の歴史パターンが一致",
+            "th": "พบรูปแบบทางประวัติศาสตร์ที่ตรงกัน {count} รายการ",
+        }),
+        (r"^(\d+) historical pattern matched$", {
+            "ja": "歴史パターンが{count}件一致",
+            "th": "พบรูปแบบทางประวัติศาสตร์ที่ตรงกัน {count} รายการ",
+        }),
+        (r"^(\d+) historical analogs matched$", {
+            "ja": "{count}件の歴史アナログが一致",
+            "th": "พบกรณีเทียบเคียงทางประวัติศาสตร์ที่ตรงกัน {count} รายการ",
+        }),
+        (r"^(\d+) historical analog matched$", {
+            "ja": "歴史アナログが{count}件一致",
+            "th": "พบกรณีเทียบเคียงทางประวัติศาสตร์ที่ตรงกัน {count} รายการ",
+        }),
+    ]
+    for pattern, templates in patterns:
+        m = re.match(pattern, raw)
+        if m:
+            count = m.group(1)
+            return templates.get(lang, raw).format(count=count)
+
+    direct = auto_translate_fallback(raw, lang)
+    if direct != raw:
+        return direct
+    return raw
+
+
+def build_reference_memory_summary_i18n(summary: str, reference_memory: Dict[str, Any]) -> Dict[str, str]:
+    base_summary = str(summary or "").strip()
+    # Existing summary_i18n in reference memory may be compact placeholders such as
+    # "similar_cases=1" and must not bypass deterministic translation here.
+    # Always translate from the normalized English summary string.
+
+    parts = [part.strip() for part in base_summary.split(";") if part.strip()]
+    if not parts:
+        parts = [base_summary]
+
+    return {
+        "en": "; ".join(parts),
+        "ja": "； ".join(translate_reference_memory_clause(part, "ja") for part in parts),
+        "th": "; ".join(translate_reference_memory_clause(part, "th") for part in parts),
+    }
+
+
 def is_negative_trigger_token(token: Any) -> bool:
     normalized = normalize_text(token)
     return any(keyword in normalized for keyword in NEGATIVE_TRIGGER_KEYWORDS)
@@ -973,7 +1043,9 @@ def labelize_i18n(value: Any) -> Dict[str, str]:
             "th": f"{prefix_i18n['th']}: {rest_i18n['th']}" if rest_i18n["th"] else prefix_i18n["th"],
         }
 
-    mapped = LABEL_REGISTRY.get(normalize_text(raw))
+    key = normalize_text(raw)
+    alt_key = key.replace(" ", "_")
+    mapped = LABEL_REGISTRY.get(key) or LABEL_REGISTRY.get(alt_key)
     if mapped:
         return finalize_text_i18n(str(mapped.get("en") or raw), mapped)
 
@@ -1976,6 +2048,7 @@ def build_summary_i18n(
     memory_summary: str,
     summary_en: str,
     semantic_context: Dict[str, Any],
+    reference_memory: Dict[str, Any],
 ) -> Dict[str, str]:
     direction_labels = label_from_map(direction, DIRECTION_LABELS)
     scenario_labels = label_from_map(dominant_scenario, SCENARIO_LABELS)
@@ -2010,9 +2083,10 @@ def build_summary_i18n(
         th += f" {historical_summary_i18n.get('th', '')}".rstrip()
 
     if memory_summary:
-        en += f" Memory context: {memory_summary}"
-        ja += f" 記憶参照文脈: {memory_summary}"
-        th += f" บริบทจากหน่วยความจำ: {memory_summary}"
+        memory_summary_i18n = build_reference_memory_summary_i18n(memory_summary, reference_memory)
+        en += f" Memory context: {memory_summary_i18n['en']}"
+        ja += f" 記憶参照文脈: {memory_summary_i18n['ja']}"
+        th += f" บริบทจากหน่วยความจำ: {memory_summary_i18n['th']}"
 
     return finalize_text_i18n(
         summary_en,
@@ -2062,10 +2136,9 @@ def build_expected_outcomes_i18n(
     scenario_data: Dict[str, Any],
     expected_outcomes: List[str],
 ) -> Dict[str, List[str]]:
-    direct_i18n = ensure_lang_list_map(scenario_data.get("expected_outcomes_i18n"))
-    if direct_i18n:
-        return finalize_list_i18n(expected_outcomes, direct_i18n)
-
+    # Existing expected_outcomes_i18n from upstream may be partially untranslated.
+    # Do not trust it for final prediction-layer output.
+    # Always rebuild deterministically from expected_outcomes.
     en_list: List[str] = []
     ja_list: List[str] = []
     th_list: List[str] = []
@@ -2696,11 +2769,7 @@ def build_reference_memory_compact(reference_memory: Dict[str, Any]) -> Dict[str
     return {
         "status": status,
         "summary": summary,
-        "summary_i18n": finalize_text_i18n(summary, {
-            "en": summary,
-            "ja": summary,
-            "th": summary,
-        }),
+        "summary_i18n": build_reference_memory_summary_i18n(summary, reference_memory),
     }
 
 def build_prediction_output(
@@ -2895,6 +2964,7 @@ def build_prediction_output(
         memory_summary=memory_summary,
         summary_en=summary,
         semantic_context=semantic_context,
+        reference_memory=reference_memory_data,
     )
 
     risk_flags_raw = build_invalidation_conditions(
