@@ -2,7 +2,7 @@
 
 Status: Active  
 Purpose: Architecture decision record  
-Last Updated: 2026-04-04
+Last Updated: 2026-04-05
 
 ---
 
@@ -2547,6 +2547,124 @@ UI = read-only renderer
 Status: adopted
 
 ---
+
+---
+
+
+
+## 2026-04-05
+### Prediction Must Carry Structured Semantics (No Meaning Gap)
+
+Decision: Prediction must carry fully structured semantic fields required for UI and explanation
+
+対象
+
+```text
+scripts/prediction_engine.py
+analysis/prediction/prediction_latest.json
+scripts/build_prediction_explanation.py
+```
+
+ルール
+
+```text
+prediction は以下の structured field を持たなければならない
+
+key_drivers_structured
+  - driver
+  - why
+  - impact
+
+monitoring_priorities_structured
+  - item
+  - trigger
+  - meaning
+
+implications_structured
+  - outcome
+  - path
+  - confidence
+
+invalidation_conditions_structured
+  - condition
+  - effect
+```
+
+補足
+
+```text
+explanation はこれらを mirror するのみ
+explanation 側で構造補完を行わない
+UI はこれらを表示するのみ
+```
+
+禁止事項
+
+```text
+explanation で意味を生成する
+UI で意味を補完する
+structured field を explanation 側で作る
+```
+
+理由
+
+```text
+意味の所在を prediction に一本化するため
+Explanation を pure mirror として固定するため
+UI を完全な表示層として維持するため
+```
+
+最終状態
+
+```text
+Prediction = structured truth
+Explanation = mirror
+UI = display only
+```
+
+Status: adopted
+
+---
+
+## 2026-04-05
+### System Completion and Phase Transition to Operation
+
+Decision: System is considered complete when end-to-end pipeline passes ritual + post + deploy + verify
+
+対象
+
+```text
+scripts/run_morning_ritual_with_checks.ps1
+```
+
+ルール
+
+```text
+以下がすべて成功した場合、システムは完成とみなす
+
+ritual OK
+post OK
+deploy OK
+verify OK
+exit code 0
+```
+
+補足
+
+```text
+この状態以降は開発フェーズではなく運用フェーズとする
+新機能追加は禁止
+UI調整のみ許可
+```
+
+理由
+
+```text
+完成基準を明確化し
+無限開発ループを防ぐため
+```
+
+Status: adopted
 
 ---
 
