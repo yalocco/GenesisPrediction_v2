@@ -385,6 +385,16 @@ def ensure_parent_dir(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
 
 
+def write_json(path: Path, payload: dict[str, Any], pretty: bool = True) -> None:
+    ensure_parent_dir(path)
+    with path.open("w", encoding="utf-8") as f:
+        if pretty:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+        else:
+            json.dump(payload, f, ensure_ascii=False, separators=(",", ":"))
+
+
 def pick_first(mapping: dict[str, Any] | None, *keys: str, default: Any = None) -> Any:
     if not isinstance(mapping, dict):
         return default
@@ -903,6 +913,339 @@ def truncate_text(text: str, max_len: int = 96) -> str:
     if len(s) <= max_len:
         return s
     return s[: max_len - 1].rstrip() + "…"
+
+def effective_lang_default(prediction: dict[str, Any] | None) -> str:
+    value = normalize_str((prediction or {}).get("lang_default"))
+    if value in SUPPORTED_LANGUAGES:
+        return value
+    return LANG_DEFAULT
+
+
+def mirror_scalar_i18n(
+    prediction: dict[str, Any] | None,
+    *field_names: str,
+    fallback_text: str = "",
+) -> dict[str, str]:
+    source = prediction or {}
+    result: dict[str, str] = {}
+
+    for lang in SUPPORTED_LANGUAGES:
+        value = ""
+        for field_name in field_names:
+            if field_name.endswith("_i18n"):
+                i18n_obj = source.get(field_name)
+                if isinstance(i18n_obj, dict):
+                    value = normalize_str(i18n_obj.get(lang)) or ""
+            else:
+                i18n_obj = source.get(f"{field_name}_i18n")
+                if isinstance(i18n_obj, dict):
+                    value = normalize_str(i18n_obj.get(lang)) or ""
+                if not value and lang == "en":
+                    value = normalize_str(source.get(field_name)) or ""
+            if value:
+                break
+        result[lang] = compact_spaces(value or fallback_text)
+
+    fallback = next((v for v in result.values() if v), compact_spaces(fallback_text))
+    for lang in SUPPORTED_LANGUAGES:
+        result[lang] = result[lang] or fallback
+    return result
+
+
+def mirror_list_i18n(
+    prediction: dict[str, Any] | None,
+    *field_names: str,
+) -> dict[str, list[str]]:
+    source = prediction or {}
+    result: dict[str, list[str]] = {lang: [] for lang in SUPPORTED_LANGUAGES}
+
+    for field_name in field_names:
+        i18n_key = field_name if field_name.endswith("_i18n") else f"{field_name}_i18n"
+        i18n_obj = source.get(i18n_key)
+        if isinstance(i18n_obj, dict):
+            found_any = False
+            for lang in SUPPORTED_LANGUAGES:
+                items = [compact_spaces(normalize_str(x) or "") for x in normalize_list(i18n_obj.get(lang))]
+                items = [x for x in items if x]
+                result[lang] = dedupe_keep_order(items)[:12]
+                if result[lang]:
+                    found_any = True
+            if found_any:
+                break
+
+        raw_key = field_name[:-5] if field_name.endswith("_i18n") else field_name
+        raw_items = [compact_spaces(normalize_str(x) or "") for x in normalize_list(source.get(raw_key))]
+        raw_items = [x for x in raw_items if x]
+        if raw_items:
+            deduped = dedupe_keep_order(raw_items)[:12]
+            result = {lang: list(deduped) for lang in SUPPORTED_LANGUAGES}
+            break
+
+    fallback = next((items for items in result.values() if items), [])
+    for lang in SUPPORTED_LANGUAGES:
+        if not result[lang] and fallback:
+            result[lang] = list(fallback)
+    return result
+
+
+def mirror_historical_i18n(prediction: dict[str, Any] | None) -> dict[str, list[str]]:
+    source = prediction or {}
+    summary_obj = source.get("historical_context", {})
+    if not isinstance(summary_obj, dict):
+        summary_obj = {}
+
+    result = {lang: [] for lang in SUPPORTED_LANGUAGES}
+    summary_i18n = summary_obj.get("summary_i18n")
+    if isinstance(summary_i18n, dict):
+        for lang in SUPPORTED_LANGUAGES:
+            text = compact_spaces(normalize_str(summary_i18n.get(lang)) or "")
+            if text:
+                result[lang] = [text]
+
+    if not any(result.values()):
+        text = compact_spaces(normalize_str(summary_obj.get("summary")) or "")
+        if text:
+            result = {lang: [text] for lang in SUPPORTED_LANGUAGES}
+
+    return result
+
+
+
+
+
+def build_structured_field_items_i18n(
+    plain_i18n: dict[str, list[str]],
+    primary_field: str,
+    secondary_fields: list[str] | None = None,
+) -> dict[str, list[dict[str, str]]]:
+    secondary_fields = secondary_fields or []
+    result: dict[str, list[dict[str, str]]] = {lang: [] for lang in SUPPORTED_LANGUAGES}
+    for lang in SUPPORTED_LANGUAGES:
+        items = []
+        for text_value in plain_i18n.get(lang, []) or []:
+            value = compact_spaces(normalize_str(text_value) or "")
+            if not value:
+                continue
+            row: dict[str, str] = {primary_field: value}
+            for field in secondary_fields:
+                row[field] = ""
+            items.append(row)
+        result[lang] = items[:12]
+    return result
+
+
+def _sanitize_structured_i18n_rows(
+    raw_i18n: Any,
+    required_fields: list[str],
+    max_items: int,
+) -> dict[str, list[dict[str, Any]]] | None:
+    if not isinstance(raw_i18n, dict):
+        return None
+
+    result: dict[str, list[dict[str, Any]]] = {lang: [] for lang in SUPPORTED_LANGUAGES}
+    found_any = False
+
+    for lang in SUPPORTED_LANGUAGES:
+        rows = raw_i18n.get(lang)
+        if not isinstance(rows, list):
+            continue
+        sanitized_rows: list[dict[str, Any]] = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            sanitized: dict[str, Any] = {}
+            has_required_value = False
+            for field in required_fields:
+                value = row.get(field)
+                if isinstance(value, str):
+                    cleaned = compact_spaces(value)
+                    sanitized[field] = cleaned
+                    if cleaned:
+                        has_required_value = True
+                else:
+                    sanitized[field] = value
+                    if value not in (None, "", [], {}):
+                        has_required_value = True
+            if has_required_value:
+                sanitized_rows.append(sanitized)
+        if sanitized_rows:
+            result[lang] = sanitized_rows[:max_items]
+            found_any = True
+
+    if not found_any:
+        return None
+
+    fallback = next((rows for rows in result.values() if rows), [])
+    for lang in SUPPORTED_LANGUAGES:
+        if not result[lang] and fallback:
+            result[lang] = [dict(item) for item in fallback[:max_items]]
+    return result
+
+
+def structured_drivers_i18n(
+    prediction: dict[str, Any] | None,
+    dominant_scenario: str | None,
+    confidence: float | None,
+    risk_value: str | None,
+) -> dict[str, list[dict[str, str]]]:
+    source = prediction or {}
+    mirrored = _sanitize_structured_i18n_rows(
+        source.get("key_drivers_structured_i18n") or source.get("drivers_structured_i18n"),
+        ["driver", "why", "impact"],
+        12,
+    )
+    if mirrored is not None:
+        return mirrored
+
+    raw_rows = normalize_list(
+        source.get("key_drivers_structured") or source.get("drivers_structured") or source.get("key_drivers")
+    )
+    result: dict[str, list[dict[str, str]]] = {lang: [] for lang in SUPPORTED_LANGUAGES}
+    for raw in raw_rows:
+        if isinstance(raw, dict):
+            driver_key = (
+                normalize_str(raw.get("driver"))
+                or normalize_str(raw.get("cause"))
+                or normalize_str(raw.get("name"))
+                or normalize_str(raw.get("title"))
+                or normalize_str(raw.get("label"))
+            )
+        else:
+            driver_key = normalize_str(raw)
+        if not driver_key:
+            continue
+        row_i18n = driver_text_triplet_i18n(driver_key, dominant_scenario, confidence, risk_value)
+        for lang in SUPPORTED_LANGUAGES:
+            result[lang].append(dict(row_i18n[lang]))
+    return {lang: dedupe_dict_list(result[lang], ["driver"])[:12] for lang in SUPPORTED_LANGUAGES}
+
+
+def structured_monitor_i18n(
+    prediction: dict[str, Any] | None,
+    dominant_scenario: str | None,
+) -> dict[str, list[dict[str, str]]]:
+    source = prediction or {}
+    mirrored = _sanitize_structured_i18n_rows(
+        source.get("monitoring_priorities_structured_i18n") or source.get("monitor_structured_i18n"),
+        ["item", "trigger", "meaning"],
+        12,
+    )
+    if mirrored is not None:
+        return mirrored
+
+    raw_rows = normalize_list(
+        source.get("monitoring_priorities_structured") or source.get("monitor_structured") or source.get("monitoring_priorities")
+    )
+    result: dict[str, list[dict[str, str]]] = {lang: [] for lang in SUPPORTED_LANGUAGES}
+    for raw in raw_rows:
+        if isinstance(raw, dict):
+            item_key = (
+                normalize_str(raw.get("item"))
+                or normalize_str(raw.get("trigger"))
+                or normalize_str(raw.get("name"))
+                or normalize_str(raw.get("title"))
+                or normalize_str(raw.get("label"))
+            )
+        else:
+            item_key = normalize_str(raw)
+        if not item_key:
+            continue
+        row_i18n = monitor_text_triplet_i18n(item_key, dominant_scenario)
+        for lang in SUPPORTED_LANGUAGES:
+            result[lang].append(dict(row_i18n[lang]))
+    return {lang: dedupe_dict_list(result[lang], ["item"])[:12] for lang in SUPPORTED_LANGUAGES}
+
+
+def structured_implications_i18n(
+    prediction: dict[str, Any] | None,
+    dominant_scenario: str | None,
+    confidence: float | None,
+) -> dict[str, list[dict[str, Any]]]:
+    source = prediction or {}
+    mirrored = _sanitize_structured_i18n_rows(
+        source.get("expected_outcomes_structured_i18n") or source.get("implications_structured_i18n"),
+        ["outcome", "path", "confidence"],
+        12,
+    )
+    if mirrored is not None:
+        return mirrored
+
+    raw_rows = normalize_list(
+        source.get("expected_outcomes_structured") or source.get("implications_structured") or source.get("expected_outcomes")
+    )
+    result: dict[str, list[dict[str, Any]]] = {lang: [] for lang in SUPPORTED_LANGUAGES}
+    for raw in raw_rows:
+        if isinstance(raw, dict):
+            normalized = normalize_implication_struct(raw, confidence)
+        else:
+            normalized = normalize_implication_struct(raw, confidence)
+        if not normalized:
+            continue
+        row_i18n = implication_row_i18n(normalized, dominant_scenario)
+        for lang in SUPPORTED_LANGUAGES:
+            result[lang].append(dict(row_i18n[lang]))
+    return {lang: dedupe_dict_list(result[lang], ["outcome"])[:12] for lang in SUPPORTED_LANGUAGES}
+
+
+def structured_historical_i18n(
+    prediction: dict[str, Any] | None,
+    historical_pattern: dict[str, Any] | None = None,
+    historical_analog: dict[str, Any] | None = None,
+) -> dict[str, list[dict[str, Any]]]:
+    source = prediction or {}
+    mirrored = _sanitize_structured_i18n_rows(
+        source.get("historical_structured_i18n"),
+        ["pattern", "similarity", "difference", "confidence"],
+        6,
+    )
+    if mirrored is not None:
+        return mirrored
+
+    historical_rows: list[dict[str, Any]] = []
+    context = source.get("historical_context")
+    if isinstance(context, dict):
+        pattern_id = normalize_str(context.get("dominant_pattern_id")) or normalize_str(context.get("dominant_pattern"))
+        analog_id = normalize_str(context.get("dominant_analog_id")) or normalize_str(context.get("dominant_analog"))
+        pattern_conf = clamp_confidence(context.get("pattern_confidence"))
+        analog_conf = clamp_confidence(context.get("analog_confidence"))
+        if pattern_id:
+            row = {"pattern": pattern_id}
+            if pattern_conf is not None:
+                row["confidence"] = pattern_conf
+            historical_rows.append(row)
+        if analog_id:
+            row = {"pattern": analog_id}
+            if analog_conf is not None:
+                row["confidence"] = analog_conf
+            historical_rows.append(row)
+
+    if not historical_rows:
+        historical_rows = extract_historical(historical_pattern, historical_analog)
+
+    if not historical_rows:
+        plain = mirror_historical_i18n(prediction)
+        result: dict[str, list[dict[str, Any]]] = {lang: [] for lang in SUPPORTED_LANGUAGES}
+        for lang in SUPPORTED_LANGUAGES:
+            items = []
+            for text_value in plain.get(lang, []) or []:
+                value = compact_spaces(normalize_str(text_value) or "")
+                if not value:
+                    continue
+                items.append({
+                    "pattern": value,
+                    "similarity": "",
+                    "difference": "",
+                    "confidence": None,
+                })
+            result[lang] = items[:4]
+        return result
+
+    result: dict[str, list[dict[str, Any]]] = {lang: [] for lang in SUPPORTED_LANGUAGES}
+    for row in historical_rows:
+        row_i18n = historical_row_i18n(row)
+        for lang in SUPPORTED_LANGUAGES:
+            result[lang].append(dict(row_i18n[lang]))
+    return {lang: dedupe_dict_list(result[lang], ["pattern"])[:6] for lang in SUPPORTED_LANGUAGES}
 
 
 def reference_memory_title_i18n(item: dict[str, Any]) -> dict[str, str]:
@@ -1941,130 +2284,104 @@ def build_prediction_explanation(
     historical_analog_path: Path,
     reference_memory_path: Path,
 ) -> dict[str, Any]:
+    """Build explanation as a strict mirror of prediction.
+
+    The explanation layer must not reinterpret scenario/signal/historical inputs.
+    Those artifacts may still exist in the pipeline, but explanation content must
+    mirror prediction-layer truth only.
+    """
     as_of = extract_as_of(prediction, scenario, signal)
     dominant_scenario = extract_dominant_scenario(prediction, scenario)
     confidence = extract_confidence(prediction, scenario)
     risk_value = extract_risk(prediction)
 
-    drivers = extract_drivers(prediction)
-    monitor = extract_monitor(prediction)
-    watchpoints = extract_watchpoints_from_monitor(monitor)
-    historical = extract_historical(historical_pattern, historical_analog)
-    implications = extract_implications(prediction, confidence)
-    risks = extract_risks(prediction)
-    invalidation = extract_invalidation(prediction)
-    reference_memory_entries = extract_reference_memory_entries(reference_memory)
+    lang_default = effective_lang_default(prediction)
 
-    headline_i18n = i18n_for_headline(dominant_scenario, watchpoints, confidence)
-    decision_line_i18n = i18n_for_decision_line(dominant_scenario, risk_value, confidence)
-    summary_i18n = i18n_for_summary(
-        dominant_scenario,
-        confidence,
-        watchpoints,
-        risk_value,
-        historical,
+    headline_i18n = mirror_scalar_i18n(
+        prediction,
+        "prediction_statement",
+        "summary",
+        fallback_text="prediction summary unavailable",
     )
-    interpretation_i18n = i18n_for_interpretation(
-        dominant_scenario,
-        confidence,
-        risk_value,
-        drivers,
-        monitor,
+    decision_line_i18n = mirror_scalar_i18n(
+        prediction,
+        "decision_summary",
+        "summary",
+        fallback_text="decision summary unavailable",
     )
-    why_it_matters_i18n = i18n_for_why_it_matters(
-        dominant_scenario,
-        confidence,
-        risk_value,
+    summary_i18n = mirror_scalar_i18n(
+        prediction,
+        "prediction_statement",
+        "summary",
+        fallback_text="prediction summary unavailable",
     )
-    narrative_flow_i18n = i18n_for_narrative_flow(
-        headline_i18n,
-        summary_i18n,
-        interpretation_i18n,
-        decision_line_i18n,
+    interpretation_i18n = mirror_scalar_i18n(
+        prediction,
+        "primary_narrative",
+        "narrative_compressed",
+        "summary",
+        fallback_text="prediction narrative unavailable",
+    )
+    why_it_matters_i18n = mirror_scalar_i18n(
+        prediction,
+        "decision_summary",
+        "summary",
+        fallback_text="prediction context unavailable",
+    )
+    narrative_flow_i18n = mirror_scalar_i18n(
+        prediction,
+        "primary_narrative",
+        "summary",
+        fallback_text="prediction narrative unavailable",
     )
 
-    drivers_i18n = {"ja": [], "en": [], "th": []}
-    drivers_base: list[dict[str, str]] = []
-    for row in drivers:
-        rendered = driver_text_triplet_i18n(
-            row.get("driver", ""),
-            dominant_scenario,
-            confidence,
-            risk_value,
-        )
-        drivers_i18n["ja"].append(rendered["ja"])
-        drivers_i18n["en"].append(rendered["en"])
-        drivers_i18n["th"].append(rendered["th"])
-        drivers_base.append(rendered["en"])
-
-    monitor_i18n = {"ja": [], "en": [], "th": []}
-    monitor_base: list[dict[str, str]] = []
-    for row in monitor:
-        rendered = monitor_text_triplet_i18n(
-            row.get("item", ""),
-            dominant_scenario,
-        )
-        monitor_i18n["ja"].append(rendered["ja"])
-        monitor_i18n["en"].append(rendered["en"])
-        monitor_i18n["th"].append(rendered["th"])
-        monitor_base.append(rendered["en"])
-
-    historical_i18n = {"ja": [], "en": [], "th": []}
-    historical_base: list[dict[str, Any]] = []
-    for row in historical:
-        rendered = historical_row_i18n(row)
-        historical_i18n["ja"].append(rendered["ja"])
-        historical_i18n["en"].append(rendered["en"])
-        historical_i18n["th"].append(rendered["th"])
-        historical_base.append(rendered["en"])
-
-    implications_i18n = {"ja": [], "en": [], "th": []}
-    implications_base: list[dict[str, Any]] = []
-    for row in implications:
-        rendered = implication_row_i18n(row, dominant_scenario)
-        implications_i18n["ja"].append(rendered["ja"])
-        implications_i18n["en"].append(rendered["en"])
-        implications_i18n["th"].append(rendered["th"])
-        implications_base.append(rendered["en"])
-
-    risks_i18n = risks_i18n_from_context(
-        risk_value=risk_value,
+    drivers_i18n = structured_drivers_i18n(
+        prediction,
         dominant_scenario=dominant_scenario,
         confidence=confidence,
-        historical=historical,
+        risk_value=risk_value,
     )
-    invalidation_i18n = invalidation_i18n_from_context(
+    monitor_i18n = structured_monitor_i18n(
+        prediction,
         dominant_scenario=dominant_scenario,
-        prediction=prediction,
-        scenario=scenario,
     )
-    must_not_mean_all_i18n = must_not_mean_i18n()
+    watchpoints_i18n = mirror_list_i18n(prediction, "monitoring_priorities", "watchpoints")
+    implications_i18n = structured_implications_i18n(
+        prediction,
+        dominant_scenario=dominant_scenario,
+        confidence=confidence,
+    )
+    risks_i18n = mirror_list_i18n(prediction, "risk_flags", "risks")
+    invalidation_i18n = mirror_list_i18n(
+        prediction,
+        "invalidation_conditions",
+        "invalidation",
+        "invalidators",
+    )
+    historical_i18n = structured_historical_i18n(prediction, historical_pattern, historical_analog)
 
-    watchpoints_i18n = {
-        "ja": [translate_key_generic(x)["ja"] for x in watchpoints],
-        "en": [translate_key_generic(x)["en"] for x in watchpoints],
-        "th": [translate_key_generic(x)["th"] for x in watchpoints],
-    }
-
+    reference_memory_entries = extract_reference_memory_entries(
+        pick_first(prediction, "reference_memory_compact", "reference_memory", default=reference_memory)
+    )
     reference_memory_i18n = {
         "ja": [x["ja"] for x in reference_memory_entries],
         "en": [x["en"] for x in reference_memory_entries],
         "th": [x["th"] for x in reference_memory_entries],
     }
 
-    based_on: list[str] = [str(prediction_path), str(scenario_path), str(signal_path)]
-    if historical_pattern_path.exists():
-        based_on.append(str(historical_pattern_path))
-    if historical_analog_path.exists():
-        based_on.append(str(historical_analog_path))
-    if reference_memory_path.exists():
-        based_on.append(str(reference_memory_path))
+    context_i18n = {
+        "dominant_scenario": label_for_scenario(dominant_scenario),
+        "overall_risk": label_for_risk(risk_value),
+        "confidence": format_confidence_text_i18n(confidence),
+    }
+
+    based_on: list[str] = [str(prediction_path)]
 
     artifact: dict[str, Any] = {
         "as_of": as_of,
         "subject": "prediction",
         "status": "ok",
-        "lang_default": LANG_DEFAULT,
+        "lang_default": lang_default,
         "languages": SUPPORTED_LANGUAGES,
         "headline": headline_i18n["en"],
         "headline_i18n": headline_i18n,
@@ -2084,20 +2401,16 @@ def build_prediction_explanation(
             "confidence": confidence,
             "overall_risk": risk_value,
         },
-        "context_i18n": {
-            "dominant_scenario": label_for_scenario(dominant_scenario),
-            "overall_risk": label_for_risk(risk_value),
-            "confidence": format_confidence_text_i18n(confidence),
-        },
-        "drivers": drivers_base,
+        "context_i18n": context_i18n,
+        "drivers": drivers_i18n["en"],
         "drivers_i18n": drivers_i18n,
-        "monitor": monitor_base,
+        "monitor": monitor_i18n["en"],
         "monitor_i18n": monitor_i18n,
         "watchpoints": watchpoints_i18n["en"],
         "watchpoints_i18n": watchpoints_i18n,
-        "historical": historical_base,
+        "historical": historical_i18n["en"],
         "historical_i18n": historical_i18n,
-        "implications": implications_base,
+        "implications": implications_i18n["en"],
         "implications_i18n": implications_i18n,
         "reference_memory": reference_memory_i18n["en"],
         "reference_memory_i18n": reference_memory_i18n,
@@ -2105,39 +2418,20 @@ def build_prediction_explanation(
         "risks_i18n": risks_i18n,
         "invalidation": invalidation_i18n["en"],
         "invalidation_i18n": invalidation_i18n,
-        "must_not_mean": must_not_mean_all_i18n["en"],
-        "must_not_mean_i18n": must_not_mean_all_i18n,
+        "must_not_mean": must_not_mean_i18n()["en"],
+        "must_not_mean_i18n": must_not_mean_i18n(),
         "ui_terms": ui_terms_with_i18n(build_ui_terms()),
         "generated_at": utc_now_iso(),
+        "reference_memory_status": normalize_str((pick_first(prediction, "reference_memory_compact", "reference_memory", default={}) or {}).get("status")) or "unavailable",
+        "reference_memory_status_i18n": shared_translate_status(
+            normalize_str((pick_first(prediction, "reference_memory_compact", "reference_memory", default={}) or {}).get("status")) or "unavailable"
+        ),
+        "reference_memory_summary": normalize_str((pick_first(prediction, "reference_memory_compact", "reference_memory", default={}) or {}).get("summary")) or "",
+        "reference_memory_summary_i18n": shared_translate_reference_memory_summary(
+            normalize_str((pick_first(prediction, "reference_memory_compact", "reference_memory", default={}) or {}).get("summary")) or ""
+        ),
     }
-
-    if reference_memory is not None:
-        reference_memory_status = reference_memory.get("status")
-        reference_memory_summary = normalize_str(
-            pick_first(reference_memory, "recall_summary", "summary", default=None)
-        )
-        artifact["reference_memory_status"] = reference_memory_status
-        artifact["reference_memory_status_i18n"] = shared_translate_status(reference_memory_status)
-        artifact["reference_memory_summary"] = reference_memory_summary
-        artifact["reference_memory_summary_i18n"] = shared_translate_reference_memory_summary(
-            reference_memory_summary,
-            reference_memory.get("summary_i18n"),
-        )
-
     return artifact
-
-
-def write_json(path: Path, data: dict[str, Any], pretty: bool) -> None:
-    ensure_parent_dir(path)
-    with path.open("w", encoding="utf-8", newline="\n") as f:
-        json.dump(
-            data,
-            f,
-            ensure_ascii=False,
-            indent=2 if pretty else None,
-            sort_keys=False,
-        )
-        f.write("\n")
 
 
 def main() -> int:

@@ -830,6 +830,23 @@ def unique_preserve_order(items: List[Any]) -> List[Any]:
     return out
 
 
+
+
+def dedupe_dict_list(items: List[Dict[str, Any]], key_fields: List[str]) -> List[Dict[str, Any]]:
+    seen = set()
+    out: List[Dict[str, Any]] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        key = " | ".join(str(item.get(field, "")).strip() for field in key_fields).strip()
+        if not key:
+            key = json.dumps(item, ensure_ascii=False, sort_keys=True)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(item)
+    return out
+
 def ensure_lang_map(value: Any) -> Dict[str, str]:
     if not isinstance(value, dict):
         return {}
@@ -2622,39 +2639,87 @@ def build_narrative_compressed_i18n(
     return finalize_text_i18n(narrative_compressed_en, payload)
 
 
+
 def build_key_drivers_structured(
     driver_structure: Dict[str, List[str]],
     driver_causal_chain: List[str],
+    expected_outcomes: List[str],
+    scenario_balance: str,
 ) -> List[Dict[str, str]]:
     core = driver_structure.get("core", [])
     modifiers = driver_structure.get("modifiers", [])
     semantic = driver_structure.get("semantic", [])
     transmission = driver_structure.get("transmission", [])
     historical = driver_structure.get("historical", [])
+    flat = driver_structure.get("flat", [])
+
+    ordered_drivers = unique_preserve_order(core + modifiers + semantic + flat + driver_causal_chain)[:6]
+    first_transmission = next((token for token in transmission if normalize_text(token)), "")
+    first_outcome = next((token for token in expected_outcomes if normalize_text(token)), "")
+    balance_token = scenario_balance or ""
 
     rows: List[Dict[str, str]] = []
-    max_len = max(len(core), len(modifiers), len(semantic), len(transmission), len(historical), 0)
-    for idx in range(max_len):
+    for driver in ordered_drivers:
+        driver_norm = normalize_text(driver)
+        if not driver_norm:
+            continue
+
+        why = ""
+        impact = ""
+
+        if driver in core:
+            idx = core.index(driver)
+            why = (
+                modifiers[idx] if idx < len(modifiers) and normalize_text(modifiers[idx]) else
+                semantic[idx] if idx < len(semantic) and normalize_text(semantic[idx]) else
+                historical[0] if historical else
+                ""
+            )
+        elif driver in modifiers:
+            idx = modifiers.index(driver)
+            why = (
+                semantic[idx] if idx < len(semantic) and normalize_text(semantic[idx]) else
+                core[idx] if idx < len(core) and normalize_text(core[idx]) else
+                historical[0] if historical else
+                ""
+            )
+        elif driver in semantic:
+            idx = semantic.index(driver)
+            why = (
+                core[idx] if idx < len(core) and normalize_text(core[idx]) else
+                modifiers[idx] if idx < len(modifiers) and normalize_text(modifiers[idx]) else
+                historical[0] if historical else
+                ""
+            )
+        elif driver in driver_causal_chain:
+            idx = driver_causal_chain.index(driver)
+            if idx + 1 < len(driver_causal_chain):
+                why = driver_causal_chain[idx + 1]
+
+        if not why and historical:
+            why = historical[0]
+        if normalize_text(why) == driver_norm:
+            why = ""
+
+        if first_transmission and normalize_text(first_transmission) != driver_norm:
+            impact = first_transmission
+        elif first_outcome and normalize_text(first_outcome) != driver_norm:
+            impact = first_outcome
+        elif balance_token:
+            impact = balance_token
+
+        if normalize_text(impact) == driver_norm:
+            impact = ""
+
         row = {
-            "cause": core[idx] if idx < len(core) else "",
-            "modifier": modifiers[idx] if idx < len(modifiers) else "",
-            "signal": semantic[idx] if idx < len(semantic) else "",
-            "transmission": transmission[idx] if idx < len(transmission) else "",
-            "historical_anchor": historical[idx] if idx < len(historical) else "",
+            "driver": driver,
+            "why": why,
+            "impact": impact,
         }
-        if any(row.values()):
+        if normalize_text(row["driver"]):
             rows.append(row)
 
-    if not rows and driver_causal_chain:
-        rows.append({
-            "cause": driver_causal_chain[0] if len(driver_causal_chain) > 0 else "",
-            "modifier": driver_causal_chain[1] if len(driver_causal_chain) > 1 else "",
-            "signal": driver_causal_chain[2] if len(driver_causal_chain) > 2 else "",
-            "transmission": driver_causal_chain[3] if len(driver_causal_chain) > 3 else "",
-            "historical_anchor": "",
-        })
-
-    return rows[:6]
+    return dedupe_dict_list(rows, ["driver"])[:6]
 
 
 def build_key_drivers_structured_i18n(
@@ -2662,60 +2727,105 @@ def build_key_drivers_structured_i18n(
 ) -> Dict[str, List[Dict[str, str]]]:
     out = {"en": [], "ja": [], "th": []}
     for row in key_drivers_structured:
-        out["en"].append({k: labelize(v, "en") if v else "" for k, v in row.items()})
-        out["ja"].append({k: labelize(v, "ja") if v else "" for k, v in row.items()})
-        out["th"].append({k: labelize(v, "th") if v else "" for k, v in row.items()})
+        driver_i18n = labelize_i18n(row.get("driver", ""))
+        why_i18n = labelize_i18n(row.get("why", ""))
+        impact_i18n = labelize_i18n(row.get("impact", ""))
+
+        out["en"].append({
+            "driver": driver_i18n.get("en", ""),
+            "why": why_i18n.get("en", ""),
+            "impact": impact_i18n.get("en", ""),
+        })
+        out["ja"].append({
+            "driver": driver_i18n.get("ja", ""),
+            "why": why_i18n.get("ja", ""),
+            "impact": impact_i18n.get("ja", ""),
+        })
+        out["th"].append({
+            "driver": driver_i18n.get("th", ""),
+            "why": why_i18n.get("th", ""),
+            "impact": impact_i18n.get("th", ""),
+        })
     return out
 
 
 def build_monitoring_priorities_structured(
     monitoring_triggers: Dict[str, List[str]],
+    dominant_scenario: str,
+    scenario_balance: str,
 ) -> List[Dict[str, str]]:
     rows: List[Dict[str, str]] = []
-    for trigger in monitoring_triggers.get("escalate_if", [])[:3]:
-        rows.append({
-            "bucket": "escalate_if",
-            "trigger": trigger,
-            "implication": "downside pressure rises",
-        })
-    for trigger in monitoring_triggers.get("persist_if", [])[:2]:
-        rows.append({
-            "bucket": "persist_if",
-            "trigger": trigger,
-            "implication": "base path persists",
-        })
-    for trigger in monitoring_triggers.get("stabilize_if", [])[:2]:
-        rows.append({
-            "bucket": "stabilize_if",
-            "trigger": trigger,
-            "implication": "stabilization credibility improves",
-        })
-    return rows[:7]
+    bucket_meanings = {
+        "escalate_if": "downside pressure rises",
+        "persist_if": f"{dominant_scenario} persists" if dominant_scenario else "base path persists",
+        "stabilize_if": "stabilization credibility improves",
+    }
+
+    for bucket in ("escalate_if", "persist_if", "stabilize_if"):
+        for trigger in monitoring_triggers.get(bucket, []):
+            if not normalize_text(trigger):
+                continue
+            rows.append({
+                "item": trigger,
+                "trigger": trigger,
+                "meaning": bucket_meanings.get(bucket, scenario_balance or ""),
+            })
+    return dedupe_dict_list(rows, ["item"])[:7]
 
 
 def build_monitoring_priorities_structured_i18n(
     monitoring_priorities_structured: List[Dict[str, str]],
 ) -> Dict[str, List[Dict[str, str]]]:
-    bucket_labels = {
-        "escalate_if": {"en": "escalate if", "ja": "悪化警戒", "th": "ยกระดับหาก"},
-        "persist_if": {"en": "persist if", "ja": "持続条件", "th": "คงอยู่หาก"},
-        "stabilize_if": {"en": "stabilize if", "ja": "安定化条件", "th": "ทรงตัวหาก"},
+    meaning_labels = {
+        "downside pressure rises": {
+            "en": "downside pressure rises",
+            "ja": "下方圧力が増す",
+            "th": "แรงกดดันด้านลบเพิ่มขึ้น",
+        },
+        "base_case persists": {
+            "en": "base case persists",
+            "ja": "基本シナリオが持続する",
+            "th": "กรณีฐานยังคงอยู่",
+        },
+        "best_case persists": {
+            "en": "best case persists",
+            "ja": "最良シナリオが持続する",
+            "th": "กรณีดีที่สุดยังคงอยู่",
+        },
+        "worst_case persists": {
+            "en": "worst case persists",
+            "ja": "最悪シナリオが持続する",
+            "th": "กรณีเลวร้ายที่สุดยังคงอยู่",
+        },
+        "stabilization credibility improves": {
+            "en": "stabilization credibility improves",
+            "ja": "安定化の信頼性が高まる",
+            "th": "ความน่าเชื่อถือของการทรงตัวดีขึ้น",
+        },
     }
-    implication_labels = {
-        "downside pressure rises": {"en": "downside pressure rises", "ja": "下方圧力が増す", "th": "แรงกดดันด้านลบเพิ่มขึ้น"},
-        "base path persists": {"en": "base path persists", "ja": "基本経路が持続する", "th": "กรณีฐานยังคงอยู่"},
-        "stabilization credibility improves": {"en": "stabilization credibility improves", "ja": "安定化の信頼性が高まる", "th": "ความน่าเชื่อถือของการทรงตัวดีขึ้น"},
-    }
+
     out = {"en": [], "ja": [], "th": []}
     for row in monitoring_priorities_structured:
-        bucket = row.get("bucket", "")
-        implication = row.get("implication", "")
-        for lang in ("en", "ja", "th"):
-            out[lang].append({
-                "bucket": bucket_labels.get(bucket, {}).get(lang, bucket),
-                "trigger": labelize(row.get("trigger", ""), lang) if row.get("trigger") else "",
-                "implication": implication_labels.get(implication, {}).get(lang, implication),
-            })
+        item_i18n = labelize_i18n(row.get("item", ""))
+        trigger_i18n = labelize_i18n(row.get("trigger", ""))
+        meaning_key = str(row.get("meaning", "")).strip()
+        meaning_i18n = meaning_labels.get(meaning_key) or labelize_i18n(meaning_key)
+
+        out["en"].append({
+            "item": item_i18n.get("en", ""),
+            "trigger": trigger_i18n.get("en", ""),
+            "meaning": meaning_i18n.get("en", ""),
+        })
+        out["ja"].append({
+            "item": item_i18n.get("ja", ""),
+            "trigger": trigger_i18n.get("ja", ""),
+            "meaning": meaning_i18n.get("ja", ""),
+        })
+        out["th"].append({
+            "item": item_i18n.get("th", ""),
+            "trigger": trigger_i18n.get("th", ""),
+            "meaning": meaning_i18n.get("th", ""),
+        })
     return out
 
 
@@ -2726,9 +2836,15 @@ def build_invalidation_conditions_structured(
 ) -> List[Dict[str, str]]:
     rows: List[Dict[str, str]] = []
     for item in invalidation_conditions[:4]:
+        if not normalize_text(item):
+            continue
+        if normalize_text(scenario_balance) in {"downside_pressure", "material_tail_risk"}:
+            effect = f"review {dominant_scenario}"
+        else:
+            effect = f"reassess {dominant_scenario}"
         rows.append({
             "condition": item,
-            "effect": f"review {dominant_scenario}",
+            "effect": effect,
             "balance_context": scenario_balance,
         })
     return rows
@@ -2739,28 +2855,48 @@ def build_invalidation_conditions_structured_i18n(
 ) -> Dict[str, List[Dict[str, str]]]:
     out = {"en": [], "ja": [], "th": []}
     for row in invalidation_conditions_structured:
-        scenario_key = normalize_text(row.get("effect", "").replace("review ", ""))
+        scenario_key = normalize_text(
+            row.get("effect", "").replace("review ", "").replace("reassess ", "")
+        )
         scenario_labels = label_from_map(scenario_key, SCENARIO_LABELS)
+        balance_labels = label_from_map(
+            row.get("balance_context", ""),
+            SCENARIO_BALANCE_LABELS,
+        )
 
-        for lang in ("en", "ja", "th"):
-            if row.get("effect", "").startswith("review "):
-                if lang == "en":
-                    effect = f"review {scenario_labels.get('en', scenario_key)}"
-                elif lang == "ja":
-                    effect = f"{scenario_labels.get('ja', scenario_key)} を見直す"
-                else:
-                    effect = f"ทบทวน {scenario_labels.get('th', scenario_key)}"
-            else:
-                effect = row.get("effect", "")
+        effect_key = str(row.get("effect", "")).strip()
+        if effect_key.startswith("review "):
+            effect_i18n = {
+                "en": f"review {scenario_labels.get('en', scenario_key)}",
+                "ja": f"{scenario_labels.get('ja', scenario_key)} を見直す",
+                "th": f"ทบทวน {scenario_labels.get('th', scenario_key)}",
+            }
+        elif effect_key.startswith("reassess "):
+            effect_i18n = {
+                "en": f"reassess {scenario_labels.get('en', scenario_key)}",
+                "ja": f"{scenario_labels.get('ja', scenario_key)} を再評価する",
+                "th": f"ประเมิน {scenario_labels.get('th', scenario_key)} ใหม่",
+            }
+        else:
+            effect_i18n = labelize_i18n(effect_key)
 
-            out[lang].append({
-                "condition": labelize(row.get("condition", ""), lang) if row.get("condition") else "",
-                "effect": effect,
-                "balance_context": label_from_map(
-                    row.get("balance_context", ""),
-                    SCENARIO_BALANCE_LABELS,
-                ).get(lang, row.get("balance_context", "")),
-            })
+        condition_i18n = labelize_i18n(row.get("condition", ""))
+
+        out["en"].append({
+            "condition": condition_i18n.get("en", ""),
+            "effect": effect_i18n.get("en", ""),
+            "balance_context": balance_labels.get("en", row.get("balance_context", "")),
+        })
+        out["ja"].append({
+            "condition": condition_i18n.get("ja", ""),
+            "effect": effect_i18n.get("ja", ""),
+            "balance_context": balance_labels.get("ja", row.get("balance_context", "")),
+        })
+        out["th"].append({
+            "condition": condition_i18n.get("th", ""),
+            "effect": effect_i18n.get("th", ""),
+            "balance_context": balance_labels.get("th", row.get("balance_context", "")),
+        })
     return out
 
 def build_reference_memory_compact(reference_memory: Dict[str, Any]) -> Dict[str, Any]:
@@ -3072,9 +3208,15 @@ def build_prediction_output(
     key_drivers_structured = build_key_drivers_structured(
         driver_structure=driver_structure,
         driver_causal_chain=driver_causal_chain,
+        expected_outcomes=expected_outcomes,
+        scenario_balance=scenario_balance,
     )
     key_drivers_structured_i18n = build_key_drivers_structured_i18n(key_drivers_structured)
-    monitoring_priorities_structured = build_monitoring_priorities_structured(monitoring_triggers)
+    monitoring_priorities_structured = build_monitoring_priorities_structured(
+        monitoring_triggers=monitoring_triggers,
+        dominant_scenario=dominant_scenario,
+        scenario_balance=scenario_balance,
+    )
     monitoring_priorities_structured_i18n = build_monitoring_priorities_structured_i18n(monitoring_priorities_structured)
     invalidation_conditions_structured = build_invalidation_conditions_structured(
         invalidation_conditions=output.get("risk_flags", []),
@@ -3090,6 +3232,10 @@ def build_prediction_output(
     output["key_drivers_structured_i18n"] = key_drivers_structured_i18n
     output["monitoring_priorities_structured"] = monitoring_priorities_structured
     output["monitoring_priorities_structured_i18n"] = monitoring_priorities_structured_i18n
+    output["drivers_structured"] = key_drivers_structured
+    output["drivers_structured_i18n"] = key_drivers_structured_i18n
+    output["monitor_structured"] = monitoring_priorities_structured
+    output["monitor_structured_i18n"] = monitoring_priorities_structured_i18n
     output["invalidation_conditions_structured"] = invalidation_conditions_structured
     output["invalidation_conditions_structured_i18n"] = invalidation_conditions_structured_i18n
     output["reference_memory_compact"] = reference_memory_compact
