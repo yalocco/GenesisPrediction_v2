@@ -2668,5 +2668,76 @@ Status: adopted
 
 ---
 
+---
+
+## 2026-04-07
+### Prediction History Must Be Synced to data Layer for UI
+
+Decision: prediction history must be explicitly synced from analysis to data for UI consumption
+
+対象
+
+```text
+analysis/prediction/history/*
+data/prediction/history/*
+scripts/run_daily_with_publish.ps1
+```
+
+ルール
+
+```text
+UI は data/prediction/history のみを参照する
+
+analysis/prediction/history は
+UI が直接参照してはならない
+
+run_daily_with_publish.ps1 にて
+history ディレクトリを毎回同期する
+
+sync:
+analysis/prediction/history → data/prediction/history
+```
+
+禁止事項
+
+```text
+UI が analysis/history を直接読む
+手動コピーに依存する
+history 未同期状態で deploy する
+```
+
+理由
+
+```text
+history が data 層に存在しない場合
+UI は 404 を返し silent failure となる
+
+analysis は SSOT だが
+UI は distribution layer（data）を読むため
+明示的な同期が必要である
+```
+
+補足
+
+```text
+prediction_latest / scenario_latest / reference_memory は
+alias で同期されていたが
+
+history は未同期だったため
+今回の不整合が発生した
+```
+
+最終状態
+
+```text
+analysis = truth
+data = distribution
+UI = data only
+
+history も distribution 対象に含める
+```
+
+Status: adopted
+
 # END OF DOCUMENT
 ---

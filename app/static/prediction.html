@@ -17,10 +17,11 @@
 <section class="panel prediction-shell">
 <section class="hero-grid">
 <article class="hero-card hero-intro-card">
-<h1 class="hero-title" data-ui-text="hero_title" id="heroHeadline">Prediction</h1>
+<h1 class="hero-title" data-ui-text="hero_title" id="heroPageTitle">Prediction</h1>
 <p class="sub" data-ui-text="hero_sub">
               Prediction is a display layer that directly renders prediction_latest.json and prediction_explanation_latest.json generated in the analysis layer. The UI is responsible for display only and does not perform inference, completion, or recalculation.
               </p>
+<p class="sub" data-ui-text="loading_prediction_headline" id="heroHeadline">Loading prediction headline...</p>
 <div class="detail-card hero-decision-card mt-compact">
 <div class="detail-eyebrow" data-ui-text="eyebrow_decision">Decision</div>
 <h2 class="detail-title" data-ui-text="loading_decision_line" id="heroDecisionLine">Loading decision line...</h2>
@@ -362,6 +363,7 @@
             "loading_interpretation": "Loading interpretation...",
             "loading_prediction_statement": "Loading latest prediction statement...",
             "loading_runtime": "Loading",
+            "loading_prediction_headline": "Loading prediction headline...",
             "loading_generic": "Loading...",
             "meta_as_of": "As of",
             "meta_dominant": "Dominant",
@@ -527,6 +529,7 @@
             "loading_interpretation": "解釈を読み込み中...",
             "loading_prediction_statement": "最新の予測文を読み込み中...",
             "loading_runtime": "読込中",
+            "loading_prediction_headline": "予測見出しを読み込み中...",
             "loading_generic": "読み込み中...",
             "meta_as_of": "時点",
             "meta_dominant": "優勢",
@@ -692,6 +695,7 @@
             "loading_interpretation": "กำลังโหลดการตีความ...",
             "loading_prediction_statement": "กำลังโหลดข้อความคาดการณ์ล่าสุด...",
             "loading_runtime": "กำลังโหลด",
+            "loading_prediction_headline": "กำลังโหลดหัวข้อการคาดการณ์...",
             "loading_generic": "กำลังโหลด...",
             "meta_as_of": "ณ เวลา",
             "meta_dominant": "เด่น",
@@ -1550,7 +1554,7 @@
       const statement = viewModel.statement || tr("no_prediction_statement");
       const narrativeMini = viewModel.narrative || tr("primary_narrative_unavailable");
 
-      el("heroHeadline").textContent = predictionExplanation?.headline || tr("hero_title");
+      el("heroHeadline").textContent = predictionExplanation?.headline || tr("loading_prediction_headline");
       el("heroDecisionLine").textContent = viewModel.decisionLine || tr("decision_unavailable");
       el("heroInterpretation").textContent = viewModel.interpretation || tr("interpretation_unavailable");
       el("heroSummary").textContent = predictionExplanation?.summary || statement;
