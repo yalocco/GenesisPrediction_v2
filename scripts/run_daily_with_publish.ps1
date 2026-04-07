@@ -60,6 +60,31 @@ function Copy-IfExists {
     return $false
 }
 
+function Sync-DirIfExists {
+    param(
+        [string]$SourceDir,
+        [string]$DestinationDir,
+        [string]$Label = ""
+    )
+
+    if (-not (Test-Path -LiteralPath $SourceDir)) {
+        Write-Log "[SKIP] missing source dir: $SourceDir"
+        return $false
+    }
+
+    Ensure-Dir -PathToEnsure $DestinationDir
+    Copy-Item -Path (Join-Path $SourceDir "*") -Destination $DestinationDir -Recurse -Force
+
+    if ([string]::IsNullOrWhiteSpace($Label)) {
+        Write-Log "[OK] synced dir: $SourceDir -> $DestinationDir"
+    }
+    else {
+        Write-Log ("[OK] synced {0}: {1} -> {2}" -f $Label, $SourceDir, $DestinationDir)
+    }
+
+    return $true
+}
+
 function Invoke-Step {
     param(
         [string]$Name,
@@ -159,9 +184,13 @@ $digestDir = Join-Path $Root "data\digest"
 $digestViewDir = Join-Path $digestDir "view"
 
 $analysisDir = Join-Path $Root "analysis"
+$analysisPredictionDir = Join-Path $analysisDir "prediction"
+$dataPredictionDir = Join-Path $Root "data\prediction"
+$dataPredictionHistoryDir = Join-Path $dataPredictionDir "history"
 
 Ensure-Dir -PathToEnsure $analysisDir
 Ensure-Dir -PathToEnsure $digestViewDir
+Ensure-Dir -PathToEnsure $dataPredictionDir
 
 Write-Host "GenesisPrediction v2 - run_daily_with_publish"
 Write-Host "ROOT : $Root"
@@ -201,8 +230,6 @@ try {
         $dailySummaryLatest = Join-Path $dataAnalysisDir "daily_summary_latest.json"
         $dailySummaryDated  = Join-Path $dataAnalysisDir ("daily_summary_{0}.json" -f $Date)
 
-        # FIX:
-        # daily_news_* must be a real raw-news artifact, not latest.json metadata.
         $rawNewsSource = Get-RawNewsSourcePath -DataDir $dataDir -LatestJsonPath $latestJson
 
         Copy-Item -LiteralPath $rawNewsSource -Destination $dailyNewsLatest -Force
@@ -368,6 +395,29 @@ if daily_summary_path.exists():
         foreach ($pair in $publishPairs) {
             Copy-IfExists -SourcePath $pair.Src -DestinationPath $pair.Dst | Out-Null
         }
+    }
+
+    Invoke-Step -Name "5) Sync prediction artifacts for UI delivery" -Action {
+        Copy-IfExists `
+            -SourcePath (Join-Path $analysisPredictionDir "prediction_latest.json") `
+            -DestinationPath (Join-Path $dataPredictionDir "prediction_latest.json") | Out-Null
+
+        Copy-IfExists `
+            -SourcePath (Join-Path $analysisPredictionDir "scenario_latest.json") `
+            -DestinationPath (Join-Path $dataPredictionDir "scenario_latest.json") | Out-Null
+
+        Copy-IfExists `
+            -SourcePath (Join-Path $analysisPredictionDir "reference_memory_latest.json") `
+            -DestinationPath (Join-Path $dataPredictionDir "reference_memory_latest.json") | Out-Null
+
+        Copy-IfExists `
+            -SourcePath (Join-Path $analysisPredictionDir "prediction_history_index.json") `
+            -DestinationPath (Join-Path $dataPredictionDir "prediction_history_index.json") | Out-Null
+
+        Sync-DirIfExists `
+            -SourceDir (Join-Path $analysisPredictionDir "history") `
+            -DestinationDir $dataPredictionHistoryDir `
+            -Label "prediction history" | Out-Null
     }
 
     Write-Log "[DONE] run_daily_with_publish completed."
