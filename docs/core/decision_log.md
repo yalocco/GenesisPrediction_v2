@@ -2741,3 +2741,86 @@ Status: adopted
 
 # END OF DOCUMENT
 ---
+
+---
+
+## 2026-04-07
+### Local Server and Distribution Structure Must Be Strictly Distinguished
+
+Decision: Local development server and distribution (dist) structure must not be confused
+
+対象
+
+scripts/run_server.ps1
+dist/labos_deploy/*
+python -m http.server
+UI data loading paths
+
+ルール
+
+run_server.ps1 は開発用サーバーであり
+配信構造（dist）とは一致しない
+
+UIの最終確認は必ず dist を対象に行う
+
+python -m http.server は
+dist/labos_deploy をルートにして起動する
+
+UIのfetchパスは dist 構造に一致している必要がある
+
+禁止事項
+
+開発サーバーで正常 → deployも正常とみなす
+dist を通さずUI動作確認する
+analysis / app を直接参照する
+
+理由
+
+開発サーバーと配信構造が一致しないため
+
+ローカルでは正常でも
+deployで404になる silent failure が発生する
+
+補足
+
+UI不具合のように見える問題の多くは
+distribution mismatch に起因する
+
+Status: adopted
+
+---
+
+## 2026-04-07
+### UI 404 Debug Must Start From Distribution Layer
+
+Decision: UI 404 errors must be debugged from distribution layer, not UI layer
+
+ルール
+
+UIで404が発生した場合の優先確認順
+
+1. data 配信構造（dist）
+2. history sync
+3. ファイル存在確認
+4. パス整合性
+5. その後にUI
+
+必須確認
+
+dist/data/prediction/history/YYYY-MM-DD/prediction.json が存在するか
+http.server で直接アクセス可能か
+URLとファイルパスが一致しているか
+
+禁止事項
+
+即UI修正に入る
+consoleエラーだけで判断する
+仮fallbackで隠す
+
+理由
+
+UIエラーの多くは表示層ではなく
+distribution層の不整合であるため
+
+Status: adopted
+
