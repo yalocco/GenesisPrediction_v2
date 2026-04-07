@@ -40,6 +40,56 @@ function Invoke-Native {
     return $exitCode
 }
 
+function Normalize-RemotePath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    $normalized = [string]$Path
+    $normalized = $normalized -replace "`r", ""
+    $normalized = $normalized -replace "`n", ""
+    $normalized = $normalized.Trim()
+
+    if ([string]::IsNullOrWhiteSpace($normalized)) {
+        Fail "RemotePath is empty after normalization."
+    }
+
+    if ($normalized -ne "/") {
+        $normalized = $normalized.TrimEnd("/")
+    }
+
+    return $normalized
+}
+
+function Normalize-UnixScript {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Text
+    )
+
+    $normalized = [string]$Text
+    $normalized = $normalized -replace "`r`n", "`n"
+    $normalized = $normalized -replace "`r", "`n"
+    $normalized = $normalized.Trim()
+
+    if ([string]::IsNullOrWhiteSpace($normalized)) {
+        Fail "Remote shell script is empty after normalization."
+    }
+
+    return $normalized + "`n"
+}
+
+function Quote-ShellSingle {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Text
+    )
+
+    $escaped = $Text -replace "'", "''"
+    return "'" + $escaped + "'"
+}
+
 $PayloadDir = Join-Path $Root "dist\labos_deploy"
 $TarPath = Join-Path $Root "dist\labos_deploy.tar.gz"
 
@@ -51,9 +101,14 @@ if (!(Test-Path $KeyPath)) {
     Fail "SSH key not found: $KeyPath"
 }
 
+$RemotePath = Normalize-RemotePath -Path $RemotePath
 $RemoteTarget = "${UserName}@${HostName}"
 $RemoteTarName = ".deploy_labos_payload.tar.gz"
 $RemoteTarPath = "$RemotePath/$RemoteTarName"
+
+$QuotedRemotePath = Quote-ShellSingle -Text $RemotePath
+$QuotedRemoteTarPath = Quote-ShellSingle -Text $RemoteTarPath
+$QuotedRemoteTarName = Quote-ShellSingle -Text $RemoteTarName
 
 Log "START"
 Log "ROOT           : $Root"
@@ -71,18 +126,18 @@ Log "Pack payload tar.gz"
 Invoke-Native -FilePath "tar" -ArgumentList @("-czf", $TarPath, "-C", $PayloadDir, ".")
 Log "TAR READY      : $TarPath"
 
-$remotePrepare = @"
+$remotePrepare = Normalize-UnixScript @"
 set -e
-mkdir -p '$RemotePath'
-rm -f '$RemoteTarPath'
+mkdir -p $QuotedRemotePath
+rm -f $QuotedRemoteTarPath
 "@
 
-$remoteDeploy = @"
+$remoteDeploy = Normalize-UnixScript @"
 set -e
-mkdir -p '$RemotePath'
-find '$RemotePath' -mindepth 1 -maxdepth 1 ! -name '$RemoteTarName' -exec rm -rf {} +
-tar -xzf '$RemoteTarPath' -C '$RemotePath'
-rm -f '$RemoteTarPath'
+mkdir -p $QuotedRemotePath
+find $QuotedRemotePath -mindepth 1 -maxdepth 1 ! -name $QuotedRemoteTarName -exec rm -rf {} +
+tar -xzf $QuotedRemoteTarPath -C $QuotedRemotePath
+rm -f $QuotedRemoteTarPath
 "@
 
 if ($DryRun) {

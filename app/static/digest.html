@@ -53,32 +53,32 @@
                 <div class="digest-kpi tone-articles">
                   <div class="k" id="digestKpiArticlesLabel">Articles</div>
                   <div id="kpiArticles" class="v">—</div>
-                  <div class="s">full article count</div>
+                  <div class="s" id="digestKpiArticlesSub">full article count</div>
                 </div>
                 <div class="digest-kpi tone-positive">
                   <div class="k" id="digestKpiPredictionRiskLabel">Prediction Risk</div>
                   <div id="kpiPredictionRisk" class="v">—</div>
-                  <div class="s">prediction.latest.risk</div>
+                  <div class="s" id="digestKpiPredictionRiskSub">prediction.latest.risk</div>
                 </div>
                 <div class="digest-kpi tone-negative">
                   <div class="k" id="digestKpiDominantScenarioLabel">Dominant Scenario</div>
                   <div id="kpiDominantScenario" class="v">—</div>
-                  <div class="s">prediction.latest.dominant_scenario</div>
+                  <div class="s" id="digestKpiDominantScenarioSub">prediction.latest.dominant_scenario</div>
                 </div>
                 <div class="digest-kpi tone-neutral">
                   <div class="k" id="digestKpiConfidenceLabel">Confidence</div>
                   <div id="kpiConfidence" class="v">—</div>
-                  <div class="s">prediction.latest.confidence_pct</div>
+                  <div class="s" id="digestKpiConfidenceSub">prediction.latest.confidence_pct</div>
                 </div>
                 <div class="digest-kpi tone-mixed">
                   <div class="k" id="digestKpiFxPairLabel">FX Pair</div>
                   <div id="kpiFxPair" class="v">—</div>
-                  <div class="s">fx.latest.pair</div>
+                  <div class="s" id="digestKpiFxPairSub">fx.latest.pair</div>
                 </div>
                 <div class="digest-kpi tone-fx">
                   <div class="k" id="digestKpiFxStatusLabel">FX Status</div>
                   <div id="kpiFxStatus" class="v">—</div>
-                  <div class="s">fx.latest.status</div>
+                  <div class="s" id="digestKpiFxStatusSub">fx.latest.status</div>
                 </div>
               </div>
 
@@ -118,9 +118,9 @@
 
             <div class="toolbar">
               <div class="toolbar-left">
-                <button class="btn btn-small active" type="button" data-sort="risk">Sort: risk</button>
-                <button class="btn btn-small" type="button" data-sort="score">Sort: score</button>
-                <button class="btn btn-small" type="button" data-sort="newest">Sort: newest</button>
+                <button class="btn btn-small active" type="button" data-sort="risk" id="sortRiskBtn">Sort: risk</button>
+                <button class="btn btn-small" type="button" data-sort="score" id="sortScoreBtn">Sort: score</button>
+                <button class="btn btn-small" type="button" data-sort="newest" id="sortNewestBtn">Sort: newest</button>
               </div>
               <div class="toolbar-right">
                 <span id="articlesState" class="pill">loading…</span>
@@ -144,6 +144,208 @@
   <script src="/static/common/i18n.js?v=20260323-lang-manager-1"></script>
   <script src="/static/common/global_status.js?v=20260318-digest-final-1"></script>
   <script src="/static/common/layout.js?v=20260323-lang-manager-1"></script>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var UI_TEXT = {
+        en: {
+          title: "Digest",
+          hero_digest: "Prioritize the Digest ViewModel and present Summary, Highlights, Prediction, and FX. If article cards are unavailable, fall back to the world view model and then to news.",
+          hero_world_fallback: "The Digest ViewModel could not be loaded, so world_view_model_latest.json is being used as a fallback. Once Digest is generated, prefer the digest view model.",
+          hero_summary_fallback: "Digest and World View could not be loaded, so daily_summary_latest.json is being used as a fallback. In normal operation, prefer the digest view model.",
+          hero_no_data: "Digest, Summary, and News could not be loaded. Reload the page after data generation completes.",
+          globalStatus: "Global Status",
+          summary: "Summary",
+          highlights: "Highlights",
+          articles: "Articles",
+          predictionRisk: "Prediction Risk",
+          dominantScenario: "Dominant Scenario",
+          confidence: "Confidence",
+          fxPair: "FX Pair",
+          fxStatus: "FX Status",
+          prediction: "Prediction",
+          fxDecision: "FX Decision",
+          fullArticleCount: "full article count",
+          predictionLatestRisk: "prediction.latest.risk",
+          predictionLatestDominant: "prediction.latest.dominant_scenario",
+          predictionLatestConfidence: "prediction.latest.confidence_pct",
+          fxLatestPair: "fx.latest.pair",
+          fxLatestStatus: "fx.latest.status",
+          loading: "loading…",
+          summaryHintDigest: "digest preferred",
+          summaryHintWorld: "world view fallback",
+          summaryHintSummary: "daily summary fallback",
+          summaryHintNone: "no data",
+          highlightsHintDigest: "digest preferred",
+          highlightsHintWorld: "world fallback",
+          highlightsHintSummary: "summary fallback",
+          highlightsHintNone: "no data",
+          articlesStateDigest: "digest cards preferred",
+          articlesStateWorld: "world_view_model_latest fallback",
+          articlesStateNews: "daily_news_latest fallback",
+          articlesStateNone: "no articles",
+          sourcePrefix: "source: ",
+          noSummary: "No summary available.",
+          noPrediction: "Prediction not available.",
+          noFxDecision: "FX decision not available.",
+          noArticles: "No articles are available to display. Prioritize the Digest ViewModel, and only fall back to world_view_model_latest.json and then daily_news_latest.json when necessary.",
+          highlightsUnavailable: "highlights unavailable",
+          sortRisk: "Sort: risk",
+          sortScore: "Sort: score",
+          sortNewest: "Sort: newest",
+          riskLabel: "risk",
+          scoreLabel: "score",
+          positiveLabel: "positive",
+          uncertaintyLabel: "unc",
+          pairLabel: "pair",
+          actionLabel: "action",
+          confLabel: "conf",
+          unknownSource: "Unknown source",
+          untitledArticle: "Untitled article",
+          untitledNews: "News",
+          summaryNotAvailable: "Summary not available.",
+          unknown: "unknown"
+        },
+        ja: {
+          title: "ダイジェスト",
+          hero_digest: "Digest ViewModel を優先し、Summary、Highlights、Prediction、FX を統合表示します。記事カードが使えない場合のみ、world view、その後 news に表示を切り替えます。",
+          hero_world_fallback: "Digest ViewModel を読み込めないため、world_view_model_latest.json を代替表示しています。Digest が生成されたら digest view model を優先してください。",
+          hero_summary_fallback: "Digest と World View を読み込めないため、daily_summary_latest.json を代替表示しています。通常運用では digest view model を優先してください。",
+          hero_no_data: "Digest、Summary、News を読み込めませんでした。データ生成完了後に再読み込みしてください。",
+          globalStatus: "グローバルステータス",
+          summary: "サマリー",
+          highlights: "ハイライト",
+          articles: "記事",
+          predictionRisk: "予測リスク",
+          dominantScenario: "支配的シナリオ",
+          confidence: "信頼度",
+          fxPair: "FXペア",
+          fxStatus: "FX状態",
+          prediction: "予測",
+          fxDecision: "FX判断",
+          fullArticleCount: "全記事件数",
+          predictionLatestRisk: "prediction.latest.risk",
+          predictionLatestDominant: "prediction.latest.dominant_scenario",
+          predictionLatestConfidence: "prediction.latest.confidence_pct",
+          fxLatestPair: "fx.latest.pair",
+          fxLatestStatus: "fx.latest.status",
+          loading: "読み込み中…",
+          summaryHintDigest: "digest 優先",
+          summaryHintWorld: "world view 代替",
+          summaryHintSummary: "daily summary 代替",
+          summaryHintNone: "データなし",
+          highlightsHintDigest: "digest 優先",
+          highlightsHintWorld: "world 代替",
+          highlightsHintSummary: "summary 代替",
+          highlightsHintNone: "データなし",
+          articlesStateDigest: "digest cards 優先",
+          articlesStateWorld: "world_view_model_latest 代替",
+          articlesStateNews: "daily_news_latest 代替",
+          articlesStateNone: "記事なし",
+          sourcePrefix: "source: ",
+          noSummary: "サマリーはありません。",
+          noPrediction: "予測はまだ利用できません。",
+          noFxDecision: "FX判断はまだ利用できません。",
+          noArticles: "表示できる記事はありません。Digest ViewModel を優先し、必要な場合のみ world_view_model_latest.json、その後 daily_news_latest.json を使用してください。",
+          highlightsUnavailable: "ハイライトは利用できません",
+          sortRisk: "並び順: risk",
+          sortScore: "並び順: score",
+          sortNewest: "並び順: newest",
+          riskLabel: "risk",
+          scoreLabel: "score",
+          positiveLabel: "positive",
+          uncertaintyLabel: "unc",
+          pairLabel: "pair",
+          actionLabel: "action",
+          confLabel: "conf",
+          unknownSource: "不明なソース",
+          untitledArticle: "無題の記事",
+          untitledNews: "ニュース",
+          summaryNotAvailable: "要約はありません。",
+          unknown: "unknown"
+        },
+        th: {
+          title: "ไดเจสต์",
+          hero_digest: "ให้ความสำคัญกับ Digest ViewModel และแสดง Summary, Highlights, Prediction และ FX แบบรวม หากไม่มีการ์ดบทความจึงค่อยถอยไปใช้ world view และจากนั้นจึงใช้ news",
+          hero_world_fallback: "ไม่สามารถโหลด Digest ViewModel ได้ จึงกำลังใช้ world_view_model_latest.json เป็นข้อมูลสำรอง เมื่อ Digest ถูกสร้างแล้วควรใช้ digest view model เป็นหลัก",
+          hero_summary_fallback: "ไม่สามารถโหลดทั้ง Digest และ World View ได้ จึงกำลังใช้ daily_summary_latest.json เป็นข้อมูลสำรอง ในการใช้งานปกติควรใช้ digest view model เป็นหลัก",
+          hero_no_data: "ไม่สามารถโหลด Digest, Summary และ News ได้ กรุณารีโหลดหลังจากการสร้างข้อมูลเสร็จสิ้น",
+          globalStatus: "สถานะรวม",
+          summary: "สรุป",
+          highlights: "ไฮไลต์",
+          articles: "บทความ",
+          predictionRisk: "ความเสี่ยงการคาดการณ์",
+          dominantScenario: "ฉากทัศน์เด่น",
+          confidence: "ความเชื่อมั่น",
+          fxPair: "คู่ FX",
+          fxStatus: "สถานะ FX",
+          prediction: "การคาดการณ์",
+          fxDecision: "การตัดสินใจ FX",
+          fullArticleCount: "จำนวนบทความทั้งหมด",
+          predictionLatestRisk: "prediction.latest.risk",
+          predictionLatestDominant: "prediction.latest.dominant_scenario",
+          predictionLatestConfidence: "prediction.latest.confidence_pct",
+          fxLatestPair: "fx.latest.pair",
+          fxLatestStatus: "fx.latest.status",
+          loading: "กำลังโหลด…",
+          summaryHintDigest: "ใช้ digest ก่อน",
+          summaryHintWorld: "fallback จาก world view",
+          summaryHintSummary: "fallback จาก daily summary",
+          summaryHintNone: "ไม่มีข้อมูล",
+          highlightsHintDigest: "ใช้ digest ก่อน",
+          highlightsHintWorld: "fallback จาก world",
+          highlightsHintSummary: "fallback จาก summary",
+          highlightsHintNone: "ไม่มีข้อมูล",
+          articlesStateDigest: "ใช้ digest cards ก่อน",
+          articlesStateWorld: "fallback จาก world_view_model_latest",
+          articlesStateNews: "fallback จาก daily_news_latest",
+          articlesStateNone: "ไม่มีบทความ",
+          sourcePrefix: "source: ",
+          noSummary: "ไม่มีสรุป",
+          noPrediction: "ยังไม่มีข้อมูลการคาดการณ์",
+          noFxDecision: "ยังไม่มีข้อมูลการตัดสินใจ FX",
+          noArticles: "ไม่มีบทความที่จะแสดง ให้ใช้ Digest ViewModel ก่อน และใช้ world_view_model_latest.json จากนั้น daily_news_latest.json เฉพาะเมื่อจำเป็น",
+          highlightsUnavailable: "ไม่มีไฮไลต์",
+          sortRisk: "เรียง: risk",
+          sortScore: "เรียง: score",
+          sortNewest: "เรียง: newest",
+          riskLabel: "risk",
+          scoreLabel: "score",
+          positiveLabel: "positive",
+          uncertaintyLabel: "unc",
+          pairLabel: "pair",
+          actionLabel: "action",
+          confLabel: "conf",
+          unknownSource: "ไม่ทราบแหล่งที่มา",
+          untitledArticle: "บทความไม่มีชื่อ",
+          untitledNews: "ข่าว",
+          summaryNotAvailable: "ไม่มีสรุป",
+          unknown: "unknown"
+        }
+      };
+
+      function getLang() {
+        var manager = window.GP_LANG_MANAGER;
+        if (manager && typeof manager.getLang === "function") {
+          return String(manager.getLang() || "en").toLowerCase();
+        }
+        return String(window.GP_LANG || document.documentElement.lang || "en").toLowerCase();
+      }
+
+      function ui(key) {
+        var lang = getLang();
+        if (lang !== "ja" && lang !== "th") lang = "en";
+        return (UI_TEXT[lang] && UI_TEXT[lang][key]) || UI_TEXT.en[key] || key;
+      }
+
+      window.GP_DIGEST_UI = {
+        getLang: getLang,
+        text: ui
+      };
+    })();
+  </script>
 
   <script>
     (function () {
@@ -241,8 +443,12 @@
         if (!value) return "--";
         var d = new Date(value);
         if (Number.isNaN(d.getTime())) return String(value);
+
+        var lang = (window.GP_DIGEST_UI && window.GP_DIGEST_UI.getLang ? window.GP_DIGEST_UI.getLang() : "en");
+        var locale = lang === "ja" ? "ja-JP" : (lang === "th" ? "th-TH" : "en-US");
+
         try {
-          return d.toLocaleString("ja-JP", {
+          return d.toLocaleString(locale, {
             year: "numeric",
             month: "2-digit",
             day: "2-digit",
@@ -269,6 +475,10 @@
         if (v === "CAUTION" || v === "WARN" || v === "WARNING" || v === "GUARDED" || v === "ELEVATED" || v === "MIX") return "caution";
         if (v === "DANGER" || v === "HIGH" || v === "CRITICAL" || v === "OFF" || v === "NG" || v === "ALERT") return "danger";
         return "neutral";
+      }
+
+      function ui(key) {
+        return (window.GP_DIGEST_UI && window.GP_DIGEST_UI.text) ? window.GP_DIGEST_UI.text(key) : key;
       }
 
       function applyInsightPill(id, text, statusValue) {
@@ -403,7 +613,7 @@
           summaryData && pickText(summaryData, "text_summary", ""),
           summaryData && pickI18n(summaryData.daily_summary_i18n, ""),
           summaryData && pickText(summaryData, "daily_summary", ""),
-          "No summary available."
+          ui("noSummary")
         );
       }
 
@@ -463,11 +673,11 @@
         );
         var label = normalizeLabel(labelKey);
         return {
-          title: textOr(firstDefined(pickText(card, "title", ""), pickText(card, "headline", ""), pickValue(card.title_i18n, ""), pickValue(card.headline_i18n, ""), card.title, card.headline), "Untitled article " + (index + 1)),
-          summary: textOr(firstDefined(pickText(card, "summary", ""), pickText(card, "description", ""), pickText(card, "content", ""), pickValue(card.summary_i18n, ""), pickValue(card.description_i18n, ""), pickValue(card.content_i18n, ""), card.summary, card.description, card.content), "Summary not available."),
+          title: textOr(firstDefined(pickText(card, "title", ""), pickText(card, "headline", ""), pickValue(card.title_i18n, ""), pickValue(card.headline_i18n, ""), card.title, card.headline), ui("untitledArticle") + " " + (index + 1)),
+          summary: textOr(firstDefined(pickText(card, "summary", ""), pickText(card, "description", ""), pickText(card, "content", ""), pickValue(card.summary_i18n, ""), pickValue(card.description_i18n, ""), pickValue(card.content_i18n, ""), card.summary, card.description, card.content), ui("summaryNotAvailable")),
           url: firstDefined(card.url, card.link, "#") || "#",
           image: firstDefined(card.image, card.urlToImage, card.thumbnail, card.image_url),
-          source: textOr(firstDefined(pickText(card, "source", ""), pickText(card, "publisher", ""), pickText(card, "domain", ""), pickValue(card.source_i18n, ""), pickValue(card.publisher_i18n, ""), card.source && pickValue(card.source, ""), card.publisher && pickValue(card.publisher, ""), card.domain), "Unknown source"),
+          source: textOr(firstDefined(pickText(card, "source", ""), pickText(card, "publisher", ""), pickText(card, "domain", ""), pickValue(card.source_i18n, ""), pickValue(card.publisher_i18n, ""), card.source && pickValue(card.source, ""), card.publisher && pickValue(card.publisher, ""), card.domain), ui("unknownSource")),
           category: textOr(firstDefined(pickText(card, "category", ""), pickValue(card.category_i18n, ""), card.category && pickValue(card.category, "")), ""),
           publishedAt: firstDefined(card.publishedAt, card.published_at, card.date, card.datetime),
           label: label,
@@ -484,15 +694,15 @@
         var source = item.source;
         if (source && typeof source === "object") source = source.name || source.id || "";
         return {
-          title: textOr(firstDefined(pickText(item, "title", ""), pickText(item, "headline", ""), pickValue(item.title_i18n, ""), item.title, item.headline), "News " + (index + 1)),
-          summary: textOr(firstDefined(pickText(item, "description", ""), pickText(item, "summary", ""), pickText(item, "content", ""), pickValue(item.description_i18n, ""), pickValue(item.summary_i18n, ""), item.description, item.summary, item.content), "Summary not available."),
+          title: textOr(firstDefined(pickText(item, "title", ""), pickText(item, "headline", ""), pickValue(item.title_i18n, ""), item.title, item.headline), ui("untitledNews") + " " + (index + 1)),
+          summary: textOr(firstDefined(pickText(item, "description", ""), pickText(item, "summary", ""), pickText(item, "content", ""), pickValue(item.description_i18n, ""), pickValue(item.summary_i18n, ""), item.description, item.summary, item.content), ui("summaryNotAvailable")),
           url: firstDefined(item.url, item.link, "#") || "#",
           image: firstDefined(item.urlToImage, item.image, item.thumbnail),
-          source: textOr(firstDefined(pickText(item, "source", ""), pickText(item, "publisher", ""), pickValue(item.source_i18n, ""), pickValue(source, ""), item.publisher), "Unknown source"),
+          source: textOr(firstDefined(pickText(item, "source", ""), pickText(item, "publisher", ""), pickValue(item.source_i18n, ""), pickValue(source, ""), item.publisher), ui("unknownSource")),
           category: textOr(firstDefined(pickText(item, "category", ""), pickValue(item.category_i18n, ""), item.category), ""),
           publishedAt: firstDefined(item.publishedAt, item.published_at, item.date),
           label: "unknown",
-          labelText: textOr(firstDefined(pickText(item, "label", ""), pickValue(item.label_i18n, ""), item.label), "unknown"),
+          labelText: textOr(firstDefined(pickText(item, "label", ""), pickValue(item.label_i18n, ""), item.label), ui("unknown")),
           risk: 0,
           score: 0,
           positive: 0,
@@ -520,7 +730,7 @@
         var row = $("topicRow");
         if (!row) return;
         if (!tags.length) {
-          row.innerHTML = '<span class="topicTag">highlights unavailable</span>';
+          row.innerHTML = '<span class="topicTag">' + escapeHtml(ui("highlightsUnavailable")) + '</span>';
           return;
         }
         row.innerHTML = tags.map(function (tag) {
@@ -558,13 +768,13 @@
               pickText(prediction, "prediction_statement", ""),
               pickText(prediction, "primary_narrative", "")
             ),
-            "Prediction not available."
+            ui("noPrediction")
           )
         );
-        applyInsightPill("predictionRiskPill", "risk: " + textOr(pickText(prediction, "risk", "--"), "--").toUpperCase(), prediction.risk);
+        applyInsightPill("predictionRiskPill", ui("riskLabel") + ": " + textOr(pickText(prediction, "risk", "--"), "--").toUpperCase(), prediction.risk);
         applyInsightPill(
           "predictionConfPill",
-          "conf: " + (prediction.confidence_pct != null ? fmtPercent(prediction.confidence_pct) : "--"),
+          ui("confLabel") + ": " + (prediction.confidence_pct != null ? fmtPercent(prediction.confidence_pct) : "--"),
           prediction.risk
         );
 
@@ -576,11 +786,11 @@
               pickText(fx, "summary", ""),
               pickText(fx, "reason", "")
             ),
-            "FX decision not available."
+            ui("noFxDecision")
           )
         );
-        applyInsightPill("fxPairPill", "pair: " + textOr(pickText(fx, "pair", "--"), "--"), fx.status || fx.raw_status);
-        applyInsightPill("fxActionPill", "action: " + textOr(pickText(fx, "action", "--"), "--"), fx.status || fx.raw_status);
+        applyInsightPill("fxPairPill", ui("pairLabel") + ": " + textOr(pickText(fx, "pair", "--"), "--"), fx.status || fx.raw_status);
+        applyInsightPill("fxActionPill", ui("actionLabel") + ": " + textOr(pickText(fx, "action", "--"), "--"), fx.status || fx.raw_status);
       }
 
       function articleCard(article) {
@@ -603,10 +813,10 @@
               '<h3 class="articleTitle"><a href="' + escapeHtml(safeUrl) + '"' + target + '>' + escapeHtml(article.title) + '</a></h3>' +
               '<p class="articleSummary">' + escapeHtml(article.summary) + '</p>' +
               '<div class="scoreRow">' +
-                '<span class="scorePill">risk ' + escapeHtml(fmtMetric(article.risk)) + '</span>' +
-                '<span class="scorePill">score ' + escapeHtml(fmtMetric(article.score)) + '</span>' +
-                '<span class="scorePill">positive ' + escapeHtml(fmtMetric(article.positive)) + '</span>' +
-                '<span class="scorePill">unc ' + escapeHtml(fmtMetric(article.uncertainty)) + '</span>' +
+                '<span class="scorePill">' + escapeHtml(ui("riskLabel")) + ' ' + escapeHtml(fmtMetric(article.risk)) + '</span>' +
+                '<span class="scorePill">' + escapeHtml(ui("scoreLabel")) + ' ' + escapeHtml(fmtMetric(article.score)) + '</span>' +
+                '<span class="scorePill">' + escapeHtml(ui("positiveLabel")) + ' ' + escapeHtml(fmtMetric(article.positive)) + '</span>' +
+                '<span class="scorePill">' + escapeHtml(ui("uncertaintyLabel")) + ' ' + escapeHtml(fmtMetric(article.uncertainty)) + '</span>' +
               '</div>' +
             '</div>' +
           '</article>';
@@ -620,6 +830,7 @@
         if (!sorted.length) {
           grid.innerHTML = "";
           empty.style.display = "block";
+          empty.textContent = ui("noArticles");
           setText("renderedCount", "0");
           setText("totalCount", "0");
           return;
@@ -629,6 +840,40 @@
         grid.innerHTML = sorted.map(articleCard).join("");
         setText("renderedCount", String(sorted.length));
         setText("totalCount", String(sorted.length));
+      }
+
+      function applyStaticHeadings() {
+        setText("digestTitle", ui("title"));
+        setText("digestGlobalStatusTitle", ui("globalStatus"));
+        setText("digestSummaryTitle", ui("summary"));
+        setText("digestHighlightsTitle", ui("highlights"));
+        setText("digestKpiArticlesLabel", ui("articles"));
+        setText("digestKpiPredictionRiskLabel", ui("predictionRisk"));
+        setText("digestKpiDominantScenarioLabel", ui("dominantScenario"));
+        setText("digestKpiConfidenceLabel", ui("confidence"));
+        setText("digestKpiFxPairLabel", ui("fxPair"));
+        setText("digestKpiFxStatusLabel", ui("fxStatus"));
+        setText("digestPredictionLabel", ui("prediction"));
+        setText("digestFxDecisionLabel", ui("fxDecision"));
+        setText("digestArticlesTitle", ui("articles"));
+
+        setText("digestKpiArticlesSub", ui("fullArticleCount"));
+        setText("digestKpiPredictionRiskSub", ui("predictionLatestRisk"));
+        setText("digestKpiDominantScenarioSub", ui("predictionLatestDominant"));
+        setText("digestKpiConfidenceSub", ui("predictionLatestConfidence"));
+        setText("digestKpiFxPairSub", ui("fxLatestPair"));
+        setText("digestKpiFxStatusSub", ui("fxLatestStatus"));
+
+        setText("sortRiskBtn", ui("sortRisk"));
+        setText("sortScoreBtn", ui("sortScore"));
+        setText("sortNewestBtn", ui("sortNewest"));
+
+        if (!state.digestData && !state.worldVmData && !state.summaryData && !state.newsData) {
+          setText("summaryHint", ui("loading"));
+          setText("summaryBody", ui("loading"));
+          setText("articlesState", ui("loading"));
+          setText("emptyState", ui("noArticles"));
+        }
       }
 
       function wireToolbar() {
@@ -702,21 +947,23 @@
           };
         }
 
-        var summaryText = textOr(getSummaryText(digest, worldVm, summaryData || {}), "No summary available.");
+        var summaryText = textOr(getSummaryText(digest, worldVm, summaryData || {}), ui("noSummary"));
         var topicTags = getTopicTags(digest, worldVm, summaryData || {});
+
+        applyStaticHeadings();
 
         setText("summaryBody", summaryText);
         setText(
           "summaryHint",
-          state.summaryMode === "digest" ? "digest preferred" :
-          state.summaryMode === "world-fallback" ? "world view fallback" :
-          state.summaryMode === "summary-fallback" ? "daily summary fallback" :
-          "no data"
+          state.summaryMode === "digest" ? ui("summaryHintDigest") :
+          state.summaryMode === "world-fallback" ? ui("summaryHintWorld") :
+          state.summaryMode === "summary-fallback" ? ui("summaryHintSummary") :
+          ui("summaryHintNone")
         );
 
         setText(
           "summarySource",
-          "source: " + (
+          ui("sourcePrefix") + (
             state.summaryMode === "digest" ? state.digestPath :
             state.summaryMode === "world-fallback" ? state.worldVmPath :
             state.summaryPath
@@ -725,13 +972,13 @@
 
         setText(
           "highlightsSource",
-          "source: " + state.digestPath +
+          ui("sourcePrefix") + state.digestPath +
           (state.sentimentPath !== "-" ? " / " + state.sentimentPath : "")
         );
 
         setText(
           "articlesSource",
-          "source: " + (
+          ui("sourcePrefix") + (
             state.articleMode === "digest" ? state.digestPath :
             state.articleMode === "world-fallback" ? state.worldVmPath :
             state.newsPath
@@ -740,25 +987,27 @@
 
         setText(
           "articlesState",
-          state.articleMode === "digest" ? "digest cards preferred" :
-          state.articleMode === "world-fallback" ? "world_view_model_latest fallback" :
-          state.articleMode === "news-fallback" ? "daily_news_latest fallback" :
-          "no articles"
+          state.articleMode === "digest" ? ui("articlesStateDigest") :
+          state.articleMode === "world-fallback" ? ui("articlesStateWorld") :
+          state.articleMode === "news-fallback" ? ui("articlesStateNews") :
+          ui("articlesStateNone")
         );
 
-        if (state.summaryMode === "digest") {
-          setText("heroText", "Prioritize the Digest ViewModel and present Summary, Highlights, Prediction, and FX. If article cards are unavailable, fall back to the world view model or then to news.");
-          setText("highlightsHint", "digest preferred");
-        } else if (state.summaryMode === "world-fallback") {
-          setText("heroText", "The Digest ViewModel could not be loaded, so world_view_model_latest.json is being used as a fallback. Once Digest is generated, prefer the digest view model.");
-          setText("highlightsHint", "world fallback");
-        } else if (state.summaryMode === "summary-fallback") {
-          setText("heroText", "Digest and World View could not be loaded, so daily_summary_latest.json is being used as a fallback. In normal operation, prefer the digest view model.");
-          setText("highlightsHint", "summary fallback");
-        } else {
-          setText("heroText", "Digest, Summary, and News could not be loaded. Reload the page after data generation completes.");
-          setText("highlightsHint", "no data");
-        }
+        setText(
+          "heroText",
+          state.summaryMode === "digest" ? ui("hero_digest") :
+          state.summaryMode === "world-fallback" ? ui("hero_world_fallback") :
+          state.summaryMode === "summary-fallback" ? ui("hero_summary_fallback") :
+          ui("hero_no_data")
+        );
+
+        setText(
+          "highlightsHint",
+          state.summaryMode === "digest" ? ui("highlightsHintDigest") :
+          state.summaryMode === "world-fallback" ? ui("highlightsHintWorld") :
+          state.summaryMode === "summary-fallback" ? ui("highlightsHintSummary") :
+          ui("highlightsHintNone")
+        );
 
         renderTopics(topicTags);
         renderKpis(digest, sentimentSummary, state.articles.length);
@@ -768,6 +1017,7 @@
 
       async function init() {
         wireToolbar();
+        applyStaticHeadings();
 
         var digestResult = await fetchFirstJson(DIGEST_CANDIDATES);
         var worldVmResult = await fetchFirstJson(WORLD_VM_CANDIDATES);
@@ -795,130 +1045,6 @@
       var digestLangEvent = (window.GP_LANG_MANAGER && window.GP_LANG_MANAGER.LANG_CHANGED_EVENT) || "gp:lang-changed";
       window.addEventListener(digestLangEvent, renderView);
       document.addEventListener(digestLangEvent, renderView);
-    })();
-  </script>
-
-  <script>
-    (function () {
-      "use strict";
-
-      var UI_TEXT = {
-        en: {
-          title: "Digest",
-          hero: "Prioritize the Digest ViewModel and present an integrated view of Summary, Highlights, Prediction, and FX.",
-          globalStatus: "Global Status",
-          summary: "Summary",
-          highlights: "Highlights",
-          articles: "Articles",
-          predictionRisk: "Prediction Risk",
-          dominantScenario: "Dominant Scenario",
-          confidence: "Confidence",
-          fxPair: "FX Pair",
-          fxStatus: "FX Status",
-          prediction: "Prediction",
-          fxDecision: "FX Decision"
-        },
-        ja: {
-          title: "ダイジェスト",
-          hero: "Digest ViewModel を優先し、Summary、Highlights、Prediction、FX を統合表示します。",
-          globalStatus: "グローバルステータス",
-          summary: "サマリー",
-          highlights: "ハイライト",
-          articles: "記事",
-          predictionRisk: "予測リスク",
-          dominantScenario: "支配的シナリオ",
-          confidence: "信頼度",
-          fxPair: "FXペア",
-          fxStatus: "FX状態",
-          prediction: "予測",
-          fxDecision: "FX判断"
-        },
-        th: {
-          title: "ไดเจสต์",
-          hero: "ให้ความสำคัญกับ Digest ViewModel และแสดงภาพรวมแบบบูรณาการของ Summary, Highlights, Prediction และ FX",
-          globalStatus: "สถานะรวม",
-          summary: "สรุป",
-          highlights: "ไฮไลต์",
-          articles: "บทความ",
-          predictionRisk: "ความเสี่ยงการคาดการณ์",
-          dominantScenario: "ฉากทัศน์เด่น",
-          confidence: "ความเชื่อมั่น",
-          fxPair: "คู่ FX",
-          fxStatus: "สถานะ FX",
-          prediction: "การคาดการณ์",
-          fxDecision: "การตัดสินใจ FX"
-        }
-      };
-
-      function getLang() {
-        var m = window.GP_LANG_MANAGER;
-        if (m && typeof m.getLang === "function") return String(m.getLang() || "en").toLowerCase();
-        return String(window.GP_LANG || document.documentElement.lang || "en").toLowerCase();
-      }
-
-      function text(key) {
-        var lang = getLang();
-        if (lang !== "ja" && lang !== "th") lang = "en";
-        return (UI_TEXT[lang] && UI_TEXT[lang][key]) || UI_TEXT.en[key] || key;
-      }
-
-      function set(id, value) {
-        var el = document.getElementById(id);
-        if (el) el.textContent = value;
-      }
-
-      function applyDigestStaticHeadings() {
-        set("digestTitle", text("title"));
-        set("heroText", text("hero"));
-        set("digestGlobalStatusTitle", text("globalStatus"));
-        set("digestSummaryTitle", text("summary"));
-        set("digestHighlightsTitle", text("highlights"));
-        set("digestKpiArticlesLabel", text("articles"));
-        set("digestKpiPredictionRiskLabel", text("predictionRisk"));
-        set("digestKpiDominantScenarioLabel", text("dominantScenario"));
-        set("digestKpiConfidenceLabel", text("confidence"));
-        set("digestKpiFxPairLabel", text("fxPair"));
-        set("digestKpiFxStatusLabel", text("fxStatus"));
-        set("digestPredictionLabel", text("prediction"));
-        set("digestFxDecisionLabel", text("fxDecision"));
-        set("digestArticlesTitle", text("articles"));
-      }
-
-      function scheduleApply() {
-        applyDigestStaticHeadings();
-        window.requestAnimationFrame(applyDigestStaticHeadings);
-        window.setTimeout(applyDigestStaticHeadings, 0);
-        window.setTimeout(applyDigestStaticHeadings, 80);
-      }
-
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", scheduleApply);
-      } else {
-        scheduleApply();
-      }
-
-      var evt = (window.GP_LANG_MANAGER && window.GP_LANG_MANAGER.LANG_CHANGED_EVENT) || "gp:lang-changed";
-      window.addEventListener(evt, scheduleApply);
-      document.addEventListener(evt, scheduleApply);
-
-      if (document.documentElement) {
-        var observer = new MutationObserver(function (mutations) {
-          for (var i = 0; i < mutations.length; i++) {
-            if (mutations[i].attributeName === "lang") {
-              scheduleApply();
-              break;
-            }
-          }
-        });
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
-      }
-
-      document.addEventListener("change", function (event) {
-        var target = event && event.target;
-        if (target && target.id === "langSwitch") {
-          scheduleApply();
-        }
-      }, true);
     })();
   </script>
 
