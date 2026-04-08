@@ -1570,13 +1570,21 @@ def build_concrete_action_tokens(
         hedge_target = "market_volatility"
 
     cut_target = ""
-    if "equities_down" in outcomes:
+    if "equities_sharp_down" in outcomes:
+        cut_target = "equities_sharp_down"
+    elif "equities_down" in outcomes:
         cut_target = "equities_down"
+    elif "credit_spreads_sharp_up" in outcomes:
+        cut_target = "credit_spreads_sharp_up"
     elif "default_risk_up" in outcomes or "credit_spreads_up" in outcomes:
         cut_target = "credit_spreads_up"
 
     add_target = ""
-    if "policy_stabilization" in outcomes:
+    if "equities_stabilizes" in outcomes:
+        add_target = "equities_stabilizes"
+    elif "credit_spreads_moderates" in outcomes:
+        add_target = "credit_spreads_moderates"
+    elif "policy_stabilization" in outcomes:
         add_target = "policy_stabilization"
     elif "pressure_easing" in monitors:
         add_target = "pressure_easing"
@@ -1590,6 +1598,137 @@ def build_concrete_action_tokens(
         "monitor_target": monitor_target,
     }
 
+
+
+
+def get_scenario_branch_data(scenario_data: Dict[str, Any], scenario_id: str) -> Dict[str, Any]:
+    scenarios = scenario_data.get("scenarios")
+    if isinstance(scenarios, list):
+        for item in scenarios:
+            if not isinstance(item, dict):
+                continue
+            item_id = normalize_text(item.get("scenario_id") or item.get("name") or item.get("label"))
+            if item_id == normalize_text(scenario_id):
+                return item
+    return {}
+
+
+def is_negative_outcome_token(token: Any) -> bool:
+    normalized = normalize_text(token)
+    negative_keywords = (
+        "stress", "instability", "down", "decline", "drop", "surge", "widening", "sharp",
+        "default_risk", "credit_spreads", "unemployment", "funding_squeeze", "safe_haven",
+        "drawdown", "contraction", "volatility"
+    )
+    return any(keyword in normalized for keyword in negative_keywords)
+
+
+def is_positive_outcome_token(token: Any) -> bool:
+    normalized = normalize_text(token)
+    positive_keywords = ("stabil", "moderat", "easing", "improve", "restor", "recovery")
+    return any(keyword in normalized for keyword in positive_keywords)
+
+
+def choose_primary_token(candidates: List[str], *, positive: bool | None = None) -> str:
+    tokens = normalize_token_list(candidates)
+    if positive is True:
+        for token in tokens:
+            if is_positive_outcome_token(token) or is_positive_trigger_token(token):
+                return token
+    elif positive is False:
+        for token in tokens:
+            if is_negative_outcome_token(token) or is_negative_trigger_token(token):
+                return token
+    return tokens[0] if tokens else ""
+
+
+def build_branch_action_context(
+    scenario_data: Dict[str, Any],
+    scenario_id: str,
+    monitoring_priorities: List[str],
+    decision_guardrails: Dict[str, List[str]],
+    expected_outcomes: List[str],
+    posture: str,
+) -> Dict[str, Any]:
+    branch = get_scenario_branch_data(scenario_data, scenario_id)
+    branch_watchpoints = normalize_token_list(branch.get("watchpoints"))
+    branch_outcomes = normalize_token_list(branch.get("expected_outcomes"))
+    branch_roles = branch.get("watchpoint_roles") if isinstance(branch.get("watchpoint_roles"), dict) else {}
+
+    escalation_candidates = unique_preserve_order(
+        normalize_token_list(branch_roles.get("escalation"))
+        + decision_guardrails.get("escalation", [])
+        + branch_watchpoints
+        + monitoring_priorities
+    )
+    stabilization_candidates = unique_preserve_order(
+        normalize_token_list(branch_roles.get("stabilization"))
+        + decision_guardrails.get("stabilization", [])
+        + branch_watchpoints
+    )
+    persistence_candidates = unique_preserve_order(
+        normalize_token_list(branch_roles.get("persistence"))
+        + decision_guardrails.get("persistence", [])
+        + branch_watchpoints
+    )
+
+    branch_targets = build_concrete_action_tokens(
+        expected_outcomes=branch_outcomes or expected_outcomes,
+        monitoring_priorities=branch_watchpoints or monitoring_priorities,
+        posture=posture,
+    )
+
+    negative_outcomes = [token for token in branch_outcomes if is_negative_outcome_token(token)]
+    positive_outcomes = [token for token in branch_outcomes if is_positive_outcome_token(token)]
+
+    primary_trigger = choose_primary_token(escalation_candidates, positive=False)
+    stabilization_trigger = choose_primary_token(stabilization_candidates, positive=True)
+    persistence_trigger = choose_primary_token(persistence_candidates)
+    primary_negative_outcome = choose_primary_token(negative_outcomes or expected_outcomes, positive=False)
+
+    if scenario_id == "best_case":
+        primary_trigger = stabilization_trigger or primary_trigger
+        primary_positive_outcome = choose_primary_token(positive_outcomes or branch_outcomes, positive=True)
+        primary_negative_outcome = ""
+    else:
+        primary_positive_outcome = ""
+
+    return {
+        "scenario_id": scenario_id,
+        "watchpoints": branch_watchpoints[:6],
+        "expected_outcomes": branch_outcomes[:6],
+        "primary_trigger": primary_trigger,
+        "stabilization_trigger": stabilization_trigger,
+        "persistence_trigger": persistence_trigger,
+        "primary_negative_outcome": primary_negative_outcome,
+        "primary_positive_outcome": primary_positive_outcome,
+        "targets": branch_targets,
+    }
+
+
+def build_decision_action_links_i18n(action_links: Dict[str, Any]) -> Dict[str, Any]:
+    out: Dict[str, Any] = {}
+    for scenario_id, details in action_links.items():
+        if not isinstance(details, dict):
+            continue
+        out[scenario_id] = {
+            "primary_trigger": labelize_i18n(details.get("primary_trigger")),
+            "stabilization_trigger": labelize_i18n(details.get("stabilization_trigger")),
+            "persistence_trigger": labelize_i18n(details.get("persistence_trigger")),
+            "primary_negative_outcome": labelize_i18n(details.get("primary_negative_outcome")),
+            "primary_positive_outcome": labelize_i18n(details.get("primary_positive_outcome")),
+            "watchpoints": {
+                "en": labelize_list(details.get("watchpoints", []), "en"),
+                "ja": labelize_list(details.get("watchpoints", []), "ja"),
+                "th": labelize_list(details.get("watchpoints", []), "th"),
+            },
+            "expected_outcomes": {
+                "en": labelize_list(details.get("expected_outcomes", []), "en"),
+                "ja": labelize_list(details.get("expected_outcomes", []), "ja"),
+                "th": labelize_list(details.get("expected_outcomes", []), "th"),
+            },
+        }
+    return out
 
 def build_monitoring_triggers(
     scenario_data: Dict[str, Any],
@@ -2574,17 +2713,42 @@ def build_decision_guardrails_i18n(guardrails: Dict[str, List[str]]) -> Dict[str
 
 
 def build_decision_actions(
+    scenario_data: Dict[str, Any],
     posture: str,
     scenario_balance: str,
     decision_guardrails: Dict[str, List[str]],
     monitoring_priorities: List[str],
     expected_outcomes: List[str] | None = None,
-) -> Dict[str, List[str]]:
-    escalation = unique_preserve_order(decision_guardrails.get("escalation", []) + monitoring_priorities[:2])[:3]
-    stabilization = unique_preserve_order(decision_guardrails.get("stabilization", []))[:2]
-    action_targets = build_concrete_action_tokens(
-        expected_outcomes=expected_outcomes or [],
+) -> Tuple[Dict[str, List[str]], Dict[str, Any]]:
+    expected_outcomes = expected_outcomes or []
+    fallback_targets = build_concrete_action_tokens(
+        expected_outcomes=expected_outcomes,
         monitoring_priorities=monitoring_priorities,
+        posture=posture,
+    )
+
+    base_ctx = build_branch_action_context(
+        scenario_data=scenario_data,
+        scenario_id="base_case",
+        monitoring_priorities=monitoring_priorities,
+        decision_guardrails=decision_guardrails,
+        expected_outcomes=expected_outcomes,
+        posture=posture,
+    )
+    worst_ctx = build_branch_action_context(
+        scenario_data=scenario_data,
+        scenario_id="worst_case",
+        monitoring_priorities=monitoring_priorities,
+        decision_guardrails=decision_guardrails,
+        expected_outcomes=expected_outcomes,
+        posture=posture,
+    )
+    best_ctx = build_branch_action_context(
+        scenario_data=scenario_data,
+        scenario_id="best_case",
+        monitoring_priorities=monitoring_priorities,
+        decision_guardrails=decision_guardrails,
+        expected_outcomes=expected_outcomes,
         posture=posture,
     )
 
@@ -2593,39 +2757,68 @@ def build_decision_actions(
         base_case.append("keep_tail_hedge_active")
     else:
         base_case.append("avoid_overreaction")
-    if action_targets.get("hedge_target"):
-        base_case.append(f"hedge::{action_targets['hedge_target']}")
-    elif action_targets.get("monitor_target"):
-        base_case.append(f"monitor::{action_targets['monitor_target']}")
 
-    worst_case: List[str] = [
-        "reduce_exposure",
-        "raise_defensive_buffer",
-    ]
-    if action_targets.get("cut_target"):
-        worst_case.append(f"cut::{action_targets['cut_target']}")
-    if escalation:
-        worst_case.append(f"escalate_on::{escalation[0]}")
+    base_hedge = base_ctx["targets"].get("hedge_target") or fallback_targets.get("hedge_target")
+    base_monitor = base_ctx.get("persistence_trigger") or base_ctx.get("primary_trigger") or fallback_targets.get("monitor_target")
+    base_prepare = base_ctx.get("primary_negative_outcome") or choose_primary_token(expected_outcomes, positive=False)
+
+    if base_hedge:
+        base_case.append(f"hedge::{base_hedge}")
+    if base_monitor:
+        base_case.append(f"monitor::{base_monitor}")
+    if base_prepare:
+        base_case.append(f"prepare_for::{base_prepare}")
+
+    worst_case: List[str] = ["reduce_exposure", "raise_defensive_buffer"]
+    worst_cut = worst_ctx["targets"].get("cut_target") or fallback_targets.get("cut_target")
+    worst_hedge = worst_ctx["targets"].get("hedge_target") or fallback_targets.get("hedge_target")
+    worst_trigger = worst_ctx.get("primary_trigger") or choose_primary_token(decision_guardrails.get("escalation", []), positive=False)
+    worst_prepare = worst_ctx.get("primary_negative_outcome") or worst_cut or choose_primary_token(expected_outcomes, positive=False)
+
+    if worst_cut:
+        worst_case.append(f"cut::{worst_cut}")
+    if worst_hedge:
+        worst_case.append(f"hedge::{worst_hedge}")
+    if worst_trigger:
+        worst_case.append(f"escalate_on::{worst_trigger}")
+    if worst_prepare:
+        worst_case.append(f"prepare_for::{worst_prepare}")
 
     best_case: List[str] = ["selective_reengagement"]
-    if stabilization:
-        best_case.append(f"add_risk_only_if::{stabilization[0]}")
-    elif action_targets.get("add_target"):
-        best_case.append(f"favor::{action_targets['add_target']}")
+    best_stabilize = best_ctx.get("stabilization_trigger") or choose_primary_token(decision_guardrails.get("stabilization", []), positive=True)
+    best_add_target = best_ctx["targets"].get("add_target") or fallback_targets.get("add_target") or best_ctx.get("primary_positive_outcome")
+    best_clearance = base_ctx.get("primary_trigger") or choose_primary_token(decision_guardrails.get("escalation", []), positive=False)
+
+    if best_stabilize:
+        best_case.append(f"add_risk_only_if::{best_stabilize}")
+    elif best_add_target:
+        best_case.append(f"reenter_via::{best_add_target}")
     else:
         best_case.append("add_risk_selectively")
+
+    if best_add_target:
+        best_case.append(f"reenter_via::{best_add_target}")
+    if best_clearance:
+        best_case.append(f"wait_for_clearance_of::{best_clearance}")
     best_case.append("prefer_high_conviction_only")
 
     if posture == "protect_capital_now":
-        worst_case = unique_preserve_order(["protect_capital_now"] + worst_case)[:5]
+        worst_case = unique_preserve_order(["protect_capital_now"] + worst_case)[:7]
     elif posture == "selective_reengagement":
-        best_case = unique_preserve_order(["lean_into_stabilization"] + best_case)[:5]
+        best_case = unique_preserve_order(["lean_into_stabilization"] + best_case)[:7]
+
+    action_links = {
+        "base_case": base_ctx,
+        "worst_case": worst_ctx,
+        "best_case": best_ctx,
+    }
 
     return {
-        "base_case": unique_preserve_order(base_case)[:5],
-        "worst_case": unique_preserve_order(worst_case)[:5],
-        "best_case": unique_preserve_order(best_case)[:5],
-    }
+        "base_case": unique_preserve_order(base_case)[:7],
+        "worst_case": unique_preserve_order(worst_case)[:7],
+        "best_case": unique_preserve_order(best_case)[:7],
+    }, action_links
+
 
 
 def build_decision_actions_i18n(actions: Dict[str, List[str]]) -> Dict[str, Any]:
@@ -2708,6 +2901,30 @@ def build_decision_actions_i18n(actions: Dict[str, List[str]]) -> Dict[str, Any]
             if lang == "th":
                 return f"เพิ่มความเสี่ยงเฉพาะเมื่อเห็น {target_label}"
             return f"add risk only if {target_label} appears"
+        if token.startswith("prepare_for::"):
+            target = token.split("::", 1)[1]
+            target_label = labelize(target, lang)
+            if lang == "ja":
+                return f"{target_label} に備えて防御計画を進める"
+            if lang == "th":
+                return f"เตรียมแผนป้องกันสำหรับ {target_label}"
+            return f"prepare defensive plans for {target_label}"
+        if token.startswith("reenter_via::"):
+            target = token.split("::", 1)[1]
+            target_label = labelize(target, lang)
+            if lang == "ja":
+                return f"{target_label} を確認できる領域から段階的に再参入する"
+            if lang == "th":
+                return f"กลับเข้าเพิ่มน้ำหนักทีละขั้นผ่านส่วนที่ยืนยัน {target_label}"
+            return f"re-enter gradually through areas confirming {target_label}"
+        if token.startswith("wait_for_clearance_of::"):
+            target = token.split("::", 1)[1]
+            target_label = labelize(target, lang)
+            if lang == "ja":
+                return f"{target_label} の明確な改善を確認するまで拡張を待つ"
+            if lang == "th":
+                return f"รอให้ {target_label} ดีขึ้นชัดเจนก่อนขยายความเสี่ยง"
+            return f"wait for clear easing in {target_label} before expanding risk"
         if token.startswith("hedge::"):
             target = token.split("::", 1)[1]
             target_label = labelize(target, lang)
@@ -3230,7 +3447,8 @@ def build_prediction_output(
         monitoring_priorities=monitoring_priorities,
     )
     decision_guardrails_i18n = build_decision_guardrails_i18n(decision_guardrails)
-    decision_actions = build_decision_actions(
+    decision_actions, decision_action_links = build_decision_actions(
+        scenario_data=scenario_data,
         posture=decision_posture,
         scenario_balance=scenario_balance,
         decision_guardrails=decision_guardrails,
@@ -3238,6 +3456,7 @@ def build_prediction_output(
         expected_outcomes=expected_outcomes,
     )
     decision_actions_i18n = build_decision_actions_i18n(decision_actions)
+    decision_action_links_i18n = build_decision_action_links_i18n(decision_action_links)
 
     summary = build_summary(
         direction=direction,
@@ -3269,7 +3488,7 @@ def build_prediction_output(
     output = {
         "as_of": as_of,
         "generated_at": utc_now_iso(),
-        "engine_version": "v4_prediction_enhanced_actionable_public_i18n_final_fix_i18n_guardrails",
+        "engine_version": "v4_prediction_decision_action_hardening",
         "lang_default": LANG_DEFAULT,
         "languages": SUPPORTED_LANGUAGES,
         "direction": direction,
@@ -3304,6 +3523,8 @@ def build_prediction_output(
         "decision_guardrails_i18n": decision_guardrails_i18n,
         "decision_actions": decision_actions,
         "decision_actions_i18n": decision_actions_i18n,
+        "decision_action_links": decision_action_links,
+        "decision_action_links_i18n": decision_action_links_i18n,
         "expected_outcomes": expected_outcomes,
         "expected_outcomes_i18n": expected_outcomes_i18n,
         "risk_flags": risk_flags_raw,
