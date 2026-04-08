@@ -265,19 +265,118 @@ def pick_text(obj):
             return value.strip()
     return ""
 
+daily_summary_path = Path(r"data\world_politics\analysis\daily_summary_latest.json")
+daily_summary_data = {}
+if daily_summary_path.exists():
+    loaded = json.loads(daily_summary_path.read_text(encoding="utf-8"))
+    if isinstance(loaded, dict):
+        daily_summary_data = loaded
+
+def as_int(value, default=0):
+    try:
+        if value is None:
+            return default
+        if isinstance(value, bool):
+            return int(value)
+        return int(value)
+    except Exception:
+        return default
+
+def pick_count(summary_obj, daily_obj):
+    candidates = []
+    if isinstance(daily_obj, dict):
+        today = daily_obj.get("today")
+        if isinstance(today, dict):
+            candidates.extend([
+                today.get("count"),
+                today.get("event_count"),
+                today.get("items"),
+                today.get("article_count"),
+            ])
+        candidates.extend([
+            daily_obj.get("count"),
+            daily_obj.get("event_count"),
+            daily_obj.get("n_events"),
+            daily_obj.get("items"),
+            daily_obj.get("article_count"),
+        ])
+    if isinstance(summary_obj, dict):
+        candidates.extend([
+            summary_obj.get("n_events"),
+            summary_obj.get("count"),
+            summary_obj.get("event_count"),
+        ])
+
+    for value in candidates:
+        n = as_int(value, default=-1)
+        if n >= 0:
+            return n
+    return 0
+
+def pick_urls(summary_obj, daily_obj):
+    for obj in (daily_obj, summary_obj):
+        if not isinstance(obj, dict):
+            continue
+        today = obj.get("today")
+        if isinstance(today, dict):
+            urls = today.get("new_urls")
+            if isinstance(urls, list):
+                return [str(x).strip() for x in urls if str(x).strip()]
+        urls = obj.get("new_urls")
+        if isinstance(urls, list):
+            return [str(x).strip() for x in urls if str(x).strip()]
+    return []
+
+def pick_anchors(summary_obj, daily_obj):
+    candidates = []
+    for obj in (daily_obj, summary_obj):
+        if not isinstance(obj, dict):
+            continue
+        for key in ("anchors", "topics", "dominant_anchors"):
+            values = obj.get(key)
+            if isinstance(values, list):
+                candidates.extend([str(x).strip() for x in values if str(x).strip()])
+        today = obj.get("today")
+        if isinstance(today, dict):
+            for key in ("anchors", "topics", "dominant_anchors"):
+                values = today.get(key)
+                if isinstance(values, list):
+                    candidates.extend([str(x).strip() for x in values if str(x).strip()])
+    seen = set()
+    ordered = []
+    for item in candidates:
+        if item not in seen:
+            seen.add(item)
+            ordered.append(item)
+    return ordered
+
+def pick_titles(summary_obj, daily_obj):
+    candidates = []
+    if isinstance(summary_obj, dict):
+        ys = summary_obj.get("yesterday_summary", {})
+        if isinstance(ys, dict):
+            titles = ys.get("titles", [])
+            if isinstance(titles, list):
+                candidates.extend([str(x).strip() for x in titles if str(x).strip()])
+    if isinstance(daily_obj, dict):
+        highlights = daily_obj.get("highlights")
+        if isinstance(highlights, list):
+            for item in highlights[:3]:
+                if isinstance(item, dict):
+                    title = item.get("title")
+                    if isinstance(title, str) and title.strip():
+                        candidates.append(title.strip())
+    return candidates[:3]
+
 summary_text = pick_text(data)
+n_events = pick_count(data, daily_summary_data)
+urls = pick_urls(data, daily_summary_data)
+anchors = pick_anchors(data, daily_summary_data)
+top_titles = pick_titles(data, daily_summary_data)
 
-if not summary_text:
-    anchors = [str(x).strip() for x in data.get("anchors", []) if str(x).strip()]
-    urls = data.get("new_urls", []) if isinstance(data.get("new_urls"), list) else []
-    n_events = data.get("n_events", 0)
-    top_titles = []
-    ys = data.get("yesterday_summary", {})
-    if isinstance(ys, dict):
-        titles = ys.get("titles", [])
-        if isinstance(titles, list):
-            top_titles = [str(x).strip() for x in titles[:3] if str(x).strip()]
-
+if n_events <= 0:
+    summary_text = "Observed 0 events."
+else:
     anchor_part = ", ".join(anchors[:5]) if anchors else "global developments"
     title_part = "; ".join(top_titles) if top_titles else ""
     pieces = [
@@ -294,13 +393,10 @@ data["summary"] = summary_text
 data["text"] = summary_text
 summary_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
-daily_summary_path = Path(r"data\world_politics\analysis\daily_summary_latest.json")
-if daily_summary_path.exists():
-    ds = json.loads(daily_summary_path.read_text(encoding="utf-8"))
-    if isinstance(ds, dict):
-        ds["summary"] = summary_text
-        ds["text"] = summary_text
-        daily_summary_path.write_text(json.dumps(ds, ensure_ascii=False, indent=2), encoding="utf-8")
+if daily_summary_data:
+    daily_summary_data["summary"] = summary_text
+    daily_summary_data["text"] = summary_text
+    daily_summary_path.write_text(json.dumps(daily_summary_data, ensure_ascii=False, indent=2), encoding="utf-8")
 '@
             $tempPy = Join-Path $env:TEMP "genesis_summary_materializer.py"
             Set-Content -LiteralPath $tempPy -Value $summaryMaterializer -Encoding UTF8
