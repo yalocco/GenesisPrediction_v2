@@ -1082,78 +1082,84 @@ def _sanitize_structured_i18n_rows(
     return result
 
 
+def _sanitize_structured_raw_rows(
+    raw_rows: Any,
+    required_fields: list[str],
+    max_items: int,
+) -> list[dict[str, Any]]:
+    if not isinstance(raw_rows, list):
+        return []
+
+    sanitized_rows: list[dict[str, Any]] = []
+    for row in raw_rows:
+        if not isinstance(row, dict):
+            continue
+        sanitized: dict[str, Any] = {}
+        has_required_value = False
+        for field in required_fields:
+            value = row.get(field)
+            if isinstance(value, str):
+                cleaned = compact_spaces(value)
+                sanitized[field] = cleaned
+                if cleaned:
+                    has_required_value = True
+            else:
+                sanitized[field] = value
+                if value not in (None, "", [], {}):
+                    has_required_value = True
+        if has_required_value:
+            sanitized_rows.append(sanitized)
+    return dedupe_dict_list(sanitized_rows, [required_fields[0]])[:max_items]
+
+
+def _mirror_structured_rows(
+    prediction: dict[str, Any] | None,
+    structured_i18n_fields: list[str],
+    structured_raw_fields: list[str],
+    required_fields: list[str],
+    max_items: int,
+) -> dict[str, list[dict[str, Any]]]:
+    source = prediction or {}
+
+    for field_name in structured_i18n_fields:
+        mirrored = _sanitize_structured_i18n_rows(source.get(field_name), required_fields, max_items)
+        if mirrored is not None:
+            return mirrored
+
+    for field_name in structured_raw_fields:
+        sanitized_raw = _sanitize_structured_raw_rows(source.get(field_name), required_fields, max_items)
+        if sanitized_raw:
+            return {lang: [dict(item) for item in sanitized_raw] for lang in SUPPORTED_LANGUAGES}
+
+    return {lang: [] for lang in SUPPORTED_LANGUAGES}
+
+
 def structured_drivers_i18n(
     prediction: dict[str, Any] | None,
     dominant_scenario: str | None,
     confidence: float | None,
     risk_value: str | None,
 ) -> dict[str, list[dict[str, str]]]:
-    source = prediction or {}
-    mirrored = _sanitize_structured_i18n_rows(
-        source.get("key_drivers_structured_i18n") or source.get("drivers_structured_i18n"),
-        ["driver", "why", "impact"],
-        12,
+    return _mirror_structured_rows(
+        prediction,
+        structured_i18n_fields=["key_drivers_structured_i18n", "drivers_structured_i18n"],
+        structured_raw_fields=["key_drivers_structured", "drivers_structured"],
+        required_fields=["driver", "why", "impact"],
+        max_items=12,
     )
-    if mirrored is not None:
-        return mirrored
-
-    raw_rows = normalize_list(
-        source.get("key_drivers_structured") or source.get("drivers_structured") or source.get("key_drivers")
-    )
-    result: dict[str, list[dict[str, str]]] = {lang: [] for lang in SUPPORTED_LANGUAGES}
-    for raw in raw_rows:
-        if isinstance(raw, dict):
-            driver_key = (
-                normalize_str(raw.get("driver"))
-                or normalize_str(raw.get("cause"))
-                or normalize_str(raw.get("name"))
-                or normalize_str(raw.get("title"))
-                or normalize_str(raw.get("label"))
-            )
-        else:
-            driver_key = normalize_str(raw)
-        if not driver_key:
-            continue
-        row_i18n = driver_text_triplet_i18n(driver_key, dominant_scenario, confidence, risk_value)
-        for lang in SUPPORTED_LANGUAGES:
-            result[lang].append(dict(row_i18n[lang]))
-    return {lang: dedupe_dict_list(result[lang], ["driver"])[:12] for lang in SUPPORTED_LANGUAGES}
 
 
 def structured_monitor_i18n(
     prediction: dict[str, Any] | None,
     dominant_scenario: str | None,
 ) -> dict[str, list[dict[str, str]]]:
-    source = prediction or {}
-    mirrored = _sanitize_structured_i18n_rows(
-        source.get("monitoring_priorities_structured_i18n") or source.get("monitor_structured_i18n"),
-        ["item", "trigger", "meaning"],
-        12,
+    return _mirror_structured_rows(
+        prediction,
+        structured_i18n_fields=["monitoring_priorities_structured_i18n", "monitor_structured_i18n"],
+        structured_raw_fields=["monitoring_priorities_structured", "monitor_structured"],
+        required_fields=["item", "trigger", "meaning"],
+        max_items=12,
     )
-    if mirrored is not None:
-        return mirrored
-
-    raw_rows = normalize_list(
-        source.get("monitoring_priorities_structured") or source.get("monitor_structured") or source.get("monitoring_priorities")
-    )
-    result: dict[str, list[dict[str, str]]] = {lang: [] for lang in SUPPORTED_LANGUAGES}
-    for raw in raw_rows:
-        if isinstance(raw, dict):
-            item_key = (
-                normalize_str(raw.get("item"))
-                or normalize_str(raw.get("trigger"))
-                or normalize_str(raw.get("name"))
-                or normalize_str(raw.get("title"))
-                or normalize_str(raw.get("label"))
-            )
-        else:
-            item_key = normalize_str(raw)
-        if not item_key:
-            continue
-        row_i18n = monitor_text_triplet_i18n(item_key, dominant_scenario)
-        for lang in SUPPORTED_LANGUAGES:
-            result[lang].append(dict(row_i18n[lang]))
-    return {lang: dedupe_dict_list(result[lang], ["item"])[:12] for lang in SUPPORTED_LANGUAGES}
 
 
 def structured_implications_i18n(
@@ -1161,30 +1167,13 @@ def structured_implications_i18n(
     dominant_scenario: str | None,
     confidence: float | None,
 ) -> dict[str, list[dict[str, Any]]]:
-    source = prediction or {}
-    mirrored = _sanitize_structured_i18n_rows(
-        source.get("expected_outcomes_structured_i18n") or source.get("implications_structured_i18n"),
-        ["outcome", "path", "confidence"],
-        12,
+    return _mirror_structured_rows(
+        prediction,
+        structured_i18n_fields=["expected_outcomes_structured_i18n", "implications_structured_i18n"],
+        structured_raw_fields=["expected_outcomes_structured", "implications_structured"],
+        required_fields=["outcome", "path", "confidence"],
+        max_items=12,
     )
-    if mirrored is not None:
-        return mirrored
-
-    raw_rows = normalize_list(
-        source.get("expected_outcomes_structured") or source.get("implications_structured") or source.get("expected_outcomes")
-    )
-    result: dict[str, list[dict[str, Any]]] = {lang: [] for lang in SUPPORTED_LANGUAGES}
-    for raw in raw_rows:
-        if isinstance(raw, dict):
-            normalized = normalize_implication_struct(raw, confidence)
-        else:
-            normalized = normalize_implication_struct(raw, confidence)
-        if not normalized:
-            continue
-        row_i18n = implication_row_i18n(normalized, dominant_scenario)
-        for lang in SUPPORTED_LANGUAGES:
-            result[lang].append(dict(row_i18n[lang]))
-    return {lang: dedupe_dict_list(result[lang], ["outcome"])[:12] for lang in SUPPORTED_LANGUAGES}
 
 
 def structured_historical_i18n(
@@ -2346,10 +2335,10 @@ def build_prediction_explanation(
         dominant_scenario=dominant_scenario,
     )
     watchpoints_i18n = mirror_list_i18n(prediction, "monitoring_priorities", "watchpoints")
-    implications_i18n = structured_implications_i18n(
+    implications_i18n = mirror_list_i18n(
         prediction,
-        dominant_scenario=dominant_scenario,
-        confidence=confidence,
+        "expected_outcomes",
+        "implications",
     )
     risks_i18n = mirror_list_i18n(prediction, "risk_flags", "risks")
     invalidation_i18n = mirror_list_i18n(
