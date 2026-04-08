@@ -2878,6 +2878,100 @@ deploy前チェックを必須運用として固定する
 ```
 
 Status: adopted
+---
+---
+
+## 2026-04-08
+### EN as SSOT (Language Architecture Finalization)
+
+Decision:
+Prediction / Explanation の default language は英語（en）とする
+
+Rule:
+- lang_default = "en" を全analysis出力で固定する
+- languages = ["en","ja","th"] を維持する
+- ja / th は補助言語とする
+- UI は selector のみで言語切替を行う
+- UI は翻訳・fallback・補完を行わない
+
+Reason:
+- 国際標準化
+- 一貫性確保
+- UI責務の完全分離
+
+Status: adopted
+
+---
+---
+
+---
+
+## 2026-04-08
+### Explanation Pure Mirror Hardening
+
+Decision:
+Explanation は prediction の pure mirror とする
+
+Rule:
+- summary = prediction_statement
+- drivers = key_drivers
+- watchpoints = monitoring_priorities
+- implications = expected_outcomes
+
+禁止:
+- lower layer（scenario / signal）から再構成
+- explanation側で新規意味生成
+- structured field の再生成
+
+Reason:
+- 第二のtruth層を排除
+- SSOTの一貫性維持
+
+Status: adopted
+---
+---
+
+---
+
+## 2026-04-08
+### Structured Truth Consolidation
+
+Decision:
+structured semantic fields は prediction 層に集約する
+
+Rule:
+- structured_* は prediction のみ生成
+- explanation は mirror のみ
+- UI は表示のみ
+
+Reason:
+- 意味の所在を一本化
+- デバッグ容易性向上
+
+Status: adopted
+
+---
+
+---
+
+---
+## 2026-04-08
+### Prediction Enhancement Phase1
+
+Decision:
+Prediction の因果性・判断性を強化
+
+Enhancement:
+- causal narrative 強化
+- driver structure 拡張
+- decision_actions 改善開始
+
+Result:
+- narrative が因果ベースへ進化
+- decision_actions が部分的に具体化
+
+Status: adopted
+
 
 # END OF DOCUMENT
 ---
