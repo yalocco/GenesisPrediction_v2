@@ -2973,6 +2973,101 @@ Result:
 Status: adopted
 
 
+## 2026-04-08
+### Decision Action Hardening (Branch-Linked Actions, Triggers, Outcomes)
+
+Decision:
+prediction.decision_actions must be scenario-aware, trigger-linked, and outcome-linked.
+
+対象
+
+```text
+scripts/prediction_engine.py
+analysis/prediction/prediction_latest.json
+prediction.decision_actions
+prediction.decision_action_links
+```
+
+ルール
+
+```text
+decision_actions は best / base / worst ごとに生成する
+各 branch action は scenario branch の watchpoints / expected_outcomes と整合しなければならない
+prediction 側で decision-grade な branch link を保持する
+```
+
+必須構造
+
+```text
+decision_actions
+- base_case
+- worst_case
+- best_case
+
+decision_action_links
+- scenario_id
+- watchpoints
+- expected_outcomes
+- primary_trigger
+- stabilization_trigger
+- persistence_trigger
+- primary_negative_outcome
+- primary_positive_outcome
+- targets
+```
+
+branch rule
+
+```text
+base_case  = persistence-driven action
+worst_case = deterioration-driven action
+best_case  = stabilization-driven action
+```
+
+整合ルール
+
+```text
+action token と targets は一致させる
+例:
+cut::equities_sharp_down
+⇔
+targets.cut_target = equities_sharp_down
+
+best_case.primary_trigger は stabilization 側 trigger を優先する
+base / worst の primary_positive_outcome は空でよい
+best の negative slot は negative outcome が無い場合は空とする
+```
+
+禁止事項
+
+```text
+scenario と逆向きの outcome を branch action に混ぜる
+action token と targets を不一致のまま出力する
+best_case に deterioration trigger を primary として置く
+prediction 側で branch link を持たずに explanation / UI へ判断構造を委ねる
+```
+
+理由
+
+```text
+Prediction を decision-grade conclusion layer として完成させるため
+Scenario の branch logic を行動判断へ橋渡しするため
+watchpoints を単なる一覧ではなく action trigger として扱うため
+Explanation / UI が新しい判断構造を作らずに済むようにするため
+```
+
+最終状態
+
+```text
+Scenario = cause-oriented branches
+Prediction = decision-grade conclusion + branch-linked actions
+Explanation = pure mirror
+UI = display only
+```
+
+Status: adopted
+
+
 # END OF DOCUMENT
 ---
 ---
