@@ -34,7 +34,7 @@ SENTIMENT_LATEST_PATH = ROOT / "data" / "world_politics" / "analysis" / "sentime
 
 PREDICTION_LATEST_PATH = PREDICTION_DIR / "prediction_latest.json"
 
-LANG_DEFAULT = "en"
+LANG_DEFAULT = "ja"
 SUPPORTED_LANGUAGES = ["en", "ja", "th"]
 
 DIRECTION_LABELS = {

@@ -915,9 +915,9 @@ def truncate_text(text: str, max_len: int = 96) -> str:
     return s[: max_len - 1].rstrip() + "…"
 
 def effective_lang_default(prediction: dict[str, Any] | None) -> str:
-    value = normalize_str((prediction or {}).get("lang_default"))
-    if value in SUPPORTED_LANGUAGES:
-        return value
+    # GenesisPrediction i18n finalization rule:
+    # English is the primary analysis-side default across artifacts.
+    # Explanation must not regress to a stale upstream lang_default.
     return LANG_DEFAULT
 
 
