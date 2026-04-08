@@ -21,7 +21,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_post_ritual_checks.ps1
 powershell -ExecutionPolicy Bypass -File scripts/run_labos_publish.ps1
 
 ■ verify(deploy後)
-python scripts/verify_deploy.py
+python scripts/verify_deploy.py --root D:\AI\Projects\GenesisPrediction_v2
 
 ■ decision_index（更新）
 python scripts/build_decision_index.py
