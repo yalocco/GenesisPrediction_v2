@@ -2739,7 +2739,7 @@ history も distribution 対象に含める
 
 Status: adopted
 
-# END OF DOCUMENT
+
 ---
 
 ---
@@ -2824,3 +2824,61 @@ distribution層の不整合であるため
 
 Status: adopted
 
+---
+
+## 2026-04-08
+### GUI Final Audit Completed
+
+Decision: GUI final audit is complete and UI is confirmed stable
+
+ルール
+
+```text
+全ページで local / LABOS 一致確認済み
+UI差分と distribution差分を分離して検証する
+UIは表示のみ（display only）を厳守する
+UIは修正対象ではなく、analysis / data を正とする
+```
+
+理由
+
+```text
+UI不具合と見える問題の多くは distribution / deploy に起因するため
+設計原則（UI = display only）を最終監査で確認・固定するため
+```
+
+Status: adopted
+
+---
+
+### Pre-deploy Payload Freshness Check Is Mandatory
+
+Decision: Deploy前に payload freshness を必ず確認する
+
+ルール
+
+```text
+deploy前に dist/labos_deploy の snapshot を確認する
+
+確認対象:
+- data/world_politics/analysis/daily_summary_latest.json の date
+- data/prediction/prediction_latest.json の as_of
+
+local analysis/data と一致しない場合は deploy 禁止
+```
+
+理由
+
+```text
+古い dist payload を配信すると
+UIは正常でも内容が不整合となるため
+
+これは silent failure であり検知が困難であるため
+deploy前チェックを必須運用として固定する
+```
+
+Status: adopted
+
+# END OF DOCUMENT
+---
+---
