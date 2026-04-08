@@ -23,6 +23,10 @@ python scripts/build_vector_memory.py --recreate
 ■ Deploy（自宅PC専用）
 powershell -ExecutionPolicy Bypass -File scripts/run_labos_publish.ps1
 
+■ Deploy前の確認
+Get-Content dist\labos_deploy\data\world_politics\analysis\daily_summary_latest.json | Select-String '"date"|"generated_at"'
+Get-Content dist\labos_deploy\data\prediction\prediction_latest.json | Select-String '"as_of"|"generated_at"'
+
 ■ decision_index（更新）
 python build_decision_index.py --input docs/core/decision_log.md --output docs/core/decision_index.md
 
