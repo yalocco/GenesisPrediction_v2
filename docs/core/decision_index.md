@@ -2,7 +2,7 @@
 
 Status: Active
 Purpose: decision_log の検索効率を向上させるための軽量インデックス
-Last Updated: 2026-04-05
+Last Updated: 2026-04-09
 
 ---
 
@@ -759,6 +759,16 @@ source: docs/core/decision_log.md
 tags: decision, action, hardening, branch, linked
 
 rule: scripts/prediction_engine.py
+
+source: docs/core/decision_log.md
+
+---
+
+## 2026-04-09 | Daily Summary Materialization Must Be Count-Based
+
+tags: summary, materialization, count, structured
+
+rule: daily_summary_latest.json summary must be derived from today.count and must not contradict it
 
 source: docs/core/decision_log.md
 

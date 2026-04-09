@@ -2,7 +2,7 @@
 
 Status: Active  
 Purpose: Architecture decision record  
-Last Updated: 2026-04-05
+Last Updated: 2026-04-09
 
 ---
 
@@ -3063,6 +3063,49 @@ Scenario = cause-oriented branches
 Prediction = decision-grade conclusion + branch-linked actions
 Explanation = pure mirror
 UI = display only
+```
+
+Status: adopted
+
+
+---
+
+## 2026-04-09
+### Daily Summary Materialization Must Be Count-Based
+
+Decision: daily_summary summary text must be materialized from structured count-based fields
+
+対象
+
+```text
+scripts/run_daily_with_publish.ps1
+data/world_politics/analysis/daily_summary_latest.json
+analysis/daily_summary_latest.json
+```
+
+ルール
+
+```text
+daily_summary の summary は today.count と矛盾してはならない
+count > 0 のとき "Observed 0 events." を出してはならない
+summary materialization は free text 優先ではなく structured-first とする
+summary は count-based に再生成する
+```
+
+理由
+
+```text
+today.count と summary の矛盾は
+公開時の説明性と analysis completeness を壊すため
+world summary は観測件数と整合した短文で固定する必要があるため
+```
+
+補足
+
+```text
+Observed {count} events. のような count-based summary を基準とする
+Dominant anchors は count-based summary と矛盾しない範囲で付加してよい
+UI はこの不整合を補正してはならない
 ```
 
 Status: adopted
