@@ -6,7 +6,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual.ps1
 
 ■ 朝の儀式 ガード阻止
 git add -A
-git commit -m "WIP: pass dirty guard before morning ritual"
+git commit -m "auto commit before run"
 
 ■ VectorDB　更新チェック
 python scripts/check_vector_memory_freshness.py

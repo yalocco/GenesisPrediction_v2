@@ -2,7 +2,7 @@
 
 Status: Active
 Purpose: decision_log の検索効率を向上させるための軽量インデックス
-Last Updated: 2026-04-09
+Last Updated: 2026-04-10
 
 ---
 
@@ -773,6 +773,28 @@ rule: daily_summary_latest.json summary must be derived from today.count and mus
 source: docs/core/decision_log.md
 
 ---
+
+
+---
+
+## 2026-04-10 | Explanation Drivers Must Be Pure Prediction Mirror
+
+tags: explanation, drivers, mirror, prediction
+
+rule: explanation.drivers must mirror prediction.key_drivers / prediction.drivers without why / impact
+
+source: docs/core/decision_log.md
+
+
+---
+
+## 2026-04-10 | Explanation Core Fields Must Be Pure Prediction Mirror
+
+tags: explanation, mirror, prediction, monitor, implications, risks, invalidation
+
+rule: explanation core fields must mirror prediction fields directly without structured reinterpretation
+
+source: docs/core/decision_log.md
 
 # 3. Notes
 

@@ -2,7 +2,7 @@
 
 Status: Active  
 Purpose: Architecture decision record  
-Last Updated: 2026-04-09
+Last Updated: 2026-04-10
 
 ---
 
@@ -3110,6 +3110,152 @@ UI はこの不整合を補正してはならない
 
 Status: adopted
 
+
+
+---
+
+## 2026-04-10
+### Explanation Drivers Must Be Pure Prediction Mirror
+
+Decision: explanation drivers must be a pure mirror of prediction drivers with no structured reinterpretation
+
+対象
+
+```text
+scripts/build_prediction_explanation.py
+analysis/prediction/prediction_latest.json
+analysis/explanation/prediction_explanation_latest.json
+prediction.key_drivers
+prediction.drivers
+prediction.key_drivers_i18n
+prediction.drivers_i18n
+```
+
+ルール
+
+```text
+explanation.drivers は prediction.key_drivers / prediction.drivers をそのまま mirror する
+explanation.drivers_i18n は prediction.key_drivers_i18n / prediction.drivers_i18n をそのまま mirror する
+drivers に why / impact を含めない
+drivers を structured object へ再構成しない
+```
+
+禁止事項
+
+```text
+key_drivers_structured / drivers_structured から explanation.drivers を生成する
+why / impact を explanation.drivers に混入させる
+lower layer や explanation 側ロジックで drivers の意味を追加する
+```
+
+理由
+
+```text
+drivers は Prediction の真実であり
+Explanation はその読み替えではなく mirror でなければならないため
+
+why / impact の混入は
+Explanation を第二の truth layer に近づけ
+Prediction = truth / Explanation = mirror
+の原則を壊すため
+```
+
+確認済み結果
+
+```text
+prediction.key_drivers
+=
+explanation.drivers
+
+drivers は文字列リスト
+drivers_i18n も同じ粒度の mirror
+why / impact は explanation.drivers から除去済み
+```
+
+Status: adopted
+
+
+---
+
+## 2026-04-10
+### Explanation Core Fields Must Be Pure Prediction Mirror
+
+Decision: core explanation fields must be a pure mirror of prediction fields and must not be structurally reinterpreted
+
+対象
+
+```text
+scripts/build_prediction_explanation.py
+analysis/prediction/prediction_latest.json
+analysis/explanation/prediction_explanation_latest.json
+
+prediction.key_drivers / prediction.drivers
+prediction.monitoring_priorities / prediction.watchpoints
+prediction.expected_outcomes / prediction.implications
+prediction.risk_flags
+prediction.invalidation_conditions
+```
+
+ルール
+
+```text
+explanation.drivers      = prediction.key_drivers / prediction.drivers をそのまま mirror する
+explanation.watchpoints  = prediction.monitoring_priorities / prediction.watchpoints をそのまま mirror する
+explanation.monitor      = prediction.monitoring_priorities / prediction.watchpoints をそのまま mirror する
+explanation.implications = prediction.expected_outcomes / prediction.implications をそのまま mirror する
+explanation.risks        = prediction.risk_flags をそのまま mirror する
+explanation.invalidation = prediction.invalidation_conditions をそのまま mirror する
+
+*_i18n も prediction 側の対応 field をそのまま mirror する
+```
+
+禁止事項
+
+```text
+structured_* から explanation 本体 field を生成する
+item / trigger / meaning を explanation.monitor に再導入する
+outcome / path / confidence を explanation.implications に再導入する
+scenario / signal / historical から explanation 本体 field を再構成する
+explanation 側で core field の意味を追加する
+```
+
+理由
+
+```text
+Explanation を第二の truth layer にしないため
+Prediction = truth / Explanation = mirror を core field 全体に徹底するため
+drivers だけでなく monitor / implications / risks / invalidation でも
+同じ規律を維持するため
+```
+
+確認済み結果
+
+```text
+prediction.key_drivers
+=
+explanation.drivers
+
+prediction.monitoring_priorities
+=
+explanation.watchpoints
+=
+explanation.monitor
+
+prediction.expected_outcomes
+=
+explanation.implications
+（表示用 i18n では human-readable 化を許可するが、構造追加は禁止）
+
+prediction.risk_flags
+=
+explanation.risks
+
+prediction.invalidation_conditions
+=
+explanation.invalidation
+```
+
+Status: adopted
 
 # END OF DOCUMENT
 ---

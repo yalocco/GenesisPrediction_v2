@@ -2140,7 +2140,7 @@ def build_ui_terms() -> list[dict[str, str]]:
         {"term": "confidence", "meaning": "現在の観測とシナリオ整合性の強さであり、的中率ではない"},
         {"term": "dominant_scenario", "meaning": "現時点で最も支持が強い主枝であり、唯一の未来ではない"},
         {"term": "watchpoints", "meaning": "今後シナリオを変えうる監視項目であり、結論そのものではない"},
-        {"term": "monitor", "meaning": "watchpoints を item / trigger / meaning に構造化した判断支援フィールド"},
+        {"term": "monitor", "meaning": "watchpoints と同じ監視項目を mirror した参照フィールドであり、新しい意味を追加しない"},
         {"term": "historical", "meaning": "過去との比較材料であり、歴史の再演確定を意味しない"},
         {"term": "interpretation", "meaning": "prediction を人間がどう読むべきかを示す中間説明であり、新しい真実ではない"},
         {"term": "decision_line", "meaning": "現局面をどう扱うべきかを一行で示す運用的要約であり、命令ではない"},
@@ -2330,10 +2330,7 @@ def build_prediction_explanation(
         confidence=confidence,
         risk_value=risk_value,
     )
-    monitor_i18n = structured_monitor_i18n(
-        prediction,
-        dominant_scenario=dominant_scenario,
-    )
+    monitor_i18n = mirror_list_i18n(prediction, "monitoring_priorities", "watchpoints")
     watchpoints_i18n = mirror_list_i18n(prediction, "monitoring_priorities", "watchpoints")
     implications_i18n = mirror_list_i18n(
         prediction,
