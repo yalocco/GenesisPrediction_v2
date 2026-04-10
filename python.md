@@ -41,16 +41,16 @@ docker run -d -p 11435:11434 --name ollama-docker -v ollama:/root/.ollama ollama
 docker exec -it ollama-docker ollama pull gemma4:e4b
 
 ■ 三項目チェック
-# === Prediction ===
+
 "=== Prediction ==="
-(Get-Content analysis\prediction\prediction_latest.json -Raw | ConvertFrom-Json).summary
-(Get-Content analysis\prediction\prediction_latest.json -Raw | ConvertFrom-Json).key_drivers
-(Get-Content analysis\prediction\prediction_latest.json -Raw | ConvertFrom-Json).monitoring_priorities
+$p = Get-Content analysis\prediction\prediction_latest.json -Raw | ConvertFrom-Json
+$p.summary
+$p.key_drivers
+$p.monitoring_priorities
 
 # === Explanation ===
 "=== Explanation ==="
-(Get-Content analysis\explanation\prediction_explanation_latest.json -Raw | ConvertFrom-Json).summary
-(Get-Content analysis\explanation\prediction_explanation_latest.json -Raw | ConvertFrom-Json).drivers
-(Get-Content analysis\explanation\prediction_explanation_latest.json -Raw | ConvertFrom-Json).monitor
-
-
+$e = Get-Content analysis\explanation\prediction_explanation_latest.json -Raw | ConvertFrom-Json
+$e.summary
+$e.drivers
+$e.monitor

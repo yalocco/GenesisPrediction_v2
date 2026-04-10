@@ -2323,12 +2323,8 @@ def build_prediction_explanation(
         fallback_text="prediction narrative unavailable",
     )
 
-    drivers_i18n = structured_drivers_i18n(
-        prediction,
-        dominant_scenario=dominant_scenario,
-        confidence=confidence,
-        risk_value=risk_value,
-    )
+    drivers = extract_drivers(prediction)
+    drivers_i18n = mirror_list_i18n(prediction, "key_drivers", "drivers")
     monitor_i18n = mirror_list_i18n(prediction, "monitoring_priorities", "watchpoints")
     watchpoints_i18n = mirror_list_i18n(prediction, "monitoring_priorities", "watchpoints")
     implications_i18n = mirror_list_i18n(
@@ -2387,7 +2383,7 @@ def build_prediction_explanation(
             "overall_risk": risk_value,
         },
         "context_i18n": context_i18n,
-        "drivers": drivers_i18n["en"],
+        "drivers": [d["driver"] for d in drivers],
         "drivers_i18n": drivers_i18n,
         "monitor": monitor_i18n["en"],
         "monitor_i18n": monitor_i18n,
