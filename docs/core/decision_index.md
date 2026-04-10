@@ -796,6 +796,16 @@ rule: explanation core fields must mirror prediction fields directly without str
 
 source: docs/core/decision_log.md
 
+
+
+## 2026-04-10 | Prediction Monitoring Priorities Ordering Must Preserve Decision Flow
+
+tags: prediction, monitoring, ordering, decision_flow
+
+rule: monitoring_priorities must be ordered as escalation → persistence → downstream confirmation → stabilization
+
+source: docs/core/decision_log.md
+
 # 3. Notes
 
 このファイルは以下用途で使用される：

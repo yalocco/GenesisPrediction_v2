@@ -2300,7 +2300,6 @@ def build_prediction_explanation(
     )
     summary_i18n = mirror_scalar_i18n(
         prediction,
-        "prediction_statement",
         "summary",
         fallback_text="prediction summary unavailable",
     )

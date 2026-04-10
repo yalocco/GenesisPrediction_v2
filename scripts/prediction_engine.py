@@ -2073,38 +2073,75 @@ def build_monitoring_priorities(
     reference_memory: Dict[str, Any],
 ) -> List[str]:
     roles = get_scenario_watchpoint_roles(scenario_data)
-    priorities: List[str] = []
 
-    priorities.extend(roles.get("escalation", [])[:4])
-    priorities.extend(roles.get("persistence", [])[:3])
-    priorities.extend(roles.get("stabilization", [])[:2])
+    escalation_items = normalize_token_list(roles.get("escalation"))
+    persistence_items = normalize_token_list(roles.get("persistence"))
+    stabilization_items = normalize_token_list(roles.get("stabilization"))
 
-    for item in normalize_token_list(scenario_data.get("watchpoints"))[:6]:
-        priorities.append(item)
+    watchpoint_pool: List[str] = []
+    watchpoint_pool.extend(normalize_token_list(scenario_data.get("watchpoints"))[:6])
 
     historical_context = scenario_data.get("historical_context", {})
     if isinstance(historical_context, dict):
-        priorities.extend(normalize_token_list(historical_context.get("historical_watchpoints"))[:4])
+        watchpoint_pool.extend(normalize_token_list(historical_context.get("historical_watchpoints"))[:4])
 
     matched_patterns = pattern_data.get("matched_patterns", [])
     if isinstance(matched_patterns, list):
         for item in matched_patterns[:1]:
             if isinstance(item, dict):
-                priorities.extend(normalize_token_list(item.get("watchpoints"))[:2])
+                watchpoint_pool.extend(normalize_token_list(item.get("watchpoints"))[:2])
 
     top_analogs = analog_data.get("top_analogs", [])
     if isinstance(top_analogs, list):
         for item in top_analogs[:1]:
             if isinstance(item, dict):
-                priorities.extend(normalize_token_list(item.get("watchpoints"))[:2])
+                watchpoint_pool.extend(normalize_token_list(item.get("watchpoints"))[:2])
 
-    cleaned = []
-    for token in unique_preserve_order([x for x in priorities if x]):
-        if token in PREDICTION_MONITORING_NOISE:
-            continue
-        cleaned.append(token)
-    return cleaned[:8]
+    deduped_pool = unique_preserve_order([x for x in watchpoint_pool if x])
 
+    def _not_noise(items: List[str]) -> List[str]:
+        cleaned: List[str] = []
+        for token in items:
+            if token in PREDICTION_MONITORING_NOISE:
+                continue
+            cleaned.append(token)
+        return cleaned
+
+    escalation_items = _not_noise(escalation_items)
+    persistence_items = _not_noise(persistence_items)
+    stabilization_items = _not_noise(stabilization_items)
+    deduped_pool = _not_noise(deduped_pool)
+
+    ordered_monitoring: List[str] = []
+
+    # 1) escalation triggers: immediate deterioration checks
+    ordered_monitoring.extend(escalation_items[:3])
+
+    # 2) persistence checks: conditions that keep the active path alive
+    ordered_monitoring.extend(
+        [token for token in persistence_items if token not in ordered_monitoring][:3]
+    )
+
+    # 3) downstream confirmation: late-stage damage confirmation after persistence
+    downstream_confirmation = [
+        token
+        for token in (escalation_items[3:] + deduped_pool)
+        if token not in ordered_monitoring
+        and (
+            "drawdown" in token
+            or "loss" in token
+            or "default" in token
+            or "funding" in token
+        )
+    ]
+    ordered_monitoring.extend(downstream_confirmation[:1])
+
+    # 4) stabilization checks: only after deterioration / persistence logic
+    ordered_monitoring.extend(
+        [token for token in stabilization_items if token not in ordered_monitoring][:2]
+    )
+
+    return unique_preserve_order([x for x in ordered_monitoring if x])[:8]
 
 
 def build_prediction_drivers(

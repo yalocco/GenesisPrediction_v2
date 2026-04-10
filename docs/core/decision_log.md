@@ -3257,6 +3257,85 @@ explanation.invalidation
 
 Status: adopted
 
+
+
+## 2026-04-10
+### Prediction Monitoring Priorities Ordering Must Preserve Decision Flow
+
+Decision: prediction monitoring_priorities must preserve decision flow ordering, not just role inclusion
+
+対象
+
+```text
+scripts/prediction_engine.py
+analysis/prediction/prediction_latest.json
+prediction.monitoring_priorities
+prediction.monitoring_triggers
+prediction.monitoring_priorities_structured
+```
+
+ルール
+
+```text
+monitoring_priorities は単に branch role を含むだけでは不十分である
+出力順は以下の decision flow を保持しなければならない
+
+1. escalation
+2. persistence
+3. downstream confirmation
+4. stabilization
+```
+
+補足
+
+```text
+escalation = 直近の悪化判定トリガー
+persistence = base path 継続判定
+downstream confirmation = すでに波及が可視化した確認項目
+stabilization = 安定化を認める最終条件
+
+flat list であっても
+上から読むだけで branch logic が分かる順序を保つ
+```
+
+禁止事項
+
+```text
+housing or equity drawdown のような downstream confirmation を
+persistence より前に置くこと
+
+stabilization 項目を途中に混ぜること
+
+role は正しくても
+読む順序で decision flow が崩れる出力を許可すること
+```
+
+理由
+
+```text
+Prediction monitoring は UI 表示用の一覧ではなく
+判断順に読める監視列である必要があるため
+
+monitoring_triggers に構造が存在していても
+flat monitoring_priorities の順序が崩れていると
+実運用では判断支援として弱くなるため
+```
+
+確認済み結果
+
+```text
+bank funding stress
+credit spread widening
+loan loss increase
+capital control discussion
+money market dislocation
+mobility restrictions
+housing or equity drawdown
+pressure easing
+```
+
+Status: adopted
+
 # END OF DOCUMENT
 ---
 ---
