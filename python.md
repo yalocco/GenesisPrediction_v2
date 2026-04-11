@@ -54,3 +54,7 @@ $e = Get-Content analysis\explanation\prediction_explanation_latest.json -Raw | 
 $e.summary
 $e.drivers
 $e.monitor
+
+三項目チェックが不調な時
+python -m json.tool analysis\prediction\prediction_latest.json > $null
+python -m json.tool analysis\explanation\prediction_explanation_latest.json > $null
