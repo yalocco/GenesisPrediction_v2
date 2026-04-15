@@ -37,24 +37,6 @@ docker rm ollama-docker
 docker pull ollama/ollama:latest
 ④ 再作成
 docker run -d -p 11435:11434 --name ollama-docker -v ollama:/root/.ollama ollama/ollama:latest
-⑤ 再トライ
+⑤ ダウンロードモデル
 docker exec -it ollama-docker ollama pull gemma4:e4b
 
-■ 三項目チェック
-
-"=== Prediction ==="
-$p = Get-Content analysis\prediction\prediction_latest.json -Raw | ConvertFrom-Json
-$p.summary
-$p.key_drivers
-$p.monitoring_priorities
-
-# === Explanation ===
-"=== Explanation ==="
-$e = Get-Content analysis\explanation\prediction_explanation_latest.json -Raw | ConvertFrom-Json
-$e.summary
-$e.drivers
-$e.monitor
-
-三項目チェックが不調な時
-python -m json.tool analysis\prediction\prediction_latest.json > $null
-python -m json.tool analysis\explanation\prediction_explanation_latest.json > $null
