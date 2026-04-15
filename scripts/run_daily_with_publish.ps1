@@ -437,7 +437,13 @@ if daily_summary_data:
         }
 
         Invoke-PythonScript -PythonExe $python `
-            -ScriptPath (Join-Path $scriptsDir "build_world_view_model_latest.py")
+            -ScriptPath (Join-Path $scriptsDir "build_world_view_model_latest.py") `
+            -Arguments @(
+                "--translate-articles",
+                "--translate-meta",
+                "--ollama-model", "gemma3:4b",
+                "--ollama-base-url", "http://127.0.0.1:11435"
+            )
 
         $worldViewLatest = Join-Path $dataAnalysisDir "view_model_latest.json"
         Copy-IfExists -SourcePath $worldViewLatest -DestinationPath (Join-Path $analysisDir "view_model_latest.json") | Out-Null
