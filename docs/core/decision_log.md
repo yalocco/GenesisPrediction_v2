@@ -3339,3 +3339,39 @@ Status: adopted
 # END OF DOCUMENT
 ---
 ---
+
+
+---
+## 2026-04-15
+### Translation Pipeline Requires Explicit Invocation Parameters
+
+Decision:
+Morning Ritual must explicitly pass translation-related parameters to world view build.
+
+Context:
+Even when Ollama (Docker) and models are properly configured, translation will not execute unless the following flags are explicitly provided during script invocation.
+
+```text
+--translate-articles
+--translate-meta
+--ollama-model <model>
+--ollama-base-url <url>
+```
+
+Issue Observed:
+Morning Ritual completed successfully but translation was silently disabled due to missing arguments.
+
+Resolution:
+Updated run_daily_with_publish.ps1 to include required translation parameters.
+
+Result:
+Translation pipeline is now fully integrated into Morning Ritual.
+Automatic end-to-end pipeline confirmed.
+
+Rule:
+```text
+Translation is NOT implicit.
+All external service integrations must be explicitly wired at invocation level.
+```
+
+Status: adopted

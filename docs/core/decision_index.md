@@ -826,3 +826,19 @@ AI の意思決定参照
 ---
 
 END OF FILE
+
+---
+
+
+## 2026-04-15 | Translation Pipeline Explicit Invocation
+
+tags: translation, pipeline, invocation
+
+rule: translation requires explicit parameters and is not implicit
+
+source: docs/core/decision_log.md
+
+
+---
+
+END OF FILE
