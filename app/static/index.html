@@ -3,19 +3,23 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Home - GenesisPrediction v2</title>
+  <title>GenesisPrediction | Global Risk Signals, Scenarios, and Prediction</title>
 
-    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon.png?v=20260418-3">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon.png?v=20260418-3">
   <link rel="shortcut icon" href="assets/favicon.png?v=20260418-3">
-<meta name="description" content="AI-driven global risk and prediction system">
-
+  <meta name="description" content="GenesisPrediction is a structured global risk observation system that connects observation, trend, signal, scenario, and prediction into decision-grade insight.">
   <link rel="canonical" href="https://labos.soma-samui.com/">
 
-  <meta property="og:title" content="GenesisPrediction v2">
-  <meta property="og:description" content="AI-driven global risk and prediction system">
+  <meta property="og:title" content="GenesisPrediction | Global Risk Signals, Scenarios, and Prediction">
+  <meta property="og:description" content="Understand global events, detect key signals, and move from observation to prediction through a structured decision-grade flow.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://labos.soma-samui.com/">
   <meta property="og:image" content="https://labos.soma-samui.com/static/assets/ogp.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="GenesisPrediction | Global Risk Signals, Scenarios, and Prediction">
+  <meta name="twitter:description" content="Understand global events, detect key signals, and move from observation to prediction through a structured decision-grade flow.">
+  <meta name="twitter:image" content="https://labos.soma-samui.com/static/assets/ogp.png">
 
   <link rel="stylesheet" href="/static/app.css?v=20260329-home-i18n-rollout-3" />
   <link rel="stylesheet" href="/static/index.css?v=20260329-home-i18n-rollout-3" />
@@ -28,71 +32,115 @@
       <div class="gp-page">
         <section class="panel">
           <div class="home-hero">
-            <div class="h1" data-ui-text="home.title">Home</div>
-            <p class="sub" data-ui-text="home.subtitle">
-              GenesisPrediction is an analysis system that observes global events and connects trends, signals, and scenarios to forward-looking predictions. This Home screen presents the current state of the world, which serves as the starting point of the system.
+            <div class="hint" data-ui-text="home.eyebrow">GenesisPrediction</div>
+            <div class="h1" data-ui-text="home.hero_title">Understand the World. Anticipate What Comes Next.</div>
+            <p class="sub" data-ui-text="home.hero_subtitle">
+              Daily global signals, structured into decision-grade insight.
             </p>
+            <p class="hint" data-ui-text="home.hero_meta">
+              From observation to prediction — no noise, no guesswork.
+            </p>
+          </div>
+        </section>
 
-            <div class="status-shell">
-              <div class="status-top">
-                <div class="status-title" data-ui-text="home.global_status_title">Global Status</div>
-                <div class="pillrow">
-                  <span id="pillAsOfLocal" class="pill">as_of: --</span>
-                  <span id="pillReadyLocal" class="pill">loading…</span>
-                </div>
+        <section class="panel home-routes-panel">
+          <div class="sectionTitle">
+            <h2 data-ui-text="home.routes_title">Start here</h2>
+            <span class="hint" data-ui-text="home.routes_hint">Choose the next view based on what you need.</span>
+          </div>
+
+          <div class="status-grid home-route-grid">
+            <a class="status-item home-route-card" href="/static/digest.html">
+              <div class="status-label" data-ui-text="home.route_digest_label">Understand</div>
+              <div class="status-value" data-ui-text="home.route_digest_title">Understand the World</div>
+              <div class="status-sub" data-ui-text="home.route_digest_sub">See what is happening across global events today.</div>
+              <div class="pillrow home-pillrow-top">
+                <span class="pill" data-ui-text="home.route_digest_cta">View Digest →</span>
               </div>
+            </a>
 
-              <div class="status-grid">
-                <div class="status-item">
-                  <div class="status-label" data-ui-text="home.global_risk_label">Global Risk</div>
-                  <div id="gsRisk" class="status-value">—</div>
-                  <div id="gsRiskSub" class="status-sub">daily summary / sentiment</div>
-                </div>
+            <a class="status-item home-route-card" href="/static/overlay.html">
+              <div class="status-label" data-ui-text="home.route_overlay_label">Detect</div>
+              <div class="status-value" data-ui-text="home.route_overlay_title">Detect Key Signals</div>
+              <div class="status-sub" data-ui-text="home.route_overlay_sub">Identify shifts, risks, and underlying pressures.</div>
+              <div class="pillrow home-pillrow-top">
+                <span class="pill" data-ui-text="home.route_overlay_cta">View Signals →</span>
+              </div>
+            </a>
 
-                <div class="status-item">
-                  <div class="status-label" data-ui-text="home.sentiment_balance_label">Sentiment Balance</div>
-                  <div id="gsSentiment" class="status-value">—</div>
-                  <div id="gsSentimentSub" class="status-sub">article distribution</div>
-                </div>
+            <a class="status-item home-route-card" href="/static/prediction.html">
+              <div class="status-label" data-ui-text="home.route_prediction_label">Decide</div>
+              <div class="status-value" data-ui-text="home.route_prediction_title">Make Decisions</div>
+              <div class="status-sub" data-ui-text="home.route_prediction_sub">See structured scenarios and the most likely outcome.</div>
+              <div class="pillrow home-pillrow-top">
+                <span class="pill" data-ui-text="home.route_prediction_cta">View Prediction →</span>
+              </div>
+            </a>
+          </div>
+        </section>
 
-                <div class="status-item">
-                  <div class="status-label" data-ui-text="home.fx_regime_label">FX Regime</div>
-                  <div id="gsFx" class="status-value">—</div>
-                  <div id="gsFxSub" class="status-sub">decision / fallback</div>
-                </div>
+        <section class="panel home-method-panel">
+          <div class="sectionTitle">
+            <h2 data-ui-text="home.method_title">How it works</h2>
+            <span class="hint" data-ui-text="home.method_hint">The system moves from observation to decision support in layers.</span>
+          </div>
 
-                <div class="status-item">
-                  <div class="status-label" data-ui-text="home.articles_label">Articles</div>
-                  <div id="gsArticles" class="status-value">—</div>
-                  <div id="gsArticlesSub" class="status-sub">digest latest</div>
-                </div>
+          <div class="card">
+            <div class="mono" data-ui-text="home.method_flow">Observation → Trend → Signal → Scenario → Prediction</div>
+            <p class="sub" data-ui-text="home.method_sub">
+              Each layer builds on verified signals — not assumptions.
+            </p>
+          </div>
+        </section>
 
-                <div class="status-item">
-                  <div class="status-label" data-ui-text="home.updated_label">Updated</div>
-                  <div id="gsUpdated" class="status-value">—</div>
-                  <div id="gsUpdatedSub" class="status-sub">latest runtime stamp</div>
-                </div>
+        <section class="panel">
+          <div class="status-shell">
+            <div class="status-top">
+              <div class="status-title" data-ui-text="home.global_status_title">Global Status</div>
+              <div class="pillrow">
+                <span id="pillAsOfLocal" class="pill">as_of: --</span>
+                <span id="pillReadyLocal" class="pill">loading…</span>
               </div>
             </div>
 
-            <div class="home-kpis">
-              <div class="home-kpi">
-                <div class="hint" data-ui-text="home.kpi_events">Events</div>
-                <div id="kpiEvents" class="value">—</div>
+            <div class="status-grid">
+              <div class="status-item">
+                <div class="status-label" data-ui-text="home.global_risk_label">Global Risk</div>
+                <div id="gsRisk" class="status-value">—</div>
+                <div id="gsRiskSub" class="status-sub">daily summary / sentiment</div>
               </div>
-              <div class="home-kpi">
-                <div class="hint" data-ui-text="home.kpi_health_ok">Health OK</div>
-                <div id="kpiHealthOk" class="value">—</div>
+
+              <div class="status-item">
+                <div class="status-label" data-ui-text="home.sentiment_balance_label">Sentiment Balance</div>
+                <div id="gsSentiment" class="status-value">—</div>
+                <div id="gsSentimentSub" class="status-sub">article distribution</div>
               </div>
-              <div class="home-kpi">
-                <div class="hint" data-ui-text="home.kpi_sentiment_items">Sentiment Items</div>
-                <div id="kpiSentimentItems" class="value">—</div>
+
+              <div class="status-item">
+                <div class="status-label" data-ui-text="home.fx_regime_label">FX Regime</div>
+                <div id="gsFx" class="status-value">—</div>
+                <div id="gsFxSub" class="status-sub">decision / fallback</div>
               </div>
-              <div class="home-kpi">
-                <div class="hint" data-ui-text="home.kpi_summary">Summary</div>
-                <div id="kpiSummaryState" class="value">—</div>
+
+              <div class="status-item">
+                <div class="status-label" data-ui-text="home.articles_label">Articles</div>
+                <div id="gsArticles" class="status-value">—</div>
+                <div id="gsArticlesSub" class="status-sub">digest latest</div>
+              </div>
+
+              <div class="status-item">
+                <div class="status-label" data-ui-text="home.updated_label">Updated</div>
+                <div id="gsUpdated" class="status-value">—</div>
+                <div id="gsUpdatedSub" class="status-sub">latest runtime stamp</div>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section class="panel home-latest-panel">
+          <div class="sectionTitle">
+            <h2 data-ui-text="home.latest_snapshot_title">Latest Snapshot</h2>
+            <span class="hint" data-ui-text="home.latest_snapshot_hint">A compact view of the current system state.</span>
           </div>
 
           <div class="grid2 home-grid-section">
@@ -143,6 +191,20 @@
                 <span id="sumSource" class="pill">source: --</span>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section class="panel home-value-panel">
+          <div class="sectionTitle">
+            <h2 data-ui-text="home.why_title">Why this matters</h2>
+          </div>
+          <div class="card">
+            <p class="sub" data-ui-text="home.why_body_1">
+              This system is designed for clarity, not speculation.
+            </p>
+            <p class="sub" data-ui-text="home.why_body_2">
+              Every output is traceable, structured, and explainable.
+            </p>
           </div>
         </section>
       </div>
