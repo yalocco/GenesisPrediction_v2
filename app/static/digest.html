@@ -6,10 +6,23 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Digest - GenesisPrediction v2</title>
+    <title>Daily Risk Digest | GenesisPrediction</title>
 
     <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon.png?v=20260418-3">
   <link rel="shortcut icon" href="assets/favicon.png?v=20260418-3">
+  <meta name="description" content="Read a daily digest of global events with key highlights, sentiment shifts, and emerging risk signals in a structured overview.">
+  <link rel="canonical" href="https://labos.soma-samui.com/static/digest.html">
+
+  <meta property="og:title" content="Daily Global Risk Digest">
+  <meta property="og:description" content="Key global events, sentiment shifts, and emerging risks summarized in one structured view.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://labos.soma-samui.com/static/digest.html">
+  <meta property="og:image" content="https://labos.soma-samui.com/static/assets/ogp.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Daily Global Risk Digest">
+  <meta name="twitter:description" content="Key global events, sentiment shifts, and emerging risks summarized in one structured view.">
+  <meta name="twitter:image" content="https://labos.soma-samui.com/static/assets/ogp.png">
 <link rel="stylesheet" href="/static/app.css?v=20260318-digest-final-1" />
   <link rel="stylesheet" href="/static/digest.css?v=20260318-digest-final-1" />
 </head>
@@ -21,8 +34,8 @@
       <div class="gp-page digest-page">
         <section class="panel digest-shell">
           <div class="digest-hero">
-            <div class="h1" id="digestTitle">Digest</div>
-            <p id="heroText" class="sub">Prioritize the Digest ViewModel and present an integrated view of Summary, Highlights, Prediction, and FX.</p>
+            <div class="h1" id="digestTitle">Daily Risk Digest</div>
+            <p id="heroText" class="sub">Today’s global situation, structured. Key events, sentiment shifts, and risk signals are organized here for clarity.</p>
 
             <section class="card digest-card-top section-no-margin">
               <div class="sectionTitle">
@@ -155,7 +168,7 @@
       var UI_TEXT = {
         en: {
           title: "Digest",
-          hero_digest: "Prioritize the Digest ViewModel and present Summary, Highlights, Prediction, and FX. If article cards are unavailable, fall back to the world view model and then to news.",
+          hero_digest: "Today’s global situation, structured. Key events, sentiment shifts, and risk signals are organized here for clarity.",
           hero_world_fallback: "The Digest ViewModel could not be loaded, so world_view_model_latest.json is being used as a fallback. Once Digest is generated, prefer the digest view model.",
           hero_summary_fallback: "Digest and World View could not be loaded, so daily_summary_latest.json is being used as a fallback. In normal operation, prefer the digest view model.",
           hero_no_data: "Digest, Summary, and News could not be loaded. Reload the page after data generation completes.",
@@ -213,7 +226,7 @@
         },
         ja: {
           title: "ダイジェスト",
-          hero_digest: "Digest ViewModel を優先し、Summary、Highlights、Prediction、FX を統合表示します。記事カードが使えない場合のみ、world view、その後 news に表示を切り替えます。",
+          hero_digest: "今日の世界状況を、構造化して把握するためのページです。主要イベント、センチメント変化、リスクシグナルを見やすく整理して表示します。",
           hero_world_fallback: "Digest ViewModel を読み込めないため、world_view_model_latest.json を代替表示しています。Digest が生成されたら digest view model を優先してください。",
           hero_summary_fallback: "Digest と World View を読み込めないため、daily_summary_latest.json を代替表示しています。通常運用では digest view model を優先してください。",
           hero_no_data: "Digest、Summary、News を読み込めませんでした。データ生成完了後に再読み込みしてください。",
@@ -271,7 +284,7 @@
         },
         th: {
           title: "ไดเจสต์",
-          hero_digest: "ให้ความสำคัญกับ Digest ViewModel และแสดง Summary, Highlights, Prediction และ FX แบบรวม หากไม่มีการ์ดบทความจึงค่อยถอยไปใช้ world view และจากนั้นจึงใช้ news",
+          hero_digest: "ภาพรวมสถานการณ์โลกของวันนี้ในรูปแบบที่เป็นโครงสร้าง จัดเหตุการณ์สำคัญ การเปลี่ยนแปลงของเซนติเมนต์ และสัญญาณความเสี่ยงให้อ่านได้ชัดเจน",
           hero_world_fallback: "ไม่สามารถโหลด Digest ViewModel ได้ จึงกำลังใช้ world_view_model_latest.json เป็นข้อมูลสำรอง เมื่อ Digest ถูกสร้างแล้วควรใช้ digest view model เป็นหลัก",
           hero_summary_fallback: "ไม่สามารถโหลดทั้ง Digest และ World View ได้ จึงกำลังใช้ daily_summary_latest.json เป็นข้อมูลสำรอง ในการใช้งานปกติควรใช้ digest view model เป็นหลัก",
           hero_no_data: "ไม่สามารถโหลด Digest, Summary และ News ได้ กรุณารีโหลดหลังจากการสร้างข้อมูลเสร็จสิ้น",

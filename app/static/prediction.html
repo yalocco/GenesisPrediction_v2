@@ -4,11 +4,21 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>Prediction - GenesisPrediction v2</title>
+<title>World Risk Prediction | GenesisPrediction</title>
 
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon.png?v=20260418-3">
   <link rel="shortcut icon" href="assets/favicon.png?v=20260418-3">
-<meta content="GenesisPrediction Prediction UI" name="description"/>
+<meta content="View the latest world risk prediction based on observation, trends, signals, and scenario analysis for informed decision-making." name="description"/>
+<link rel="canonical" href="https://labos.soma-samui.com/static/prediction.html"/>
+<meta property="og:title" content="World Risk Prediction | GenesisPrediction"/>
+<meta property="og:description" content="Latest global risk outlook based on observation, signals, and scenario analysis. See what to watch next."/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://labos.soma-samui.com/static/prediction.html"/>
+<meta property="og:image" content="https://labos.soma-samui.com/static/assets/ogp.png"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="Global Risk Outlook (Latest)"/>
+<meta name="twitter:description" content="A structured prediction of global risk with key drivers and watchpoints."/>
+<meta name="twitter:image" content="https://labos.soma-samui.com/static/assets/ogp.png"/>
 <link href="/static/app.css?v=20260321-three-layer-1" rel="stylesheet"/>
 <link href="/static/prediction.css?v=20260321-three-layer-1" rel="stylesheet"/>
 </head>
@@ -20,9 +30,9 @@
 <section class="panel prediction-shell">
 <section class="hero-grid">
 <article class="hero-card hero-intro-card">
-<h1 class="hero-title" data-ui-text="hero_title" id="heroPageTitle">Prediction</h1>
+<h1 class="hero-title" data-ui-text="hero_title" id="heroPageTitle">World Risk Prediction</h1>
 <p class="sub" data-ui-text="hero_sub">
-              Prediction is a display layer that directly renders prediction_latest.json and prediction_explanation_latest.json generated in the analysis layer. The UI is responsible for display only and does not perform inference, completion, or recalculation.
+              What is likely to happen next. This page presents the latest world risk outlook based on observation, trends, signals, and scenario analysis.
               </p>
 <p class="sub" data-ui-text="loading_prediction_headline" id="heroHeadline">Loading prediction headline...</p>
 <div class="detail-card hero-decision-card mt-compact">
@@ -164,7 +174,7 @@
 </section>
 <section class="card compact-card">
 <div class="sectionTitle">
-<h2 data-ui-text="prediction_explanation_title">Prediction Explanation Summary</h2>
+<h2 data-ui-text="prediction_explanation_title">Why this prediction?</h2>
 <span class="hint" data-ui-text="prediction_explanation_hint">analysis/explanation/prediction_explanation_latest.json</span>
 </div>
 <div class="list-stack compact-list" id="explanationSummaryBlock"></div>
@@ -359,8 +369,8 @@
 
     const UI_TEXT = {
       "en": {
-            "hero_title": "Prediction",
-            "hero_sub": "Prediction is a display layer that directly renders prediction_latest.json and prediction_explanation_latest.json generated in the analysis layer. The UI is responsible for display only and does not perform inference, completion, or recalculation.",
+            "hero_title": "World Risk Prediction",
+            "hero_sub": "What is likely to happen next. This page presents the latest world risk outlook based on observation, trends, signals, and scenario analysis.",
             "eyebrow_decision": "Decision",
             "loading_decision_line": "Loading decision line...",
             "loading_interpretation": "Loading interpretation...",
@@ -405,7 +415,7 @@
             "runtime_notes_sub": "Quick operating context.",
             "source_status_title": "Source Status",
             "source_status_sub": "Artifact load summary.",
-            "prediction_explanation_title": "Prediction Explanation Summary",
+            "prediction_explanation_title": "Why this prediction?",
             "prediction_explanation_hint": "data/explanation/prediction_explanation_latest.json",
             "ai_recall_title": "🧠 AI Recall",
             "ai_recall_sub": "Past decisions, similar cases, and historical context retrieved from vector memory. This represents the reasoning memory supporting the current prediction.",
@@ -525,8 +535,8 @@
             "recall_expand_title": "Click or press Enter/Space to expand"
       },
       "ja": {
-            "hero_title": "予測",
-            "hero_sub": "Prediction は analysis 層で生成された prediction_latest.json と prediction_explanation_latest.json をそのまま表示する表示レイヤです。UI は表示のみを担当し、推論・補完・再計算は行いません。",
+            "hero_title": "世界リスク予測",
+            "hero_sub": "次に何が起こりやすいかを示すページです。観測、トレンド、シグナル、シナリオ分析に基づく最新の世界リスク見通しを表示します。",
             "eyebrow_decision": "判断",
             "loading_decision_line": "判断文を読み込み中...",
             "loading_interpretation": "解釈を読み込み中...",
@@ -571,7 +581,7 @@
             "runtime_notes_sub": "素早い運用文脈。",
             "source_status_title": "ソース状態",
             "source_status_sub": "成果物ロード要約。",
-            "prediction_explanation_title": "予測説明サマリー",
+            "prediction_explanation_title": "なぜこの予測なのか？",
             "prediction_explanation_hint": "data/explanation/prediction_explanation_latest.json",
             "ai_recall_title": "🧠 AI Recall",
             "ai_recall_sub": "ベクターメモリから取得した過去判断・類似事例・歴史文脈です。現在の予測を支える推論メモリを表します。",
@@ -691,8 +701,8 @@
             "recall_expand_title": "クリックまたは Enter / Space で展開"
       },
       "th": {
-            "hero_title": "Prediction",
-            "hero_sub": "Prediction เป็นชั้นแสดงผลที่เรนเดอร์ prediction_latest.json และ prediction_explanation_latest.json จากชั้น analysis โดยตรง UI มีหน้าที่แสดงผลเท่านั้น และไม่ทำการอนุมาน เติมข้อมูล หรือคำนวณใหม่",
+            "hero_title": "การคาดการณ์ความเสี่ยงโลก",
+            "hero_sub": "สิ่งที่มีแนวโน้มจะเกิดขึ้นถัดไป หน้านี้แสดงมุมมองความเสี่ยงโลกล่าสุดโดยอิงจาก observation, trend, signal และ scenario analysis",
             "eyebrow_decision": "การตัดสินใจ",
             "loading_decision_line": "กำลังโหลดบรรทัดการตัดสินใจ...",
             "loading_interpretation": "กำลังโหลดการตีความ...",
@@ -737,7 +747,7 @@
             "runtime_notes_sub": "บริบทการปฏิบัติงานแบบรวดเร็ว",
             "source_status_title": "สถานะแหล่งข้อมูล",
             "source_status_sub": "สรุปการโหลดอาร์ติแฟกต์",
-            "prediction_explanation_title": "สรุปคำอธิบาย Prediction",
+            "prediction_explanation_title": "เหตุใดจึงเป็นการคาดการณ์นี้?",
             "prediction_explanation_hint": "data/explanation/prediction_explanation_latest.json",
             "ai_recall_title": "🧠 AI Recall",
             "ai_recall_sub": "การตัดสินใจก่อนหน้า กรณีคล้ายกัน และบริบททางประวัติศาสตร์ที่ดึงจากเวกเตอร์เมมโมรี สิ่งนี้แสดงถึงหน่วยความจำเชิงเหตุผลที่รองรับการคาดการณ์ปัจจุบัน",
