@@ -10,7 +10,7 @@
     en: {
       home: {
         eyebrow: "GenesisPrediction",
-        hero_title: "Understand the World. Anticipate What Comes Next.",
+        hero_title: "Understand Global Risk. Anticipate What Comes Next.",
         hero_subtitle: "Daily global signals, structured into decision-grade insight.",
         hero_meta: "From observation to prediction — no noise, no guesswork.",
         routes_title: "Start here",
