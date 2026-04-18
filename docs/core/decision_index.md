@@ -806,6 +806,27 @@ rule: monitoring_priorities must be ordered as escalation → persistence → do
 
 source: docs/core/decision_log.md
 
+
+## 2026-04-19 | Home Must Be Route-First Public Landing Page
+
+tags: home, landing, routes, public_release, ui
+
+rule: home must be route-first and lead users toward digest, overlay, and prediction
+
+source: docs/core/decision_log.md
+
+---
+
+## 2026-04-19 | Prediction Page Static UI Text Must Resolve Locally
+
+tags: prediction, i18n, static_labels, local_ui_text
+
+rule: prediction.html static labels must resolve from page-local UI_TEXT, not shared translation routing
+
+source: docs/core/decision_log.md
+
+---
+
 # 3. Notes
 
 このファイルは以下用途で使用される：

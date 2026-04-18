@@ -3390,6 +3390,131 @@ Status: adopted
 
 ---
 
+
+## 2026-04-19
+### Home Must Be Route-First Public Landing Page
+
+Decision: Home must function as a route-first landing page, not as a dashboard-first analysis dump
+
+対象
+
+```text
+app/static/index.html
+app/static/index.css
+app/static/common/i18n.js
+```
+
+ルール
+
+```text
+Home は「何を見るべきか」を最初に示す
+Hero → Route Cards → How it works → Status / Snapshot
+の順で構成する
+
+Home は説明を増やしすぎない
+Home で Prediction 本文を先出ししない
+Home は Digest / Overlay / Prediction への入口とする
+```
+
+補足
+
+```text
+Home = route-first landing
+Digest = situation understanding
+Overlay = signal / pressure understanding
+Prediction = decision-grade conclusion
+Explanation = structured justification
+```
+
+禁止事項
+
+```text
+Home を dashboard-first に戻す
+Home に詳細分析を詰め込む
+Home で別の truth narrative を生成する
+SEO のために Home で新しい意味説明を書く
+```
+
+理由
+
+```text
+公開導線フェーズでは
+初見ユーザーが迷わず
+Home → Digest / Overlay / Prediction へ進めることが最重要であるため
+
+Prediction = truth
+SEO / SNS = 見せ方
+の原則を保ったまま
+route-first landing を固定するため
+```
+
+Status: adopted
+
+---
+
+## 2026-04-19
+### Prediction Page Static UI Text Must Resolve Locally
+
+Decision: prediction.html static UI labels must resolve from page-local UI_TEXT, not through shared common i18n translation
+
+対象
+
+```text
+app/static/prediction.html
+app/static/common/i18n.js
+```
+
+ルール
+
+```text
+prediction.html の static label は
+ページ内 UI_TEXT から直接解決する
+
+tr() は
+UI_TEXT[current_lang][key]
+↓
+UI_TEXT.en[key]
+↓
+key
+の順で解決する
+
+prediction.html の static labels は
+共通 i18n.translate(UI_TEXT, ...) に依存しない
+```
+
+補足
+
+```text
+Home などの共通 static label は central dictionary を使用してよい
+ただし prediction.html は
+既に page-local UI_TEXT を持つため
+その責務を page-local で閉じる
+```
+
+禁止事項
+
+```text
+prediction.html の static label を
+共通 i18n helper に無理に委譲すること
+
+その結果
+hero_title / global_status_title / three_layer_title
+のような key 露出を再発させること
+```
+
+理由
+
+```text
+prediction.html では
+page-local UI_TEXT と shared i18n が競合しうるため
+
+Static UI labels must not compete with runtime/shared i18n
+の原則に従い
+責務を一系統に固定する必要があるため
+```
+
+Status: adopted
+
 # END OF DOCUMENT
 ---
 ---
