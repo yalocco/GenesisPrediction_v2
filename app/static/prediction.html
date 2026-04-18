@@ -918,27 +918,20 @@
     }
 
     function tr(key){
-      const i18n = getI18n();
-      if (i18n && typeof i18n.translate === "function"){
-        return i18n.translate(UI_TEXT, key, getStoredLang());
-      }
-      const lang = getStoredLang();
+      const lang = normalizeLangCode(getStoredLang());
       const table = UI_TEXT[lang] || UI_TEXT.en || {};
       return table[key] ?? (UI_TEXT.en && UI_TEXT.en[key]) ?? key;
     }
 
     function applyStaticUiText(lang){
-      const i18n = getI18n();
-      if (i18n && typeof i18n.applyStaticUiText === "function"){
-        i18n.applyStaticUiText(document, UI_TEXT, { lang: normalizeLangCode(lang || getStoredLang()) });
-      } else {
-        document.documentElement.lang = normalizeLangCode(lang || getStoredLang());
-        document.querySelectorAll("[data-ui-text]").forEach((node) => {
-          const key = node.getAttribute("data-ui-text");
-          if (!key) return;
-          node.textContent = tr(key);
-        });
-      }
+      const activeLang = normalizeLangCode(lang || getStoredLang());
+      document.documentElement.lang = activeLang;
+
+      document.querySelectorAll("[data-ui-text]").forEach((node) => {
+        const key = node.getAttribute("data-ui-text");
+        if (!key) return;
+        node.textContent = tr(key);
+      });
 
       const confidenceChart = el("confidenceChart");
       if (confidenceChart) confidenceChart.setAttribute("aria-label", tr("chart_confidence_label"));

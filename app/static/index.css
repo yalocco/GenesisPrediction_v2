@@ -1,14 +1,169 @@
 /* =========================================================
    Home Page
-   externalized from inline style
-   2026-03-18
+   public release optimization final tune
+   2026-04-18
    ========================================================= */
 
 /* =========================
    Hero / top
 ========================= */
 .home-hero {
+  margin-bottom: 10px;
+  padding: 8px 6px 4px;
+}
+
+.home-hero .hint:first-child {
+  display: inline-block;
   margin-bottom: 12px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.82;
+}
+
+.home-hero .h1 {
+  max-width: 780px;
+  font-size: clamp(34px, 5vw, 56px);
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  font-weight: 800;
+  margin-bottom: 14px;
+  color: #f3f7ff;
+  text-wrap: balance;
+}
+
+.home-hero .sub {
+  max-width: 760px;
+  font-size: 15px;
+  line-height: 1.72;
+  color: #d6e0f8;
+  margin-bottom: 12px;
+}
+
+.home-hero .hint:last-child {
+  display: block;
+  max-width: 760px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(214, 224, 248, 0.76);
+}
+
+/* =========================
+   Route section
+========================= */
+.home-routes-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.home-routes-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(120,160,220,.18), transparent);
+  pointer-events: none;
+}
+
+.home-route-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.home-route-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  min-height: 182px;
+  padding: 18px 16px 14px;
+  border: 1px solid rgba(120,160,220,.18);
+  background:
+    linear-gradient(180deg, rgba(20,30,54,.58), rgba(10,16,30,.34));
+  box-shadow:
+    0 10px 24px rgba(0,0,0,.14),
+    inset 0 1px 0 rgba(255,255,255,.04);
+  transition:
+    transform .18s ease,
+    border-color .18s ease,
+    background .18s ease,
+    box-shadow .18s ease;
+}
+
+.home-route-card .status-label {
+  margin-bottom: 10px;
+  color: rgba(179, 203, 248, 0.88);
+}
+
+.home-route-card .status-value {
+  font-size: 28px;
+  line-height: 1.1;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  margin-bottom: 10px;
+}
+
+.home-route-card .status-sub {
+  min-height: 38px;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.48;
+  color: rgba(214, 224, 248, 0.82);
+}
+
+.home-route-card .pillrow {
+  margin-top: 16px;
+}
+
+.home-route-card .pill {
+  border-color: rgba(155, 188, 244, 0.28);
+  color: #f4f7ff;
+  background: rgba(16, 25, 44, 0.68);
+}
+
+.home-route-card:hover,
+.home-route-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(155, 188, 244, 0.42);
+  background:
+    linear-gradient(180deg, rgba(28,40,69,.74), rgba(12,18,34,.44));
+  box-shadow:
+    0 16px 34px rgba(0,0,0,.20),
+    inset 0 1px 0 rgba(255,255,255,.05);
+  outline: none;
+}
+
+.home-route-card:focus-visible {
+  box-shadow:
+    0 0 0 2px rgba(155,188,244,.18),
+    0 16px 34px rgba(0,0,0,.20),
+    inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+/* =========================
+   Method / value sections
+========================= */
+.home-method-panel .card,
+.home-value-panel .card {
+  border-color: rgba(120,160,220,.12);
+  background: rgba(11,18,34,.28);
+}
+
+.home-method-panel .mono {
+  font-size: 18px;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+  color: #eff5ff;
+  white-space: normal;
+}
+
+.home-method-panel .sub,
+.home-value-panel .sub {
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(214, 224, 248, 0.82);
 }
 
 /* =========================
@@ -113,6 +268,27 @@
 }
 
 /* =========================
+   Latest snapshot emphasis
+========================= */
+.home-latest-panel .sectionTitle,
+.home-value-panel .sectionTitle {
+  margin-bottom: 10px;
+}
+
+.home-latest-panel .card {
+  background: rgba(12,18,34,.26);
+  border-color: rgba(120,160,220,.12);
+}
+
+.home-latest-panel .card .sectionTitle h2 {
+  font-size: 15px;
+}
+
+.home-latest-panel .hint {
+  opacity: 0.8;
+}
+
+/* =========================
    Text body
 ========================= */
 .home-pre {
@@ -146,8 +322,20 @@
     grid-template-columns: repeat(2, minmax(0,1fr));
   }
 
+  .home-route-grid {
+    grid-template-columns: 1fr;
+  }
+
   .home-kpis {
     grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+
+  .home-hero .h1 {
+    max-width: 100%;
+  }
+
+  .home-route-card {
+    min-height: 0;
   }
 }
 
@@ -171,5 +359,33 @@
 
   .home-kpi .value {
     font-size: 20px;
+  }
+
+  .home-hero {
+    padding: 2px 0 0;
+  }
+
+  .home-hero .h1 {
+    font-size: clamp(28px, 8vw, 40px);
+    line-height: 1.08;
+    margin-bottom: 10px;
+  }
+
+  .home-hero .sub {
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .home-method-panel .mono {
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  .home-route-card {
+    padding: 15px 13px 13px;
+  }
+
+  .home-route-card .status-value {
+    font-size: 24px;
   }
 }
