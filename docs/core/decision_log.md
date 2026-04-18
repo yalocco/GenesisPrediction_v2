@@ -3336,10 +3336,6 @@ pressure easing
 
 Status: adopted
 
-# END OF DOCUMENT
----
----
-
 
 ---
 ## 2026-04-15
@@ -3375,3 +3371,25 @@ All external service integrations must be explicitly wired at invocation level.
 ```
 
 Status: adopted
+
+## 2026-04-18
+### Favicon and OGP Handling in Static Deployment
+
+Decision:
+Favicon and OGP assets must be correctly named and placed under `app/static/assets/`, and referenced using paths relative to the static root.
+
+Key Points:
+
+- Incorrect double extensions (e.g. favicon.png.png) cause silent 404 failures
+- Static server root (`/static`) must align with HTML asset paths
+- Favicon caching can obscure correct fixes during debugging
+- OGP cannot be verified locally; must be validated against deployed URL
+- External validators (e.g. OpenGraph.xyz) are required for confirmation
+
+Status: adopted
+
+---
+
+# END OF DOCUMENT
+---
+---
