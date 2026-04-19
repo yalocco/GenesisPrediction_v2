@@ -3515,6 +3515,96 @@ Static UI labels must not compete with runtime/shared i18n
 
 Status: adopted
 
+
+## 2026-04-19
+### News Content Must Never Be Reproduced In Full
+
+Decision: News content must never be reproduced in full; it must be summarized, linked, and transformed into analysis
+
+対象
+
+```text
+news headlines
+article summaries
+source links
+digest
+sentiment
+observation
+prediction inputs
+public release pages
+```
+
+ルール
+
+```text
+ニュース本文の全文転載を禁止する
+長文転載を禁止する
+全文翻訳転載を禁止する
+GenesisPrediction を原記事の代替表示にしない
+
+許可されるのは以下
+- 短い見出し
+- 自分の言葉による短い要約
+- source / url の明示
+- 複数記事の統合分析
+- signal / risk / driver / implication への変換
+```
+
+補足
+
+```text
+GenesisPrediction はニュース配信サイトではない
+GenesisPrediction はニュース分析システムである
+```
+
+理由
+
+```text
+著作権リスクを避けるため
+公開運用での転載事故を防ぐため
+Prediction / Explanation / UI を原文複製ではなく分析価値に固定するため
+```
+
+Status: adopted
+
+---
+
+## 2026-04-19
+### Policy Documents Are Human-Facing; AI Rules Must Be Compressed Into Decision Log
+
+Decision: Detailed policy documents are for human operation, but AI-effective enforcement must be compressed into decision_log
+
+対象
+
+```text
+docs/policy/*.md
+docs/core/decision_log.md
+docs/core/decision_index.md
+```
+
+ルール
+
+```text
+詳細ポリシーは docs/policy に置く
+AI に恒常的に効かせたいルールは decision_log に短く圧縮して記録する
+decision_index はその検索補助として 1 decision = 1 entry を維持する
+policy 文書だけを追加して AI が知っている前提で進めない
+```
+
+理由
+
+```text
+policy 文書は人間向けの運用ルールであり
+情報源未登録や参照外では AI に直接効かないため
+
+一方 decision_log は
+AI の判断抑制・再発防止・vector memory 参照の基点になるため
+```
+
+Status: adopted
+
+---
+
 # END OF DOCUMENT
 ---
 ---

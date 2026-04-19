@@ -827,6 +827,27 @@ source: docs/core/decision_log.md
 
 ---
 
+
+## 2026-04-19 | News Content Must Never Be Reproduced In Full
+
+tags: news, copyright, summary, linking, public_release
+
+rule: news content must never be reproduced in full; only summarized, linked, and transformed into analysis
+
+source: docs/core/decision_log.md
+
+---
+
+## 2026-04-19 | Policy Documents Are Human-Facing; AI Rules Must Be Compressed Into Decision Log
+
+tags: policy, decision_log, ai, governance
+
+rule: detailed policy docs are human-facing and AI-effective rules must be compressed into decision_log
+
+source: docs/core/decision_log.md
+
+---
+
 # 3. Notes
 
 このファイルは以下用途で使用される：
