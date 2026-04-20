@@ -599,7 +599,12 @@ def _extract_articles_from_daily(
             continue
 
         title_text = _clean_text(a.get("title") or a.get("headline") or "")
-        url_text = _clean_text(a.get("url") or a.get("link") or "")
+        raw_url = a.get("url") or a.get("link")
+        url_text = _as_str(raw_url).strip()
+
+        if not url_text:
+            continue
+
         summary_text = _clean_text(a.get("summary") or a.get("description") or a.get("excerpt") or a.get("content") or "")
         source_text = _clean_text(_parse_source_name(a.get("source")) or _as_str(a.get("domain")))
         published_at = _clean_text(a.get("published_at") or a.get("publishedAt") or a.get("published") or a.get("date") or "")
