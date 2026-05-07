@@ -457,7 +457,7 @@ if daily_summary_data:
     daily_summary_data["text"] = summary_text
     daily_summary_path.write_text(json.dumps(daily_summary_data, ensure_ascii=False, indent=2), encoding="utf-8")
 '@
-            $tempPy = Join-Path $env:TEMP "genesis_summary_materializer.py"
+            $tempPy = Join-Path ([System.IO.Path]::GetTempPath()) "genesis_summary_materializer.py"
             Set-Content -LiteralPath $tempPy -Value $summaryMaterializer -Encoding UTF8
             Write-Host "CMD: $python $tempPy"
             & $python $tempPy
