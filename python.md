@@ -3,6 +3,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_server.ps1
 
 ■ 朝の儀式（正式）
 powershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual.ps1
+powershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual.ps1 -NoLLM
 
 ■ 朝の儀式 ガード阻止
 git add -A
