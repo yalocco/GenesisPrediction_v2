@@ -52,6 +52,20 @@ jobs:
           "resolved_date=$resolved" >> $env:GITHUB_OUTPUT
           Write-Host "Resolved run date: $resolved"
 
+      - name: Create minimal .env for docker compose
+        shell: bash
+        run: |
+          {
+            echo "NEWSAPI_KEY=${{ secrets.NEWSAPI_KEY }}"
+            echo "NEWS_QUERY=world politics"
+            echo "NEWS_LANG=en"
+            echo "NEWS_PAGE_SIZE=50"
+            echo "TZ=Asia/Tokyo"
+          } > .env
+          test -s .env
+          grep -q '^NEWSAPI_KEY=' .env
+          echo "[OK] minimal .env created"
+
       - name: Docker compose sanity check
         run: |
           docker compose version
