@@ -170,12 +170,67 @@ function Get-RawNewsSourcePath {
     throw "No raw news JSON found under $DataDir"
 }
 
+function Resolve-PythonExe {
+    param([string]$RepoRoot)
+
+    $candidates = @(
+        (Join-Path $RepoRoot ".venv/Scripts/python.exe"),
+        (Join-Path $RepoRoot ".venv/bin/python")
+    )
+
+    foreach ($candidate in $candidates) {
+        if (Test-Path -LiteralPath $candidate) {
+            return (Resolve-Path $candidate).Path
+        }
+    }
+
+    $python3 = Get-Command python3 -ErrorAction SilentlyContinue
+    if ($python3) {
+        return $python3.Source
+    }
+
+    $python = Get-Command python -ErrorAction SilentlyContinue
+    if ($python) {
+        return $python.Source
+    }
+
+    throw "Python executable was not found. Expected .venv or system python/python3."
+}
+
+function Repair-DockerVolumeOwnership {
+    param([string]$PathToRepair)
+
+    if ($IsWindows) {
+        return
+    }
+
+    if (-not (Test-Path -LiteralPath $PathToRepair)) {
+        return
+    }
+
+    $bash = Get-Command bash -ErrorAction SilentlyContinue
+    if (-not $bash) {
+        Write-Log "[WARN] bash not found; docker volume ownership repair skipped."
+        return
+    }
+
+    $escapedPath = $PathToRepair.Replace("'", "'\''")
+    $script = "if command -v sudo >/dev/null 2>&1; then sudo chown -R $(id -u):$(id -g) '$escapedPath'; else chown -R $(id -u):$(id -g) '$escapedPath' 2>/dev/null || true; fi"
+
+    Write-Log "[INFO] repairing docker volume ownership for: $PathToRepair"
+    & bash -lc $script
+    if ($LASTEXITCODE -ne 0) {
+        Write-Log "[WARN] docker volume ownership repair returned exit code $LASTEXITCODE; continuing."
+    }
+}
+
+
 $Root = Resolve-RepoRoot -ExplicitRoot $Root
 if ([string]::IsNullOrWhiteSpace($Date)) {
     $Date = Get-Date -Format "yyyy-MM-dd"
 }
 
-$python = Join-Path $Root ".venv\Scripts\python.exe"
+$python = Resolve-PythonExe -RepoRoot $Root
 $scriptsDir = Join-Path $Root "scripts"
 
 $dataDir = Join-Path $Root "data\world_politics"
@@ -223,6 +278,8 @@ try {
             throw "Analyzer failed with exit code $LASTEXITCODE."
         }
 
+        Repair-DockerVolumeOwnership -PathToRepair (Join-Path $Root "data")
+
         $latestJson = Join-Path $dataAnalysisDir "latest.json"
         $summaryJson = Join-Path $dataAnalysisDir "summary.json"
 
@@ -252,7 +309,7 @@ try {
 import json
 from pathlib import Path
 
-summary_path = Path(r"data\world_politics\analysis\summary.json")
+summary_path = Path("data/world_politics/analysis/summary.json")
 if not summary_path.exists():
     raise SystemExit(0)
 
@@ -267,7 +324,7 @@ def pick_text(obj):
             return value.strip()
     return ""
 
-daily_summary_path = Path(r"data\world_politics\analysis\daily_summary_latest.json")
+daily_summary_path = Path("data/world_politics/analysis/daily_summary_latest.json")
 daily_summary_data = {}
 if daily_summary_path.exists():
     loaded = json.loads(daily_summary_path.read_text(encoding="utf-8"))
