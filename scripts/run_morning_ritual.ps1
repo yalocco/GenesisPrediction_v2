@@ -223,7 +223,7 @@ if (-not $SkipFx) {
 # 4) Health lane
 # ============================================================
 if (-not $SkipHealth) {
-    Invoke-PythonScript -Name "build_data_health" -RepoRoot $repoRoot -PythonExe $pythonExe -ScriptPath "scripts/build_data_health.py"
+    Invoke-PythonScript -Name "build_data_health" -RepoRoot $repoRoot -PythonExe $pythonExe -ScriptPath "scripts/build_data_health.py" -Args @("--out-latest", "analysis/health_latest.json")
 
     if ($Guard) {
         Assert-PathExists -Path $healthLatest
