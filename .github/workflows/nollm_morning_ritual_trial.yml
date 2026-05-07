@@ -34,10 +34,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Prepare PowerShell compatibility
+      - name: Show PowerShell version
+        shell: pwsh
         run: |
-          sudo apt-get update
-          sudo apt-get install -y powershell
+          $PSVersionTable
 
       - name: Resolve run date
         id: resolvedate
@@ -52,14 +52,19 @@ jobs:
           "resolved_date=$resolved" >> $env:GITHUB_OUTPUT
           Write-Host "Resolved run date: $resolved"
 
+      - name: Docker compose sanity check
+        run: |
+          docker compose version
+
       - name: Run NoLLM Morning Ritual
         shell: pwsh
         run: |
-          powershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual.ps1 `
+          ./scripts/run_morning_ritual.ps1 `
             -Date "${{ steps.resolvedate.outputs.resolved_date }}" `
             -NoLLM
 
       - name: Collect trial artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: nollm-trial-artifacts
