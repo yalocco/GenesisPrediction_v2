@@ -557,6 +557,11 @@ def _translated_block_valid(src: str, block: Dict[str, str]) -> bool:
         return False
     return True
 
+def _english_only_i18n_block(value: str, kind: str = "description") -> Dict[str, str]:
+    src = _clean_for_translation(value, limit=220 if kind == "title" else 280)
+    return {"en": src, "ja": src, "th": src}
+
+
 def _translate_item_text(kind: str, value: str, cfg: TranslationConfig, session: requests.Session, cache: Dict[str, Dict[str, str]]) -> Dict[str, str]:
     src = _clean_for_translation(value, limit=220 if kind == "title" else 280)
     if not src:
@@ -662,10 +667,13 @@ def main() -> int:
     parser.add_argument("--model", default="gemma3:4b", help="Ollama model name")
     parser.add_argument("--ollama-url", default="http://localhost:11435", help="Ollama API base URL")
     parser.add_argument("--timeout", type=int, default=60, help="Per request timeout seconds")
+    parser.add_argument("--no-llm", action="store_true", help="Disable Ollama translation and emit English-first i18n fields without LLM calls")
     args = parser.parse_args()
 
     src_path = _resolve_input(args.date.strip())
     cfg = TranslationConfig(ollama_url=args.ollama_url, model=args.model, timeout=args.timeout)
+    if args.no_llm:
+        print("[NoLLM] sentiment i18n runs in English-first mode; Ollama translation is skipped")
 
     doc = json.loads(src_path.read_text(encoding="utf-8"))
     items = _extract_items(doc)
@@ -702,8 +710,12 @@ def main() -> int:
             signal_tags_i18n = _list_i18n_block(signal_tags, SIGNAL_LABELS)
             risk_drivers_i18n = _list_i18n_block(risk_drivers, RISK_DRIVER_LABELS)
             impact_tags_i18n = _list_i18n_block(impact_tags, IMPACT_LABELS)
-            translated_title = _translate_item_text("title", title, cfg, session, cache)
-            translated_description = _translate_item_text("description", description, cfg, session, cache)
+            if args.no_llm:
+                translated_title = _english_only_i18n_block(title, kind="title")
+                translated_description = _english_only_i18n_block(description, kind="description")
+            else:
+                translated_title = _translate_item_text("title", title, cfg, session, cache)
+                translated_description = _translate_item_text("description", description, cfg, session, cache)
 
             out_items.append({
                 "url": url,

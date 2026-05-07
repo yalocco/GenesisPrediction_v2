@@ -421,9 +421,15 @@ if daily_summary_data:
             return
         }
 
+        $sentimentArgs = @("--date", $Date)
+        if ($NoLLM) {
+            $sentimentArgs += "--no-llm"
+            Write-Log "[NoLLM] build_daily_sentiment.py runs without Ollama translation."
+        }
+
         Invoke-PythonScript -PythonExe $python `
             -ScriptPath (Join-Path $scriptsDir "build_daily_sentiment.py") `
-            -Arguments @("--date", $Date)
+            -Arguments $sentimentArgs
 
         $sentLatest = Join-Path $dataAnalysisDir "sentiment_latest.json"
         $sentDated  = Join-Path $dataAnalysisDir ("sentiment_{0}.json" -f $Date)
