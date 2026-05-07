@@ -170,7 +170,11 @@ if __name__ == "__main__":
     raise SystemExit(main())
 '@
 
-  $tmpPy = Join-Path $env:TEMP ("sanitize_fx_dashboard_{0}.py" -f ([Guid]::NewGuid().ToString("N")))
+  $tmpDir = [System.IO.Path]::GetTempPath()
+  if ([string]::IsNullOrWhiteSpace($tmpDir)) {
+    throw "[ERROR] temporary directory could not be resolved"
+  }
+  $tmpPy = Join-Path $tmpDir ("sanitize_fx_dashboard_{0}.py" -f ([Guid]::NewGuid().ToString("N")))
   Set-Content -Path $tmpPy -Value $py -Encoding UTF8
 
   try {
