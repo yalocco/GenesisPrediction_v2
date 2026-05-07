@@ -281,7 +281,8 @@ function Build-GlobalStatusLatest {
         $args += "-Pretty"
     }
 
-    powershell -ExecutionPolicy Bypass -File $runner @args
+    $psCommand = if ($PSVersionTable.PSEdition -eq "Core") { "pwsh" } else { "powershell" }
+    & $psCommand -ExecutionPolicy Bypass -File $runner @args
 }
 
 function Show-Summary {
