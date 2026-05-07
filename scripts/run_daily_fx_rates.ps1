@@ -24,7 +24,7 @@ $ROOT = (Resolve-Path ".").Path
 $PY = Join-Path $ROOT ".venv\Scripts\python.exe"
 if (-not (Test-Path $PY)) { $PY = "python" }
 
-$scriptPath = Join-Path $ROOT "scriptsx_materialize_rates.py"
+$scriptPath = Join-Path $ROOT "scripts/fx_materialize_rates.py"
 
 Write-Host ("[{0}] START FX rates strict=False cooldown_seconds={1}" -f (NowStamp), $CooldownSeconds)
 
