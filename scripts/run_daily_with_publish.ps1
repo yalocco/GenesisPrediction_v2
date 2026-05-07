@@ -5,6 +5,7 @@ param(
     [switch]$SkipAnalyzer,
     [switch]$SkipSentiment,
     [switch]$SkipDigest,
+    [switch]$NoLLM,
     [switch]$ContinueOnError
 )
 
@@ -196,6 +197,7 @@ Write-Host "GenesisPrediction v2 - run_daily_with_publish"
 Write-Host "ROOT : $Root"
 Write-Host "DATE : $Date"
 Write-Host ("GUARD: " + ($(if ($AllowDirtyRepo) { "OFF" } else { "ON" })))
+Write-Host ("MODE : " + ($(if ($NoLLM) { "NoLLM / English-first" } else { "Full" })))
 
 Push-Location $Root
 try {
@@ -436,14 +438,22 @@ if daily_summary_data:
             return
         }
 
-        Invoke-PythonScript -PythonExe $python `
-            -ScriptPath (Join-Path $scriptsDir "build_world_view_model_latest.py") `
-            -Arguments @(
+        $worldViewArgs = @()
+        if ($NoLLM) {
+            Write-Log "[NoLLM] build_world_view_model_latest.py runs without translation/Ollama arguments."
+        }
+        else {
+            $worldViewArgs = @(
                 "--translate-articles",
                 "--translate-meta",
                 "--ollama-model", "gemma3:4b",
                 "--ollama-base-url", "http://127.0.0.1:11435"
             )
+        }
+
+        Invoke-PythonScript -PythonExe $python `
+            -ScriptPath (Join-Path $scriptsDir "build_world_view_model_latest.py") `
+            -Arguments $worldViewArgs
 
         $worldViewLatest = Join-Path $dataAnalysisDir "view_model_latest.json"
         Copy-IfExists -SourcePath $worldViewLatest -DestinationPath (Join-Path $analysisDir "view_model_latest.json") | Out-Null

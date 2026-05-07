@@ -6,6 +6,7 @@ param(
     [switch]$SkipHealth,
     [switch]$SkipRefresh,
     [switch]$SkipVectorMemory,
+    [switch]$NoLLM,
     [switch]$Guard = $true
 )
 
@@ -141,6 +142,7 @@ $pythonExe = Resolve-PythonCommand -RepoRoot $repoRoot
 Write-Host "Morning Ritual (single entrypoint)"
 Write-Host ("ROOT        : {0}" -f $repoRoot)
 Write-Host ("DATE        : {0}" -f $runDate)
+Write-Host ("MODE        : {0}" -f ($(if ($NoLLM) { "NoLLM / English-first" } else { "Full" })))
 
 $mainWorldSummary = Join-Path $repoRoot "analysis\daily_summary_latest.json"
 $predictionLatest = Join-Path $repoRoot "analysis\prediction\prediction_latest.json"
@@ -154,7 +156,12 @@ $vectorBuildScript = Join-Path $repoRoot "scripts\build_vector_memory.py"
 # 1) Main lane
 # ============================================================
 if (-not $SkipMain) {
-    Invoke-PowerShellScript -Name "run_daily_with_publish" -RepoRoot $repoRoot -ScriptPath "scripts/run_daily_with_publish.ps1" -Arguments @("-Date", $runDate)
+    $dailyArgs = @("-Date", $runDate)
+    if ($NoLLM) {
+        $dailyArgs += "-NoLLM"
+    }
+
+    Invoke-PowerShellScript -Name "run_daily_with_publish" -RepoRoot $repoRoot -ScriptPath "scripts/run_daily_with_publish.ps1" -Arguments $dailyArgs
     Invoke-PythonScript -Name "build_daily_sentiment" -RepoRoot $repoRoot -PythonExe $pythonExe -ScriptPath "scripts/build_daily_sentiment.py" -Arguments @("--date", $runDate)
 
     if ($Guard) {
@@ -225,7 +232,12 @@ if (-not $SkipRefresh) {
 #    - reference-only memory
 #    - failure-safe / non-blocking
 # ============================================================
-if (-not $SkipVectorMemory) {
+if ($NoLLM) {
+    Write-Host ""
+    Write-Host ("[{0}] === build_vector_memory (--recreate) ===" -f (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss"))
+    Write-Host "[SKIP] NoLLM mode: vector memory rebuild is skipped."
+}
+elseif (-not $SkipVectorMemory) {
     if (Test-Path $vectorBuildScript) {
         Invoke-OptionalPythonScript -Name "build_vector_memory (--recreate)" -RepoRoot $repoRoot -PythonExe $pythonExe -ScriptPath "scripts/build_vector_memory.py" -Arguments @("--recreate") | Out-Null
     }
