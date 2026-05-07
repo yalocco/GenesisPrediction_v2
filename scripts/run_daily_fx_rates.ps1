@@ -4,12 +4,16 @@
 # Purpose:
 # - Call fx_materialize_rates.py with explicit pairs
 # - Designed to be called ONLY from run_morning_ritual.ps1
+# - Add deterministic pair-to-pair pacing to avoid API quota/pacing collisions
 #
 # Usage:
 #   powershell -ExecutionPolicy Bypass -File scripts/run_daily_fx_rates.ps1
+#   powershell -ExecutionPolicy Bypass -File scripts/run_daily_fx_rates.ps1 -CooldownSeconds 75
 
 [CmdletBinding()]
-param()
+param(
+    [int]$CooldownSeconds = 75
+)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -20,9 +24,9 @@ $ROOT = (Resolve-Path ".").Path
 $PY = Join-Path $ROOT ".venv\Scripts\python.exe"
 if (-not (Test-Path $PY)) { $PY = "python" }
 
-$scriptPath = Join-Path $ROOT "scripts\fx_materialize_rates.py"
+$scriptPath = Join-Path $ROOT "scriptsx_materialize_rates.py"
 
-Write-Host ("[{0}] START FX rates strict=False" -f (NowStamp))
+Write-Host ("[{0}] START FX rates strict=False cooldown_seconds={1}" -f (NowStamp), $CooldownSeconds)
 
 # --- Define pairs here (single source of truth) ---
 $pairs = @(
@@ -30,7 +34,9 @@ $pairs = @(
   "usdjpy"
 )
 
-foreach ($pair in $pairs) {
+for ($i = 0; $i -lt $pairs.Count; $i++) {
+    $pair = $pairs[$i]
+
     Write-Host ("[{0}] PY  fx_materialize_rates.py --pair {1}" -f (NowStamp), $pair)
 
     & $PY $scriptPath --pair $pair
@@ -39,6 +45,11 @@ foreach ($pair in $pairs) {
     if ($code -ne 0) {
         Write-Host ("[{0}] ERROR Python failed (fx_materialize_rates.py --pair {1}) exit={2}" -f (NowStamp), $pair, $code)
         exit 1
+    }
+
+    if ($i -lt ($pairs.Count - 1)) {
+        Write-Host ("[{0}] WAIT FX pair cooldown seconds={1}" -f (NowStamp), $CooldownSeconds)
+        Start-Sleep -Seconds $CooldownSeconds
     }
 }
 
