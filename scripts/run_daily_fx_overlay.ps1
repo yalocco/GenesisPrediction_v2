@@ -46,6 +46,34 @@ function Invoke-ExternalOrThrow {
   }
 }
 
+
+function Resolve-PythonExe {
+  param([Parameter(Mandatory=$true)][string]$RepoRoot)
+
+  $candidates = @(
+    (Join-Path $RepoRoot ".venv/Scripts/python.exe"),
+    (Join-Path $RepoRoot ".venv/bin/python")
+  )
+
+  foreach ($candidate in $candidates) {
+    if (Test-Path -LiteralPath $candidate) {
+      return (Resolve-Path -LiteralPath $candidate).Path
+    }
+  }
+
+  $python3 = Get-Command python3 -ErrorAction SilentlyContinue
+  if ($python3) {
+    return $python3.Source
+  }
+
+  $python = Get-Command python -ErrorAction SilentlyContinue
+  if ($python) {
+    return $python.Source
+  }
+
+  throw "[ERROR] Python executable was not found. Expected .venv or system python/python3."
+}
+
 function Get-LastBusinessDayString {
   param([Parameter(Mandatory=$true)][string]$Ymd)
 
@@ -156,7 +184,7 @@ if __name__ == "__main__":
 }
 
 $REPO = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$PY = Join-Path $REPO ".venv\Scripts\python.exe"
+$PY = Resolve-PythonExe -RepoRoot $REPO
 if (-not (Test-Path $PY)) { $PY = "python" }
 
 $DATE = (Get-Date -Format "yyyy-MM-dd")
