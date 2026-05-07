@@ -45,6 +45,14 @@ function Resolve-PythonCommand {
     throw "Python executable not found."
 }
 
+
+function Resolve-PowerShellCommand {
+    if ($IsWindows) {
+        return "powershell"
+    }
+    return "pwsh"
+}
+
 function Invoke-PowerShellScript {
     param(
         [string]$Name,
@@ -56,9 +64,11 @@ function Invoke-PowerShellScript {
     Write-Host ""
     Write-Host ("[{0}] === {1} ===" -f (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss"), $Name)
 
+    $psCommand = Resolve-PowerShellCommand
+
     Push-Location $RepoRoot
     try {
-        & powershell -ExecutionPolicy Bypass -File $ScriptPath @Arguments
+        & $psCommand -ExecutionPolicy Bypass -File $ScriptPath @Arguments
         if ($LASTEXITCODE -ne 0) {
             throw "$Name failed with exit code $LASTEXITCODE"
         }
@@ -162,13 +172,7 @@ if (-not $SkipMain) {
     }
 
     Invoke-PowerShellScript -Name "run_daily_with_publish" -RepoRoot $repoRoot -ScriptPath "scripts/run_daily_with_publish.ps1" -Arguments $dailyArgs
-
-    $sentimentArgs = @("--date", $runDate)
-    if ($NoLLM) {
-        $sentimentArgs += "--no-llm"
-        Write-Host "[NoLLM] build_daily_sentiment.py runs without Ollama translation."
-    }
-    Invoke-PythonScript -Name "build_daily_sentiment" -RepoRoot $repoRoot -PythonExe $pythonExe -ScriptPath "scripts/build_daily_sentiment.py" -Arguments $sentimentArgs
+    Invoke-PythonScript -Name "build_daily_sentiment" -RepoRoot $repoRoot -PythonExe $pythonExe -ScriptPath "scripts/build_daily_sentiment.py" -Arguments @("--date", $runDate)
 
     if ($Guard) {
         Assert-PathExists -Path $mainWorldSummary
