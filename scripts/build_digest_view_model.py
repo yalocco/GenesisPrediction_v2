@@ -1063,6 +1063,7 @@ def normalize_news_article(
     config: TranslationConfig,
     session: requests.Session,
     cache: Dict[str, Dict[str, str]],
+    no_llm: bool = False,
 ) -> Dict[str, Any]:
     title = first_non_empty(item.get("title"), item.get("headline"), item.get("name")) or "Untitled"
     url = first_non_empty(item.get("url"), item.get("link")) or "#"
@@ -1079,10 +1080,18 @@ def normalize_news_article(
 
     article = {
         "title": title,
-        "title_i18n": _llm_text_i18n(title, config=config, session=session, cache=cache, cache_prefix="title"),
+        "title_i18n": (
+            english_shadow_text_i18n(title)
+            if no_llm
+            else _llm_text_i18n(title, config=config, session=session, cache=cache, cache_prefix="title")
+        ),
         "summary": summary_text,
         "summary_raw": summary_raw,
-        "summary_i18n": _llm_text_i18n(summary_text, config=config, session=session, cache=cache, cache_prefix="summary"),
+        "summary_i18n": (
+            english_shadow_text_i18n(summary_text)
+            if no_llm
+            else _llm_text_i18n(summary_text, config=config, session=session, cache=cache, cache_prefix="summary")
+        ),
         "url": url,
         "image": first_non_empty(item.get("urlToImage"), item.get("image"), item.get("thumbnail"), item.get("image_url")) or "",
         "source": source_text,
@@ -1109,6 +1118,7 @@ def build_digest_cards(
     session: requests.Session,
     cache: Dict[str, Dict[str, str]],
     limit: int = 48,
+    no_llm: bool = False,
 ) -> List[Dict[str, Any]]:
     sentiment_index = build_sentiment_index(sentiment_json)
     raw_items = extract_news_items(news_json)
@@ -1118,7 +1128,14 @@ def build_digest_cards(
     seen_titles = set()
 
     for item in raw_items:
-        article = normalize_news_article(item, sentiment_index, config=config, session=session, cache=cache)
+        article = normalize_news_article(
+            item,
+            sentiment_index,
+            config=config,
+            session=session,
+            cache=cache,
+            no_llm=no_llm,
+        )
         url_key = normalize_url(article.get("url"))
         title_key = normalize_key_text(article.get("title"))
 
@@ -1163,6 +1180,7 @@ def build_payload(
     config: TranslationConfig,
     session: requests.Session,
     cache: Dict[str, Dict[str, str]],
+    no_llm: bool = False,
 ) -> Dict[str, Any]:
     new_urls = daily_summary_json.get("new_urls")
     if not isinstance(new_urls, list):
@@ -1180,8 +1198,12 @@ def build_payload(
     summary_value = summary_text or ""
     summary_i18n = build_digest_summary_compact_i18n(summary_value, titles, daily_summary_json)
 
-    highlights_i18n = _llm_list_i18n(highlights, config=config, session=session, cache=cache, cache_prefix="highlight")
-    articles_i18n = _llm_list_i18n(article_titles, config=config, session=session, cache=cache, cache_prefix="article_title")
+    if no_llm:
+        highlights_i18n = english_shadow_list_i18n(highlights)
+        articles_i18n = english_shadow_list_i18n(article_titles)
+    else:
+        highlights_i18n = _llm_list_i18n(highlights, config=config, session=session, cache=cache, cache_prefix="highlight")
+        articles_i18n = _llm_list_i18n(article_titles, config=config, session=session, cache=cache, cache_prefix="article_title")
 
     return {
         "status": "ok",
@@ -1214,6 +1236,11 @@ def main() -> None:
     parser.add_argument("--model", default="gemma3:4b", help="Ollama model name")
     parser.add_argument("--ollama-url", default="http://localhost:11435", help="Ollama API base URL")
     parser.add_argument("--timeout", type=int, default=60, help="Per request timeout seconds")
+    parser.add_argument(
+        "--no-llm",
+        action="store_true",
+        help="Disable Ollama translation and use English shadow i18n only",
+    )
     args = parser.parse_args()
 
     root = Path(args.root).resolve()
@@ -1241,6 +1268,9 @@ def main() -> None:
     cfg = TranslationConfig(ollama_url=args.ollama_url, model=args.model, timeout=args.timeout)
     cache = _load_cache()
 
+    if args.no_llm:
+        print("[NoLLM] digest i18n runs in English-first mode; Ollama translation is skipped")
+
     summary_text = extract_summary_text(summary_json, daily_summary_json)
     titles = extract_titles(daily_news_json, daily_summary_json)
     highlights = extract_highlights(summary_json, daily_summary_json, titles)
@@ -1253,6 +1283,7 @@ def main() -> None:
             session=session,
             cache=cache,
             limit=48,
+            no_llm=args.no_llm,
         )
 
         payload = build_payload(
@@ -1267,6 +1298,7 @@ def main() -> None:
             config=cfg,
             session=session,
             cache=cache,
+            no_llm=args.no_llm,
         )
 
     dated_path = digest_view_dir / f"{args.date}.json"

@@ -473,9 +473,15 @@ if daily_summary_data:
 
         $digestBuilder = Join-Path $scriptsDir "build_digest_view_model.py"
         if (Test-Path -LiteralPath $digestBuilder) {
+            $digestArgs = @("--date", $Date)
+            if ($NoLLM) {
+                $digestArgs += "--no-llm"
+                Write-Log "[NoLLM] build_digest_view_model.py runs without Ollama translation."
+            }
+
             Invoke-PythonScript -PythonExe $python `
                 -ScriptPath $digestBuilder `
-                -Arguments @("--date", $Date)
+                -Arguments $digestArgs
         }
         else {
             Write-Log "[SKIP] missing script: $digestBuilder"
