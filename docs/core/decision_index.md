@@ -848,6 +848,38 @@ source: docs/core/decision_log.md
 
 ---
 
+
+
+## 2026-05-08 | Health Output Path Must Match SSOT Distribution Path
+
+tags: health, ssot, path, pipeline, guard
+
+rule: build_data_health.py output path must explicitly align with analysis guard path
+
+source: docs/core/decision_log.md
+
+---
+
+## 2026-05-08 | Cross-Platform PowerShell Invocation Must Prefer pwsh on PowerShell Core
+
+tags: powershell, cross_platform, pwsh, github_actions
+
+rule: PowerShell Core environments must dynamically resolve pwsh instead of powershell
+
+source: docs/core/decision_log.md
+
+---
+
+## 2026-05-08 | NoLLM Morning Ritual GitHub Actions Trial Succeeded
+
+tags: nollm, github_actions, automation, unattended, operations
+
+rule: unattended Morning Ritual execution on GitHub Actions is operationally valid
+
+source: docs/core/decision_log.md
+
+---
+
 # 3. Notes
 
 このファイルは以下用途で使用される：

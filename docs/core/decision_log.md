@@ -3605,6 +3605,150 @@ Status: adopted
 
 ---
 
+
+
+## 2026-05-08
+### Health Output Path Must Match SSOT Distribution Path
+
+Decision: build_data_health.py output path must explicitly align with analysis SSOT expectations
+
+対象
+
+```text
+scripts/run_morning_ritual.ps1
+scripts/build_data_health.py
+analysis/health_latest.json
+data/world_politics/analysis/health_latest.json
+```
+
+ルール
+
+```text
+run_morning_ritual.ps1 は
+build_data_health.py 実行時に
+--out-latest analysis/health_latest.json
+を明示的に渡す
+
+guard が analysis/health_latest.json を検証する場合
+生成先も同一パスでなければならない
+```
+
+理由
+
+```text
+default 出力先と guard 検証先が不一致の場合
+pipeline 全体は正常でも
+Missing required path により FAIL するため
+
+SSOT path と generated artifact path を
+明示的に一致させる必要があるため
+```
+
+Status: adopted
+
+---
+
+## 2026-05-08
+### Cross-Platform PowerShell Invocation Must Prefer pwsh on PowerShell Core
+
+Decision: Cross-platform automation must dynamically resolve PowerShell executable
+
+対象
+
+```text
+scripts/refresh_latest_artifacts.ps1
+GitHub Actions Linux runner
+PowerShell Core
+```
+
+ルール
+
+```text
+PowerShell Core 環境では pwsh を使用する
+Windows PowerShell 環境では powershell を使用する
+
+実装例:
+
+$psCommand = if ($PSVersionTable.PSEdition -eq "Core") { "pwsh" } else { "powershell" }
+& $psCommand ...
+```
+
+禁止事項
+
+```text
+Linux runner 上で powershell 固定呼び出しを行うこと
+cross-platform 前提の pipeline で powershell executable 名を固定すること
+```
+
+理由
+
+```text
+GitHub Actions Linux runner では
+powershell command が存在せず
+pwsh が正式 executable となるため
+
+cross-platform automation の deterministic operation を維持するため
+```
+
+Status: adopted
+
+---
+
+## 2026-05-08
+### NoLLM Morning Ritual GitHub Actions Trial Succeeded
+
+Decision: NoLLM unattended Morning Ritual execution on GitHub Actions is considered operationally valid
+
+対象
+
+```text
+.github/workflows/nollm_morning_ritual_trial.yml
+scripts/run_morning_ritual.ps1
+scripts/refresh_latest_artifacts.ps1
+GitHub Actions
+```
+
+確認済み状態
+
+```text
+NoLLM Morning Ritual Trial #20
+Status: SUCCESS
+
+FX lane
+Health lane
+Refresh lane
+Global status generation
+all completed on Linux runner
+```
+
+ルール
+
+```text
+NoLLM pipeline は
+cross-platform deterministic execution を維持する
+
+artifact path mismatch を放置しない
+PowerShell executable 固定を行わない
+GitHub Actions success を unattended operation baseline とする
+```
+
+理由
+
+```text
+GenesisPrediction が
+local manual execution だけでなく
+governed unattended execution へ到達したため
+
+path determinism
+artifact alignment
+cross-platform discipline
+を architecture-level operational rules として固定するため
+```
+
+Status: adopted
+
+---
+
 # END OF DOCUMENT
 ---
 ---
