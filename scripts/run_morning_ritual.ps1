@@ -162,7 +162,13 @@ if (-not $SkipMain) {
     }
 
     Invoke-PowerShellScript -Name "run_daily_with_publish" -RepoRoot $repoRoot -ScriptPath "scripts/run_daily_with_publish.ps1" -Arguments $dailyArgs
-    Invoke-PythonScript -Name "build_daily_sentiment" -RepoRoot $repoRoot -PythonExe $pythonExe -ScriptPath "scripts/build_daily_sentiment.py" -Arguments @("--date", $runDate)
+
+    $sentimentArgs = @("--date", $runDate)
+    if ($NoLLM) {
+        $sentimentArgs += "--no-llm"
+        Write-Host "[NoLLM] build_daily_sentiment.py runs without Ollama translation."
+    }
+    Invoke-PythonScript -Name "build_daily_sentiment" -RepoRoot $repoRoot -PythonExe $pythonExe -ScriptPath "scripts/build_daily_sentiment.py" -Arguments $sentimentArgs
 
     if ($Guard) {
         Assert-PathExists -Path $mainWorldSummary
