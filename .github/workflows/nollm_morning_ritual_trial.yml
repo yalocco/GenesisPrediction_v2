@@ -89,11 +89,12 @@ jobs:
       - name: Run NoLLM Morning Ritual
         shell: pwsh
         run: |
-          $argsList = @("-NoLLM")
-
-          if ("${{ github.event.inputs.run_date }}" -ne "") {
-            $argsList += @("-Date", "${{ github.event.inputs.run_date }}")
+          $runDate = "${{ github.event.inputs.run_date }}"
+          if ([string]::IsNullOrWhiteSpace($runDate)) {
+            $runDate = Get-Date -Format "yyyy-MM-dd"
           }
+
+          $argsList = @("-Date", $runDate, "-NoLLM")
 
           if ("${{ github.event.inputs.skip_fx }}" -eq "true") {
             $argsList += "-SkipFx"
@@ -103,6 +104,7 @@ jobs:
             $argsList += "-SkipRefresh"
           }
 
+          Write-Host "Resolved run date: $runDate"
           Write-Host "Running: scripts/run_morning_ritual.ps1 $($argsList -join ' ')"
           ./scripts/run_morning_ritual.ps1 @argsList
 
