@@ -148,6 +148,15 @@ jobs:
           test -s labos.pem
           echo "[OK] LABOS SSH key restored"
 
+      - name: Register LABOS host key
+        if: steps.runmode.outputs.deploy_input == 'true'
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p 8022 www143.conoha.ne.jp >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          echo "[OK] LABOS host key registered"
+
       - name: Docker compose sanity check
         run: |
           docker compose version
