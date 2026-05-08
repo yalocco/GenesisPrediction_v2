@@ -157,7 +157,8 @@ jobs:
         run: |
           ./scripts/run_morning_ritual.ps1 `
             -Date "${{ steps.resolvedate.outputs.resolved_date }}" `
-            -NoLLM
+            -NoLLM `
+            -AllowDirtyRepo
 
       - name: Check analysis freshness
         id: freshness
