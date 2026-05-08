@@ -7,14 +7,17 @@ on:
         description: "Target date YYYY-MM-DD (optional)"
         required: false
         default: ""
+
       skip_fx:
         description: "Skip FX phase for trial stability"
         required: false
         default: "false"
+
       skip_refresh_latest_artifacts:
         description: "Skip refresh_latest_artifacts phase"
         required: false
         default: "false"
+
       deploy_after_success:
         description: "Deploy to LABOS only after freshness gate passes"
         required: false
@@ -89,6 +92,7 @@ jobs:
           $deployInput = "${{ github.event.inputs.deploy_after_success }}".Trim().ToLowerInvariant()
 
           $scheduledRun = "false"
+
           if ($eventName -eq "schedule") {
             $scheduledRun = "true"
           }
@@ -134,6 +138,15 @@ jobs:
           grep -q '^ALPHAVANTAGE_API_KEY=' .env
 
           echo "[OK] minimal .env created and runtime secrets exported"
+
+      - name: Restore LABOS SSH key
+        if: steps.runmode.outputs.deploy_input == 'true'
+        shell: bash
+        run: |
+          echo "${{ secrets.LABOS_SSH_KEY }}" > labos.pem
+          chmod 600 labos.pem
+          test -s labos.pem
+          echo "[OK] LABOS SSH key restored"
 
       - name: Docker compose sanity check
         run: |
@@ -199,7 +212,8 @@ jobs:
         if: steps.deploygate.outputs.deploy_enabled == 'true'
         shell: pwsh
         run: |
-          ./scripts/run_deploy_labos.ps1
+          ./scripts/run_deploy_labos.ps1 `
+            -KeyPath "./labos.pem"
 
       - name: Show freshness summary
         if: always()
