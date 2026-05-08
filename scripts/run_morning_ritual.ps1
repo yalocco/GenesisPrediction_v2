@@ -7,6 +7,7 @@ param(
     [switch]$SkipRefresh,
     [switch]$SkipVectorMemory,
     [switch]$NoLLM,
+    [switch]$AllowDirtyRepo,
     [switch]$Guard = $true
 )
 
@@ -167,6 +168,10 @@ $vectorBuildScript = Join-Path $repoRoot "scripts\build_vector_memory.py"
 # ============================================================
 if (-not $SkipMain) {
     $dailyArgs = @("-Date", $runDate)
+
+    if ($AllowDirtyRepo) {
+        $dailyArgs += "-AllowDirtyRepo"
+    }
     if ($NoLLM) {
         $dailyArgs += "-NoLLM"
     }
