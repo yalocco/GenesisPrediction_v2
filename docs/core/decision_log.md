@@ -3749,6 +3749,118 @@ Status: adopted
 
 ---
 
+
+
+## 2026-05-08
+### Thread Objective Freeze and Completion Boundary Enforcement
+
+Decision: Every operational thread must explicitly define objective, completion condition, and stop boundary before implementation begins
+
+対象
+
+```text
+GenesisPrediction operational threads
+AI_Foundation operational threads
+GitHub Actions hardening
+deploy / automation / governance discussions
+```
+
+ルール
+
+```text
+新規スレ開始時は以下を必須定義する
+
+1. Single-sentence objective
+2. Explicit completion condition
+3. Stop rule after completion
+```
+
+必須形式
+
+```text
+Objective:
+このスレで何を達成するかを一文で固定する
+
+Completion Condition:
+何を確認できたら完了かを固定する
+
+Stop Rule:
+完了後は追加高度化提案を禁止する
+必要な場合のみユーザー明示要求で再開する
+```
+
+補足
+
+```text
+「もっと安全に」
+「もっと高度に」
+「もっと運用可能に」
+は completion condition を超えてはならない
+
+capability increase は
+automatic justification にならない
+```
+
+禁止事項
+
+```text
+目的達成後に
+追加 hardening を自動提案すること
+
+completion condition 達成後に
+別目的へ silently 拡張すること
+
+「便利そうだから」で
+runtime / governance / observability を増殖させること
+```
+
+理由
+
+```text
+運用改善や hardening は
+本来目的を飲み込みやすく
+無限拡張ループを引き起こすため
+
+AI は capability expansion を継続提案しやすいため
+明示的 stop boundary が必要である
+
+「できること」と
+「やるべきこと」は異なる
+```
+
+今回確認された事例
+
+```text
+本来目的:
+iPad から GitHub Actions で LABOS 更新
+
+必要十分:
+- Morning Ritual
+- freshness gate
+- deploy gate
+- safe stop
+
+しかし途中で:
+- rollback discipline
+- operational observability
+- recovery expansion
+- governance-grade hardening
+
+へ目的逸脱しかけた
+```
+
+最終原則
+
+```text
+capability ≠ authority
+completion ≠ invitation for expansion
+purpose must dominate sophistication
+```
+
+Status: adopted
+
+---
+
 # END OF DOCUMENT
 ---
 ---
