@@ -151,6 +151,10 @@ if ($DryRun) {
     $deployArgs += "-DryRun"
 }
 
+if (-not [string]::IsNullOrWhiteSpace($KeyPath)) {
+    $deployArgs += @("-KeyPath", $KeyPath)
+}
+
 Invoke-PowerShellScript -ScriptPath $deployScript -ScriptArguments $deployArgs
 
 if ($DryRun) {

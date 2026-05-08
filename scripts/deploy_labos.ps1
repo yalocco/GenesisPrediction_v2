@@ -10,18 +10,6 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-if ([string]::IsNullOrWhiteSpace($KeyPath)) {
-    $defaultWindowsKey = "D:\AI\Projects\keys\genesisprediction-labos.pem"
-
-    if (Test-Path $defaultWindowsKey) {
-        $KeyPath = $defaultWindowsKey
-    }
-    else {
-        Fail "KeyPath is required. GitHub Actions must pass -KeyPath ./labos.pem"
-    }
-}
-
-
 function Log($msg) {
     Write-Host "[deploy] $msg"
 }
@@ -29,6 +17,27 @@ function Log($msg) {
 function Fail($msg) {
     throw $msg
 }
+
+function Resolve-DeployKeyPath {
+    param(
+        [Parameter(Mandatory = $false)]
+        [string]$ProvidedKeyPath
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($ProvidedKeyPath)) {
+        return $ProvidedKeyPath
+    }
+
+    $defaultWindowsKey = "D:\AI\Projects\keys\genesisprediction-labos.pem"
+
+    if (Test-Path $defaultWindowsKey) {
+        return $defaultWindowsKey
+    }
+
+    Fail "KeyPath is required. GitHub Actions must pass -KeyPath ./labos.pem"
+}
+
+$KeyPath = Resolve-DeployKeyPath -ProvidedKeyPath $KeyPath
 
 function Invoke-Native {
     param(
