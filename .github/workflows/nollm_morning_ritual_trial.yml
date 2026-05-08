@@ -15,14 +15,39 @@ on:
         description: "Skip refresh_latest_artifacts phase"
         required: false
         default: "false"
+      deploy_after_success:
+        description: "Deploy to LABOS only after freshness gate passes"
+        required: false
+        default: "false"
+
+  schedule:
+    # GitHub Actions cron uses UTC.
+    # 21:30 UTC = 06:30 JST.
+    # Scheduled runs are observation-only by default and do not deploy.
+    - cron: "30 21 * * *"
 
 jobs:
   nollm-trial:
     runs-on: ubuntu-latest
 
+    timeout-minutes: 90
+
+    env:
+      TZ: Asia/Tokyo
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Show workflow context
+        shell: bash
+        run: |
+          echo "workflow    : $GITHUB_WORKFLOW"
+          echo "run_id      : $GITHUB_RUN_ID"
+          echo "actor       : $GITHUB_ACTOR"
+          echo "ref         : $GITHUB_REF"
+          echo "event       : $GITHUB_EVENT_NAME"
+          echo "deploy_input: ${{ github.event.inputs.deploy_after_success }}"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -44,13 +69,42 @@ jobs:
         shell: pwsh
         run: |
           $inputDate = "${{ github.event.inputs.target_date }}"
+
           if ([string]::IsNullOrWhiteSpace($inputDate)) {
             $resolved = Get-Date -Format "yyyy-MM-dd"
-          } else {
+          }
+          else {
             $resolved = $inputDate
           }
+
           "resolved_date=$resolved" >> $env:GITHUB_OUTPUT
+
           Write-Host "Resolved run date: $resolved"
+
+      - name: Resolve run mode
+        id: runmode
+        shell: pwsh
+        run: |
+          $eventName = "${{ github.event_name }}"
+          $deployInput = "${{ github.event.inputs.deploy_after_success }}".Trim().ToLowerInvariant()
+
+          $scheduledRun = "false"
+          if ($eventName -eq "schedule") {
+            $scheduledRun = "true"
+          }
+
+          "event_name=$eventName" >> $env:GITHUB_OUTPUT
+          "scheduled_run=$scheduledRun" >> $env:GITHUB_OUTPUT
+          "deploy_input=$deployInput" >> $env:GITHUB_OUTPUT
+
+          Write-Host "=== Run Mode ==="
+          Write-Host "event_name   : $eventName"
+          Write-Host "scheduled_run: $scheduledRun"
+          Write-Host "deploy_input : $deployInput"
+
+          if ($scheduledRun -eq "true") {
+            Write-Host "[SAFE-STOP] Scheduled run is observation-only. Deploy is disabled for schedule events."
+          }
 
       - name: Create minimal .env and export runtime secrets
         shell: bash
@@ -78,6 +132,7 @@ jobs:
           test -s .env
           grep -q '^NEWSAPI_KEY=' .env
           grep -q '^ALPHAVANTAGE_API_KEY=' .env
+
           echo "[OK] minimal .env created and runtime secrets exported"
 
       - name: Docker compose sanity check
@@ -91,11 +146,151 @@ jobs:
             -Date "${{ steps.resolvedate.outputs.resolved_date }}" `
             -NoLLM
 
+      - name: Check analysis freshness
+        id: freshness
+        shell: pwsh
+        run: |
+          python scripts/check_analysis_freshness.py `
+            --root . `
+            --date "${{ steps.resolvedate.outputs.resolved_date }}"
+
+          "freshness_passed=true" >> $env:GITHUB_OUTPUT
+
+      - name: Build pipeline health summary
+        id: pipelinehealth
+        shell: pwsh
+        run: |
+          python scripts/build_pipeline_health_summary.py `
+            --root . `
+            --date "${{ steps.resolvedate.outputs.resolved_date }}" `
+            --pretty
+
+          "pipeline_health_built=true" >> $env:GITHUB_OUTPUT
+
+      - name: Resolve deploy gate
+        id: deploygate
+        shell: pwsh
+        run: |
+          $eventName = "${{ steps.runmode.outputs.event_name }}"
+          $deployInput = "${{ steps.runmode.outputs.deploy_input }}"
+          $freshnessPassed = "${{ steps.freshness.outputs.freshness_passed }}".Trim().ToLowerInvariant()
+          $pipelineHealthBuilt = "${{ steps.pipelinehealth.outputs.pipeline_health_built }}".Trim().ToLowerInvariant()
+
+          $deployEnabled = "false"
+
+          if ($eventName -eq "workflow_dispatch" -and $deployInput -eq "true" -and $freshnessPassed -eq "true" -and $pipelineHealthBuilt -eq "true") {
+            $deployEnabled = "true"
+          }
+
+          "deploy_enabled=$deployEnabled" >> $env:GITHUB_OUTPUT
+
+          Write-Host "=== Deploy Gate ==="
+          Write-Host "event_name            : $eventName"
+          Write-Host "deploy_after_success  : $deployInput"
+          Write-Host "freshness_passed      : $freshnessPassed"
+          Write-Host "pipeline_health_built : $pipelineHealthBuilt"
+          Write-Host "deploy_enabled        : $deployEnabled"
+
+          if ($deployEnabled -ne "true") {
+            Write-Host "[SAFE-STOP] Deploy is not enabled for this run."
+          }
+
+      - name: Deploy to LABOS after freshness gate
+        if: steps.deploygate.outputs.deploy_enabled == 'true'
+        shell: pwsh
+        run: |
+          ./scripts/run_deploy_labos.ps1
+
+      - name: Show freshness summary
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "=== Freshness Summary ==="
+
+          $targets = @(
+            "analysis/prediction/prediction_latest.json",
+            "analysis/explanation/prediction_explanation_latest.json",
+            "analysis/global_status_latest.json"
+          )
+
+          foreach ($path in $targets) {
+            if (Test-Path $path) {
+              try {
+                $json = Get-Content $path -Raw -Encoding UTF8 | ConvertFrom-Json
+                Write-Host "[OK] $path"
+                Write-Host "  as_of : $($json.as_of)"
+              }
+              catch {
+                Write-Host "[NG] failed to parse: $path"
+              }
+            }
+            else {
+              Write-Host "[NG] missing: $path"
+            }
+          }
+
+      - name: Show pipeline health summary
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "=== Pipeline Health Summary ==="
+
+          $path = "analysis/ops/pipeline_health_latest.json"
+
+          if (Test-Path $path) {
+            try {
+              $json = Get-Content $path -Raw -Encoding UTF8 | ConvertFrom-Json
+              Write-Host "[OK] $path"
+              Write-Host "  overall_status : $($json.overall_status)"
+              Write-Host "  deploy_ready   : $($json.deploy_readiness.eligible)"
+              Write-Host "  reason         : $($json.deploy_readiness.reason)"
+              Write-Host "  total          : $($json.summary.total)"
+              Write-Host "  ok             : $($json.summary.ok)"
+              Write-Host "  warn           : $($json.summary.warn)"
+              Write-Host "  fail           : $($json.summary.fail)"
+              Write-Host "  missing        : $($json.summary.missing)"
+            }
+            catch {
+              Write-Host "[NG] failed to parse: $path"
+            }
+          }
+          else {
+            Write-Host "[NG] missing: $path"
+          }
+
+      - name: Show deploy gate summary
+        if: always()
+        shell: bash
+        run: |
+          echo "=== Deploy Gate Summary ==="
+          echo "event_name            : ${{ steps.runmode.outputs.event_name }}"
+          echo "scheduled_run         : ${{ steps.runmode.outputs.scheduled_run }}"
+          echo "deploy_after_success  : ${{ steps.runmode.outputs.deploy_input }}"
+          echo "freshness_passed      : ${{ steps.freshness.outputs.freshness_passed }}"
+          echo "pipeline_health_built : ${{ steps.pipelinehealth.outputs.pipeline_health_built }}"
+          echo "deploy_enabled        : ${{ steps.deploygate.outputs.deploy_enabled }}"
+
+      - name: Final workflow status
+        if: always()
+        shell: bash
+        run: |
+          echo "=== FINAL STATUS ==="
+          echo "workflow : $GITHUB_WORKFLOW"
+          echo "run_id   : $GITHUB_RUN_ID"
+          echo "event    : $GITHUB_EVENT_NAME"
+          echo "status   : ${{ job.status }}"
+
       - name: Collect trial artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: nollm-trial-artifacts
+          retention-days: 14
+          if-no-files-found: warn
           path: |
             analysis/
             data/world_politics/analysis/
+            data/prediction/
+            data/explanation/
+            dist/labos_deploy/
+            .github/workflows/
