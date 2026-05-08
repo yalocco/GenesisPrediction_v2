@@ -4,11 +4,23 @@ param(
     [string]$HostName = "www143.conoha.ne.jp",
     [string]$UserName = "c3999143",
     [int]$Port = 8022,
-    [string]$KeyPath = "D:\AI\Projects\keys\genesisprediction-labos.pem",
+    [string]$KeyPath,
     [switch]$DryRun
 )
 
 $ErrorActionPreference = "Stop"
+
+if ([string]::IsNullOrWhiteSpace($KeyPath)) {
+    $defaultWindowsKey = "D:\AI\Projects\keys\genesisprediction-labos.pem"
+
+    if (Test-Path $defaultWindowsKey) {
+        $KeyPath = $defaultWindowsKey
+    }
+    else {
+        Fail "KeyPath is required. GitHub Actions must pass -KeyPath ./labos.pem"
+    }
+}
+
 
 function Log($msg) {
     Write-Host "[deploy] $msg"

@@ -7,7 +7,8 @@ param(
     [switch]$DryRun,
     [string]$BaseUrl = "https://labos.soma-samui.com",
     [int]$VerifyTimeoutSeconds = 20,
-    [switch]$SkipVerify
+    [switch]$SkipVerify,
+    [string]$KeyPath
 )
 
 $ErrorActionPreference = "Stop"
