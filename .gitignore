@@ -66,3 +66,9 @@ docker-compose.override.yml
 
 archive/
 temp_audit/
+
+
+# GenesisPrediction governance archive (tracked)
+!docs/archive/
+!docs/archive/decision_rationale/
+!docs/archive/decision_rationale/*.md
