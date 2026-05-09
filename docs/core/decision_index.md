@@ -1,918 +1,494 @@
 # Decision Index (GenesisPrediction v2)
 
 Status: Active
-Purpose: decision_log の検索効率を向上させるための軽量インデックス
-Last Updated: 2026-04-10
+Purpose: Lightweight navigation for decision_log.md
+Last Updated: 2026-05-09
 
 ---
 
 # 0. Purpose
 
-このファイルは
+This file is navigation only.
 
 ```text
-decision_log.md の検索補助
-```
-
-として使用する。
-
-重要:
-
-```text
-decision_index は真実ではない
-decision_log が唯一の正本である
+decision_index is not authority
+decision_log.md is authority
+archive is rationale only
 ```
 
 ---
 
 # 1. Rules
 
-## Rule 1
-
-```text
-1 decision = 1 entry
-```
-
-## Rule 2
-
-```text
-1 entry = 4行構成
-```
-
-- date
-- title
-- tags
-- rule
-
-## Rule 3
-
-```text
-長文禁止
-説明禁止
-要約禁止
-```
-
-## Rule 4
-
-```text
-source は必ず decision_log.md を指す
-```
+- 1 decision = 1 entry
+- Each entry contains title, tags, rule, source
+- No long rationale
+- Source must point to decision_log.md or archive when explicitly historical
 
 ---
 
 # 2. Index Entries
 
----
+## Core Authority / Governance
 
-## CORE | Analysis Is Single Source of Truth
+### CORE-001 | Decision Log Role Is Authoritative Operational Record
+tags: decision_log, authority, archive
+rule: decision_log.md records current binding decisions only; rationale and operational narratives live in docs/archive/decision_rationale/.
+source: docs/core/decision_log.md
 
+### CORE-002 | Decision Index Is Navigation Only
+tags: decision_index, navigation
+rule: decision_index.md is a lightweight search aid; it is not authority.
+source: docs/core/decision_log.md
+
+### CORE-003 | Rationale Archive Is Historical, Not Authority
+tags: archive, rationale, authority
+rule: docs/archive/decision_rationale preserves long-form reasoning but does not override decision_log.md.
+source: docs/core/decision_log.md
+
+### CORE-004 | Analysis Is Single Source of Truth
 tags: analysis, ssot, architecture
-
-rule: analysis is the single source of truth and ui must not override it
-
+rule: analysis/ is runtime truth; UI, vector memory, deploy snapshots, and archive must not override it.
 source: docs/core/decision_log.md
 
----
+### CORE-005 | Docs Are Single Source of Design Intent
+tags: docs, design_intent, architecture
+rule: docs/ stores design intent; analysis/ remains runtime truth.
+source: docs/core/decision_log.md
 
-## CORE | UI Is Display Only
-
+### CORE-006 | UI Is Display Only
 tags: ui, display_only, architecture
-
-rule: ui must not compute, decide, translate, or generate meaning
-
+rule: UI reads generated artifacts and displays them; it must not compute, decide, translate, generate fallback meaning, or redefine truth.
 source: docs/core/decision_log.md
 
----
-
-## CORE | Full File Delivery Only
-
-tags: generation, full_file, integrity
-
-rule: diff proposals are prohibited and full files are required
-
+### CORE-007 | Full File Delivery Only
+tags: generation, integrity, full_file
+rule: Diff proposals and partial patches are prohibited; complete files are required.
 source: docs/core/decision_log.md
 
----
-
-## CORE | Existing File Must Be Verified
-
-tags: generation, integrity, verification
-
-rule: do not generate from guesswork when an existing file has not been verified
-
+### CORE-008 | Existing File Verification Required
+tags: generation, verification, no_guessing
+rule: Existing files must be inspected before generation; do not reconstruct from guesswork.
 source: docs/core/decision_log.md
 
----
-
-## CORE | Vector Memory Is Reference Only
-
-tags: vector_memory, reference, architecture
-
-rule: vector memory must be reference-only and must not overwrite analysis
-
+### CORE-009 | Download/ZIP Workflow Required For Long Files
+tags: markdown, zip, integrity
+rule: Long Markdown/code artifacts must be delivered as downloadable complete files or ZIP; browser manual copy-paste is prohibited.
 source: docs/core/decision_log.md
 
----
-
-## 2026-04-04 | Explanation Is a Mirror of Prediction
-
-tags: explanation, prediction, mirror
-
-rule: analysis/prediction/prediction_latest.json
-
+### CORE-010 | Line Count Integrity Must Be Checked
+tags: line_count, integrity
+rule: Line counts must be checked before/after file replacement; large reductions require explicit rationale.
 source: docs/core/decision_log.md
 
----
-
-## 2026-04-04 | Watchpoints Must Not Be Mixed Across Layers
-
-tags: watchpoints, prediction, explanation
-
-rule: scripts/build_prediction_explanation.py
-
+### CORE-011 | Incomplete Input Guard
+tags: no_guessing, stop, escalate
+rule: If required input is missing, stop or escalate rather than inventing a plausible file.
 source: docs/core/decision_log.md
 
----
+## Architecture
 
-## 2026-04-04 | Runtime UI Text Must Not Compete With Static i18n
-
-tags: runtime, ui, text, not, compete
-
-rule: app/static/*.html
-
+### ARCH-001 | Pipeline Structure Is Fixed
+tags: pipeline, architecture
+rule: GenesisPrediction follows Observation → Trend → Signal → Scenario → Prediction, with Explanation, Vector Memory, FX Decision, and History Snapshot as supporting layers.
 source: docs/core/decision_log.md
 
----
-
-## 2026-04-04 | Build Environment（自宅PC）
-
-tags: build, environment, pc
-
-rule: llmあり
-
+### ARCH-002 | WorldDate Uses Local Date
+tags: worlddate, morning_ritual
+rule: WorldDate uses LOCAL DATE because raw news files are saved by local date.
 source: docs/core/decision_log.md
 
----
-
-## 2026-04-04 | View Environment（会社PC）
-
-tags: view, environment, pc
-
-rule: ui確認
-
+### ARCH-003 | Vector Memory Is Reference Only
+tags: vector_memory, qdrant, reference
+rule: Qdrant/vector memory is searchable reference memory; it must never overwrite analysis or become authority.
 source: docs/core/decision_log.md
 
----
-
-## 2026-04-04 | Automation Must Expose Phase Status and Unified Exit Code
-
-tags: automation, expose, phase, status, unified
-
-rule: scripts/run_morning_ritual_with_checks.ps1
-
+### ARCH-004 | Memory Is Promoted, Not Raw
+tags: memory, promotion
+rule: Only decisions, rules, and durable insights are promoted; raw conversations, trials, and temporary logs are not authoritative memory.
 source: docs/core/decision_log.md
 
----
-
-## 2026-04-04 | Automatic Vector Memory Rebuild Is Accepted as Self-Healing in Pipeline
-
-tags: automatic, vector, memory, rebuild, accepted
-
-rule: vector memory freshness が warn の場合
-
+### ARCH-005 | Decision Log Is Primary Memory Source
+tags: memory, decision_log
+rule: decision_log.md is the primary source for decision memory indexing.
 source: docs/core/decision_log.md
 
----
-
-## 2026-03-27 | UI i18n Template Standardization
-
-tags: ui, i18n, template, standardization
-
-rule: - adopt prediction-based ui i18n template
-
+### ARCH-006 | build_vector_memory.py Is Single Entrypoint
+tags: vector_memory, scripts
+rule: Vector memory rebuild uses build_vector_memory.py as the single rebuild entrypoint.
 source: docs/core/decision_log.md
 
----
-
-## 2026-03-27 | 結論
-
-tags: decision
-
-rule: vector memory は
-
+### ARCH-007 | Reference Memory Is Compacted For UI
+tags: reference_memory, ui
+rule: Reference memory passed to UI is compacted by analysis/scripts; UI must not compact raw memory.
 source: docs/core/decision_log.md
 
----
+## Language / i18n
 
-## 2026-03-27 | 理由
-
-tags: decision
-
-rule: - 既存の責務分離（analysis / scripts / ui）がすでに完成している
-
+### I18N-001 | Global i18n Architecture Is Analysis-Side
+tags: i18n, analysis, ui
+rule: Translation and *_i18n generation happen in scripts/analysis; UI only selects and displays.
 source: docs/core/decision_log.md
 
----
-
-## 2026-03-27 | 方針
-
-tags: decision
-
-rule: build_vector_memory.py を単一入口とする
-
+### I18N-002 | Language State Is Centrally Managed
+tags: lang, theme, central_state
+rule: LANG state is centrally managed like theme; pages do not directly own language state.
 source: docs/core/decision_log.md
 
----
-
-## 2026-03-27 | 許可される将来拡張
-
-tags: decision
-
-rule: langchain は将来的に以下用途に限定して検討可能
-
+### I18N-003 | UI Must Not Generate Language
+tags: ui, i18n, language
+rule: UI must not translate, supplement, fallback-generate, compress, or reinterpret language content.
 source: docs/core/decision_log.md
 
----
-
-## 2026-03-27 | 非交渉ルール
-
-tags: decision
-
-rule: langchain は
-
+### I18N-004 | Runtime Text Must Not Compete With Static i18n
+tags: i18n, runtime_text
+rule: A DOM node must have one text responsibility; static labels and runtime content must not overwrite each other.
 source: docs/core/decision_log.md
 
----
-
-## 2026-04-02 | Sentiment Semantic Enrichment (B-1〜B-4)
-
-tags: sentiment, semantic, enrichment, b, 1
-
-rule: theme_tags
-
+### I18N-005 | Static Labels May Use Central Dictionary
+tags: i18n, labels
+rule: Static labels may use central dictionary; dynamic runtime text must come from analysis *_i18n fields.
 source: docs/core/decision_log.md
 
----
-
-## 2026-04-02 | World View Structured Summary Enforcement
-
-tags: world, view, structured, summary, enforcement
-
-rule: summary_structured = 正
-
+### I18N-006 | Prediction Output Must Preserve Structure
+tags: prediction, i18n, structure
+rule: Prediction output must not use partial word-level translation fallback; unknown phrases remain raw unless explicitly mapped.
 source: docs/core/decision_log.md
 
----
-
-## 2026-04-02 | Prediction Must Use Semantic Analysis Fields
-
-tags: prediction, use, semantic, analysis, fields
-
-rule: theme_tags
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Deploy Hardening (Full Replacement, Target-Only, Permission-Aware)
-
-tags: deploy, hardening, full, replacement, target
-
-rule: - labos.soma-samui.com 以外のディレクトリを操作しない
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Deploy Payload Self-Deletion Guard
-
-tags: deploy, payload, self, deletion, guard
-
-rule: cleanup 処理で deploy payload（tar）を除外する
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Deploy Permission Constraints (Conoha)
-
-tags: deploy, permission, constraints, conoha
-
-rule: - ディレクトリ自体の削除ではなく中身のみ削除する
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Full File Integrity Reinforcement (Line Count & Copy Safety)
-
-tags: full, file, integrity, reinforcement, line
-
-rule: - 元ファイルより大幅に行数が減る場合は生成禁止
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Deploy Verification Must Follow Deploy
-
-tags: deploy, verify, operations
-
-rule: deploy 成功表示だけで完了とみなさない
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Morning Ritual End-to-End Chain Is Valid
-
-tags: operations, ritual, deploy, verify
-
-rule: run_morning_ritual.ps1
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Prediction Enhancement Phase 2 Completion (Recall Alignment & Text Quality)
-
-tags: prediction, enhancement, phase, 2, completion
-
-rule: prediction は vector memory を補助情報として参照する
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Dirty Repo Guard Enforcement (Run Requires Clean Working Tree)
-
-tags: dirty, repo, guard, enforcement, run
-
-rule: scripts/run_daily_with_publish.ps1
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Pre-Run Commit Rule (Operational Requirement)
-
-tags: pre, run, commit, rule, operational
-
-rule: run 前は必ず commit を行う
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | PowerShell Switch Parameter Rule (No Boolean Value Passing)
-
-tags: powershell, switch, parameter, rule, no
-
-rule: powershell scripts
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Scenario Engine Must Produce Causal Branches, Not Templates
-
-tags: scenario, causal, branch, watchpoints
-
-rule: scripts/scenario_engine.py
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Scenario Drivers Must Be Cause-Oriented
-
-tags: scenario, drivers, cause
-
-rule: scripts/scenario_engine.py
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Prediction Must Be Decision-Grade, Not Scenario Restatement
-
-tags: prediction, decision, architecture, scenario
-
-rule: scripts/prediction_engine.py
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Prediction Drivers Must Be Limited and Cause-Oriented
-
-tags: prediction, drivers, cause
-
-rule: scripts/prediction_engine.py
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Prediction Monitoring Priorities Must Follow Branch Logic
-
-tags: prediction, monitoring, branch_logic
-
-rule: scripts/prediction_engine.py
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Explanation Must Be Mirror-Only Across Structured Fields
-
-tags: explanation, mirror, structure
-
-rule: scripts/build_prediction_explanation.py
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Explanation May Clarify Reading, But Must Not Create New Truth
-
-tags: explanation, mirror, truth
-
-rule: headline
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Scenario Driver Canonicalization Must Exclude Scenario Labels
-
-tags: scenario, drivers, canonicalization
-
-rule: scripts/scenario_engine.py
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Prediction Enhancement (Cause-Oriented Scenario + Decision-Grade Prediction) Is Completed
-
-tags: prediction, scenario, milestone
-
-rule: analysis/prediction/scenario_latest.json
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Scenario Transmission Must Be Deterministic Per Branch
-
-tags: scenario, transmission, deterministic, branch
-
-rule: scripts/scenario_engine.py
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Scenario Narrative Must Be Built From Structured Drivers, Not Raw Tags
-
-tags: scenario, narrative, drivers
-
-rule: scripts/scenario_engine.py
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Scenario Narrative Outcomes Must Align With Branch Outcomes
-
-tags: scenario, narrative, outcomes, branch
-
-rule: scripts/scenario_engine.py
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Internal Scenario / Transmission Tokens Must Be Snake Case
-
-tags: scenario, tokens, snake_case, i18n
-
-rule: scripts/scenario_engine.py
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Scenario Must Carry Invalidation Conditions
-
-tags: scenario, invalidation, monitoring
-
-rule: scripts/scenario_engine.py
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-04 | Scenario Engine Final Polish Completed
-
-tags: scenario, production_ready, milestone
-
-rule: analysis/prediction/scenario_latest.json
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-05 | Markdown Editing Must Use Download-Based Full File Workflow
-
-tags: markdown, workflow, download, integrity
-
-rule: docs/*.md
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-05 | 背景
-
-tags: decision
-
-rule: コードブロック崩壊
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-05 | 新ルール
-
-tags: decision
-
-rule: .md ファイルはブラウザコピペ編集を禁止する
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-05 | 必須運用
-
-tags: decision
-
-rule: 完全ファイルをダウンロード形式で受け取る
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-05 | 禁止事項
-
-tags: decision
-
-rule: ブラウザ上での直接編集
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-05 | 理由
-
-tags: decision
-
-rule: markdown は構造依存が強く、
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-05 | 既存ルールとの関係
-
-tags: decision
-
-rule: 完全ファイルのみ
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-05 | 本質
-
-tags: decision
-
-rule: markdown はコードである
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-05 | Prediction Output Must Preserve Structure (No Partial Translation)
-
-tags: prediction, i18n, translation, structure
-
-rule: decision:
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-05 | Scenario Labels Must Not Use Generic Translation
-
+### I18N-007 | Scenario Labels Must Not Use Generic Translation
 tags: scenario, i18n, labels
-
-rule: decision:
-
+rule: Scenario labels must be explicit canonical labels, not generic translation artifacts.
 source: docs/core/decision_log.md
 
----
-
-## 2026-04-05 | Prediction Enhancement v4 Completed
-
-tags: prediction, milestone, v4
-
-rule: summary:
-
+### I18N-008 | EN Is Internal SSOT For Language Architecture
+tags: i18n, en, ssot
+rule: English is the primary internal basis for generated i18n/artifacts; Japanese and Thai are supplementary display layers.
 source: docs/core/decision_log.md
 
----
+## Prediction / Scenario
 
-## 2026-04-05 | Prediction Layer i18n Must Be Fully Resolved in Analysis (Structure Fix)
-
-tags: prediction, i18n, analysis
-
-rule: scripts/prediction_engine.py
-
+### PRED-001 | Prediction Must Be Last Layer
+tags: prediction, architecture
+rule: Prediction is the final decision-grade summary; it must not replace Observation/Trend/Signal/Scenario.
 source: docs/core/decision_log.md
 
----
-
-## 2026-04-05 | Prediction Must Carry Structured Semantics (No Meaning Gap)
-
-tags: prediction, structure, explanation, ui
-
-rule: scripts/prediction_engine.py
-
+### PRED-002 | Scenario Engine Must Produce Causal Branches
+tags: scenario, causal, branch
+rule: Scenario output must be causal, branch-readable, and monitoring-linked, not template text.
 source: docs/core/decision_log.md
 
----
-
-## 2026-04-05 | System Completion and Phase Transition to Operation
-
-tags: operations, completion, ritual
-
-rule: scripts/run_morning_ritual_with_checks.ps1
-
+### PRED-003 | Scenario Drivers Must Be Cause-Oriented
+tags: scenario, drivers, cause
+rule: Scenario key_drivers must contain causes, not outcomes, state labels, or scenario names.
 source: docs/core/decision_log.md
 
----
+### PRED-004 | Prediction Must Be Decision-Grade
+tags: prediction, decision_grade
+rule: Prediction must be a decision-grade conclusion, not a scenario restatement.
+source: docs/core/decision_log.md
 
-## 2026-04-07 | Prediction History Must Be Synced to data Layer for UI
+### PRED-005 | Prediction Drivers Are Limited And Cause-Oriented
+tags: prediction, drivers, cause
+rule: Prediction key_drivers should be short, limited, and cause-oriented.
+source: docs/core/decision_log.md
 
+### PRED-006 | Monitoring Priorities Follow Branch Logic
+tags: prediction, monitoring, branch_logic
+rule: Monitoring priorities must preserve decision flow and branch logic, especially escalation and persistence before stabilization.
+source: docs/core/decision_log.md
+
+### PRED-007 | Scenario Driver Canonicalization Excludes Scenario Labels
+tags: scenario, canonicalization
+rule: Scenario labels such as base_case/best_case/worst_case must not enter driver canonicalization.
+source: docs/core/decision_log.md
+
+### PRED-008 | Scenario Transmission Is Deterministic Per Branch
+tags: scenario, transmission
+rule: Scenario transmission chains must be deterministic and branch-specific.
+source: docs/core/decision_log.md
+
+### PRED-009 | Scenario Narrative Uses Structured Drivers
+tags: scenario, narrative
+rule: Scenario narrative must be built from structured drivers, not raw tags.
+source: docs/core/decision_log.md
+
+### PRED-010 | Scenario Narrative Outcomes Align With Branch Outcomes
+tags: scenario, outcomes
+rule: Scenario narrative outcomes must align with branch expected outcomes.
+source: docs/core/decision_log.md
+
+### PRED-011 | Internal Scenario Tokens Are Snake Case
+tags: scenario, tokens, snake_case
+rule: Internal scenario/transmission tokens must use snake_case.
+source: docs/core/decision_log.md
+
+### PRED-012 | Scenario Carries Invalidation Conditions
+tags: scenario, invalidation
+rule: Scenario branches must carry invalidation conditions.
+source: docs/core/decision_log.md
+
+### PRED-013 | Scenario Engine Final Polish Is Baseline
+tags: scenario, milestone
+rule: The production-ready scenario baseline is causal branches + deterministic transmission + aligned narrative + snake_case tokens + invalidation.
+source: docs/core/decision_log.md
+
+## Explanation
+
+### EXPL-001 | Explanation Is Mirror Of Prediction
+tags: explanation, prediction, mirror
+rule: Explanation mirrors prediction and must not reinterpret it or create new truth.
+source: docs/core/decision_log.md
+
+### EXPL-002 | Watchpoints Must Not Mix Layers
+tags: watchpoints, explanation, prediction
+rule: Prediction monitoring_priorities take precedence; explanation must not mix scenario/signal watchpoints when prediction watchpoints exist.
+source: docs/core/decision_log.md
+
+### EXPL-003 | Explanation Fields Mirror Prediction Fields
+tags: explanation, mirror, structure
+rule: drivers, monitoring, implications, risks, and invalidation must mirror prediction fields directly.
+source: docs/core/decision_log.md
+
+### EXPL-004 | Explanation May Clarify Reading Only
+tags: explanation, no_new_truth
+rule: Explanation may structure reading guidance and misread prevention, but must not add new causes, risks, or watchpoints.
+source: docs/core/decision_log.md
+
+### EXPL-005 | Explanation Drivers Are Pure Prediction Mirror
+tags: explanation, drivers, mirror
+rule: explanation.drivers mirror prediction.key_drivers / prediction.drivers without extra why/impact reconstruction.
+source: docs/core/decision_log.md
+
+### EXPL-006 | Explanation Core Fields Are Pure Prediction Mirror
+tags: explanation, core_fields, mirror
+rule: Explanation core fields mirror prediction directly without structured reinterpretation.
+source: docs/core/decision_log.md
+
+## Operations / Deploy
+
+### OPS-001 | Deploy Target Is Snapshot
+tags: deploy, labos, snapshot
+rule: LABOS is a distribution snapshot; Git + analysis/data remain authoritative.
+source: docs/core/decision_log.md
+
+### OPS-002 | Deploy Is Full Replacement
+tags: deploy, full_replacement
+rule: Deploy must fully replace target state and must not overlay stale files.
+source: docs/core/decision_log.md
+
+### OPS-003 | Deploy Must Be Target-Isolated
+tags: deploy, conoha, safety
+rule: Deploy must only operate inside the intended LABOS target and must not affect other hosted sites.
+source: docs/core/decision_log.md
+
+### OPS-004 | Deploy Payload Self-Deletion Guard
+tags: deploy, payload, guard
+rule: Cleanup logic must not delete the deploy payload before extraction.
+source: docs/core/decision_log.md
+
+### OPS-005 | Deploy Verification Must Follow Deploy
+tags: deploy, verify
+rule: Deploy success is not final; verify_deploy.py/local-vs-public comparison must pass.
+source: docs/core/decision_log.md
+
+### OPS-006 | Morning Ritual Chain Is Formal
+tags: morning_ritual, deploy, verify
+rule: Morning Ritual → post checks → deploy → verify is the formal end-to-end operational chain.
+source: docs/core/decision_log.md
+
+### OPS-007 | Build And View Environments Are Separated
+tags: environment, build, view
+rule: Home/build PC generates analysis/data; company/view PC consumes and verifies only.
+source: docs/core/decision_log.md
+
+### OPS-008 | Company PC Must Not Regenerate Analysis/Data
+tags: environment, no_build
+rule: Company PC must not run Morning Ritual or regenerate analysis/data.
+source: docs/core/decision_log.md
+
+### OPS-009 | analysis/data USB Sync Is Valid Transport
+tags: sync, transport
+rule: Whole analysis/data sync from build environment to view environment is valid; do not regenerate on view side.
+source: docs/core/decision_log.md
+
+### OPS-010 | Git Restore Is Destructive Rollback
+tags: git, restore, rollback
+rule: git restore is destructive rollback and must only be used after explicit rollback decision.
+source: docs/core/decision_log.md
+
+### OPS-011 | Detached HEAD Work Is Not Trusted Final State
+tags: git, detached_head
+rule: Detached HEAD work is not final until returned to main and committed/stashed intentionally.
+source: docs/core/decision_log.md
+
+### OPS-012 | Local Cache Failure Is Operational Incident
+tags: cache, fastembed, incident
+rule: fastembed/local cache failures are operational incidents, not architecture failures.
+source: docs/core/decision_log.md
+
+### OPS-013 | Automation Must Expose Phase Status And Exit Code
+tags: automation, status, exit_code
+rule: Unattended automation must expose per-phase OK/FAIL/SKIP and unified final exit code.
+source: docs/core/decision_log.md
+
+### OPS-014 | Vector Rebuild Self-Healing Is Valid
+tags: vector_memory, self_healing
+rule: WARN → rebuild → re-check → OK for vector freshness is valid self-healing behavior.
+source: docs/core/decision_log.md
+
+### OPS-015 | Dirty Repo Guard Enforced
+tags: git, dirty_guard
+rule: Run scripts must execute on a clean working tree.
+source: docs/core/decision_log.md
+
+### OPS-016 | Pre-Run Commit Required
+tags: git, commit, operations
+rule: Commit before run is mandatory to satisfy dirty guard and preserve reproducibility.
+source: docs/core/decision_log.md
+
+### OPS-017 | PowerShell Switch Parameters Do Not Receive Boolean Values
+tags: powershell, switch
+rule: PowerShell switch parameters are enabled by presence and must not receive explicit boolean values.
+source: docs/core/decision_log.md
+
+### OPS-018 | Cross-Platform PowerShell Prefers pwsh On Core
+tags: powershell, github_actions
+rule: PowerShell Core environments must dynamically resolve pwsh instead of powershell.
+source: docs/core/decision_log.md
+
+### OPS-019 | NoLLM Morning Ritual GitHub Actions Trial Succeeded
+tags: github_actions, nollm, labos
+rule: NoLLM GitHub Actions workflow can support iPad-driven LABOS updates when SSH restrictions are resolved.
+source: docs/core/decision_log.md
+
+## Data / Analysis
+
+### DATA-001 | Sentiment Output Is Semantic
+tags: sentiment, semantic
+rule: Sentiment output includes theme_tags, signal_tags, risk_drivers, and impact_tags for Prediction/Scenario use.
+source: docs/core/decision_log.md
+
+### DATA-002 | World View Summary Is Structured First
+tags: world_view, summary
+rule: World view summary derives from structured summary, not malformed upstream free text.
+source: docs/core/decision_log.md
+
+### DATA-003 | Prediction Uses Semantic Analysis Fields
+tags: prediction, semantic
+rule: Prediction consumes semantic analysis fields, not score-only sentiment.
+source: docs/core/decision_log.md
+
+### DATA-004 | Daily Summary Is Count-Based
+tags: summary, count
+rule: daily_summary_latest summary must be derived from count-based structured fields and not contradict today.count.
+source: docs/core/decision_log.md
+
+### DATA-005 | Health Output Path Matches SSOT Path
+tags: health, ssot, path
+rule: build_data_health.py output must align with analysis/health_latest.json when guards verify that path.
+source: docs/core/decision_log.md
+
+## UI / Public Release
+
+### UI-001 | UI Must Not Silently Mask Missing Data
+tags: ui, missing_data, silent_failure
+rule: Missing data must be visible as loading/missing/unavailable, not hidden as normal output.
+source: docs/core/decision_log.md
+
+### UI-002 | Release Requires Analysis Completeness
+tags: release, analysis, completeness
+rule: Deploy/release requires necessary latest JSON and *_i18n keys; UI fixes must not cover incomplete analysis.
+source: docs/core/decision_log.md
+
+### UI-003 | Digest Summary i18n Generated In Analysis
+tags: digest, i18n
+rule: Digest summary_i18n is generated in analysis and displayed by UI only.
+source: docs/core/decision_log.md
+
+### UI-004 | Prediction History Syncs To Data Layer For UI
 tags: history, data_layer, ui
-
-rule: analysis/prediction/history/*
-
+rule: Prediction history must be synced to data layer paths needed by the UI distribution.
 source: docs/core/decision_log.md
 
----
-
-## 2026-04-07 | Local Server and Distribution Structure Must Be Strictly Distinguished
-
-tags: distribution, local_server, ui
-
-rule: decision: local development server and distribution (dist) structure must not be confused
-
+### UI-005 | Local Server And Distribution Are Distinct
+tags: distribution, local_server
+rule: Local dev server structure and dist/deploy structure must not be confused.
 source: docs/core/decision_log.md
 
----
-
-## 2026-04-07 | UI 404 Debug Must Start From Distribution Layer
-
+### UI-006 | UI 404 Debug Starts From Distribution Layer
 tags: ui, debug, distribution
-
-rule: decision: ui 404 errors must be debugged from distribution layer, not ui layer
-
+rule: UI 404 issues must be debugged from distribution/build output before page logic.
 source: docs/core/decision_log.md
 
----
-
-## 2026-04-08 | GUI Final Audit Completed
-
-tags: ui, audit, stability
-
-rule: 全ページで local / labos 一致確認済み
-
+### UI-007 | GUI Final Audit Completed
+tags: ui, audit
+rule: GUI final audit established the public UI baseline.
 source: docs/core/decision_log.md
 
----
-
-## 2026-04-08 | Pre-deploy Payload Freshness Check Is Mandatory
-
+### UI-008 | Pre-Deploy Payload Freshness Check Required
 tags: deploy, payload, freshness
+rule: Deploy payload must be checked for freshness before deployment.
+source: docs/core/decision_log.md
 
-rule: deploy前に dist/labos_deploy の snapshot を確認する
+### UI-009 | Favicon And OGP Handling In Static Deployment
+tags: seo, ogp, favicon
+rule: Static deploy must preserve favicon and OGP asset paths.
+source: docs/core/decision_log.md
 
+### UI-010 | Home Is Route-First Public Landing Page
+tags: home, landing, public
+rule: Home must guide users to Digest, Overlay, and Prediction as route-first public landing page.
+source: docs/core/decision_log.md
+
+### UI-011 | Prediction Static Text Resolves Locally
+tags: prediction, ui_text, i18n
+rule: Prediction page static labels resolve from page-local UI_TEXT when required, not conflicting shared runtime routing.
+source: docs/core/decision_log.md
+
+## Policy / Public Content
+
+### POLICY-001 | News Content Must Not Be Reproduced In Full
+tags: news, copyright, policy
+rule: GenesisPrediction summarizes and links news; it must never reproduce full articles or large source text.
+source: docs/core/decision_log.md
+
+### POLICY-002 | Policy Docs Are Human-Facing; AI Rules Are Compressed
+tags: policy, decision_log
+rule: Detailed policy docs may exist for humans, but AI-effective rules must be compressed into decision_log and indexed.
+source: docs/core/decision_log.md
+
+## Thread Governance
+
+### THREAD-001 | Thread Objective Freeze And Completion Boundary
+tags: thread, scope, completion
+rule: Each thread must freeze objective and completion boundary to avoid infinite expansion.
+source: docs/core/decision_log.md
+
+### CORE-012 | Archive Rationale Map Required
+tags: archive, consolidation, map
+rule: decision_log consolidation must include a map that explains where legacy rationale moved and how authority was preserved.
+source: docs/core/decision_log.md
+
+### CORE-013 | Consolidation Report Required
+tags: archive, consolidation, report
+rule: decision_log consolidation must include a report documenting line counts, reduction rationale, archive coverage, and vector indexing intent.
+source: docs/core/decision_log.md
+
+### CORE-014 | Legacy Decision Log Must Be Preserved
+tags: archive, legacy, integrity
+rule: the pre-consolidation decision_log must be preserved in rationale archive before compact authority replacement is accepted.
+source: docs/core/decision_log.md
+
+### ARCH-008 | VectorDB Must Separate Authority And Rationale Memory
+tags: vector_memory, authority, rationale
+rule: decision_log entries and archive rationale must be indexed as separate reference memory types and must not be treated as equal authority.
+source: docs/core/decision_log.md
+
+### ARCH-009 | Archive Recall Is Context Only
+tags: vector_memory, archive, recall
+rule: archive recall may explain history and rationale but must not override current decision_log authority.
 source: docs/core/decision_log.md
 
 ---
 
-## 2026-04-08 | EN as SSOT (Language Architecture Finalization)
-
-tags: i18n, language, ssot
-
-rule: decision:
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-08 | Explanation Pure Mirror Hardening
-
-tags: explanation, mirror, hardening
-
-rule: decision:
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-08 | Structured Truth Consolidation
-
-tags: prediction, structure, truth
-
-rule: decision:
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-08 | Prediction Enhancement Phase1
-
-tags: prediction, enhancement, phase1
-
-rule: decision:
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-08 | Decision Action Hardening (Branch-Linked Actions, Triggers, Outcomes)
-
-tags: decision, action, hardening, branch, linked
-
-rule: scripts/prediction_engine.py
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-09 | Daily Summary Materialization Must Be Count-Based
-
-tags: summary, materialization, count, structured
-
-rule: daily_summary_latest.json summary must be derived from today.count and must not contradict it
-
-source: docs/core/decision_log.md
-
----
-
-
----
-
-## 2026-04-10 | Explanation Drivers Must Be Pure Prediction Mirror
-
-tags: explanation, drivers, mirror, prediction
-
-rule: explanation.drivers must mirror prediction.key_drivers / prediction.drivers without why / impact
-
-source: docs/core/decision_log.md
-
-
----
-
-## 2026-04-10 | Explanation Core Fields Must Be Pure Prediction Mirror
-
-tags: explanation, mirror, prediction, monitor, implications, risks, invalidation
-
-rule: explanation core fields must mirror prediction fields directly without structured reinterpretation
-
-source: docs/core/decision_log.md
-
-
-
-## 2026-04-10 | Prediction Monitoring Priorities Ordering Must Preserve Decision Flow
-
-tags: prediction, monitoring, ordering, decision_flow
-
-rule: monitoring_priorities must be ordered as escalation → persistence → downstream confirmation → stabilization
-
-source: docs/core/decision_log.md
-
-
-## 2026-04-19 | Home Must Be Route-First Public Landing Page
-
-tags: home, landing, routes, public_release, ui
-
-rule: home must be route-first and lead users toward digest, overlay, and prediction
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-19 | Prediction Page Static UI Text Must Resolve Locally
-
-tags: prediction, i18n, static_labels, local_ui_text
-
-rule: prediction.html static labels must resolve from page-local UI_TEXT, not shared translation routing
-
-source: docs/core/decision_log.md
-
----
-
-
-## 2026-04-19 | News Content Must Never Be Reproduced In Full
-
-tags: news, copyright, summary, linking, public_release
-
-rule: news content must never be reproduced in full; only summarized, linked, and transformed into analysis
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-04-19 | Policy Documents Are Human-Facing; AI Rules Must Be Compressed Into Decision Log
-
-tags: policy, decision_log, ai, governance
-
-rule: detailed policy docs are human-facing and AI-effective rules must be compressed into decision_log
-
-source: docs/core/decision_log.md
-
----
-
-
-
-## 2026-05-08 | Health Output Path Must Match SSOT Distribution Path
-
-tags: health, ssot, path, pipeline, guard
-
-rule: build_data_health.py output path must explicitly align with analysis guard path
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-05-08 | Cross-Platform PowerShell Invocation Must Prefer pwsh on PowerShell Core
-
-tags: powershell, cross_platform, pwsh, github_actions
-
-rule: PowerShell Core environments must dynamically resolve pwsh instead of powershell
-
-source: docs/core/decision_log.md
-
----
-
-## 2026-05-08 | NoLLM Morning Ritual GitHub Actions Trial Succeeded
-
-tags: nollm, github_actions, automation, unattended, operations
-
-rule: unattended Morning Ritual execution on GitHub Actions is operationally valid
-
-source: docs/core/decision_log.md
-
----
-
-# 3. Notes
-
-このファイルは以下用途で使用される：
-
-```text
-vector memory の高速検索
-AI の意思決定参照
-設計判断の一覧確認
-```
-
-重要:
-
-```text
-意味の解釈は decision_log を参照する
-このファイル単体で判断しない
-```
-
----
-
-END OF FILE
-
----
-
-
-## 2026-04-15 | Translation Pipeline Explicit Invocation
-
-tags: translation, pipeline, invocation
-
-rule: translation requires explicit parameters and is not implicit
-
-source: docs/core/decision_log.md
-
-
----
-
-END OF FILE
+END OF DOCUMENT
