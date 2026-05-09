@@ -45,7 +45,9 @@ class MemoryItem:
 
 @dataclass(slots=True)
 class BuildStats:
-    decision_log: int = 0
+    decision_authority: int = 0
+    decision_rationale_archive: int = 0
+    legacy_decision_log: int = 0
     prediction_snapshot: int = 0
     scenario_snapshot: int = 0
     signal_snapshot: int = 0
@@ -56,7 +58,9 @@ class BuildStats:
 
     def as_dict(self) -> dict[str, int]:
         return {
-            "decision_log": self.decision_log,
+            "decision_authority": self.decision_authority,
+            "decision_rationale_archive": self.decision_rationale_archive,
+            "legacy_decision_log": self.legacy_decision_log,
             "prediction_snapshot": self.prediction_snapshot,
             "scenario_snapshot": self.scenario_snapshot,
             "signal_snapshot": self.signal_snapshot,
@@ -318,55 +322,130 @@ def summary_i18n_from_markdown_body(body: str) -> dict[str, str]:
     }
 
 
-def build_decision_log_items(root: Path, stats: BuildStats) -> list[MemoryItem]:
-    path = root / "docs" / "core" / "decision_log.md"
-    if not path.exists():
-        return []
+def decision_markdown_sources(root: Path) -> list[tuple[Path, str, str, str]]:
+    """
+    Returns Markdown sources for governance memory.
 
-    text = path.read_text(encoding="utf-8")
-    chunks = extract_decision_log_chunks(text)
+    Tuple:
+      (path, memory_type, authority_level, archive_role)
+
+    authority_level:
+      - authoritative
+      - archive_reference_only
+
+    archive_role:
+      - operational_decision_record
+      - consolidation_map
+      - consolidation_report
+      - legacy_decision_log
+    """
+    archive_root = root / "docs" / "archive" / "decision_rationale"
+    return [
+        (
+            root / "docs" / "core" / "decision_log.md",
+            "decision_authority",
+            "authoritative",
+            "operational_decision_record",
+        ),
+        (
+            archive_root / "decision_log_consolidation_map.md",
+            "decision_rationale_archive",
+            "archive_reference_only",
+            "consolidation_map",
+        ),
+        (
+            archive_root / "decision_log_consolidation_report.md",
+            "decision_rationale_archive",
+            "archive_reference_only",
+            "consolidation_report",
+        ),
+        (
+            archive_root / "legacy_decision_log_2026-05-09.md",
+            "legacy_decision_log",
+            "archive_reference_only",
+            "legacy_decision_log",
+        ),
+    ]
+
+
+def build_decision_log_items(root: Path, stats: BuildStats) -> list[MemoryItem]:
     items: list[MemoryItem] = []
 
-    for chunk_kind, title, body in chunks:
-        title_i18n = title_i18n_from_markdown_title(title)
-        summary_i18n = summary_i18n_from_markdown_body(body)
-        memory_id = stable_memory_id(
-            "decision_log",
-            rel_path_str(path, root),
-            chunk_kind,
-            title,
-        )
-        payload = {
-            "memory_id": memory_id,
-            "memory_type": "decision_log",
-            "lang_default": LANG_DEFAULT,
-            "languages": list(SUPPORTED_LANGUAGES),
-            "as_of": extract_as_of_from_text(title, body),
-            "title": preferred_lang_text(title_i18n, title),
-            "title_i18n": title_i18n,
-            "summary": preferred_lang_text(summary_i18n, clip_text(body, 800)),
-            "summary_i18n": summary_i18n,
-            "tags": derive_tags_from_text(
-                title + "\n" + body,
-                base=["decision_log", "docs", chunk_kind],
-            ),
-            "source_path": rel_path_str(path, root),
-            "source_kind": "docs",
-            "chunk_kind": chunk_kind,
-            "chunk_title": title,
-            "version": "v1",
-            "indexed_at": utc_now_iso(),
-        }
-        document = build_decision_log_document(chunk_kind=chunk_kind, title=title, body=body)
-        items.append(MemoryItem(stable_point_id(memory_id), clip_text(document), payload))
-        stats.decision_log += 1
+    for path, memory_type, authority_level, archive_role in decision_markdown_sources(root):
+        if not path.exists():
+            continue
+
+        text = path.read_text(encoding="utf-8")
+        chunks = extract_decision_log_chunks(text)
+
+        for chunk_kind, title, body in chunks:
+            title_i18n = title_i18n_from_markdown_title(title)
+            summary_i18n = summary_i18n_from_markdown_body(body)
+            memory_id = stable_memory_id(
+                memory_type,
+                rel_path_str(path, root),
+                authority_level,
+                archive_role,
+                chunk_kind,
+                title,
+            )
+            payload = {
+                "memory_id": memory_id,
+                "memory_type": memory_type,
+                "lang_default": LANG_DEFAULT,
+                "languages": list(SUPPORTED_LANGUAGES),
+                "as_of": extract_as_of_from_text(title, body),
+                "title": preferred_lang_text(title_i18n, title),
+                "title_i18n": title_i18n,
+                "summary": preferred_lang_text(summary_i18n, clip_text(body, 800)),
+                "summary_i18n": summary_i18n,
+                "tags": derive_tags_from_text(
+                    title + "\n" + body,
+                    base=[
+                        memory_type,
+                        "docs",
+                        "governance_memory",
+                        authority_level,
+                        archive_role,
+                        chunk_kind,
+                    ],
+                ),
+                "source_path": rel_path_str(path, root),
+                "source_kind": "docs",
+                "authority_level": authority_level,
+                "archive_role": archive_role,
+                "chunk_kind": chunk_kind,
+                "chunk_title": title,
+                "version": "v2",
+                "indexed_at": utc_now_iso(),
+            }
+            document = build_decision_log_document(
+                memory_type=memory_type,
+                authority_level=authority_level,
+                archive_role=archive_role,
+                chunk_kind=chunk_kind,
+                title=title,
+                body=body,
+            )
+            items.append(MemoryItem(stable_point_id(memory_id), clip_text(document), payload))
+            increment_stats(stats, memory_type)
 
     return items
 
 
-def build_decision_log_document(*, chunk_kind: str, title: str, body: str) -> str:
+def build_decision_log_document(
+    *,
+    memory_type: str,
+    authority_level: str,
+    archive_role: str,
+    chunk_kind: str,
+    title: str,
+    body: str,
+) -> str:
     lines = [
-        f"memory_type: decision_log",
+        f"memory_type: {memory_type}",
+        f"authority_level: {authority_level}",
+        f"archive_role: {archive_role}",
         f"chunk_kind: {chunk_kind}",
         f"title: {title}",
     ]
@@ -989,7 +1068,13 @@ def extract_patterns_from_library(data: Any) -> list[dict[str, Any]]:
 
 
 def increment_stats(stats: BuildStats, memory_type: str) -> None:
-    if memory_type == "prediction_snapshot":
+    if memory_type == "decision_authority":
+        stats.decision_authority += 1
+    elif memory_type == "decision_rationale_archive":
+        stats.decision_rationale_archive += 1
+    elif memory_type == "legacy_decision_log":
+        stats.legacy_decision_log += 1
+    elif memory_type == "prediction_snapshot":
         stats.prediction_snapshot += 1
     elif memory_type == "scenario_snapshot":
         stats.scenario_snapshot += 1
@@ -1034,12 +1119,20 @@ def write_build_stamp(
         "indexed": indexed,
         "stats": stats.as_dict(),
         "source_scope": {
-            "decision_log": "docs/core/decision_log.md",
+            "decision_authority": "docs/core/decision_log.md",
+            "decision_rationale_archive": "docs/archive/decision_rationale",
+            "legacy_decision_log": "docs/archive/decision_rationale/legacy_decision_log_2026-05-09.md",
             "prediction_history": "analysis/prediction/history",
             "historical": "analysis/historical",
             "explanation": "analysis/explanation",
         },
-        "note": "Vector DB build stamp for freshness checking. reference_memory_latest.json is a recall artifact, not a build stamp.",
+        "authority_policy": {
+            "decision_authority": "authoritative operational decision record",
+            "decision_rationale_archive": "historical rationale archive; reference-only; not authority",
+            "legacy_decision_log": "legacy historical record; reference-only; not authority",
+            "vector_memory": "reference-only recall layer; never source of truth",
+        },
+        "note": "Vector DB build stamp for freshness checking. reference_memory_latest.json is a recall artifact, not a build stamp. Archive memory is searchable rationale, not operational authority.",
     }
     stamp_path = root / "analysis" / "prediction" / "vector_memory_build_latest.json"
     stamp_path.parent.mkdir(parents=True, exist_ok=True)
