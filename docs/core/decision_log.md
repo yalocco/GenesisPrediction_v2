@@ -2,7 +2,7 @@
 
 Status: Active
 Purpose: Authoritative operational decision record
-Last Updated: 2026-05-09
+Last Updated: 2026-05-12
 Consolidation: authority/archive/vector hierarchy applied
 
 ---
@@ -108,6 +108,7 @@ Status: adopted
 | ARCH-007 | Reference Memory Is Compacted For UI | Reference memory passed to UI is compacted by analysis/scripts; UI must not compact raw memory. | reference_memory, ui |
 | ARCH-008 | VectorDB Must Separate Authority And Rationale Memory | decision_log entries and archive rationale must be indexed as separate reference memory types and must not be treated as equal authority. | vector_memory, authority, rationale |
 | ARCH-009 | Archive Recall Is Context Only | archive recall may explain history and rationale but must not override current decision_log authority. | vector_memory, archive, recall |
+| ARCH-010 | Downstream Layers Must Not Feed Upstream | Later pipeline layers must not be read by earlier layers; Prediction must not feed Trend/Signal/Scenario or create feedback loops. | pipeline, dependency, feedback_loop |
 
 ---
 
@@ -182,6 +183,7 @@ Status: adopted
 | OPS-017 | PowerShell Switch Parameters Do Not Receive Boolean Values | PowerShell switch parameters are enabled by presence and must not receive explicit boolean values. | powershell, switch |
 | OPS-018 | Cross-Platform PowerShell Prefers pwsh On Core | PowerShell Core environments must dynamically resolve pwsh instead of powershell. | powershell, github_actions |
 | OPS-019 | NoLLM Morning Ritual GitHub Actions Trial Succeeded | NoLLM GitHub Actions workflow can support iPad-driven LABOS updates when SSH restrictions are resolved. | github_actions, nollm, labos |
+| OPS-020 | Deploy Verify Is Technical, Not Semantic Truth | verify_deploy.py confirms deployed artifacts match local artifacts; it does not prove that generated meaning, dates, or pipeline logic are correct. | deploy, verify, semantic_integrity |
 
 ---
 
@@ -266,6 +268,7 @@ Do not use archive as:
 3. Update `decision_index.md` with one navigation entry per decision.
 4. Rebuild VectorDB after decision_log/index/archive updates when the project workflow requires it.
 5. Keep entries short enough for humans and AI to govern from them.
+6. When an incident reveals a new architectural constraint, record the compact binding rule here and place long incident narrative in archive only if needed.
 
 ---
 

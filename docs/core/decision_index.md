@@ -2,7 +2,7 @@
 
 Status: Active
 Purpose: Lightweight navigation for decision_log.md
-Last Updated: 2026-05-09
+Last Updated: 2026-05-12
 
 ---
 
@@ -361,6 +361,11 @@ tags: github_actions, nollm, labos
 rule: NoLLM GitHub Actions workflow can support iPad-driven LABOS updates when SSH restrictions are resolved.
 source: docs/core/decision_log.md
 
+### OPS-020 | Deploy Verify Is Technical, Not Semantic Truth
+tags: deploy, verify, semantic_integrity
+rule: verify_deploy.py confirms deployed artifacts match local artifacts; it does not prove that generated meaning, dates, or pipeline logic are correct.
+source: docs/core/decision_log.md
+
 ## Data / Analysis
 
 ### DATA-001 | Sentiment Output Is Semantic
@@ -487,6 +492,11 @@ source: docs/core/decision_log.md
 ### ARCH-009 | Archive Recall Is Context Only
 tags: vector_memory, archive, recall
 rule: archive recall may explain history and rationale but must not override current decision_log authority.
+source: docs/core/decision_log.md
+
+### ARCH-010 | Downstream Layers Must Not Feed Upstream
+tags: pipeline, dependency, feedback_loop
+rule: Later pipeline layers must not be read by earlier layers; Prediction must not feed Trend/Signal/Scenario or create feedback loops.
 source: docs/core/decision_log.md
 
 ---
