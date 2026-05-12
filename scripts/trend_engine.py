@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 
-VERSION = "1.1"
+VERSION = "1.2"
 DEFAULT_HORIZON_DAYS = 7
 DEFAULT_HISTORY_DAYS = 7
 
@@ -170,8 +170,6 @@ def read_history_window(root: Path, limit_days: int) -> List[Dict[str, Any]]:
             "health.json",
             "view_model_latest.json",
             "view_model.json",
-            "prediction_latest.json",
-            "prediction.json",
         ):
             path = folder / name
             if path.exists():
@@ -211,7 +209,6 @@ class ObservationBundle:
         self.load_if_exists("sentiment", "sentiment_latest.json", "world_politics/sentiment_latest.json")
         self.load_if_exists("health", "health_latest.json", "world_politics/health_latest.json")
         self.load_if_exists("view_model", "view_model_latest.json", "digest/view_model_latest.json")
-        self.load_if_exists("prediction", "prediction/prediction_latest.json")
 
 
 class TrendMetric:
@@ -320,7 +317,7 @@ def build_sentiment_trend(bundle: ObservationBundle) -> Optional[TrendMetric]:
 
 
 def build_risk_trend(bundle: ObservationBundle) -> Optional[TrendMetric]:
-    sources = [bundle.sources.get("daily_summary"), bundle.sources.get("view_model"), bundle.sources.get("prediction")]
+    sources = [bundle.sources.get("daily_summary"), bundle.sources.get("view_model")]
     flattened: List[Tuple[str, float]] = []
     for src in sources:
         if src:
@@ -355,7 +352,7 @@ def build_risk_trend(bundle: ObservationBundle) -> Optional[TrendMetric]:
         previous=previous,
         confidence=confidence,
         rationale=rationale,
-        source="daily_summary/view_model/prediction",
+        source="daily_summary/view_model",
         tags=unique_preserve_order(tags),
         metadata={"risk_level": risk_level},
     )
@@ -600,7 +597,7 @@ def build_payload(bundle: ObservationBundle, horizon_days: int, history_days: in
     trend_tags = build_trend_tags(metrics, summary)
 
     as_of = None
-    for key in ("daily_summary", "sentiment", "health", "view_model", "prediction"):
+    for key in ("daily_summary", "sentiment", "health", "view_model"):
         payload = bundle.sources.get(key)
         if payload:
             as_of = pick(payload, "as_of", "date", "generated_at")
@@ -632,9 +629,9 @@ def build_payload(bundle: ObservationBundle, horizon_days: int, history_days: in
         },
         "history_sources_used": [pick(item, "__history_path__", default=None) for item in bundle.history[:history_days]],
         "notes": [
-            "Trend Engine reads analysis artifacts and lightweight history to infer directionality.",
+            "Trend Engine reads observation artifacts and lightweight history to infer directionality.",
             "Confidence expresses observation coherence, not certainty of future outcomes.",
-            "Schema is tolerant so upstream analysis artifacts can evolve without breaking Signal Engine.",
+            "Schema is tolerant so upstream observation artifacts can evolve without breaking Signal Engine.",
             "trend_tags are normalized short tags for downstream Signal / Historical Pattern matching.",
         ],
     }
