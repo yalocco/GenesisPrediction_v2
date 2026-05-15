@@ -2,7 +2,7 @@
 
 Status: Active
 Purpose: Authoritative operational decision record
-Last Updated: 2026-05-12
+Last Updated: 2026-05-16
 Consolidation: authority/archive/vector hierarchy applied
 
 ---
@@ -196,6 +196,7 @@ Status: adopted
 | DATA-003 | Prediction Uses Semantic Analysis Fields | Prediction consumes semantic analysis fields, not score-only sentiment. | prediction, semantic |
 | DATA-004 | Daily Summary Is Count-Based | daily_summary_latest summary must be derived from count-based structured fields and not contradict today.count. | summary, count |
 | DATA-005 | Health Output Path Matches SSOT Path | build_data_health.py output must align with analysis/health_latest.json when guards verify that path. | health, ssot, path |
+| DATA-006 | World Latest Pointer Must Sync During News Publish | Publishing daily world news must synchronize data/world_politics/analysis/latest.json with the dated raw source so downstream view/global status artifacts do not drift to stale as_of dates. | world_politics, latest_pointer, as_of, publish |
 
 ---
 
