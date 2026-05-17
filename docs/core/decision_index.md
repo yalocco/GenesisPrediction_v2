@@ -2,7 +2,7 @@
 
 Status: Active
 Purpose: Lightweight navigation for decision_log.md
-Last Updated: 2026-05-16
+Last Updated: 2026-05-17
 
 ---
 
@@ -396,6 +396,11 @@ source: docs/core/decision_log.md
 ### DATA-006 | World Latest Pointer Must Sync During News Publish
 tags: world_politics, latest_pointer, as_of, publish
 rule: Publishing daily world news must synchronize data/world_politics/analysis/latest.json with the dated raw source so downstream view/global status artifacts do not drift to stale as_of dates.
+source: docs/core/decision_log.md
+
+### DATA-007 | Dated Raw Source Is Authority Over latest.json
+tags: world_politics, authority, latest_pointer, stale_prevention
+rule: When a dated raw world news source exists for the requested/local date, pipeline truth selection must prefer the dated source over analysis/latest.json to prevent stale as_of drift.
 source: docs/core/decision_log.md
 
 ## UI / Public Release

@@ -2,7 +2,7 @@
 
 Status: Active
 Purpose: Authoritative operational decision record
-Last Updated: 2026-05-16
+Last Updated: 2026-05-17
 Consolidation: authority/archive/vector hierarchy applied
 
 ---
@@ -197,6 +197,7 @@ Status: adopted
 | DATA-004 | Daily Summary Is Count-Based | daily_summary_latest summary must be derived from count-based structured fields and not contradict today.count. | summary, count |
 | DATA-005 | Health Output Path Matches SSOT Path | build_data_health.py output must align with analysis/health_latest.json when guards verify that path. | health, ssot, path |
 | DATA-006 | World Latest Pointer Must Sync During News Publish | Publishing daily world news must synchronize data/world_politics/analysis/latest.json with the dated raw source so downstream view/global status artifacts do not drift to stale as_of dates. | world_politics, latest_pointer, as_of, publish |
+| DATA-007 | Dated Raw Source Is Authority Over latest.json | When a dated raw world news source exists for the requested/local date, pipeline truth selection must prefer the dated source over analysis/latest.json to prevent stale as_of drift. | world_politics, authority, latest_pointer, stale_prevention |
 
 ---
 
