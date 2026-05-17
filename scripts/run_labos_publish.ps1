@@ -89,7 +89,77 @@ try {
   Ok "Deploy payload validated"
 
   Info "=== 3) Freshness gate ==="
-  $expectedAsOf = (Get-Content (Join-Path $repoRoot "analysis\global_status_latest.json") -Raw | ConvertFrom-Json).as_of
+
+  function Get-JsonTopLevelField {
+    param(
+      [Parameter(Mandatory=$true)]
+      [string]$JsonPath,
+
+      [Parameter(Mandatory=$true)]
+      [string]$Field
+    )
+
+    if (-not (Test-Path $JsonPath)) {
+      Fail "json field source missing: $JsonPath"
+    }
+
+    $pythonSource = @'
+import json
+import sys
+from pathlib import Path
+
+if len(sys.argv) != 3:
+    print("usage: get_json_field.py <path> <field>", file=sys.stderr)
+    sys.exit(2)
+
+path = Path(sys.argv[1])
+field = sys.argv[2]
+
+with path.open("r", encoding="utf-8-sig") as f:
+    obj = json.load(f)
+
+if not isinstance(obj, dict):
+    print("top-level JSON value is not an object", file=sys.stderr)
+    sys.exit(3)
+
+value = obj.get(field, "")
+
+if value is None:
+    value = ""
+
+if isinstance(value, (dict, list)):
+    print(json.dumps(value, ensure_ascii=False, separators=(",", ":")))
+else:
+    print(str(value))
+'@
+
+    $tempScript = Join-Path ([System.IO.Path]::GetTempPath()) ("gp_json_field_{0}.py" -f ([Guid]::NewGuid().ToString("N")))
+
+    try {
+      Set-Content -Path $tempScript -Value $pythonSource -Encoding UTF8
+      $output = & python $tempScript $JsonPath $Field
+      $exitCode = $LASTEXITCODE
+
+      if ($exitCode -ne 0) {
+        Fail "failed to read json field: $JsonPath [$Field]"
+      }
+
+      return (($output -join "`n").Trim())
+    }
+    finally {
+      if (Test-Path $tempScript) {
+        Remove-Item -Force $tempScript
+      }
+    }
+  }
+
+  $expectedAsOf = Get-JsonTopLevelField `
+    -JsonPath (Join-Path $repoRoot "analysis\global_status_latest.json") `
+    -Field "as_of"
+
+  if ([string]::IsNullOrWhiteSpace($expectedAsOf)) {
+    Fail "expected as_of is empty: analysis\global_status_latest.json"
+  }
 
   $checks = @(
     @{ Path = (Join-Path $OutDir "analysis\global_status_latest.json"); Field = "as_of" },
@@ -103,8 +173,9 @@ try {
       Fail "freshness check file missing: $($check.Path)"
     }
 
-    $obj = Get-Content $check.Path -Raw | ConvertFrom-Json
-    $value = $obj.($check.Field)
+    $value = Get-JsonTopLevelField `
+      -JsonPath $check.Path `
+      -Field $check.Field
 
     if ($value -ne $expectedAsOf) {
       Fail "freshness mismatch: $($check.Path) expected=$expectedAsOf actual=$value"

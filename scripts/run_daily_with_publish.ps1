@@ -129,8 +129,29 @@ function Invoke-PythonScript {
 function Get-RawNewsSourcePath {
     param(
         [string]$DataDir,
-        [string]$LatestJsonPath
+        [string]$LatestJsonPath,
+        [string]$Date
     )
+
+    if (-not [string]::IsNullOrWhiteSpace($Date)) {
+        $dateCandidate = Join-Path $DataDir ("{0}.json" -f $Date)
+        if (Test-Path -LiteralPath $dateCandidate) {
+            Write-Log "[OK] raw news source resolved from requested date: $dateCandidate"
+            return $dateCandidate
+        }
+
+        Write-Log "[WARN] requested date raw file not found: $dateCandidate"
+    }
+
+    $latestDatedRaw = Get-ChildItem -LiteralPath $DataDir -File |
+        Where-Object { $_.Name -match '^\d{4}-\d{2}-\d{2}\.json$' } |
+        Sort-Object Name -Descending |
+        Select-Object -First 1
+
+    if ($latestDatedRaw) {
+        Write-Log "[OK] raw news source resolved from newest dated raw file: $($latestDatedRaw.FullName)"
+        return $latestDatedRaw.FullName
+    }
 
     $rawDate = $null
 
@@ -149,7 +170,7 @@ function Get-RawNewsSourcePath {
     if (-not [string]::IsNullOrWhiteSpace($rawDate)) {
         $candidate = Join-Path $DataDir ("{0}.json" -f $rawDate)
         if (Test-Path -LiteralPath $candidate) {
-            Write-Log "[OK] raw news source resolved from latest.json date: $candidate"
+            Write-Log "[WARN] raw news source resolved from latest.json fallback date: $candidate"
             return $candidate
         }
         else {
@@ -157,18 +178,9 @@ function Get-RawNewsSourcePath {
         }
     }
 
-    $fallback = Get-ChildItem -LiteralPath $DataDir -File |
-        Where-Object { $_.Name -match '^\d{4}-\d{2}-\d{2}\.json$' } |
-        Sort-Object Name -Descending |
-        Select-Object -First 1
-
-    if ($fallback) {
-        Write-Log "[WARN] fallback raw news source selected: $($fallback.FullName)"
-        return $fallback.FullName
-    }
-
     throw "No raw news JSON found under $DataDir"
 }
+
 
 function Resolve-PythonExe {
     param([string]$RepoRoot)
@@ -289,7 +301,7 @@ try {
         $dailySummaryLatest = Join-Path $dataAnalysisDir "daily_summary_latest.json"
         $dailySummaryDated  = Join-Path $dataAnalysisDir ("daily_summary_{0}.json" -f $Date)
 
-        $rawNewsSource = Get-RawNewsSourcePath -DataDir $dataDir -LatestJsonPath $latestJson
+        $rawNewsSource = Get-RawNewsSourcePath -DataDir $dataDir -LatestJsonPath $latestJson -Date $Date
 
         Copy-Item -LiteralPath $rawNewsSource -Destination $dailyNewsLatest -Force
         Write-Log "[OK] materialized: $dailyNewsLatest"
