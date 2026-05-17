@@ -88,11 +88,34 @@ try {
   }
   Ok "Deploy payload validated"
 
-  Info "=== 3) Run LABOS deploy ==="
+  Info "=== 3) Freshness gate ==="
+  $expectedAsOf = (Get-Content (Join-Path $repoRoot "analysis\global_status_latest.json") -Raw | ConvertFrom-Json).as_of
+
+  $checks = @(
+    @{ Path = (Join-Path $OutDir "analysis\global_status_latest.json"); Field = "as_of" },
+    @{ Path = (Join-Path $OutDir "analysis\prediction\prediction_latest.json"); Field = "as_of" },
+    @{ Path = (Join-Path $OutDir "analysis\explanation\prediction_explanation_latest.json"); Field = "as_of" },
+    @{ Path = (Join-Path $OutDir "data\world_politics\analysis\latest.json"); Field = "date" }
+  )
+
+  foreach ($check in $checks) {
+    if (-not (Test-Path $check.Path)) {
+      Fail "freshness check file missing: $($check.Path)"
+    }
+
+    $obj = Get-Content $check.Path -Raw | ConvertFrom-Json
+    $value = $obj.($check.Field)
+
+    if ($value -ne $expectedAsOf) {
+      Fail "freshness mismatch: $($check.Path) expected=$expectedAsOf actual=$value"
+    }
+  }
+  Ok "Freshness gate passed"
+
+  Info "=== 4) Run LABOS deploy ==="
   $argv = @(
     "-ExecutionPolicy", "Bypass",
-    "-File", $deployScript,
-    "-Profile", $Profile
+    "-File", $deployScript
   )
   if ($DryRun) { $argv += "-DryRun" }
 
