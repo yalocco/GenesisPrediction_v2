@@ -465,12 +465,14 @@ data["text"] = summary_text
 summary_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 if daily_summary_data:
+    daily_summary_data["date"] = "__PIPELINE_DATE__"
+    daily_summary_data["as_of"] = "__PIPELINE_DATE__"
     daily_summary_data["summary"] = summary_text
     daily_summary_data["text"] = summary_text
     daily_summary_path.write_text(json.dumps(daily_summary_data, ensure_ascii=False, indent=2), encoding="utf-8")
 '@
             $tempPy = Join-Path ([System.IO.Path]::GetTempPath()) "genesis_summary_materializer.py"
-            Set-Content -LiteralPath $tempPy -Value $summaryMaterializer -Encoding UTF8
+            Set-Content -LiteralPath $tempPy -Value ($summaryMaterializer.Replace("__PIPELINE_DATE__", $Date)) -Encoding UTF8
             Write-Host "CMD: $python $tempPy"
             & $python $tempPy
             $exitCode = $LASTEXITCODE
