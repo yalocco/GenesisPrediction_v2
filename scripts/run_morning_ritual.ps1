@@ -192,7 +192,14 @@ if (-not $SkipPrediction) {
 
     Invoke-PythonScript -Name "trend_engine" -RepoRoot $repoRoot -PythonExe $pythonExe -ScriptPath "scripts/trend_engine.py"
     Invoke-PythonScript -Name "signal_engine" -RepoRoot $repoRoot -PythonExe $pythonExe -ScriptPath "scripts/signal_engine.py"
-    Invoke-PythonScript -Name "scenario_engine" -RepoRoot $repoRoot -PythonExe $pythonExe -ScriptPath "scripts/scenario_engine.py"
+
+    $scenarioArgs = @()
+    if ($NoLLM) {
+        $scenarioArgs += "--skip-recall"
+        Write-Host "[NoLLM] scenario_engine.py runs without live vector recall."
+    }
+
+    Invoke-PythonScript -Name "scenario_engine" -RepoRoot $repoRoot -PythonExe $pythonExe -ScriptPath "scripts/scenario_engine.py" -Arguments $scenarioArgs
     Invoke-PythonScript -Name "prediction_engine" -RepoRoot $repoRoot -PythonExe $pythonExe -ScriptPath "scripts/prediction_engine.py"
     Invoke-PythonScript -Name "build_prediction_history_index" -RepoRoot $repoRoot -PythonExe $pythonExe -ScriptPath "scripts/build_prediction_history_index.py"
 

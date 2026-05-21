@@ -39,17 +39,28 @@ for ($i = 0; $i -lt $pairs.Count; $i++) {
 
     Write-Host ("[{0}] PY  fx_materialize_rates.py --pair {1}" -f (NowStamp), $pair)
 
-    & $PY $scriptPath --pair $pair
+    $fxOutput = & $PY $scriptPath --pair $pair 2>&1
     $code = $LASTEXITCODE
+
+    foreach ($line in $fxOutput) {
+        Write-Host $line
+    }
 
     if ($code -ne 0) {
         Write-Host ("[{0}] ERROR Python failed (fx_materialize_rates.py --pair {1}) exit={2}" -f (NowStamp), $pair, $code)
         exit 1
     }
 
+    $outputText = ($fxOutput | Out-String)
+    $skippedOnlineBecauseAlreadyAttempted = ($outputText -match "skip online \(already_attempted_today\(ok\)\)")
+
     if ($i -lt ($pairs.Count - 1)) {
-        Write-Host ("[{0}] WAIT FX pair cooldown seconds={1}" -f (NowStamp), $CooldownSeconds)
-        Start-Sleep -Seconds $CooldownSeconds
+        if ($skippedOnlineBecauseAlreadyAttempted) {
+            Write-Host ("[{0}] SKIP FX pair cooldown because online fetch was already attempted today for {1}" -f (NowStamp), $pair)
+        } else {
+            Write-Host ("[{0}] WAIT FX pair cooldown seconds={1}" -f (NowStamp), $CooldownSeconds)
+            Start-Sleep -Seconds $CooldownSeconds
+        }
     }
 }
 
