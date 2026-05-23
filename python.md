@@ -1,11 +1,17 @@
 ■ ローカルサーバー起動（正式）
 powershell -ExecutionPolicy Bypass -File scripts/run_server.ps1
 
-■ 朝の儀式（正式）
+■ 朝の儀式（正式） option  -AllowDirtyRepo 
 powershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual.ps1
-powershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual.ps1 -AllowDirtyRepo
+powershell -ExecutionPolicy Bypass -File scripts/run_post_ritual_checks.ps1
+powershell -ExecutionPolicy Bypass -File scripts/run_labos_publish.ps1
+python scripts/verify_deploy.py --root D:\AI\Projects\GenesisPrediction_v2
+
+■ 朝の儀式（略式）
 powershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual.ps1 -NoLLM
-powershell -ExecutionPolicy Bypass -File scripts/run_morning_ritual.ps1 -NoLLM -AllowDirtyRepo
+powershell -ExecutionPolicy Bypass -File scripts/run_post_ritual_checks.ps1 -NoLLM
+powershell -ExecutionPolicy Bypass -File scripts/run_labos_publish.ps1
+python scripts/verify_deploy.py --root D:\AI\Projects\GenesisPrediction_v2
 
 ■ 朝の儀式 ガード阻止
 git add -A
@@ -16,15 +22,6 @@ python scripts/check_vector_memory_freshness.py
 
 ■ VectorDB　更新
 python scripts/build_vector_memory.py --recreate
-
-■ post checks(deploy前)
-powershell -ExecutionPolicy Bypass -File scripts/run_post_ritual_checks.ps1
-
-■ Deploy（自宅PC専用）
-powershell -ExecutionPolicy Bypass -File scripts/run_labos_publish.ps1
-
-■ verify(deploy後)
-python scripts/verify_deploy.py --root D:\AI\Projects\GenesisPrediction_v2
 
 ■ decision_index（更新）
 python scripts/build_decision_index.py
