@@ -1,5 +1,6 @@
 param(
     [string]$Root = (Resolve-Path "$PSScriptRoot\..").Path,
+    [switch]$NoLLM = $false,
     [switch]$AutoRebuildVectorMemory = $true,
     [switch]$ForceRebuildVectorMemory = $false
 )
@@ -66,6 +67,10 @@ function Invoke-PythonStep {
 $Root = (Resolve-Path $Root).Path
 $PythonExe = Resolve-Python -RepoRoot $Root
 
+if ($NoLLM -and -not $ForceRebuildVectorMemory) {
+    $AutoRebuildVectorMemory = $false
+}
+
 $DecisionCheck = Join-Path $Root "scripts\check_decision_log_freshness.py"
 $VectorCheck   = Join-Path $Root "scripts\check_vector_memory_freshness.py"
 $VectorBuild   = Join-Path $Root "scripts\build_vector_memory.py"
@@ -79,6 +84,12 @@ foreach ($required in @($DecisionCheck, $VectorCheck, $VectorBuild)) {
 Write-Host "GenesisPrediction - Post Ritual Checks"
 Write-Host "ROOT   : $Root"
 Write-Host "PYTHON : $PythonExe"
+if ($NoLLM) {
+    Write-Host "MODE   : NoLLM / vector rebuild auto-skip"
+}
+else {
+    Write-Host "MODE   : Full / vector rebuild allowed"
+}
 Write-Host "AUTO   : VectorMemoryRebuild=$AutoRebuildVectorMemory"
 Write-Host "FORCE  : VectorMemoryRebuild=$ForceRebuildVectorMemory"
 
@@ -102,6 +113,12 @@ if ($ForceRebuildVectorMemory) {
 }
 elseif ($vectorStatus -eq 2 -and $AutoRebuildVectorMemory) {
     $shouldRebuild = $true
+}
+
+if ($NoLLM -and $vectorStatus -eq 2 -and -not $ForceRebuildVectorMemory) {
+    Write-Section "Vector Memory Auto Rebuild"
+    Write-Host "[SKIP] NoLLM mode: automatic vector memory rebuild is skipped."
+    Write-Host "[INFO] Vector memory freshness warning is kept visible for a later full-mode rebuild."
 }
 
 if ($shouldRebuild) {

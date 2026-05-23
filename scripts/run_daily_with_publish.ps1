@@ -182,6 +182,85 @@ function Get-RawNewsSourcePath {
 }
 
 
+function Sync-WorldLatestJsonDateFromRaw {
+    param(
+        [string]$LatestJsonPath,
+        [string]$RawNewsSourcePath,
+        [string]$RequestedDate
+    )
+
+    if (-not (Test-Path -LiteralPath $RawNewsSourcePath)) {
+        Write-Log "[WARN] latest.json sync skipped; raw source missing: $RawNewsSourcePath"
+        return $false
+    }
+
+    $rawDate = [System.IO.Path]::GetFileNameWithoutExtension($RawNewsSourcePath)
+    if ($rawDate -notmatch '^\d{4}-\d{2}-\d{2}$') {
+        Write-Log "[WARN] latest.json sync skipped; raw source is not dated: $RawNewsSourcePath"
+        return $false
+    }
+
+    if ($rawDate -ne $RequestedDate) {
+        Write-Log "[WARN] latest.json sync skipped; raw date $rawDate differs from requested date $RequestedDate. Freshness gate should stop publish unless run with matching -Date."
+        return $false
+    }
+
+    $latestObj = $null
+    if (Test-Path -LiteralPath $LatestJsonPath) {
+        try {
+            $latestObj = Get-Content -LiteralPath $LatestJsonPath -Raw | ConvertFrom-Json
+        }
+        catch {
+            Write-Log "[WARN] latest.json parse failed; rebuilding minimal latest metadata: $($_.Exception.Message)"
+            $latestObj = $null
+        }
+    }
+
+    if ($null -eq $latestObj) {
+        $latestObj = [pscustomobject]@{}
+    }
+
+    $rawObj = $null
+    try {
+        $rawObj = Get-Content -LiteralPath $RawNewsSourcePath -Raw | ConvertFrom-Json
+    }
+    catch {
+        Write-Log "[WARN] raw source parse failed during latest.json sync: $($_.Exception.Message)"
+        $rawObj = $null
+    }
+
+    if (-not ($latestObj.PSObject.Properties.Name -contains "date")) {
+        $latestObj | Add-Member -NotePropertyName "date" -NotePropertyValue $rawDate
+    }
+    else {
+        $latestObj.date = $rawDate
+    }
+
+    $sourceFile = "/data/world_politics/{0}.json" -f $rawDate
+    if (-not ($latestObj.PSObject.Properties.Name -contains "source_file")) {
+        $latestObj | Add-Member -NotePropertyName "source_file" -NotePropertyValue $sourceFile
+    }
+    else {
+        $latestObj.source_file = $sourceFile
+    }
+
+    if ($rawObj -and ($rawObj.PSObject.Properties.Name -contains "articles") -and $rawObj.articles) {
+        $articleCount = @($rawObj.articles).Count
+        if (-not ($latestObj.PSObject.Properties.Name -contains "count")) {
+            $latestObj | Add-Member -NotePropertyName "count" -NotePropertyValue $articleCount
+        }
+        else {
+            $latestObj.count = $articleCount
+        }
+    }
+
+    Ensure-Dir -PathToEnsure (Split-Path -Parent $LatestJsonPath)
+    $latestObj | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $LatestJsonPath -Encoding UTF8
+    Write-Log "[OK] synced latest.json date from raw source: $LatestJsonPath date=$rawDate"
+    return $true
+}
+
+
 function Resolve-PythonExe {
     param([string]$RepoRoot)
 
@@ -302,6 +381,7 @@ try {
         $dailySummaryDated  = Join-Path $dataAnalysisDir ("daily_summary_{0}.json" -f $Date)
 
         $rawNewsSource = Get-RawNewsSourcePath -DataDir $dataDir -LatestJsonPath $latestJson -Date $Date
+        Sync-WorldLatestJsonDateFromRaw -LatestJsonPath $latestJson -RawNewsSourcePath $rawNewsSource -RequestedDate $Date | Out-Null
 
         Copy-Item -LiteralPath $rawNewsSource -Destination $dailyNewsLatest -Force
         Write-Log "[OK] materialized: $dailyNewsLatest"
